@@ -7,8 +7,8 @@
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "standalone",
     "fullscreen",
+    "standalone",
     "minimal-ui"
   ],
   "orientation": "any",
@@ -158,6 +158,7 @@
       "title": "title",
       "text": "text",
       "url": "url"
-    }
+    },
+    "enctype": "application/x-www-form-urlencoded"
   }
 }

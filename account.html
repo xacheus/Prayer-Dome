@@ -16,7 +16,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prayer Dome">
-    <link rel="apple-touch-icon" href="https://prayerdome.net/assets/logo.png">
+    <link rel="apple-touch-icon" href="/assets/logo.png">
     <link rel="icon" type="image/png" href="https://prayerdome.net/assets/logo.png">
 
     <!-- Open Graph / Facebook / WhatsApp -->
@@ -589,6 +589,7 @@
 <script src="/assets/pd-app.js" defer></script>
     <script src="/assets/pd-certificate.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
+  <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
 
@@ -1758,15 +1759,40 @@
                 healthRow('radio', 'Push channel', pushText, d.token && !d.pendingToken) +
                 healthRow('wifi', 'Service worker', d.serviceWorker === 'unknown' ? 'Checking…' : d.serviceWorker, d.serviceWorker === 'active' ? true : null) +
                 healthRow('clock', 'Last registered', d.tokenSavedAt ? new Date(d.tokenSavedAt).toLocaleString() : '—', null);
+
+            // A blocked permission can only be changed in the operating
+            // system / browser settings, so tell the member exactly where.
+            let fix = document.getElementById('notifHealthFix');
+            if (!fix) {
+                fix = document.createElement('p');
+                fix.id = 'notifHealthFix';
+                fix.style.cssText = 'display:none; margin:10px 0 0; padding:10px 12px; border-radius:10px; background:rgba(212,175,55,.10); border:1px solid rgba(212,175,55,.35); color:var(--text-sub); font-size:.72rem; line-height:1.55;';
+                list.insertAdjacentElement('afterend', fix);
+            }
+            if (d.permission === 'denied') {
+                fix.style.display = 'block';
+                fix.innerHTML = '<strong style="color:var(--text-main);">Notifications are blocked for Prayer Dome.</strong><br>' +
+                    (iOSTab
+                        ? 'On iPhone: Settings → Notifications → Prayer Dome → Allow Notifications. If Prayer Dome is not listed, add the app to your Home Screen first.'
+                        : 'On Android: Chrome → ⋮ → Settings → Site settings → Notifications → Prayer Dome → Allow. On a computer: click the padlock beside the address bar → Notifications → Allow, then reload.') ;
+            } else if (iOSTab) {
+                fix.style.display = 'block';
+                fix.innerHTML = '<strong style="color:var(--text-main);">On iPhone, install first.</strong> Tap Share → Add to Home Screen, open Prayer Dome from the Home Screen, then allow notifications.';
+            } else {
+                fix.style.display = 'none';
+            }
         };
 
         window.sendTestNotification = async function() {
             if (!window.PDApp || !PDApp.notifications) return;
             const ok = await PDApp.notifications.testDevice();
             refreshNotifHealth();
+            const denied = typeof Notification !== 'undefined' && Notification.permission === 'denied';
             PDApp.toast(ok
                 ? 'Test sent — check your notification shade (and the lock screen).'
-                : 'Allow notifications first, then try again.', ok ? 'success' : 'error');
+                : denied
+                    ? 'Notifications are blocked. Use the steps above to allow them, then reload.'
+                    : 'Allow notifications first, then try again.', ok ? 'success' : 'error');
         };
 
         function renderNotifPrefs() {
@@ -1842,6 +1868,8 @@
         }
 
         document.addEventListener('pd:notif-diagnostics', refreshNotifHealth);
+        document.addEventListener('pd:notif-prefs', renderNotifPrefs);
+        document.addEventListener('pd:notif-reminder', renderPrayerReminder);
         document.addEventListener('pd:installed', () => { refreshNotifHealth(); refreshAppDisplay(); });
         document.addEventListener('fullscreenchange', refreshAppDisplay);
         document.addEventListener('visibilitychange', () => {

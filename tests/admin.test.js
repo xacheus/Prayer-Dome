@@ -137,3 +137,37 @@ for (const [label, ok] of [
   if (ok) console.log('PASS  ' + label);
   else { console.error('FAIL  ' + label); process.exitCode = 1; }
 }
+
+// Team management: add, edit, photo, and the memorial (deceased) state.
+for (const [label, ok] of [
+  ['admin Team section has an add-member action',
+    html.includes('onclick="openAdminTeamMember()"') || html.includes('openTeamMemberModal()')],
+  ['team editor can edit an existing member',
+    html.includes('teamMemberModalTitle') && html.includes('adminTeamEditingId') && html.includes("updateDoc(doc(db, 'teamMembers'")],
+  ['team editor supports a photo upload and URL',
+    html.includes('uploadTeamMemberPhoto') && html.includes('teamMemberImageUrl')],
+  ['team editor can mark a member Late / Passed On / RIP',
+    html.includes('teamMemberStatus') && html.includes('value="late"') &&
+    html.includes('teamMemberLateLabel') && html.includes('teamMemberPassedAt')],
+  ['the public team page renders the memorial label',
+    fs.readFileSync(path.join(root, 'team.html'), 'utf8').includes('team-badge team-late-badge')]
+]) {
+  if (ok) console.log('PASS  ' + label);
+  else { console.error('FAIL  ' + label); process.exitCode = 1; }
+}
+
+// News management: edit an existing story, change its photo/title/body.
+for (const [label, ok] of [
+  ['news editor opens with an existing story id',
+    html.includes('window.openNewsEditor = function(id)') && html.includes('editingNewsId = item ? item.id : null')],
+  ['news editor updates the story instead of creating a duplicate',
+    html.includes('PDApp.news.update(editingNewsId, payload)')],
+  ['news editor can replace the image, title and body',
+    html.includes('id="newsTitle"') && html.includes('id="newsImage"') &&
+    html.includes('id="newsBody"') && html.includes('uploadNewsImage')],
+  ['news list offers Edit on every story',
+    /onclick="openNewsEditor\('\$\{n\.id\}'\)"/.test(html)]
+]) {
+  if (ok) console.log('PASS  ' + label);
+  else { console.error('FAIL  ' + label); process.exitCode = 1; }
+}

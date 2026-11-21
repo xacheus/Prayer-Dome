@@ -1,0 +1,8 @@
+Firebase JavaScript SDK 10.8.0 — compat builds
+Copyright 2017 Google LLC
+Licensed under the Apache License, Version 2.0.
+https://github.com/firebase/firebase-js-sdk
+https://www.apache.org/licenses/LICENSE-2.0
+
+Vendored so /sw.js and /firebase-messaging-sw.js can start the Messaging SDK
+without a third-party CDN request, including on a slow or offline connection.

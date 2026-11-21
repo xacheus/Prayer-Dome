@@ -60,9 +60,12 @@ async function filterTokensByPreference(tokens, kind) {
       const row = doc.data() || {};
       if (row.token && row.userId) userByToken[row.token] = row.userId;
     });
+    // Devotionals live under the member's "Sermons and devotionals" switch;
+    // the preference document stores that category as `sermon`.
+    const prefKey = kind === 'devotional' ? 'sermon' : kind;
     return tokens.filter((token) => {
       const prefs = prefsByUser[userByToken[token]];
-      return !prefs || prefs[kind] !== false;
+      return !prefs || prefs[prefKey] !== false;
     });
   } catch (error) {
     console.warn('Could not read notification preferences; sending to all:', error.message);
@@ -95,18 +98,29 @@ function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
       // FCM data values must all be strings.
       url: absoluteUrl(link),
       link: absoluteUrl(link),
+      title: String(title || 'Prayer Dome'),
+      body: String(body || ''),
       kind: normaliseKind(kind),
       id: String(id || ''),
       tag: String(tag || ('pd-' + (id || Date.now())))
     },
     webpush: {
+      // High urgency wakes a sleeping phone; a day of TTL means a device that
+      // was off overnight still receives the message when it comes back.
+      headers: { Urgency: 'high', TTL: '86400' },
       fcmOptions: { link: absoluteUrl(link) },
       notification: {
         icon: PUSH_ICON,
         badge: PUSH_BADGE,
         ...(image ? { image: absoluteUrl(image) } : {}),
         tag: String(tag || ('pd-' + (id || Date.now()))),
-        vibrate: [180, 90, 180]
+        vibrate: [180, 90, 180],
+        ...(normaliseKind(kind) === 'verse' ? {
+          actions: [
+            { action: 'read', title: 'Read in Bible' },
+            { action: 'pray', title: 'Pray now' }
+          ]
+        } : {})
       }
     },
     android: {
@@ -219,9 +233,13 @@ exports.dailyDevotionalNotification = functions.pubsub
         .get();
 
       const tokens = [];
+      const seenTokens = new Set();
       tokensSnap.forEach(doc => {
         const d = doc.data();
-        if (d.token && d.notifications !== false) tokens.push(d.token);
+        if (d.token && d.notifications !== false && !seenTokens.has(d.token)) {
+          seenTokens.add(d.token);
+          tokens.push(d.token);
+        }
       });
 
       if (tokens.length === 0) {
@@ -229,23 +247,27 @@ exports.dailyDevotionalNotification = functions.pubsub
         return null;
       }
 
-      const payload = {
-        notification: {
-          title: 'Daily Devotional — Prayer Dome',
-          body: dev.title ? `${dev.title}: ${dev.thought ? dev.thought.substring(0, 80) + '…' : 'Read today\'s word.'}` : 'Your daily devotional is ready.',
-          icon: '/assets/logo.png',
-          badge: '/assets/logo.png'
-        },
-        data: {
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          screen: 'devotional',
-          devId: devQ.docs[0].id
-        },
-        tokens: tokens
-      };
+      // Respect the member's "Sermons and devotionals" switch, exactly like a
+      // dashboard announcement does.
+      const allowedTokens = await filterTokensByPreference(tokens, 'devotional');
+      if (!allowedTokens.length) {
+        console.log('Every device muted devotionals; nothing to send.');
+        return null;
+      }
+
+      const payload = pushMessage({
+        tokens: allowedTokens,
+        title: 'Daily Devotional — Prayer Dome',
+        body: dev.title ? `${dev.title}: ${dev.thought ? dev.thought.substring(0, 80) + '…' : 'Read today\'s word.'}` : 'Your daily devotional is ready.',
+        kind: 'devotional',
+        link: '/sermons.html',
+        id: `devotional-${today}`,
+        tag: `pd-devotional-${today}`
+      });
 
       const response = await admin.messaging().sendEachForMulticast(payload);
-      console.log(`Devotional notification sent to ${response.successCount}/${tokens.length} devices.`);
+      await disableDeadTokens(response, allowedTokens);
+      console.log(`Devotional notification sent to ${response.successCount}/${allowedTokens.length} devices.`);
 
       // Log the dispatch.
       await db.collection('devotionalLogs').add({
