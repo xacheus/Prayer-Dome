@@ -58,6 +58,10 @@ t('certificate download produces a PDF, not only an image',
 t('certificate still offers a PNG for sharing', cert.includes('downloadPng') && cert.includes("+ '.png'"));
 t('profile certificate buttons say Download PDF and Print',
   account.includes('Download PDF</button>') && account.includes('cert-print-btn'));
+t('certificate sync needs no custom Firestore index',
+  /collection\(db, "certificates"\), where\("userId", "==", auth\.currentUser\.uid\), limit\(100\)\)/.test(account) &&
+  !account.includes('where("userId", "==", auth.currentUser.uid), orderBy("date"'));
+t('certificate sync sorts newest first in memory', account.includes('certs.sort((a, b) => timeOf(b.date) - timeOf(a.date))'));
 t('printed certificate opens a clean standalone page',
   account.includes('window.printCertificate') && account.includes('Preparing your certificate'));
 
@@ -98,6 +102,10 @@ t('the rail rule covers the tabs used across the site',
 const about = read('about.html');
 t('about page links the real teaching PDFs and has no Coming Soon cards',
   about.includes('/documents/statement-of-faith.pdf') && !about.includes('Coming Soon'));
+
+const event = read('event.html');
+t('public event page hides admin-only Add Event controls until an admin signs in',
+  event.includes('admin-only-action') && event.includes('setEventAdminControls(role === \'admin\')'));
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
