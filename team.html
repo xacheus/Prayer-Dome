@@ -482,7 +482,7 @@
         /* Team Grid */
         .team-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
             gap: 30px;
             margin-bottom: 50px;
         }
@@ -628,7 +628,7 @@
             max-width: 1200px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
             gap: 40px;
         }
         .footer-section h3 {
@@ -701,6 +701,7 @@
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <script src="/assets/pd-upload.js" defer></script>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
 </head>
 <body>
     <header class="team-header">

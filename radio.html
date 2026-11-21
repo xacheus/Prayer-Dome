@@ -151,7 +151,7 @@
         .section-label { font-size: 1.25rem; font-weight: 800; margin: 34px 20px 16px; display: flex; align-items: center; gap: 12px; font-family: 'Poppins', serif; }
         .section-label i { color: var(--accent-gold); }
 
-        .radio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; padding: 0 20px; }
+        .radio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 16px; padding: 0 20px; }
         .radio-card {
             background: linear-gradient(150deg, var(--accent-green) 0%, #0a3d7a 70%, #07244d 100%);
             border-radius: 24px; padding: 26px; color: #fff; position: relative; overflow: hidden;
@@ -170,7 +170,7 @@
         .radio-card .play-btn:hover { transform: translateY(-2px) scale(1.03); }
         .radio-card.pd-radio-playing { outline: 3px solid #f6df8a; outline-offset: 3px; }
 
-        .pod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 0 20px 20px; }
+        .pod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 16px; padding: 0 20px 20px; }
         .pod-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 22px; padding: 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; transition: .3s; }
         .pod-card:hover { transform: translateY(-4px); border-color: var(--accent-gold); }
         .pod-series { font-size: .6rem; font-weight: 900; letter-spacing: 1.6px; text-transform: uppercase; color: var(--accent-gold-dark); }
@@ -210,6 +210,7 @@
 <script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
 </head>
 <body class="pd-bottom-nav-page">
 

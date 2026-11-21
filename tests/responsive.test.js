@@ -79,3 +79,37 @@ for (const name of ['index.html', 'ai-prayer.html', 'news.html', 'radio.html']) 
   assert.match(page, /viewport-fit=cover/);
 }
 console.log('Mobile shell, daily-task readability and homepage semantics checks passed.');
+
+// Universal text-containment layer, loaded last on every page.
+for (const file of htmlFiles) {
+  const html = fs.readFileSync(file, 'utf8');
+  assert.match(html, /<link[^>]+href=["']\/assets\/pd-responsive-fix\.css["']/,
+    `${path.relative(ROOT, file)} must load the shared overflow guard last`);
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.ok(head.indexOf('pd-responsive-fix.css') > head.lastIndexOf('<style'),
+    `${path.relative(ROOT, file)} must load the overflow guard after its inline styles`);
+}
+
+const overflowCss = fs.readFileSync(path.join(ROOT, 'assets/pd-responsive-fix.css'), 'utf8');
+assert.match(overflowCss, /html,\s*body\s*\{[^}]*overflow-x:\s*hidden/s,
+  'The page root must never scroll sideways');
+assert.match(overflowCss, /overflow-wrap:\s*break-word/);
+assert.match(overflowCss, /word-break:\s*break-word/);
+assert.match(overflowCss, /white-space:\s*normal/);
+assert.match(overflowCss, /max-width:\s*100%/);
+assert.match(overflowCss, /flex-wrap:\s*wrap/);
+assert.match(rule(overflowCss, '.team-grid'), /minmax\(min\(100%,\s*340px\),\s*1fr\)/,
+  'Team cards must collapse to one column instead of forcing 340px + padding');
+assert.match(rule(overflowCss, '.team-overlay'), /position:\s*static/,
+  'A team bio must sit in the card flow, not in a hover-only layer');
+assert.match(rule(overflowCss, '.team-image'), /height:\s*auto/,
+  'Team cards must grow to fit the full bio');
+assert.match(rule(overflowCss, '.category-tabs'), /flex-wrap:\s*wrap/,
+  'Team filter tabs must wrap instead of clipping');
+assert.match(rule(overflowCss, '.header-actions'), /flex-wrap:\s*wrap/);
+assert.match(rule(overflowCss, '.back-btn'), /white-space:\s*nowrap/);
+assert.match(overflowCss, /\.team-overlay:has\(p:empty\)\s*\{\s*display:\s*none/,
+  'Empty bios should not add dead space to a team card');
+assert.match(overflowCss, /@media \(max-width:\s*600px\)/);
+assert.match(overflowCss, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/,
+  'Narrow screens must force oversized card grids into one column');

@@ -2695,7 +2695,7 @@ img, video, canvas, svg, iframe {
   min-width: 0;
 }
 .pd-acad-grid-3, .pd-acad-grid-4, .portal-grid {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
 @media (max-width: 900px) {
   .pd-acad-grid-3, .pd-acad-grid-4 { grid-template-columns: 1fr; }

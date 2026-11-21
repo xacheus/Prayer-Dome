@@ -366,7 +366,7 @@
         /* Gallery Grid */
         .gallery-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
             gap: 25px;
             margin-bottom: 40px;
         }
@@ -610,6 +610,7 @@
 <script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
 </head>
 <body>
     <header class="gallery-header">
