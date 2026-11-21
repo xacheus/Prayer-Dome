@@ -77,7 +77,7 @@ try {
 } catch (e) { /* offline install: the raw push handler still covers plain JSON */ }
 
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v38';
+const CACHE_NAME = 'prayer-dome-v40';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -139,8 +139,6 @@ const PRECACHE = [
     '/assets/pd-app.js',
     '/assets/pd-sfx.js',
     '/assets/pd-team-data.js',
-    '/assets/pd-phrases.js',
-    '/assets/pd-i18n.js',
     '/assets/pd-cloud-video.js',
     // Domey, the talking hostess used by the game and the Live lounge.
     '/assets/pd-mascot.css',

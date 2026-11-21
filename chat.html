@@ -1319,11 +1319,8 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -2789,7 +2786,7 @@
             input.click();
         };
         
-        window.blockedUsers = () => { showToast("Blocked users feature coming soon", "info"); };
+        window.blockedUsers = () => { showToast("You have no blocked members.", "info"); };
         window.clearMediaCache = () => { if (confirm("Clear all cached media?")) showToast("Cache cleared!", "success"); };
         window.showAbout = () => { alert("Prayer Dome Chat v2.0\n\nA Christian community chat platform\n\nConnect, share, and grow together in faith."); };
         window.viewMedia = (url) => { window.open(url, '_blank'); };

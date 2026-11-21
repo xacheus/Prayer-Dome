@@ -20,7 +20,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.1.0';
+  var VERSION = '1.2.0';
   var BRAND_LOGO = '/assets/logo.png'; // official Prayer Dome mark
   var channel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('pd-app') : null;
   var fb = null;            // Firestore bindings, set via setFirestore()
@@ -546,7 +546,11 @@
   };
 
   /* --------------------------------------------------------- translations */
-  var lang = localStorage.getItem('pd_lang') || 'en';
+  // The public site is presented in English. Older visitors may still carry a
+  // saved `pd_lang` from the retired picker; ignore and clear it so nobody is
+  // unexpectedly dropped into a part-translated page.
+  var lang = 'en';
+  try { localStorage.removeItem('pd_lang'); } catch (e) {}
   var i18n = {
     current: function () { return lang; },
     set: function (code) {
@@ -557,8 +561,9 @@
         var txt = i18n.t(key);
         if (txt && txt !== key) el.innerHTML = txt;
       });
-      var sel = $('.pd-lang-select');
-      if (sel) sel.value = code;
+      // The public language selector has been retired. Translations can still
+      // be applied programmatically (links, installed language packs) but the
+      // header never shows a language control.
       // Translate the *whole* page, not only tagged elements. pd-i18n.js walks
       // every text node and readable attribute against the phrase pack.
       if (window.PDI18n) { try { window.PDI18n.apply(code); } catch (e) {} }
@@ -682,12 +687,9 @@
       return row[lang] || row.en || key;
     },
     init: function () {
-      var sel = $('.pd-lang-select');
-      if (sel) {
-        sel.value = lang;
-        sel.addEventListener('change', function () { i18n.set(sel.value); });
-      }
-      // Honour the Admin Dashboard's Language Manager: hide disabled languages.
+      // The language picker was removed from the public header on purpose:
+      // one clear English experience for every visitor. The translation engine
+      // remains available to pages that explicitly call it.
       i18n.applyEnabled();
       // Apply strings to any [data-pd-t] elements.
       $$('[data-pd-t]').forEach(function (el) {
@@ -706,14 +708,10 @@
       on('store:languages', i18n.applyEnabled);
     },
     applyEnabled: function () {
-      var sel = $('.pd-lang-select');
-      if (!sel) return;
+      // There is no selector to filter any more. If an administrator disables
+      // the active language, fall back to English so no page is stranded.
       var enabled = store.get('languages', 'DEFAULT_LANGUAGES') || ['en'];
       if (!enabled.length) enabled = ['en'];
-      $$('option', sel).forEach(function (opt) {
-        opt.style.display = enabled.indexOf(opt.value) >= 0 ? '' : 'none';
-      });
-      // If the current language was disabled, fall back to English.
       if (enabled.indexOf(lang) < 0) i18n.set('en');
     }
   };
@@ -2394,7 +2392,6 @@
       + '<button class="pd-menu-btn" id="pdMenuBtn" aria-label="Open menu"><i class="pd-i pd-i-menu"></i></button>'
       + '<a href="/" class="pd-topbar-center" aria-label="PrayerDome home"><div class="pd-topbar-logo"><img src="/assets/logo.png" alt="PrayerDome logo"></div></a>'
       + '<div class="pd-topbar-right">'
-      + '<select class="pd-lang-select" aria-label="Language"><option value="en">English</option><option value="tum">Tumbuka</option><option value="ssw">siSwati</option><option value="bem">Bemba</option><option value="nya">Nyanja</option></select>'
       + '<button class="pd-bell-btn" id="pdNotifBell" aria-label="Notifications"><i class="pd-i pd-i-bell"></i><span class="pd-bell-badge" id="pdNotifBadge" style="display:none;">0</span></button>'
       + '</div>',
     /* The global menu itself is NOT defined here any more: it lives in
@@ -2454,17 +2451,15 @@
           topbar.innerHTML = layout.HEADER_HTML;
           document.body.insertBefore(topbar, document.body.firstChild);
         } else {
-          // Normalize existing topbar content if missing parts
-          if(!topbar.querySelector('.pd-lang-select') || !topbar.querySelector('#pdNotifBell')){
-            // Keep existing but ensure right side has language+bells+theme
+          // Normalize existing topbar content: notifications only. Any stale
+          // language picker is removed so no page can resurrect it.
+          var staleLang = topbar.querySelector('.pd-lang-select');
+          if (staleLang && staleLang.parentNode) staleLang.parentNode.removeChild(staleLang);
+          if(!topbar.querySelector('#pdNotifBell')){
+            // Keep existing but ensure the right side has the bell.
             var right = topbar.querySelector('.pd-topbar-right');
             if(!right){
               right=document.createElement('div'); right.className='pd-topbar-right'; topbar.appendChild(right);
-            }
-            if(!right.querySelector('.pd-lang-select')){
-              var sel=document.createElement('select'); sel.className='pd-lang-select'; sel.setAttribute('aria-label','Language');
-              sel.innerHTML='<option value="en">English</option><option value="tum">Tumbuka</option><option value="ssw">siSwati</option><option value="bem">Bemba</option><option value="nya">Nyanja</option>';
-              right.insertBefore(sel, right.firstChild);
             }
             if(!right.querySelector('#pdNotifBell')){
               var bell=document.createElement('button'); bell.className='pd-bell-btn'; bell.id='pdNotifBell'; bell.setAttribute('aria-label','Notifications');

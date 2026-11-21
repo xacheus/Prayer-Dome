@@ -504,14 +504,11 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <!-- Widget bridge: a tap on the home-screen / lock-screen verse widget opens
      the app and hands the route over, so the member lands on the studio. -->
 <script src="/assets/pd-widget.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -583,13 +580,6 @@
         <div class="pd-topbar-word">PRAYER DOME</div>
     </a>
     <div class="pd-topbar-right">
-        <select class="pd-lang-select" aria-label="Language">
-            <option value="en">English</option>
-            <option value="tum">Tumbuka</option>
-            <option value="ssw">siSwati</option>
-            <option value="bem">Bemba</option>
-            <option value="nya">Nyanja</option>
-        </select>
         <button class="pd-bell-btn" id="pdNotifBell" aria-label="Notifications"><i class="pd-i pd-i-bell"></i><span class="pd-bell-badge" id="pdNotifBadge" style="display:none;">0</span></button>
         <button class="theme-toggle-btn" onclick="toggleDarkMode()" aria-label="Toggle dark mode"><i class="pd-i pd-i-moon"></i></button>
     </div>
@@ -1692,7 +1682,7 @@
         if (!container || !window.PDApp) return;
         const items = PDApp.news.list().slice(0, 3);
         if (!items.length) {
-            container.innerHTML = '<div class="content-card" style="justify-content:center;"><i class="pd-i pd-i-newspaper"></i> News coming soon. Check the News Center!</div>';
+            container.innerHTML = '<div class="content-card" style="justify-content:center;"><i class="pd-i pd-i-newspaper"></i> No news stories yet — visit the News Center for the latest updates.</div>';
             return;
         }
         container.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%, 260px), 1fr)); gap:14px;">

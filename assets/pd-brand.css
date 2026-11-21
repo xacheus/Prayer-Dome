@@ -616,14 +616,6 @@ body.dark-mode .pd-topbar-word { color: #f8fafc; }
   box-shadow: 0 3px 8px rgba(220,38,38,.4);
   animation: pd-pulse-ring 1.6s ease infinite;
 }
-.pd-lang-select {
-  height: 42px; padding: 0 8px 0 10px;
-  border-radius: 14px; border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--bg-card, #fff); color: var(--text-main, #0f172a);
-  font-size: .78rem; font-weight: 700; cursor: pointer; max-width: 118px;
-}
-.pd-lang-select:focus { outline: 2px solid var(--pd-amber); outline-offset: 2px; }
-
 /* --- Slide-in drawer ------------------------------------------------------ */
 .pd-drawer-overlay {
   position: fixed; inset: 0; background: rgba(7,36,77,.5);
@@ -2937,7 +2929,6 @@ button, input, select, textarea { max-width: 100%; }
   [style*="min-width: 260px"] { min-width: 0 !important; }
   .pd-topbar { gap: 8px; }
   .pd-topbar-right { gap: 6px; }
-  .pd-lang-select { max-width: 34vw; }
 }
 
 /* Mobile refinement: shared shell first, homepage details explicitly scoped.
@@ -2970,7 +2961,6 @@ button, input, select, textarea { max-width: 100%; }
   }
   .pd-topbar-logo { box-shadow: none; padding: 1px; border-radius: 12px; }
   .pd-topbar-right { gap: 8px; }
-  .pd-lang-select { height: 44px; font-size: 16px; font-weight: 500; max-width: 118px; border-radius: 12px; }
   .pd-drawer { z-index: 1101; border-radius: 0 20px 20px 0; padding-bottom: env(safe-area-inset-bottom, 0px); }
   .pd-drawer-overlay { z-index: 1100; }
   .pd-drawer-head { padding: calc(16px + env(safe-area-inset-top, 0px)) 14px 16px; gap: 8px; }
