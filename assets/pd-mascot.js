@@ -637,6 +637,15 @@
       this.noise((start || 0) + 0.12, 0.05, 0.04);
     },
     play: function (name) {
+      // The shared sound engine (assets/pd-sfx.js) is loaded on the game page.
+      // When it is present it owns every cue, so the show gets the richer,
+      // room-mixed sounds instead of these compact fallback tones.
+      if (global.PDSFX && typeof global.PDSFX.play === 'function') {
+        // Voice mute is about Domey's spoken words; the effects have their own
+        // switch on the game page.
+        global.PDSFX.play(name);
+        return;
+      }
       if (this.muted) return;
       switch (name) {
         case 'correct': this.tone(660, 0, 0.16); this.tone(880, 0.14, 0.22); break;
@@ -660,7 +669,11 @@
         default: this.tone(600, 0, 0.1, 0.04);
       }
     },
-    unlock: function () { var ctx = this.context(); if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} } }
+    unlock: function () {
+      if (global.PDSFX && typeof global.PDSFX.unlock === 'function') { try { global.PDSFX.unlock(); } catch (e) {} }
+      var ctx = this.context();
+      if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    }
   };
 
   /* ------------------------------------------------------- the lip-sync ear */

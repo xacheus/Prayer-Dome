@@ -7,11 +7,11 @@
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "window-controls-overlay",
     "standalone",
+    "fullscreen",
     "minimal-ui"
   ],
-  "orientation": "portrait-primary",
+  "orientation": "any",
   "background_color": "#0A4D9B",
   "theme_color": "#0A4D9B",
   "lang": "en",

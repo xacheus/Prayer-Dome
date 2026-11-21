@@ -64,7 +64,38 @@
     function write(settings) {
         try { localStorage.setItem(STORE_KEY, JSON.stringify(settings)); } catch (e) { /* private mode */ }
         syncToWorker(settings);
+        syncCloud(settings);
         return settings;
+    }
+
+    /* Mirror the member's choices into Firestore so the scheduled Cloud
+       Function can still deliver their verse when the app is closed. The
+       service worker's periodic sync is best-effort on Android and does not
+       exist on iOS; the server push is the reliable path, and it needs to know
+       which slots this member wants and in which timezone. */
+    function cloud() {
+        var bindings = global.PDApp && global.PDApp._fb;
+        if (!bindings || !bindings.auth || !bindings.auth.currentUser) return null;
+        if (!bindings.setDoc || !bindings.doc || !bindings.db) return null;
+        return bindings;
+    }
+
+    function syncCloud(settings) {
+        try {
+            var bindings = cloud();
+            if (!bindings) return;
+            var uid = bindings.auth.currentUser.uid;
+            bindings.setDoc(bindings.doc(bindings.db, 'userVerseSettings', uid), {
+                uid: uid,
+                enabled: !!settings.enabled,
+                slots: settings.slots || {},
+                sound: settings.sound !== false,
+                timezoneOffset: new Date().getTimezoneOffset(),
+                platform: (global.Capacitor && global.Capacitor.isNativePlatform && global.Capacitor.isNativePlatform()) ? 'android' : 'web',
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).catch(function () { /* offline; the next change retries */ });
+            document.dispatchEvent(new CustomEvent('pd:verse-cloud-synced', { detail: { uid: uid } }));
+        } catch (e) { /* not signed in — local scheduling still runs */ }
     }
 
     function today() {
@@ -429,6 +460,13 @@
         syncToWorker(settings);
         if (settings.enabled) startTimer();
         document.querySelectorAll('[data-pd-verse-settings]').forEach(function (el) { renderSettings(el); });
+        // Upload the settings once the shared layer and the signed-in member are
+        // both available (pd-app.js may load after this file).
+        setTimeout(function () { if (cloud()) syncCloud(read()); }, 3500);
+        document.addEventListener('pd:role', function () { if (cloud()) syncCloud(read()); });
+        document.addEventListener('visibilitychange', function () {
+            if (!document.hidden && cloud()) syncCloud(read());
+        });
     }
 
     global.PDVerseAlerts = {
@@ -448,6 +486,7 @@
             return true;
         },
         disable: function () { var s = read(); s.enabled = false; write(s); if (timer) clearInterval(timer); },
+        syncCloud: syncCloud,
         init: init
     };
 

@@ -131,6 +131,23 @@ t('every sidebar item maps to a view panel (Team Management opens a page)',
   [...html.matchAll(/data-view="([a-z_-]+)"/g)]
     .every((match) => match[1] === 'team' || html.includes(`id="view-${match[1]}"`)));
 
+/* ------------------------- content editors: team and news live in-console */
+t('Team Management opens a real panel inside the console',
+  !!adminDoc.getElementById('view-team') && !!adminDoc.getElementById('adminTeamList'));
+t('a team member can be added with name, role, photo and a late marker',
+  ['teamMemberName', 'teamMemberRole', 'teamMemberPhoto', 'teamMemberStatus', 'teamMemberLateLabel', 'teamMemberMemorialNote']
+    .every((id) => !!adminDoc.getElementById(id)));
+t('the team panel can import the built-in roster on a fresh install',
+  typeof html.includes('importBuiltInTeam') && html.includes('Import built-in roster'));
+t('News stories open in an editor with photo, title and body',
+  ['newsTitle', 'newsSummary', 'newsBody', 'newsImage', 'newsImagePreview', 'newsNotify']
+    .every((id) => !!adminDoc.getElementById(id)));
+t('news editing reads Firestore instead of only the local store',
+  html.includes('loadAdminNews') && html.includes("collection(db, 'news')") &&
+  html.includes('PDApp.news.update(editingNewsId'));
+t('a story saved by an admin is published for members to read',
+  /publish:\s*function[\s\S]{0,1200}published:\s*true/.test(read('assets/pd-app.js')));
+
 console.log(`\nAdmin console shell checks passed (${passed} assertions).`);
 
 // jsdom keeps timers and BroadcastChannel handles alive: close the pages and

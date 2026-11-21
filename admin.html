@@ -600,6 +600,7 @@
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-phrases.js" defer></script>
 <script src="/assets/pd-i18n.js" defer></script>
+<script src="/assets/pd-team-data.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
 </head>
@@ -634,7 +635,7 @@
             <div class="nav-item" data-view="live-analytics" onclick="switchView('live-analytics', this)"><i class="pd-i pd-i-chart-line"></i> Live Analytics</div>
             <div class="nav-item" data-view="live-schedule" onclick="switchView('live-schedule', this)"><i class="pd-i pd-i-calendar-clock"></i> Schedule Live</div>
             <div class="nav-item" data-view="members" onclick="switchView('members', this)"><i class="pd-i pd-i-users"></i> Members CRM</div>
-            <div class="nav-item" data-view="team" onclick="openTeamManagement(this)"><i class="pd-i pd-i-user-star"></i> Team Management</div>
+            <div class="nav-item" data-view="team" onclick="switchView('team', pdNavFor('team'))"><i class="pd-i pd-i-user-star"></i> Team Management</div>
             <div class="nav-item" data-view="announcements" onclick="switchView('announcements', this)"><i class="pd-i pd-i-megaphone"></i> Notices</div>
             <div class="nav-item" data-view="care" onclick="switchView('care', this)"><i class="pd-i pd-i-hand-heart"></i> Member Care</div>
             <div class="nav-item" data-view="gallery" onclick="switchView('gallery', this)"><i class="pd-i pd-i-images"></i> Gallery Management</div>
@@ -1074,6 +1075,39 @@
                 </div>
             </div>
 
+            <!-- TEAM MANAGEMENT VIEW -->
+            <div id="view-team" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-user-star"></i> Team Management</span>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button class="btn btn-outline" type="button" onclick="importBuiltInTeam()"><i class="pd-i pd-i-download"></i> Import built-in roster</button>
+                        <button class="btn btn-primary" type="button" onclick="openAdminTeamMember()"><i class="pd-i pd-i-plus"></i> Add team member</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="padding:18px;">
+                    <div id="adminTeamStats" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px;"></div>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;">
+                        <div style="flex:1; min-width:180px; position:relative;">
+                            <i class="pd-i pd-i-search" style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-sub); pointer-events:none;"></i>
+                            <input type="search" id="adminTeamSearch" class="form-control" placeholder="Search by name, role, country…" style="padding-left:36px;" oninput="renderAdminTeam()">
+                        </div>
+                        <select id="adminTeamFilter" class="form-control" style="width:auto; min-width:150px;" onchange="renderAdminTeam()">
+                            <option value="all">Everyone</option>
+                            <option value="serving">Serving now</option>
+                            <option value="late">Marked Late</option>
+                            <option value="archived">Archived</option>
+                        </select>
+                        <button class="btn btn-outline btn-sm" type="button" onclick="loadAdminTeam()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                    </div>
+                    <p style="font-size:.76rem; color:var(--text-sub); margin:0 0 14px; line-height:1.6;">
+                        Names, photos, roles and the “Late” memorial label appear on the public <a href="/team" target="_blank" rel="noopener">Our Team</a> page immediately. Archiving hides a profile without deleting it; nothing is ever removed by accident.
+                    </p>
+                    <div id="adminTeamList" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); gap:12px;">
+                        <div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-sub);"><div class="spinner" style="width:26px;height:26px;"></div></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- NOTICES / ANNOUNCEMENTS VIEW -->
             <div id="view-announcements" class="section-view">
                 <div class="page-title"><span><i class="pd-i pd-i-megaphone"></i> Portal Notices (Announcements)</span><button class="btn btn-primary" onclick="openModal('modalAnnouncement')"><i class="pd-i pd-i-plus"></i> New Notice</button></div>
@@ -1375,7 +1409,20 @@
 
             <!-- NOTIFICATIONS VIEW -->
             <div id="view-notifications" class="section-view">
-                <div class="page-title"><i class="pd-i pd-i-bell"></i> Broadcast Notifications</div>
+                <div class="page-title"><span><i class="pd-i pd-i-bell"></i> Broadcast Notifications</span><button class="btn btn-outline" type="button" onclick="loadNotificationHealth()"><i class="pd-i pd-i-refresh-cw"></i> Refresh devices</button></div>
+
+                <!-- Push delivery health: the first thing to check when a member
+                     says they did not receive an announcement. -->
+                <div class="panel-card" style="padding:18px; margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                        <h3 style="margin:0; font-size:.95rem; flex:1;"><i class="pd-i pd-i-activity"></i> Push delivery</h3>
+                        <span id="pushHealthSummary" style="font-size:.74rem; color:var(--text-sub);">Checking registered devices…</span>
+                    </div>
+                    <div id="pushHealthGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;"></div>
+                    <p style="font-size:.72rem; color:var(--text-sub); margin:12px 0 0; line-height:1.6;">
+                        <i class="pd-i pd-i-info"></i> A device registers itself the first time a member allows notifications in <strong>My Account → Notification Settings</strong> while signed in. Notifications are delivered by Firebase Cloud Messaging, so they arrive with the app closed — provided <code>sendPushNotification</code> and <code>dailyVerseDispatch</code> are deployed (<code>firebase deploy --only functions</code>).
+                    </p>
+                </div>
 
                 <!-- Global Announcement Composer -->
                 <div class="panel-card" style="max-width: 650px;">
@@ -1385,6 +1432,13 @@
                         <div class="form-group"><label><i class="pd-i pd-i-message-circle"></i> Message</label><textarea id="notifMessage" class="form-control" rows="4" placeholder="Enter the full message..."></textarea></div>
                         <div class="form-group"><label><i class="pd-i pd-i-tag"></i> Type / Category</label><select id="notifType" class="form-control"><option value="general">General Info</option><option value="live">Live Stream</option><option value="sermon">New Sermon</option><option value="prayer">Prayer Alert</option><option value="event">Event Reminder</option><option value="news">News Update</option><option value="scripture">Daily Scripture</option><option value="urgent">Urgent Alert</option></select></div>
                         <div class="form-group"><label><i class="pd-i pd-i-link"></i> Link (optional)</label><input type="text" id="notifLink" class="form-control" placeholder="/live.html or /news.html"></div>
+                        <div class="form-group"><label><i class="pd-i pd-i-image"></i> Picture (optional)</label>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <input type="text" id="notifImage" class="form-control" placeholder="https://… or upload" style="flex:1;">
+                                <button class="btn btn-outline" type="button" style="width:auto; padding:10px 12px;" onclick="uploadNotificationImage()" title="Upload a picture"><i class="pd-i pd-i-upload"></i></button>
+                            </div>
+                            <div style="font-size:.7rem; color:var(--text-sub); margin-top:6px;">A wide picture shows on Android and in the notification shade.</div>
+                        </div>
                         <button class="btn btn-primary" style="width: 100%; margin-bottom: 10px;" onclick="sendNotification()"><i class="pd-i pd-i-send"></i> Broadcast to All Users</button>
                         <button class="btn btn-outline" style="width: 100%;" onclick="testNotification()"><i class="pd-i pd-i-flask-conical"></i> Test Notification (Send to Me)</button>
                         <p style="font-size: 0.7rem; margin-top: 15px; color: var(--text-sub); text-align: center;">
@@ -1511,7 +1565,7 @@
 
             <!-- NEWS CENTER VIEW -->
             <div id="view-news" class="section-view">
-                <div class="page-title"><span><i class="pd-i pd-i-newspaper"></i> Christian News Center</span><button class="btn btn-primary" onclick="openModal('modalNews')"><i class="pd-i pd-i-plus"></i> Publish News</button></div>
+                <div class="page-title"><span><i class="pd-i pd-i-newspaper"></i> Christian News Center</span><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-outline" type="button" onclick="loadAdminNews()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button><button class="btn btn-primary" type="button" onclick="openNewsEditor()"><i class="pd-i pd-i-plus"></i> Publish News</button></div></div>
                 <div class="panel-card">
                     <div class="panel-header"><h3><i class="pd-i pd-i-list"></i> Published Stories <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">— appear instantly in the News Center and on the home page</span></h3></div>
                     <div class="table-responsive">
@@ -1615,23 +1669,80 @@
 
     <div id="modalEvent" class="modal-overlay"><div class="modal-card"><div class="modal-header"><h2>Create Event</h2><button class="modal-close" onclick="closeModal('modalEvent')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div><div class="modal-body"><div class="form-group"><label>Title</label><input type="text" id="evTitle" class="form-control"></div><div class="form-group"><label>Date & Time</label><input type="datetime-local" id="evDate" class="form-control"></div><div class="form-group"><label>Location</label><input type="text" id="evLocation" class="form-control"></div><div class="form-group"><label>Category</label><select id="evCategory" class="form-control"><option>Service</option><option>Prayer</option><option>Conference</option></select></div><div class="form-group"><label>Description</label><textarea id="evDesc" class="form-control" rows="3"></textarea></div></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modalEvent')">Cancel</button><button class="btn btn-primary" onclick="saveEvent()">Publish</button></div></div></div>
 
+    <div id="modalTeamMember" class="modal-overlay">
+        <div class="modal-card" style="max-width: 660px;">
+            <div class="modal-header"><h2 id="teamMemberModalTitle"><i class="pd-i pd-i-user-plus"></i> Add Team Member</h2><button class="modal-close" onclick="closeModal('modalTeamMember')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body">
+                <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; margin-bottom:14px;">
+                    <img id="teamMemberPhoto" src="/assets/avatar-default.svg" alt="" style="width:82px;height:82px;border-radius:18px;object-fit:cover;background:#eef2f8;border:1px solid var(--border-color);">
+                    <div style="flex:1; min-width:160px;">
+                        <button class="btn btn-outline btn-sm" type="button" onclick="uploadTeamMemberPhoto()"><i class="pd-i pd-i-camera"></i> Upload photo</button>
+                        <div id="teamMemberPhotoState" style="font-size:.7rem;color:var(--text-sub);margin-top:6px;">A square portrait works best (JPG or PNG).</div>
+                    </div>
+                </div>
+                <div class="form-group"><label>Photo URL <span style="font-weight:400;color:var(--text-sub)">(optional)</span></label><input type="url" id="teamMemberImageUrl" class="form-control" placeholder="https://… or upload above" oninput="previewTeamMemberPhoto(this.value)"></div>
+                <div class="form-group"><label>Full name *</label><input type="text" id="teamMemberName" class="form-control" maxlength="80" placeholder="e.g. Pastor Philmon Gumbi"></div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px;">
+                    <div class="form-group"><label>Position / title *</label><input type="text" id="teamMemberTitle" class="form-control" maxlength="100" placeholder="e.g. Prayer Dome Pastor — Eswatini"></div>
+                    <div class="form-group"><label>Role label</label><input type="text" id="teamMemberRole" class="form-control" maxlength="60" placeholder="e.g. Senior Pastor"></div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px;">
+                    <div class="form-group"><label>Category</label><select id="teamMemberCategory" class="form-control"><option value="eswatini">Eswatini</option><option value="zambia">Zambia</option><option value="worship">Worship</option><option value="ministries">Ministries</option><option value="founder">Founder</option></select></div>
+                    <div class="form-group"><label>Country / region</label><input type="text" id="teamMemberCountry" class="form-control" maxlength="60" placeholder="e.g. Eswatini"></div>
+                </div>
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:12px;">
+                    <div class="form-group"><label>Email</label><input type="email" id="teamMemberEmail" class="form-control" maxlength="120"></div>
+                    <div class="form-group"><label>Phone</label><input type="tel" id="teamMemberPhone" class="form-control" maxlength="30"></div>
+                </div>
+                <div class="form-group"><label>Short biography <span style="font-weight:400;color:var(--text-sub)">(shown when the card is opened)</span></label><textarea id="teamMemberDescription" class="form-control" rows="3" maxlength="300" placeholder="A sentence or two about their ministry…"></textarea></div>
+                <div class="form-group"><label>Favourite scripture <span style="font-weight:400;color:var(--text-sub)">(optional)</span></label><input type="text" id="teamMemberScripture" class="form-control" maxlength="60" placeholder="e.g. Matthew 21:13"></div>
+                <div class="form-group"><label>Profile status</label>
+                    <select id="teamMemberStatus" class="form-control" onchange="toggleTeamLateFields()">
+                        <option value="serving">Serving — shown as an active member</option>
+                        <option value="late">Late / passed on — shown with a memorial label</option>
+                        <option value="archived">Archived — hidden from the public page</option>
+                    </select>
+                </div>
+                <div id="teamMemberLateFields" style="display:none; border:1px solid rgba(212,175,55,.45); background:rgba(212,175,55,.09); border-radius:12px; padding:12px; margin-bottom:14px;">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:12px;">
+                        <div class="form-group" style="margin:0;"><label>Memorial label</label><select id="teamMemberLateLabel" class="form-control"><option value="Late">Late</option><option value="Passed On">Passed On</option><option value="RIP">RIP</option><option value="Home with the Lord">Home with the Lord</option></select></div>
+                        <div class="form-group" style="margin:0;"><label>Date of passing</label><input type="date" id="teamMemberPassedAt" class="form-control"></div>
+                    </div>
+                    <div class="form-group" style="margin:12px 0 0;"><label>Memorial note <span style="font-weight:400;color:var(--text-sub)">(optional)</span></label><input type="text" id="teamMemberMemorialNote" class="form-control" maxlength="160" placeholder="e.g. “A faithful shepherd, 1948–2025.”"></div>
+                </div>
+                <div id="teamMemberError" style="display:none; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; border-radius:10px; padding:9px 12px; font-size:.8rem;"></div>
+            </div>
+            <div class="modal-footer" style="justify-content:space-between;">
+                <button class="btn btn-outline" type="button" id="teamMemberDeleteBtn" style="display:none; color:#b91c1c; border-color:#fecaca;" onclick="deleteAdminTeamMember()"><i class="pd-i pd-i-trash"></i> Delete</button>
+                <div style="display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;">
+                    <button class="btn btn-outline" type="button" onclick="closeModal('modalTeamMember')">Cancel</button>
+                    <button class="btn btn-primary" type="button" id="teamMemberSaveBtn" onclick="saveAdminTeamMember()"><i class="pd-i pd-i-save"></i> Save member</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="modalNews" class="modal-overlay">
         <div class="modal-card" style="max-width: 640px;">
-            <div class="modal-header"><h2><i class="pd-i pd-i-newspaper"></i> Publish News Story</h2><button class="modal-close" onclick="closeModal('modalNews')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-header"><h2 id="newsModalHeading"><i class="pd-i pd-i-newspaper"></i> Publish News Story</h2><button class="modal-close" onclick="closeModal('modalNews')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
             <div class="modal-body">
-                <div class="form-group"><label>Title</label><input type="text" id="newsTitle" class="form-control" placeholder="e.g. Revival Weekend — Lusaka" maxlength="140"></div>
+                <div class="form-group"><label>Title *</label><input type="text" id="newsTitle" class="form-control" placeholder="e.g. Revival Weekend — Lusaka" maxlength="140"></div>
                 <div class="form-group"><label>Category</label><select id="newsCategory" class="form-control"><option>Church Updates</option><option>Ministry News</option><option>Event Announcements</option><option>Revival Reports</option><option>Testimonies</option><option>Global Christian News</option></select></div>
                 <div class="form-group"><label>Summary (shown on cards)</label><textarea id="newsSummary" class="form-control" rows="2" placeholder="One or two sentences…" maxlength="240"></textarea></div>
-                <div class="form-group"><label>Full Story</label><textarea id="newsBody" class="form-control" rows="6" placeholder="Write the full story here…"></textarea></div>
-                <div class="form-group"><label>Featured / social sharing image URL</label><input type="text" id="newsImage" class="form-control" placeholder="Use the exact image for this story preview, or upload below"><small style="color:var(--text-sub);">This same image appears on the story card and as the Facebook/WhatsApp preview.</small></div>
-                <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                    <button class="btn btn-outline btn-sm" type="button" onclick="uploadNewsImage()"><i class="pd-i pd-i-cloud-upload"></i> Upload Image</button>
-                    <label style="display:flex; align-items:center; gap:8px; font-size:.85rem;"><input type="checkbox" id="newsFeatured" style="width:18px;height:18px;"> Feature on News Center hero</label>
+                <div class="form-group"><label>Full Story *</label><textarea id="newsBody" class="form-control" rows="7" placeholder="Write the full story here…"></textarea></div>
+                <div class="form-group"><label>Featured / social sharing image URL</label><input type="text" id="newsImage" class="form-control" placeholder="Use the exact image for this story preview, or upload below" oninput="previewNewsImage(this.value)"><small style="color:var(--text-sub);">This same image appears on the story card and as the Facebook/WhatsApp preview.</small></div>
+                <div style="display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; margin-top:10px;">
+                    <img id="newsImagePreview" src="/assets/hero-worship.jpg" alt="" style="width:148px; height:92px; border-radius:12px; object-fit:cover; border:1px solid var(--border-color); background:#eef2f8;">
+                    <div style="display:grid; gap:8px;">
+                        <button class="btn btn-outline btn-sm" type="button" onclick="uploadNewsImage()"><i class="pd-i pd-i-cloud-upload"></i> Upload image</button>
+                        <label style="display:flex; align-items:center; gap:8px; font-size:.82rem;"><input type="checkbox" id="newsFeatured" style="width:18px;height:18px;"> Feature on News Center hero</label>
+                        <label style="display:flex; align-items:center; gap:8px; font-size:.82rem;"><input type="checkbox" id="newsNotify" style="width:18px;height:18px;" checked> Notify members about this story</label>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button class="btn btn-outline" onclick="closeModal('modalNews')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveNews()"><i class="pd-i pd-i-send"></i> Publish & Notify</button>
+                <button class="btn btn-outline" type="button" onclick="closeModal('modalNews')">Cancel</button>
+                <button class="btn btn-primary" type="button" id="newsSaveBtn" onclick="saveNews()"><i class="pd-i pd-i-send"></i> Publish &amp; Notify</button>
             </div>
         </div>
     </div>
@@ -1992,7 +2103,7 @@
         // Hand Firestore to the shared premium layer (pd-app.js) so banners,
         // news, notifications, live status and stats sync to every page.
         if (window.PDApp) {
-            PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, onSnapshot, auth });
+            PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, onSnapshot, auth });
             // Refresh the founder signature so the admin preview and every
             // future certificate use the newest saved signature.
             PDApp.founder.refresh().catch(() => {});
@@ -3065,25 +3176,100 @@ window.toggleDarkMode = function() {
         };
 
         // ==================== NEWS CENTER (admin) ====================
-        window.loadAdminNews = function() {
+        // Firestore is the truth, so a story edited on the office computer is
+        // the same story the phone sees. Built-in sample stories are merged in
+        // only when no live copy with the same id exists yet.
+        let adminNewsCache = [];
+        let editingNewsId = null;
+
+        function newsDateValue(item) {
+            const raw = item && (item.date || item.createdAt);
+            if (!raw) return 0;
+            if (raw.toDate) return raw.toDate().getTime();
+            const time = new Date(raw).getTime();
+            return isFinite(time) ? time : 0;
+        }
+
+        window.loadAdminNews = async function() {
             const tbody = document.getElementById('listAdminNews');
-            if(!tbody) return;
-            const items = window.PDApp ? PDApp.news.list() : [];
-            const all = window.PDApp ? (PDApp.store.get('news', 'DEFAULT_NEWS') || []) : [];
-            if(!all.length){ tbody.innerHTML = '<td colspan="6">No stories yet — publish your first story</td>'; return; }
-            tbody.innerHTML = all.map(n => `
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;"><div class="spinner" style="width:26px;height:26px;margin:0 auto;"></div></td></tr>';
+            const local = window.PDApp ? (PDApp.store.get('news', 'DEFAULT_NEWS') || []) : [];
+            let remote = [];
+            try {
+                const snap = await getDocs(query(collection(db, 'news'), limit(200)));
+                snap.forEach(d => remote.push(Object.assign({ id: d.id }, d.data())));
+            } catch (error) {
+                console.warn('News could not be read from Firestore:', error && error.message);
+            }
+            const byId = new Map();
+            remote.forEach(item => byId.set(item.id, item));
+            local.forEach(item => { if (item && item.id && !byId.has(item.id)) byId.set(item.id, item); });
+            adminNewsCache = Array.from(byId.values()).sort((a, b) => newsDateValue(b) - newsDateValue(a));
+            if (window.PDApp) PDApp.store.set('news', adminNewsCache);
+            renderAdminNews();
+        };
+
+        window.renderAdminNews = function() {
+            const tbody = document.getElementById('listAdminNews');
+            if (!tbody) return;
+            if (!adminNewsCache.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:26px; color:var(--text-sub);">No stories yet — publish your first story above.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = adminNewsCache.map(n => `
                 <tr>
-                    <td>${n.date ? moment(n.date).format('MMM D, YYYY') : '—'}</td>
-                    <td><strong>${escapeHTML(n.title)}</strong><br><small style="color:var(--text-sub);">${escapeHTML((n.summary||'').substring(0,60))}…</small></td>
-                    <td><span class="badge badge-info">${escapeHTML(n.category||'Ministry News')}</span></td>
+                    <td style="white-space:nowrap;">${newsDateValue(n) ? moment(newsDateValue(n)).format('MMM D, YYYY') : '—'}</td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+                            <img src="${escapeHTML(n.socialImage || n.featuredImage || n.image || '/assets/hero-worship.jpg')}" alt="" loading="lazy" style="width:52px;height:40px;border-radius:8px;object-fit:cover;background:#eef2f8;flex-shrink:0;" onerror="this.onerror=null;this.src='/assets/hero-worship.jpg';">
+                            <div style="min-width:0;">
+                                <strong>${escapeHTML(n.title || 'Untitled')}</strong><br>
+                                <small style="color:var(--text-sub);">${escapeHTML((n.summary || '').substring(0, 70))}${(n.summary || '').length > 70 ? '…' : ''}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td><span class="badge badge-info">${escapeHTML(n.category || 'Ministry News')}</span></td>
                     <td>${n.featured ? '<span class="badge badge-warning"><i class="pd-i pd-i-star" aria-hidden="true"></i> Featured</span>' : '<span class="badge badge-outline">—</span>'}</td>
                     <td>${n.published !== false ? '<span class="badge badge-success">Published</span>' : '<span class="badge badge-warning">Draft</span>'}</td>
-                    <td>
-                        <button class="btn btn-sm" style="background:rgba(212,175,55,.15);color:#a67c00;border:1px solid rgba(212,175,55,.4);" onclick="toggleNewsFeatured('${n.id}')" aria-label="Feature or unfeature"><i class="pd-i pd-i-star"></i></button>
-                        <button class="btn btn-sm btn-outline" onclick="deleteAdminNews('${n.id}')" aria-label="Delete"><i class="pd-i pd-i-trash"></i></button>
+                    <td style="white-space:nowrap;">
+                        <button class="btn btn-sm btn-primary" type="button" onclick="openNewsEditor('${n.id}')" title="Edit story"><i class="pd-i pd-i-pen"></i> Edit</button>
+                        <button class="btn btn-sm" type="button" style="background:rgba(212,175,55,.15);color:#a67c00;border:1px solid rgba(212,175,55,.4);" onclick="toggleNewsFeatured('${n.id}')" aria-label="Feature or unfeature" title="Feature on the hero"><i class="pd-i pd-i-star"></i></button>
+                        <button class="btn btn-sm btn-outline" type="button" onclick="deleteAdminNews('${n.id}')" aria-label="Delete" title="Delete story"><i class="pd-i pd-i-trash"></i></button>
                     </td>
                 </tr>`).join('');
         };
+
+        window.previewNewsImage = function(url) {
+            const img = document.getElementById('newsImagePreview');
+            if (!img) return;
+            img.src = String(url || '').trim() || '/assets/hero-worship.jpg';
+            img.onerror = function () { this.onerror = null; this.src = '/assets/hero-worship.jpg'; };
+        };
+
+        window.openNewsEditor = function(id) {
+            const item = id ? adminNewsCache.find(n => n.id === id) : null;
+            editingNewsId = item ? item.id : null;
+            const heading = document.getElementById('newsModalHeading');
+            if (heading) heading.innerHTML = item
+                ? '<i class="pd-i pd-i-pen"></i> Edit News Story'
+                : '<i class="pd-i pd-i-newspaper"></i> Publish News Story';
+            const set = (fieldId, value) => { const el = document.getElementById(fieldId); if (el) el.value = value == null ? '' : value; };
+            set('newsTitle', item?.title);
+            set('newsCategory', item?.category || 'Church Updates');
+            set('newsSummary', item?.summary);
+            set('newsBody', item?.body);
+            set('newsImage', item?.socialImage || item?.featuredImage || item?.image || '');
+            const featured = document.getElementById('newsFeatured');
+            if (featured) featured.checked = !!item?.featured;
+            const notify = document.getElementById('newsNotify');
+            if (notify) notify.checked = !item;
+            const save = document.getElementById('newsSaveBtn');
+            if (save) save.innerHTML = item ? '<i class="pd-i pd-i-save"></i> Save changes' : '<i class="pd-i pd-i-send"></i> Publish &amp; Notify';
+            previewNewsImage(item ? (item.socialImage || item.featuredImage || item.image) : '');
+            openModal('modalNews');
+        };
+
         window.saveNews = async function() {
             const title = document.getElementById('newsTitle').value.trim();
             const category = document.getElementById('newsCategory').value;
@@ -3091,28 +3277,66 @@ window.toggleDarkMode = function() {
             const body = document.getElementById('newsBody').value.trim();
             const image = document.getElementById('newsImage').value.trim() || '/assets/hero-worship.jpg';
             const featured = document.getElementById('newsFeatured').checked;
-            if(!title || !body){ toast('Title and story are required', 'error'); return; }
-            if(!window.PDApp){ toast('Premium layer not loaded', 'error'); return; }
-            const item = PDApp.news.publish({ title, category, summary, body, image, featuredImage: image, socialImage: image, featured, author: adminUser?.email || 'Prayer Dome Media Team' });
-            PDApp.notifications.push({ type: 'news', title: title, message: (summary || body).substring(0, 90), link: `/news/${encodeURIComponent(item.id)}` });
-            toast('Story published — users notified');
-            closeModal('modalNews');
-            document.getElementById('newsTitle').value = ''; document.getElementById('newsSummary').value = ''; document.getElementById('newsBody').value = ''; document.getElementById('newsImage').value = ''; document.getElementById('newsFeatured').checked = false;
-            await logAdminActivity('news_published', { title });
+            const notify = document.getElementById('newsNotify').checked;
+            if (!title || !body) { toast('Title and story are required', 'error'); return; }
+            if (!window.PDApp) { toast('Premium layer not loaded', 'error'); return; }
+            const saveBtn = document.getElementById('newsSaveBtn');
+            if (saveBtn) saveBtn.disabled = true;
+            try {
+                const payload = {
+                    title, category, summary, body, image,
+                    featuredImage: image, socialImage: image, featured,
+                    published: true,
+                    author: adminUser?.email || 'Prayer Dome Media Team'
+                };
+                const isEdit = !!editingNewsId;
+                const item = isEdit ? PDApp.news.update(editingNewsId, payload) : PDApp.news.publish(payload);
+                if (!item) throw new Error('The story could not be saved.');
+                if (item.sync) await item.sync;
+                // Notifications only when asked: editing a typo must not ping
+                // every member's phone.
+                if (notify) {
+                    // A real broadcast, not just this browser's bell: queue a
+                    // notification document so the Cloud Function reaches every
+                    // registered device with the app closed.
+                    await sendPushNotificationToAll(
+                        isEdit ? 'Updated: ' + title : title,
+                        (summary || body).substring(0, 120),
+                        'news',
+                        `/news.html?story=${encodeURIComponent(item.id)}`,
+                        image
+                    );
+                }
+                toast(isEdit ? 'Story updated — live on the News Center' : 'Story published' + (notify ? ' — members notified' : ''), 'success');
+                closeModal('modalNews');
+                editingNewsId = null;
+                await logAdminActivity(isEdit ? 'news_updated' : 'news_published', { title });
+                await loadAdminNews();
+            } catch (error) {
+                console.error('News save failed:', error);
+                toast('Could not save the story: ' + error.message, 'error');
+            } finally {
+                if (saveBtn) saveBtn.disabled = false;
+            }
+        };
+
+        window.toggleNewsFeatured = async function(id) {
+            const item = PDApp.news.get(id) || adminNewsCache.find(n => n.id === id);
+            if (!item) return;
+            const updated = PDApp.news.update(id, { featured: !item.featured });
+            if (!updated) return toast('Could not update the featured story', 'error');
+            if (updated.sync) await updated.sync;
+            toast(updated.featured ? 'Story featured on the News Center hero' : 'Story removed from the hero');
             await loadAdminNews();
         };
-        window.toggleNewsFeatured = function(id) {
-            const all = PDApp.store.get('news', 'DEFAULT_NEWS') || [];
-            const next = all.map(n => n.id === id ? Object.assign({}, n, { featured: !n.featured }) : n);
-            PDApp.store.set('news', next);
-            toast('Featured flag updated');
-            loadAdminNews();
-        };
-        window.deleteAdminNews = function(id) {
-            if(!confirm('Delete this story permanently?')) return;
-            PDApp.news.remove(id);
+
+        window.deleteAdminNews = async function(id) {
+            const item = adminNewsCache.find(n => n.id === id) || (window.PDApp && PDApp.news.get(id));
+            if (!confirm('Delete “' + ((item && item.title) || 'this story') + '” permanently?\n\nIt disappears from the News Center and the home page immediately.')) return;
+            try { await deleteDoc(doc(db, 'news', id)); } catch (error) { /* a local-only sample story */ }
+            if (window.PDApp) PDApp.news.remove(id);
             toast('Story deleted');
-            loadAdminNews();
+            await loadAdminNews();
         };
 
         // ==================== SERMON CENTER (admin) ====================
@@ -3468,6 +3692,22 @@ window.toggleDarkMode = function() {
             deleteDoc(doc(db, 'aiVideos', id)).then(() => { toast('AI video deleted'); loadAiVideos(); }).catch(e => toast(e.message, 'error'));
         };
 
+        window.uploadNotificationImage = async function() {
+            if (!window.PDUpload) return toast('Upload is unavailable right now', 'error');
+            const res = await PDUpload.pick({
+                title: 'Notification picture',
+                accept: 'image/*',
+                preset: 'news_images',
+                folder: 'notifications',
+                maxBytes: 8 * 1024 * 1024,
+                onError: (m) => toast(m, 'error')
+            });
+            if (!res.ok) return;
+            const field = document.getElementById('notifImage');
+            if (field) field.value = res.files[0].url;
+            toast('Picture attached');
+        };
+
         window.uploadNewsImage = async function() {
             const res = await PDUpload.pick({
                 title: 'News image',
@@ -3479,6 +3719,7 @@ window.toggleDarkMode = function() {
             });
             if (!res.ok) return;
             document.getElementById('newsImage').value = res.files[0].url;
+            previewNewsImage(res.files[0].url);
             toast('Image attached');
         };
 
@@ -3747,34 +3988,120 @@ window.toggleDarkMode = function() {
             try {
                 const tokensSnapshot = await getDocs(collection(db, 'userTokens'));
                 const tokens = [];
-                tokensSnapshot.forEach(d => { const t = d.data(); if (t && t.active !== false && t.token) tokens.push(t.token); });
+                const seen = new Set();
+                tokensSnapshot.forEach(d => {
+                    const t = d.data();
+                    if (t && t.active !== false && t.token && !seen.has(t.token)) { seen.add(t.token); tokens.push(t.token); }
+                });
                 if (!tokens.length) return;
                 await addDoc(collection(db, 'notifications'), {
                     title: 'Prayer Dome is LIVE',
                     message: `"${title}" is streaming now${presenterName ? ' — ' + presenterName : ''}. Tap to watch.`,
                     type: 'live',
+                    link: '/live.html',
+                    tag: 'pd-live-' + new Date().toISOString().slice(0, 10),
                     tokens,
                     status: 'pending',
                     createdAt: serverTimestamp(),
                     createdBy: adminUser?.email || 'admin'
                 });
+                await mirrorNotification('Prayer Dome is LIVE', `"${title}" is streaming now. Tap to watch.`, 'live', '/live.html');
             } catch (e) { console.warn('live notification failed', e); }
         };
 
-        window.sendPushNotificationToAll = async function(title, message, type = 'general') {
-            if (!adminUser) { toast("Admin not logged in", "error"); return; }
+        /* A token-bearing document is unreadable to members by design, so open
+           apps would never see it in their bell. This small public mirror keeps
+           the in-app centre live on every device without exposing any token. */
+        window.mirrorNotification = async function(title, message, type = 'general', link = null) {
+            try {
+                await addDoc(collection(db, 'publicNotifications'), {
+                    title, message, type,
+                    link: link || null,
+                    inApp: true,
+                    status: 'in-app',
+                    createdAt: serverTimestamp(),
+                    createdBy: adminUser?.email || 'admin'
+                });
+            } catch (e) { /* the push is the important half */ }
+        };
+
+        /* Queue one push document. The Cloud Function fans it out to FCM, which
+           is what reaches a phone whose app is closed. The link is stored with
+           it so a tap opens the right page (it used to always open the Bible). */
+        window.sendPushNotificationToAll = async function(title, message, type = 'general', link = null, image = null) {
+            if (!adminUser) { toast("Admin not logged in", "error"); return { sent: 0, tokens: 0, error: 'signed-out' }; }
             showLoading();
             try {
                 const tokensSnapshot = await getDocs(collection(db, "userTokens"));
                 const tokens = [];
-                tokensSnapshot.forEach(doc => { if (doc.data().active !== false && doc.data().token) { tokens.push(doc.data().token); } });
-                if (tokens.length === 0) { toast("No active tokens found.", "error"); hideLoading(); return; }
-                await addDoc(collection(db, "notifications"), { title, message, type, tokens, status: 'pending', createdAt: serverTimestamp(), createdBy: adminUser?.email });
-                toast(`Notification queued! Will be sent to ${tokens.length} users.`, "success");
-                await setDoc(doc(db, "notifications", "latest_alert"), { title, message, type, active: true, createdAt: serverTimestamp(), createdBy: adminUser?.email, sentTo: tokens.length }, { merge: true });
+                const seen = new Set();
+                tokensSnapshot.forEach(d => {
+                    const row = d.data() || {};
+                    if (row.active !== false && row.token && !seen.has(row.token)) { seen.add(row.token); tokens.push(row.token); }
+                });
+                if (tokens.length === 0) {
+                    // Still mirror it so every open app's bell receives the
+                    // announcement; only the phone push has nobody to reach.
+                    await mirrorNotification(title, message, type, link);
+                    toast("No registered devices yet — the notice is in the app bell.", "info");
+                    return { sent: 0, tokens: 0 };
+                }
+                const payload = { title, message, type, tokens, status: 'pending', createdAt: serverTimestamp(), createdBy: adminUser?.email || 'admin' };
+                if (link) payload.link = link;
+                if (image) payload.image = image;
+                payload.tag = 'pd-' + type + '-' + Date.now().toString(36);
+                await addDoc(collection(db, "notifications"), payload);
+                await mirrorNotification(title, message, type, link);
+                toast(`Push queued for ${tokens.length} device${tokens.length === 1 ? '' : 's'}.`, "success");
+                await setDoc(doc(db, "notifications", "latest_alert"), { title, message, type, link: link || null, active: true, createdAt: serverTimestamp(), createdBy: adminUser?.email, sentTo: tokens.length }, { merge: true });
                 await logAdminActivity('notification_sent', { title, type, recipients: tokens.length });
                 confetti({ particleCount: 150, spread: 100 });
-            } catch (error) { console.error("Error saving notification:", error); toast("Error: " + error.message, "error"); } finally { hideLoading(); }
+                return { sent: 1, tokens: tokens.length };
+            } catch (error) {
+                console.error("Error saving notification:", error);
+                toast("Error: " + error.message, "error");
+                return { sent: 0, tokens: 0, error: error.message };
+            } finally { hideLoading(); }
+        };
+
+        /* ===== Push delivery health ===== */
+        window.loadNotificationHealth = async function() {
+            const grid = document.getElementById('pushHealthGrid');
+            const summary = document.getElementById('pushHealthSummary');
+            if (!grid) return;
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:14px; color:var(--text-sub);"><div class="spinner" style="width:22px;height:22px;margin:0 auto;"></div></div>';
+            try {
+                const snap = await getDocs(collection(db, 'userTokens'));
+                let active = 0, web = 0, android = 0, installed = 0;
+                const byUser = new Set();
+                const seen = new Set();
+                snap.forEach(d => {
+                    const row = d.data() || {};
+                    if (!row.token || seen.has(row.token)) return;
+                    seen.add(row.token);   // owner alias + device doc hold the same token
+                    if (row.active === false) return;
+                    active += 1;
+                    byUser.add(row.userId || d.id);
+                    if (row.platform === 'android') android += 1; else web += 1;
+                    if (row.installed) installed += 1;
+                });
+                const total = seen.size;
+                const card = (icon, value, label, colour) => `<div style="border:1px solid var(--border-color); border-radius:12px; padding:12px 14px; background:var(--bg-card);">
+                    <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:1.25rem; color:${colour || 'var(--accent-green)'};"><i class="pd-i ${icon}"></i> ${value}</div>
+                    <div style="font-size:.68rem; color:var(--text-sub); font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-top:2px;">${label}</div>
+                </div>`;
+                grid.innerHTML = card('pd-i-smartphone', active, 'Active devices', '#15803d')
+                    + card('pd-i-users', byUser.size, 'Members reached', 'var(--accent-green)')
+                    + card('pd-i-download', installed, 'Installed apps', '#a67c00')
+                    + card('pd-i-globe', web + android, 'Web / Android', 'var(--text-sub)');
+                if (summary) summary.textContent = total
+                    ? `${active} active of ${total} registered device${total === 1 ? '' : 's'}`
+                    : 'No device has registered yet';
+            } catch (error) {
+                console.error('Push health failed:', error);
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:14px; color:#b91c1c;"><i class="pd-i pd-i-triangle-alert"></i> Could not read the device list. Check your admin permissions.</div>';
+                if (summary) summary.textContent = 'Device list unavailable';
+            }
         };
 
         window.loadReminderStats = async function() {
@@ -3804,16 +4131,26 @@ window.toggleDarkMode = function() {
         };
 
         window.testNotification = async function() {
-            const title = "Test Notification";
-            const message = "This is a test notification from Prayer Dome Admin Panel.";
-            if (!confirm("Send test notification to YOUR device only?")) return;
+            const title = "Prayer Dome test notification";
+            const message = "Notifications are working on this device.";
+            if (!confirm("Send a test notification to your own device?")) return;
             if (!adminUser) { toast("Admin not logged in", "error"); return; }
             showLoading();
             try {
+                // Prefer the device's own token. The uid document is kept in step
+                // by PDApp.notifications, so it is the quickest path.
                 const tokenDoc = await getDoc(doc(db, "userTokens", adminUser.uid));
-                if (!tokenDoc.exists() || !tokenDoc.data().token) { toast("No token found for your device.", "error"); hideLoading(); return; }
-                await addDoc(collection(db, "test_notifications"), { title, message, token: tokenDoc.data().token, userId: adminUser.uid, status: 'pending', createdAt: serverTimestamp(), createdBy: adminUser?.email });
-                toast("Test notification queued! Check your device in a few seconds.", "success");
+                const token = tokenDoc.exists() ? tokenDoc.data().token : null;
+                if (!token) {
+                    toast("This device has not registered for push yet. Open My Account → Notifications and tap Allow.", "error");
+                    return;
+                }
+                await addDoc(collection(db, "test_notifications"), {
+                    title, message, token, link: '/account.html',
+                    userId: adminUser.uid, status: 'pending',
+                    createdAt: serverTimestamp(), createdBy: adminUser?.email
+                });
+                toast("Test queued — it should arrive in a few seconds, even with the app closed.", "success");
             } catch (error) { toast("Error: " + error.message, "error"); } finally { hideLoading(); }
         };
 
@@ -3821,19 +4158,25 @@ window.toggleDarkMode = function() {
             const title = document.getElementById('notifTitle').value;
             const msg = document.getElementById('notifMessage').value;
             const type = document.getElementById('notifType').value;
-            const link = document.getElementById('notifLink')?.value || null;
+            let link = (document.getElementById('notifLink')?.value || '').trim() || null;
+            if (link && !/^https?:\/\//i.test(link) && link.charAt(0) !== '/') link = '/' + link;
             if (!title || !msg) { toast("Title and message required", "error"); return; }
             if (!confirm(`Send notification to ALL users?\n\nTitle: ${title}\nMessage: ${msg}`)) return;
-            // 1) Instant in-app push — every open tab sees it immediately.
-            if (window.PDApp) {
-                PDApp.notifications.push({ type, title, message: msg, link });
-                PDApp.broadcast('announcement', { text: title + (msg ? ' — ' + msg : '') });
+            // 1) Instant in-app notice for every open tab. localOnly keeps this
+            //    out of Firestore, because step 2 writes the real push record
+            //    with its device tokens — writing both created a duplicate doc
+            //    (and a duplicate push) for every broadcast.
+            if (window.PDApp && PDApp.notifications) {
+                PDApp.notifications.push({ type, title, message: msg, link }, { localOnly: true });
             }
-            // 2) Firestore + FCM push for logged-in / registered devices.
-            await sendPushNotificationToAll(title, msg, type);
+            if (window.PDApp) PDApp.broadcast('announcement', { text: title + (msg ? ' — ' + msg : '') });
+            // 2) Firestore + FCM push for registered devices, app open or closed.
+            const image = (document.getElementById('notifImage')?.value || '').trim() || null;
+            await sendPushNotificationToAll(title, msg, type, link, image);
             document.getElementById('notifTitle').value = '';
             document.getElementById('notifMessage').value = '';
             document.getElementById('notifLink').value = '';
+            document.getElementById('notifImage').value = '';
         };
 
         window.uploadFinancialReport = async function() {
@@ -3868,9 +4211,360 @@ window.toggleDarkMode = function() {
         window.viewDoc = function(url,type){ const img=document.getElementById('docImagePreview'), pdf=document.getElementById('docPdfBtn'); if(url.toLowerCase().includes('.pdf')){ if(img) img.style.display='none'; if(pdf){ pdf.style.display='inline-flex'; pdf.href=url; } } else { if(img){ img.style.display='block'; img.src=url; } if(pdf) pdf.style.display='none'; } openModal('modalViewDoc'); };
         window.exportFinancialReports = function() { toast("Export feature - CSV export ready", "info"); };
         window.uploadMedia = function(){ window.uploadGalleryImage(); };
-        // Team roster management lives on the public team page; the admin
-        // tools there activate automatically for administrator accounts.
-        window.openTeamManagement = function(){ window.open('/team.html?admin=1', '_blank'); toast('Opening Team Management…'); };
+        /* ===== TEAM MANAGEMENT (full editor inside the console) =====
+         * The roster lives in Firestore `teamMembers`, the same collection the
+         * public /team page reads, so a change here appears there immediately.
+         * Adding, editing, re-ordering, archiving and marking a member as Late
+         * all happen without leaving the console.
+         */
+        let adminTeamCache = [];
+        let adminTeamLoading = false;
+        let adminTeamEditingId = null;
+        let adminTeamPhoto = '';
+
+        const TEAM_CATEGORY_LABELS = { founder: 'Founder', eswatini: 'Eswatini', zambia: 'Zambia', worship: 'Worship', ministries: 'Ministries' };
+
+        function teamStatusOf(member) {
+            if (!member) return 'serving';
+            if (member.archived) return 'archived';
+            if (member.deceased) return 'late';
+            return 'serving';
+        }
+
+        function teamInitials(name) {
+            return String(name || '?').trim().split(/\s+/).slice(0, 2).map(part => part.charAt(0).toUpperCase()).join('');
+        }
+
+        window.loadAdminTeam = async function() {
+            if (adminTeamLoading) return;
+            adminTeamLoading = true;
+            const list = document.getElementById('adminTeamList');
+            if (list) list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-sub);"><div class="spinner" style="width:26px;height:26px;"></div></div>';
+            try {
+                const snap = await getDocs(collection(db, 'teamMembers'));
+                adminTeamCache = [];
+                snap.forEach(d => adminTeamCache.push(Object.assign({ id: d.id }, d.data())));
+                adminTeamCache.sort((a, b) => (a.order || 999) - (b.order || 999) || String(a.name || '').localeCompare(String(b.name || '')));
+                renderAdminTeam();
+            } catch (error) {
+                console.error('Team load failed:', error);
+                if (list) list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#b91c1c;"><i class="pd-i pd-i-triangle-alert"></i> Could not load the team. Check your connection and try Refresh.</div>';
+                toast('Could not load the team roster', 'error');
+            } finally {
+                adminTeamLoading = false;
+            }
+        };
+
+        window.renderAdminTeam = function() {
+            const list = document.getElementById('adminTeamList');
+            const stats = document.getElementById('adminTeamStats');
+            if (!list) return;
+
+            const all = adminTeamCache.slice();
+            const serving = all.filter(m => teamStatusOf(m) === 'serving').length;
+            const late = all.filter(m => teamStatusOf(m) === 'late').length;
+            const archived = all.filter(m => teamStatusOf(m) === 'archived').length;
+            if (stats) {
+                const chip = (icon, value, label, colour) => `<div style="border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; background:var(--bg-card);">
+                    <div style="display:flex; align-items:center; gap:8px; color:${colour || 'var(--accent-green)'}; font-weight:800; font-size:1.35rem;"><i class="pd-i ${icon}"></i> ${value}</div>
+                    <div style="font-size:.7rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-sub); margin-top:2px;">${label}</div>
+                </div>`;
+                stats.innerHTML = chip('pd-i-users', all.length, 'On the roster', 'var(--accent-green)')
+                    + chip('pd-i-user-check', serving, 'Serving now', '#15803d')
+                    + chip('pd-i-feather', late, 'Marked Late', '#a67c00')
+                    + chip('pd-i-archive', archived, 'Archived', 'var(--text-sub)');
+            }
+
+            const query = (document.getElementById('adminTeamSearch')?.value || '').trim().toLowerCase();
+            const filter = document.getElementById('adminTeamFilter')?.value || 'all';
+            let rows = all;
+            if (filter !== 'all') rows = rows.filter(m => teamStatusOf(m) === filter);
+            if (query) {
+                rows = rows.filter(m => [m.name, m.title, m.role, m.country, m.category, m.email].some(value => String(value || '').toLowerCase().includes(query)));
+            }
+
+            if (!all.length) {
+                list.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:30px 18px; color:var(--text-sub); border:1px dashed var(--border-color); border-radius:16px;">
+                    <i class="pd-i pd-i-user-plus" style="font-size:2rem; opacity:.4; display:block; margin-bottom:10px;"></i>
+                    <strong style="color:var(--text-main);">No live roster yet</strong>
+                    <p style="font-size:.8rem; max-width:420px; margin:6px auto 14px; line-height:1.6;">The public team page is showing the built-in roster. Import it here once, then edit anyone — or add your first person now.</p>
+                    <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+                        <button class="btn btn-outline btn-sm" type="button" onclick="importBuiltInTeam()"><i class="pd-i pd-i-download"></i> Import built-in roster</button>
+                        <button class="btn btn-primary btn-sm" type="button" onclick="openAdminTeamMember()"><i class="pd-i pd-i-plus"></i> Add member</button>
+                    </div>
+                </div>`;
+                return;
+            }
+            if (!rows.length) {
+                list.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:26px; color:var(--text-sub);">No team member matches this filter.</div>';
+                return;
+            }
+
+            list.innerHTML = rows.map(member => {
+                const status = teamStatusOf(member);
+                const lateLabel = member.lateLabel || 'Late';
+                const photo = member.image
+                    ? `<img src="${escapeHTML(member.image)}" alt="" loading="lazy" style="width:64px;height:64px;border-radius:16px;object-fit:cover;background:#eef2f8;flex-shrink:0;" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><div style="display:none;width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0A4D9B,#07244d);color:#f6df8a;font-weight:800;place-items:center;flex-shrink:0;">${escapeHTML(teamInitials(member.name))}</div>`
+                    : `<div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0A4D9B,#07244d);color:#f6df8a;font-weight:800;display:grid;place-items:center;flex-shrink:0;">${escapeHTML(teamInitials(member.name))}</div>`;
+                const statusBadge = status === 'late'
+                    ? `<span class="badge" style="background:#07244d;color:#f6df8a;"><i class="pd-i pd-i-feather"></i> ${escapeHTML(lateLabel)}</span>`
+                    : status === 'archived'
+                        ? '<span class="badge" style="background:#fef3c7;color:#92400e;">Archived</span>'
+                        : '<span class="badge badge-success">Serving</span>';
+                const lateAction = status === 'late'
+                    ? `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberLate('${member.id}', false)" title="Return to serving"><i class="pd-i pd-i-user-check"></i> Serving</button>`
+                    : `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberLate('${member.id}', true)" title="Mark as passed on" style="color:#a67c00;border-color:rgba(212,175,55,.55);"><i class="pd-i pd-i-feather"></i> Mark Late</button>`;
+                const archiveAction = status === 'archived'
+                    ? `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberArchived('${member.id}', false)" title="Restore"><i class="pd-i pd-i-rotate-ccw"></i> Restore</button>`
+                    : `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberArchived('${member.id}', true)" title="Archive"><i class="pd-i pd-i-archive"></i> Archive</button>`;
+                return `<div style="border:1px solid ${status === 'late' ? 'rgba(212,175,55,.5)' : 'var(--border-color)'}; border-radius:18px; padding:14px; background:${status === 'late' ? 'linear-gradient(160deg,rgba(212,175,55,.09),var(--bg-card) 60%)' : 'var(--bg-card)'}; ${status === 'archived' ? 'opacity:.72;' : ''} display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; gap:12px; align-items:flex-start; min-width:0;">
+                        ${photo}
+                        <div style="flex:1; min-width:0;">
+                            <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                                <strong style="font-size:.92rem; line-height:1.3;">${escapeHTML(member.name || 'Unnamed')}</strong>
+                                ${statusBadge}
+                            </div>
+                            <div style="font-size:.76rem; color:var(--text-sub); margin-top:2px; line-height:1.45;">${escapeHTML(member.title || '')}${member.role ? ' · ' + escapeHTML(member.role) : ''}</div>
+                            <div style="display:flex; gap:5px; flex-wrap:wrap; margin-top:7px; font-size:.65rem;">
+                                <span class="badge" style="background:rgba(10,77,155,.1);color:var(--accent-green);">${escapeHTML(TEAM_CATEGORY_LABELS[member.category] || member.category || 'Team')}</span>
+                                ${member.country ? `<span class="badge" style="background:rgba(10,77,155,.06);color:var(--text-sub);">${escapeHTML(member.country)}</span>` : ''}
+                                <span class="badge" style="background:rgba(10,77,155,.06);color:var(--text-sub);">#${member.order || '—'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    ${status === 'late' && member.memorialNote ? `<div style="font-size:.72rem; color:var(--text-sub); line-height:1.5;"><i class="pd-i pd-i-heart" style="color:#a67c00;"></i> ${escapeHTML(member.memorialNote)}</div>` : ''}
+                    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; border-top:1px solid var(--border-color); padding-top:10px;">
+                        <button class="btn btn-sm btn-primary" type="button" onclick="openAdminTeamMember('${member.id}')"><i class="pd-i pd-i-pen"></i> Edit</button>
+                        ${lateAction}
+                        ${archiveAction}
+                        <button class="btn btn-sm btn-outline" type="button" onclick="moveTeamMember('${member.id}', -1)" title="Move up" aria-label="Move up"><i class="pd-i pd-i-arrow-up"></i></button>
+                        <button class="btn btn-sm btn-outline" type="button" onclick="moveTeamMember('${member.id}', 1)" title="Move down" aria-label="Move down"><i class="pd-i pd-i-arrow-down"></i></button>
+                    </div>
+                </div>`;
+            }).join('');
+        };
+
+        function teamFormValue(id) {
+            const el = document.getElementById(id);
+            return el ? el.value.trim() : '';
+        }
+
+        window.toggleTeamLateFields = function() {
+            const status = document.getElementById('teamMemberStatus');
+            const fields = document.getElementById('teamMemberLateFields');
+            if (!status || !fields) return;
+            fields.style.display = status.value === 'late' ? 'block' : 'none';
+        };
+
+        window.previewTeamMemberPhoto = function(url) {
+            adminTeamPhoto = String(url || '').trim();
+            const img = document.getElementById('teamMemberPhoto');
+            if (!img) return;
+            img.src = adminTeamPhoto || '/assets/avatar-default.svg';
+            img.onerror = function() { this.onerror = null; this.src = '/assets/avatar-default.svg'; };
+        };
+
+        window.openAdminTeamMember = function(id) {
+            const member = id ? adminTeamCache.find(m => m.id === id) : null;
+            adminTeamEditingId = member ? member.id : null;
+            adminTeamPhoto = member?.image || '';
+            const title = document.getElementById('teamMemberModalTitle');
+            if (title) title.innerHTML = member
+                ? '<i class="pd-i pd-i-user-pen"></i> Edit team member'
+                : '<i class="pd-i pd-i-user-plus"></i> Add team member';
+            const set = (fieldId, value) => { const el = document.getElementById(fieldId); if (el) el.value = value == null ? '' : value; };
+            set('teamMemberName', member?.name);
+            set('teamMemberTitle', member?.title);
+            set('teamMemberRole', member?.role);
+            set('teamMemberCategory', member?.category || 'eswatini');
+            set('teamMemberCountry', member?.country);
+            set('teamMemberEmail', member?.email);
+            set('teamMemberPhone', member?.phone);
+            set('teamMemberDescription', member?.description);
+            set('teamMemberScripture', member?.scripture);
+            set('teamMemberImageUrl', member?.image);
+            set('teamMemberStatus', member ? teamStatusOf(member) : 'serving');
+            set('teamMemberLateLabel', member?.lateLabel || 'Late');
+            set('teamMemberPassedAt', member?.passedAt);
+            set('teamMemberMemorialNote', member?.memorialNote);
+            set('teamMemberError', '');
+            const error = document.getElementById('teamMemberError');
+            if (error) error.style.display = 'none';
+            const state = document.getElementById('teamMemberPhotoState');
+            if (state) state.textContent = member?.image ? 'Current photo — upload a new one to replace it.' : 'A square portrait works best (JPG or PNG).';
+            const del = document.getElementById('teamMemberDeleteBtn');
+            if (del) del.style.display = member ? 'inline-flex' : 'none';
+            previewTeamMemberPhoto(member?.image || '');
+            toggleTeamLateFields();
+            openModal('modalTeamMember');
+        };
+
+        window.uploadTeamMemberPhoto = async function() {
+            if (!window.PDUpload) return toast('Photo upload is unavailable right now', 'error');
+            const res = await window.PDUpload.pick({
+                title: 'Team member photo',
+                accept: 'image/*',
+                preset: 'profile_photos',
+                folder: 'team',
+                maxBytes: 8 * 1024 * 1024,
+                onError: (message) => toast(message, 'error')
+            });
+            if (!res.ok) return;
+            const url = res.files[0].url;
+            previewTeamMemberPhoto(url);
+            const field = document.getElementById('teamMemberImageUrl');
+            if (field) field.value = url;
+            const state = document.getElementById('teamMemberPhotoState');
+            if (state) state.innerHTML = '<i class="pd-i pd-i-circle-check" style="color:#15803d;"></i> Photo attached — it will be saved with the member.';
+        };
+
+        window.saveAdminTeamMember = async function() {
+            const errorBox = document.getElementById('teamMemberError');
+            const showError = (message) => {
+                if (!errorBox) return toast(message, 'error');
+                errorBox.textContent = message;
+                errorBox.style.display = 'block';
+                errorBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            };
+            if (errorBox) errorBox.style.display = 'none';
+            const name = teamFormValue('teamMemberName');
+            const title = teamFormValue('teamMemberTitle');
+            if (!name) return showError('Please enter the member’s full name.');
+            if (!title) return showError('Please enter their position or title (for example “Prayer Dome Pastor — Zambia”).');
+
+            const status = teamFormValue('teamMemberStatus') || 'serving';
+            const photoUrl = teamFormValue('teamMemberImageUrl') || adminTeamPhoto || '';
+            const data = {
+                name,
+                title,
+                role: teamFormValue('teamMemberRole'),
+                category: teamFormValue('teamMemberCategory') || 'eswatini',
+                country: teamFormValue('teamMemberCountry'),
+                email: teamFormValue('teamMemberEmail'),
+                phone: teamFormValue('teamMemberPhone'),
+                description: teamFormValue('teamMemberDescription'),
+                scripture: teamFormValue('teamMemberScripture'),
+                image: photoUrl,
+                deceased: status === 'late',
+                lateLabel: status === 'late' ? (teamFormValue('teamMemberLateLabel') || 'Late') : '',
+                passedAt: status === 'late' ? teamFormValue('teamMemberPassedAt') : '',
+                memorialNote: status === 'late' ? teamFormValue('teamMemberMemorialNote') : '',
+                archived: status === 'archived',
+                updatedAt: serverTimestamp()
+            };
+            const saveBtn = document.getElementById('teamMemberSaveBtn');
+            if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> Saving…'; }
+            try {
+                if (adminTeamEditingId) {
+                    await updateDoc(doc(db, 'teamMembers', adminTeamEditingId), data);
+                } else {
+                    data.order = adminTeamCache.length ? Math.max(...adminTeamCache.map(m => Number(m.order) || 0)) + 1 : 1;
+                    data.createdAt = serverTimestamp();
+                    await addDoc(collection(db, 'teamMembers'), data);
+                }
+                closeModal('modalTeamMember');
+                toast(adminTeamEditingId ? 'Team member updated — live on the team page' : 'Team member added — live on the team page', 'success');
+                adminTeamEditingId = null;
+                await loadAdminTeam();
+            } catch (error) {
+                console.error('Team save failed:', error);
+                showError(error.code === 'permission-denied'
+                    ? 'Your account does not have permission to manage the team.'
+                    : 'Could not save right now. Check your connection and try again.');
+            } finally {
+                if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = '<i class="pd-i pd-i-save"></i> Save member'; }
+            }
+        };
+
+        window.deleteAdminTeamMember = async function() {
+            const member = adminTeamCache.find(m => m.id === adminTeamEditingId);
+            if (!member) return;
+            if (!confirm('Delete ' + member.name + ' permanently?\n\nThis cannot be undone. If you only want them hidden, choose Archived instead.')) return;
+            try {
+                await deleteDoc(doc(db, 'teamMembers', member.id));
+                closeModal('modalTeamMember');
+                toast('Team member deleted', 'info');
+                adminTeamEditingId = null;
+                await loadAdminTeam();
+            } catch (error) { toast('Could not delete right now', 'error'); }
+        };
+
+        window.setTeamMemberLate = async function(id, late) {
+            const member = adminTeamCache.find(m => m.id === id);
+            if (!member) return;
+            if (late && !confirm('Mark ' + member.name + ' as ‘Late’?\n\nTheir profile stays on the public team page with a clear memorial label. You can change it back at any time.')) return;
+            try {
+                await updateDoc(doc(db, 'teamMembers', id), {
+                    deceased: !!late,
+                    lateLabel: late ? (member.lateLabel || 'Late') : '',
+                    archived: false,
+                    updatedAt: serverTimestamp()
+                });
+                toast(late ? member.name + ' is marked Late — the label is now on their profile.' : 'Status changed back to Serving', late ? 'info' : 'success');
+                await loadAdminTeam();
+            } catch (error) { toast('Could not update the status right now', 'error'); }
+        };
+
+        window.setTeamMemberArchived = async function(id, archived) {
+            const member = adminTeamCache.find(m => m.id === id);
+            if (!member) return;
+            if (archived && !confirm('Archive ' + member.name + '?\n\nThey disappear from the public team page but nothing is deleted. You can restore them any time.')) return;
+            try {
+                await updateDoc(doc(db, 'teamMembers', id), { archived: !!archived, archivedAt: archived ? serverTimestamp() : null, updatedAt: serverTimestamp() });
+                toast(archived ? member.name + ' archived' : member.name + ' restored', 'success');
+                await loadAdminTeam();
+            } catch (error) { toast('Could not update the archive state', 'error'); }
+        };
+
+        window.moveTeamMember = async function(id, direction) {
+            const sorted = adminTeamCache.slice().sort((a, b) => (a.order || 999) - (b.order || 999));
+            const index = sorted.findIndex(m => m.id === id);
+            const swapWith = index + (direction < 0 ? -1 : 1);
+            if (index < 0 || swapWith < 0 || swapWith >= sorted.length) return;
+            const a = sorted[index];
+            const b = sorted[swapWith];
+            const orderA = Number(a.order) || index + 1;
+            const orderB = Number(b.order) || swapWith + 1;
+            try {
+                await Promise.all([
+                    updateDoc(doc(db, 'teamMembers', a.id), { order: orderB }),
+                    updateDoc(doc(db, 'teamMembers', b.id), { order: orderA })
+                ]);
+                await loadAdminTeam();
+            } catch (error) { toast('Could not re-order the team', 'error'); }
+        };
+
+        window.importBuiltInTeam = async function() {
+            const roster = (window.PD_TEAM_DEFAULT || []).slice();
+            if (!roster.length) return toast('The built-in roster is unavailable on this device', 'error');
+            if (adminTeamCache.length && !confirm('Import the built-in roster as well?\n\nExisting members are kept; duplicate names are skipped.')) return;
+            showLoading();
+            try {
+                const existing = new Set(adminTeamCache.map(m => String(m.name || '').toLowerCase()));
+                let added = 0;
+                for (const member of roster) {
+                    if (existing.has(String(member.name || '').toLowerCase())) continue;
+                    const payload = Object.assign({}, member, {
+                        archived: false,
+                        deceased: false,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+                    delete payload.id;
+                    await addDoc(collection(db, 'teamMembers'), payload);
+                    added += 1;
+                }
+                toast(added + ' team member' + (added === 1 ? '' : 's') + ' imported', 'success');
+                await loadAdminTeam();
+            } catch (error) {
+                console.error('Roster import failed:', error);
+                toast('Could not import the roster right now', 'error');
+            } finally { hideLoading(); }
+        };
+
+        // Kept for older shortcuts/links: open the console team view in place.
+        window.openTeamManagement = function(){ window.switchView('team', window.pdNavFor('team')); };
         window.deleteRecord = async function(col,id){ if(!confirm("Delete permanently?")) return; showLoading(); try{ await deleteDoc(doc(db,col,id)); toast("Deleted"); if(col==='events') await loadEvents(); if(col==='gallery') await loadGallery(); if(col==='prayers'||col==='testimonies') await loadContent(); if(col==='contactMessages') await loadContactMessages(); if(col==='certificates') await loadCertificates(); if(col==='announcements') await loadAnnouncements(); if(col==='memberCareRequests') await loadCareRequests(); if(col==='liveRecordings') await loadLiveRecordings(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
         
         function setupAdminRealtimeListeners() {
@@ -5718,7 +6412,7 @@ window.toggleDarkMode = function() {
             'aivideo': 'AI Video Studio', 'media': 'Media Upload', 'content': 'Prayers & Testimonies',
             'news': 'News Center', 'sermons': 'Sermon Center', 'banners': 'Hero Banners',
             'languages': 'Languages', 'translations': 'Translation Review',
-            'notifications': 'Notifications', 'facebook': 'Facebook Campaign',
+            'notifications': 'Notifications', 'facebook': 'Facebook Campaign', 'team': 'Team Management',
             'contacts': 'Contact Messages', 'certificates': 'Certificates'
         };
         let activeAdminView = null;
@@ -5763,6 +6457,8 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'contacts') await loadContactMessages();
                 else if (viewId === 'certificates') { await loadCertificates(); loadFounderSignatureUI(); }
                 else if (viewId === 'news') await loadAdminNews();
+                else if (viewId === 'team') await loadAdminTeam();
+                else if (viewId === 'notifications') { await loadNotificationHealth(); loadReminderStats(); }
                 else if (viewId === 'sermons') await loadAdminSermons();
                 else if (viewId === 'translations') await loadTranslationReview();
                 else if (viewId === 'facebook') await loadFacebookCampaign();
@@ -5873,7 +6569,7 @@ window.toggleDarkMode = function() {
             saveAdminSession(user, { name: profile.fullName || '', source: options.source });
             window.PD_UID = user.uid;
             if (window.PDApp) {
-                PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, onSnapshot, auth });
+                PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, deleteDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, onSnapshot, auth });
                 // Push registration is best-effort; never let it break sign-in.
                 try { Promise.resolve(PDApp.notifications.registerDevice(user.uid)).catch(() => {}); } catch (e) {}
             }
