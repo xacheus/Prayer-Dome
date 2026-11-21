@@ -500,9 +500,72 @@
             text-align: center;
             white-space: normal;
         }
+        .cert-card {
+            position: relative;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px !important;
+            align-items: stretch !important;
+            background: linear-gradient(180deg, #fffdf6, #fbf7ec) !important;
+            border: 1px solid rgba(201, 162, 39, .45) !important;
+            border-radius: 18px !important;
+            padding: 18px !important;
+            margin-bottom: 14px !important;
+            box-shadow: 0 8px 24px rgba(7, 36, 77, .06);
+        }
+        .cert-card::before {
+            content: '';
+            position: absolute; inset: 6px;
+            border: 1px solid rgba(201, 162, 39, .25);
+            border-radius: 13px; pointer-events: none;
+        }
+        body.dark-mode .cert-card { background: linear-gradient(180deg, #0f1c30, #0b1626) !important; }
+        .cert-card-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .cert-card-logo {
+            width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px;
+            background: #fff; border: 1px solid rgba(201, 162, 39, .4); padding: 3px;
+        }
+        .cert-card-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .cert-card-eyebrow { font-size: .58rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #8f7410; }
+        body.dark-mode .cert-card-eyebrow { color: #f6df8a; }
+        .cert-card-org { font-family: 'Poppins', serif; font-size: .96rem; font-weight: 800; color: #1d2a6b; line-height: 1.25; }
+        body.dark-mode .cert-card-org { color: #e8eefc; }
+        .cert-card-seal {
+            margin-left: auto; width: 42px; height: 42px; flex-shrink: 0;
+            display: grid; place-items: center; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #f6df8a, #c9a227 70%);
+            color: #5b4600; font-size: 1.05rem; border: 2px solid rgba(143, 116, 16, .35);
+            box-shadow: 0 3px 10px rgba(201, 162, 39, .25);
+        }
+        .cert-card-body { min-width: 0; padding: 2px 4px; }
+        .cert-card-recipient {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.2rem, 4.2vw, 1.55rem);
+            font-weight: 700; color: #1d2a6b; line-height: 1.25;
+            overflow-wrap: anywhere; margin: 0 0 4px;
+        }
+        body.dark-mode .cert-card-recipient { color: #f6df8a; }
+        .cert-card-line { font-size: .78rem; color: var(--text-sub); line-height: 1.55; margin: 0; }
+        .cert-card-course { font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; }
+        .cert-card-meta {
+            display: flex; flex-wrap: wrap; gap: 6px 16px;
+            margin-top: 10px; font-size: .68rem; color: var(--text-sub);
+            overflow-wrap: anywhere;
+        }
+        .cert-card-meta b { color: var(--text-main); font-weight: 800; }
+        .cert-card-foot {
+            display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+            border-top: 1px solid rgba(201, 162, 39, .25); padding-top: 12px;
+        }
+        .cert-signature { flex: 1; min-width: 130px; }
+        .cert-signature-name { font-family: 'Great Vibes', 'Playfair Display', cursive; font-size: 1.35rem; color: #1d2a6b; line-height: 1.2; }
+        body.dark-mode .cert-signature-name { color: #f6df8a; }
+        .cert-signature-rule { height: 1px; background: rgba(107, 103, 92, .45); margin: 2px 0 4px; }
+        .cert-signature-label { font-size: .55rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .cert-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
         @media (max-width: 520px) {
-            .cert-card { align-items: flex-start !important; }
-            .cert-card > div:last-child { width: 100%; }
+            .cert-card { padding: 14px !important; }
+            .cert-card-actions { width: 100%; }
             .cert-card .btn { flex: 1 1 auto; }
         }
         #pNameDisplay { overflow-wrap: anywhere; line-height: 1.25; }
@@ -1560,18 +1623,36 @@
                 const date = parsedDate && !Number.isNaN(parsedDate.getTime())
                     ? parsedDate.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
                 const certDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : '';
-                return `<div class="cert-card" style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; background: var(--bg-secondary, rgba(10,77,155,.04)); border:1px solid rgba(212,175,55,.3); border-radius:16px; padding:14px; margin-bottom:10px;">
-                    <div style="width:46px; height:46px; border-radius:14px; background: linear-gradient(135deg, #0A4D9B, #0a3d7a); display:flex; align-items:center; justify-content:center; color:#f6df8a; font-size:1.25rem; flex-shrink:0;"><i class="pd-i pd-i-badge-check"></i></div>
-                    <div style="flex:1; min-width:180px;">
-                        <h4 style="margin:0 0 2px; font-size:.95rem; color: var(--text-main);">${escapeHtml(c.course || c.title || 'Prayer Dome Academy')}</h4>
-                        <p style="margin:0; font-size:.75rem; color: var(--text-sub);">Score ${Math.round(c.score || 0)}% · Issued ${date}</p>
-                        <p style="margin:2px 0 0; font-size:.68rem; color: var(--accent-gold); font-family:monospace;">${escapeHtml(c.id || '')}</p>
+                return `<article class="cert-card">
+                    <div class="cert-card-head">
+                        <div class="cert-card-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                        <div style="min-width:0;">
+                            <div class="cert-card-eyebrow">Prayer Dome Academy</div>
+                            <div class="cert-card-org">Certificate of Completion</div>
+                        </div>
+                        <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
                     </div>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-primary btn-sm cert-download-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-download"></i> Download PDF</button>
-                        <button class="btn btn-outline btn-sm cert-print-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-printer"></i> Print</button>
+                    <div class="cert-card-body">
+                        <h4 class="cert-card-recipient">${escapeHtml(name)}</h4>
+                        <p class="cert-card-line">has successfully completed <span class="cert-card-course">${escapeHtml(c.course || c.title || 'Prayer Dome Academy')}</span>.</p>
+                        <div class="cert-card-meta">
+                            <span>Score <b>${Math.round(c.score || 0)}%</b></span>
+                            <span>Issued <b>${date}</b></span>
+                            <span>ID <b style="font-family:monospace;">${escapeHtml(c.id || '')}</b></span>
+                        </div>
                     </div>
-                </div>`;
+                    <div class="cert-card-foot">
+                        <div class="cert-signature">
+                            <div class="cert-signature-name">Prayer Dome</div>
+                            <div class="cert-signature-rule"></div>
+                            <div class="cert-signature-label">Founder &amp; Senior Pastor</div>
+                        </div>
+                        <div class="cert-card-actions">
+                            <button class="btn btn-primary btn-sm cert-download-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-download"></i> Download PDF</button>
+                            <button class="btn btn-outline btn-sm cert-print-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-printer"></i> Print</button>
+                        </div>
+                    </div>
+                </article>`;
             }).join('');
 
             listEl.querySelectorAll('.cert-download-btn').forEach(btn => {
