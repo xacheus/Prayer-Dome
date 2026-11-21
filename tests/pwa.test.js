@@ -134,6 +134,55 @@ t('sw.js fetches JavaScript and CSS fresh so a deploy shows on the first load',
   /const isCode = [^;]*\\\.\(\?:js\|css\)/i.test(sw) &&
   /if \(isCode\)[\s\S]*?fetch\(req\)[\s\S]*?caches\.match\(req\)/.test(sw));
 
+const appSource = read('assets/pd-app.js');
+
+t('the shared layer registers /sw.js on every page without the shadowed location module',
+  appSource.includes('window.location.protocol') && !/test\(location\.protocol\)/.test(appSource));
+t('the update bar reloads the real page, not the location module',
+  appSource.includes('window.location.reload()'));
+t('the manifest can launch without browser chrome', manifest.display === 'standalone' &&
+  Array.isArray(manifest.display_override) && manifest.display_override.includes('fullscreen'));
+
+// FCM payloads are encrypted for the push subscription. The root worker is the
+// registration getToken() receives, so it must contain the Messaging SDK or a
+// closed app sees ciphertext instead of a notification.
+t('the root worker decrypts Firebase pushes', sw.includes('firebase-messaging-compat') &&
+  sw.includes('onBackgroundMessage') && sw.includes('firebase.initializeApp'));
+t('the root worker never turns ciphertext into a notification',
+  /function pushPayload\(event\)[\s\S]*?catch \(e\) \{[\s\S]*?return null;/.test(sw));
+t('Firebase-drawn notifications are not clipped by our own click handler',
+  /notification\.data\.FCM_MSG\) return;/.test(sw));
+t('the FCM SDK owns the push event once loaded, preventing duplicate cards',
+  sw.includes('if (pdMessaging) return;'));
+t('data-only FCM messages still draw a branded notification',
+  /if \(!\(payload && payload\.notification\)\)[\s\S]{0,900}showNotification/.test(sw));
+
+const messagingWorker = read('firebase-messaging-sw.js');
+t('the messaging fallback never draws a second copy of the same push',
+  !/onBackgroundMessage[\s\S]*?showNotification/.test(messagingWorker));
+t('foreground pushes also reach the device notification shade',
+  appSource.includes('notifications.notifyDevice(item);'));
+
+// Notification switches are stored per account and restored on a new device.
+t('notification settings are loaded from Firestore', appSource.includes('loadPreferences: function') &&
+  appSource.includes('userNotificationPrefs', appSource.indexOf('loadPreferences: function')) &&
+  appSource.includes("new CustomEvent('pd:notif-prefs'"));
+t('the daily reminder is restored from Firestore', appSource.includes('loadReminder: function') &&
+  appSource.includes('userReminders', appSource.indexOf('loadReminder: function')));
+t('the account page re-renders settings after a cloud sync',
+  read('account.html').includes("document.addEventListener('pd:notif-prefs', renderNotifPrefs)"));
+t('devotionals honour the sermon/devotional switch on the server',
+  read('functions/index.js').includes("kind === 'devotional' ? 'sermon' : kind"));
+t('game cues carry matching haptics', read('assets/pd-sfx.js').includes('navigator.vibrate'));
+
+const brandSources = [];
+for (const name of fs.readdirSync(ROOT).filter((n) => n.endsWith('.html'))) brandSources.push(read(name));
+for (const name of fs.readdirSync(path.join(ROOT, 'assets')).filter((n) => /\.(?:js|css)$/.test(n))) {
+  brandSources.push(fs.readFileSync(path.join(ROOT, 'assets', name), 'utf8'));
+}
+t('no Avanta branding survives anywhere in the app',
+  !brandSources.some((text) => /\bavanta\b/i.test(text)));
+
 /* ------------------------------------------------ registration on all pages */
 const appJs = read('assets/pd-app.js');
 t('the shared app layer owns PWA registration', appJs.includes('var pwa = {') &&

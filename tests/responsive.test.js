@@ -13,7 +13,22 @@ const htmlFiles = [
 for (const file of htmlFiles) {
   const html = fs.readFileSync(file, 'utf8');
   assert.match(html, /<meta\s+name=["']viewport["']/i, `${path.relative(ROOT, file)} needs a mobile viewport`);
+  // Every page must be able to become the installed app: iOS reads its own
+  // meta tags, and Android reads the manifest.
+  for (const meta of ['mobile-web-app-capable', 'apple-mobile-web-app-capable',
+    'apple-mobile-web-app-status-bar-style', 'theme-color']) {
+    assert.match(html, new RegExp(`<meta\\s+name=["']${meta}["']`, 'i'),
+      `${path.relative(ROOT, file)} is missing the ${meta} app meta tag`);
+  }
+  assert.match(html, /<link[^>]+rel=["']manifest["']/i,
+    `${path.relative(ROOT, file)} must link the web app manifest`);
 }
+
+// Pages without their own reset used to keep the browser's 8 px body margin,
+// which shifted the whole app right and produced an 8 px horizontal gutter.
+const sharedFix = fs.readFileSync(path.join(ROOT, 'assets/pd-responsive-fix.css'), 'utf8');
+assert.match(sharedFix, /html,\s*body\s*\{[^}]*margin:\s*0/,
+  'The shared phone reset must remove the browser body margin on every page');
 
 function rule(css, selector) {
   const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

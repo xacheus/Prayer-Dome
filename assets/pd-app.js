@@ -20,7 +20,7 @@
 (function () {
   'use strict';
 
-  var VERSION = '1.0.1';
+  var VERSION = '1.1.0';
   var BRAND_LOGO = '/assets/logo.png'; // official Prayer Dome mark
   var channel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('pd-app') : null;
   var fb = null;            // Firestore bindings, set via setFirestore()
@@ -1121,6 +1121,14 @@
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         setTimeout(function () { notifications.registerDevice(); }, 2500);
       }
+      // Settings follow the member across devices. Read them once the session
+      // is known; a local-only visitor keeps the switches on this device.
+      setTimeout(function () {
+        if (fb && fb.auth && fb.auth.currentUser) {
+          notifications.loadPreferences();
+          notifications.loadReminder();
+        }
+      }, 3500);
       // Messages from the worker: a dismissed system notification counts as
       // seen, and a push that arrived while the app is open is added to the
       // bell immediately (the worker already drew the notification).
@@ -1139,7 +1147,13 @@
       document.addEventListener('visibilitychange', function () {
         if (!document.hidden) notifications.flushPendingToken();
       });
-      document.addEventListener('pd:role', function () { notifications.flushPendingToken(); });
+      document.addEventListener('pd:role', function () {
+        // Signing in (or a role arriving late) is the moment the account's
+        // saved notification settings become readable.
+        notifications.loadPreferences();
+        notifications.loadReminder();
+        notifications.flushPendingToken();
+      });
       setTimeout(function () { notifications.flushPendingToken(); }, 4000);
       // Firestore live mirror: an admin broadcast reaches the bell of every
       // open app within a second, not only the next reload. onSnapshot is used
@@ -1321,9 +1335,17 @@
           // the root worker back and forth — that swap is what used to drop
           // push subscriptions. /firebase-messaging-sw.js is the fallback for
           // devices that have no root worker yet.
-          var reg = typeof navigator.serviceWorker.getRegistration === 'function'
-            ? await navigator.serviceWorker.getRegistration('/')
-            : null;
+          // `ready` waits for the active root worker. getRegistration() can
+          // return an installing worker, and getToken() against a registration
+          // that is not active is the classic reason a device never receives a
+          // background push.
+          var reg = await Promise.race([
+            navigator.serviceWorker.ready,
+            new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 4500); })
+          ]).catch(function () { return null; });
+          if (!reg && typeof navigator.serviceWorker.getRegistration === 'function') {
+            reg = await navigator.serviceWorker.getRegistration('/');
+          }
           if (!reg) reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
           var appMod = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
           var msgMod = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging.js');
@@ -1333,27 +1355,28 @@
           var token = await msgMod.getToken(messaging, { vapidKey: VAPID_PUBLIC_KEY, serviceWorkerRegistration: reg });
           if (!token) return null;
 
-          // Foreground pushes still raise a real device notification, using the
-          // same stable tag so nothing is ever shown twice.
+          // Foreground pushes do not pass through a service worker, so the
+          // browser does not show them by itself. Draw the *same* branded
+          // notification from the page as well, with the same tag, and mirror
+          // it into the bell. localOnly stops a second Firestore record.
           msgMod.onMessage(messaging, function (payload) {
             var note = (payload && payload.notification) || {};
             var data = (payload && payload.data) || {};
-            // The service worker has already raised the system notification;
-            // only reflect it in the bell. localOnly stops a second Firestore
-            // record, and silent avoids a duplicate toast on top of the tray
-            // notification. The id is the server record id, so the mirror
-            // snapshot updates this same row instead of adding another.
-            notifications.push({
-              id: data.id || note.title,
+            var item = {
+              id: data.id || data.tag || note.title || ('push-' + Date.now()),
               type: data.kind || data.type || 'general',
               title: note.title || data.title || 'Prayer Dome',
               message: note.body || data.body || data.message || '',
-              link: data.url || data.link || null
-            }, { localOnly: true, silent: true });
+              link: data.url || data.link || null,
+              time: new Date().toISOString()
+            };
+            notifications.push(item, { localOnly: true, silent: true });
+            notifications.notifyDevice(item);
           });
 
-              notifications.saveToken(token, member, 'web');
+          notifications.saveToken(token, member, 'web');
           notifications.syncPreferences();
+          notifications.loadReminder();
           return token;
         } catch (e) {
           return null;   // push is a bonus; the in-app centre still works
@@ -1574,6 +1597,7 @@
       prefs[key] = !!on;
       lsSet(PREF_KEY, prefs);
       broadcast('notif-prefs', prefs);
+      try { document.dispatchEvent(new CustomEvent('pd:notif-prefs', { detail: prefs })); } catch (e) {}
       notifications.syncPreferences();
       return prefs;
     },
@@ -1590,11 +1614,51 @@
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
       }, { merge: true })).then(function () { return true; }).catch(function () { return false; });
     },
+    /* Pull the member's category switches back from Firestore so a phone and
+       a tablet show the same notification settings. Local defaults stay in
+       place for anything the document does not mention. */
+    loadPreferences: function () {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      if (!current || !fb || !fb.db || !fb.doc || !fb.getDoc) return Promise.resolve(false);
+      return Promise.resolve(fb.getDoc(fb.doc(fb.db, 'userNotificationPrefs', current.uid)))
+        .then(function (snap) {
+          var stored = snap && snap.exists && snap.exists() ? (snap.data() || {}).prefs : null;
+          if (!stored || typeof stored !== 'object') return false;
+          var prefs = readPrefs();
+          Object.keys(NOTIF_TYPES).forEach(function (key) {
+            if (stored[key] === false) prefs[key] = false;
+            else if (stored[key] === true) prefs[key] = true;
+          });
+          lsSet(PREF_KEY, prefs);
+          broadcast('notif-prefs', prefs);
+          try { document.dispatchEvent(new CustomEvent('pd:notif-prefs', { detail: prefs })); } catch (e) {}
+          return prefs;
+        })
+        .catch(function () { return false; });
+    },
     reminder: function () {
       try {
         var raw = JSON.parse(localStorage.getItem('pd_prayer_reminder') || '{}');
         return { time: raw.time || '', on: !!raw.on };
       } catch (e) { return { time: '', on: false }; }
+    },
+    /* The daily reminder is also stored server-side so a closed phone still
+       gets it. Load that row on sign-in so a new device shows the same time. */
+    loadReminder: function () {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      if (!current || !fb || !fb.db || !fb.doc || !fb.getDoc) return Promise.resolve(false);
+      return Promise.resolve(fb.getDoc(fb.doc(fb.db, 'userReminders', current.uid)))
+        .then(function (snap) {
+          if (!snap || !snap.exists || !snap.exists()) return false;
+          var row = snap.data() || {};
+          if (!row.reminderTime && !row.notifications) return false;
+          var value = { time: /^\d{2}:\d{2}$/.test(String(row.reminderTime || '')) ? row.reminderTime : '', on: !!row.notifications && !!row.reminderTime };
+          lsSet('pd_prayer_reminder', value);
+          broadcast('notif-reminder', value);
+          try { document.dispatchEvent(new CustomEvent('pd:notif-reminder', { detail: value })); } catch (e) {}
+          return value;
+        })
+        .catch(function () { return false; });
     },
     /* Daily prayer reminder. The preference lives in localStorage so the
        service worker can read it offline, and in userReminders so the
@@ -1680,6 +1744,10 @@
       var current = fb && fb.auth && fb.auth.currentUser;
       if (!current) return Promise.resolve(false);
       notifications.saveToken(pending.token, current.uid, pending.platform || 'web');
+      // A member who allowed notifications before signing in now has a real
+      // account: adopt the settings that account already saved elsewhere.
+      notifications.loadPreferences();
+      notifications.loadReminder();
       return Promise.resolve(true);
     },
 
@@ -2371,7 +2439,7 @@
         if (body && body.getAttribute('data-pd-layout') === 'none') return false;
         if (body && body.classList.contains('pd-app-shell')) return false;
         // Defensive path check: /admin and /admin.html are the console.
-        if (/\/admin(\.html)?$/i.test((location.pathname || '').replace(/\/+$/, ''))) return false;
+        if (/\/admin(\.html)?$/i.test((window.location.pathname || '').replace(/\/+$/, ''))) return false;
       } catch (e) {}
       return true;
     },
@@ -2656,6 +2724,7 @@
       try {
         if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
         if (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches) return true;
+        if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
         return navigator.standalone === true;
       } catch (e) { return false; }
     },
@@ -2666,7 +2735,9 @@
         if (root && root.getAttribute('data-pd-sw') === 'off') return Promise.resolve(null);
         if (pwa.isNativeApp()) return Promise.resolve(null);
         // Only http(s) origins can own a service worker (file:// cannot).
-        if (!/^https?:$/.test(location.protocol)) return Promise.resolve(null);
+        // Use window.location: the local `location` module below shadows the
+        // global inside this closure (a bug that silently disabled the worker).
+        if (!/^https?:$/.test(window.location.protocol)) return Promise.resolve(null);
         return navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function (reg) {
           // Ask for a fresh worker on every load (and when the app returns to
           // the foreground) so a merged deploy is picked up without waiting for
@@ -2704,7 +2775,7 @@
           try { worker.postMessage('SKIP_WAITING'); } catch (e) {}
           // controllerchange reloads; this is a safety net for browsers that
           // do not fire it promptly.
-          setTimeout(function () { location.reload(); }, 1800);
+          setTimeout(function () { window.location.reload(); }, 1800);
         });
         buttons[1].addEventListener('click', function () { bar.remove(); });
         document.body.appendChild(bar);

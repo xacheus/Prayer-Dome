@@ -2,8 +2,82 @@
 // Also delivers the Daily Bible Verse to the device (lock screen / notification
 // shade) even when the app is closed — see /assets/pd-verse-data.js.
 try { importScripts('/assets/pd-verse-data.js'); } catch (e) { /* verses unavailable offline */ }
+
+// ---------------------------------------------------------------------------
+// Firebase Cloud Messaging inside the *root* worker.
+//
+// PDApp.notifications hands this exact registration to getToken(), so every
+// FCM push is delivered here. FCM payloads are encrypted for the push
+// subscription; only the Messaging SDK can decrypt them. Without these two
+// imports the old raw `push` handler saw ciphertext — the reason pushes could
+// arrive but show no usable notification when the app was closed.
+//
+// The SDK displays the notification itself when the payload contains a
+// `notification` block (ours always does). We only draw a card for a data-only
+// message, which the SDK never displays; calling showNotification for both
+// is what produced duplicate cards.
+// ---------------------------------------------------------------------------
+const FCM_CONFIG = {
+    apiKey: 'AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo',
+    authDomain: 'prayer-dome.firebaseapp.com',
+    projectId: 'prayer-dome',
+    storageBucket: 'prayer-dome.firebasestorage.app',
+    messagingSenderId: '198295153196',
+    appId: '1:198295153196:web:1222b31948d7974ba3bf89'
+};
+let pdMessaging = null;
+try {
+    importScripts('/assets/vendor/firebase-app-compat.js');
+    importScripts('/assets/vendor/firebase-messaging-compat.js');
+    if (self.firebase && firebase.messaging) {
+        if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(FCM_CONFIG);
+        pdMessaging = firebase.messaging();
+        pdMessaging.onBackgroundMessage((payload) => {
+            const note = (payload && payload.notification) || {};
+            const data = (payload && payload.data) || {};
+            const link = (payload && payload.fcmOptions && payload.fcmOptions.link) || data.link || data.url || '';
+            // A notification payload is drawn by the Messaging SDK itself. A
+            // data-only message is not, so draw the same branded card here.
+            // Without this branch data-only pushes reached the bell but never
+            // appeared on the lock screen.
+            let drawn = Promise.resolve();
+            if (!(payload && payload.notification)) {
+                const fallback = {
+                    title: data.title || 'Prayer Dome',
+                    body: data.body || data.message || 'A new word from Prayer Dome',
+                    icon: data.icon || '/assets/logo-192.png',
+                    image: data.image || undefined,
+                    tag: data.tag || ('pd-' + (data.id || Date.now())),
+                    kind: String(data.kind || data.type || 'general').toLowerCase(),
+                    link: link,
+                    id: data.id || null,
+                    reference: data.reference || null
+                };
+                drawn = self.registration.showNotification(fallback.title, notificationOptions(fallback)).catch(() => {});
+            }
+            return Promise.all([
+                drawn,
+                // Tell any open window so the in-app bell updates in the same second.
+                self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+                    .then((list) => list.forEach((client) => client.postMessage({
+                        type: 'pd-push-received',
+                        notification: {
+                            id: data.id || data.tag || note.title,
+                            type: data.kind || data.type || 'general',
+                            title: note.title || data.title || 'Prayer Dome',
+                            message: note.body || data.body || data.message || '',
+                            link: link || null,
+                            time: new Date().toISOString()
+                        }
+                    })))
+                    .catch(() => {})
+            ]);
+        });
+    }
+} catch (e) { /* offline install: the raw push handler still covers plain JSON */ }
+
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v36';
+const CACHE_NAME = 'prayer-dome-v38';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -388,7 +462,9 @@ function pushPayload(event) {
     try {
         payload = event.data ? event.data.json() : {};
     } catch (e) {
-        payload = { notification: { title: 'Prayer Dome', body: event.data ? event.data.text() : '' } };
+        // Encrypted FCM ciphertext is handled by the Messaging SDK above.
+        // Never turn raw bytes into a gibberish notification.
+        return null;
     }
     if (!payload || typeof payload !== 'object') payload = {};
     var note = payload.notification || payload;
@@ -469,7 +545,13 @@ function notificationOptions(note) {
 }
 
 self.addEventListener('push', event => {
+    // When the FCM SDK loaded, it owns every push event: it draws notification
+    // payloads, routes foreground messages to the page and calls the data-only
+    // handler above. A second showNotification here is what used to produce a
+    // duplicate card on the lock screen.
+    if (pdMessaging) return;
     var note = pushPayload(event);
+    if (!note) return;
     event.waitUntil(
         Promise.all([
             self.registration.showNotification(note.title, notificationOptions(note)),
@@ -518,6 +600,9 @@ self.addEventListener('pushsubscriptionchange', event => {
 // Notification click — route to the page the notification came from.
 // ---------------------------------------------------------------------------
 self.addEventListener('notificationclick', event => {
+    // Notifications drawn by the Firebase Messaging SDK carry FCM_MSG and are
+    // routed by the SDK itself. Handling them here too could open two windows.
+    if (event.notification.data && event.notification.data.FCM_MSG) return;
     event.notification.close();
 
     const data = event.notification.data || {};

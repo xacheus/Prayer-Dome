@@ -232,10 +232,27 @@
     ding: 'badge', whoosh: 'swoosh', boing: 'pop', question: 'question'
   };
 
+  /* A short, phone-native buzz that matches the audio cue. Vibration is the
+     one extra sense an installed app has over a web page, and it makes a
+     correct answer feel instant on a phone in the hand. */
+  var HAPTICS = {
+    correct: 26, streak: [18, 34, 18], celebrate: [22, 40, 22, 40, 34],
+    finish: [26, 50, 26], badge: 22, levelup: [18, 30, 18, 30, 26],
+    wrong: [14, 42, 14], start: 18, select: 10, tap: 7, pop: 9
+  };
+  function haptic(name) {
+    if (!enabled) return;
+    var pattern = HAPTICS[name];
+    if (!pattern || !global.navigator || typeof global.navigator.vibrate !== 'function') return;
+    try { global.navigator.vibrate(pattern); } catch (e) { /* unsupported */ }
+  }
+
   function play(name) {
     if (!enabled) return false;
-    var cue = CUES[ALIAS[name] || name] || CUES.tap;
+    var cueName = ALIAS[name] || name;
+    var cue = CUES[cueName] || CUES.tap;
     try { cue(); } catch (e) { /* audio is a bonus */ }
+    haptic(cueName);
     return true;
   }
 

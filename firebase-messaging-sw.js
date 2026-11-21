@@ -1,14 +1,14 @@
 // firebase-messaging-sw.js
 // Background push delivery for Prayer Dome (Firebase Cloud Messaging).
 //
-// /sw.js is the root worker on every page, and PDApp.notifications hands that
-// registration to getToken(), so in normal use this file is the *fallback* for
-// a device that has no root worker yet. It still has to behave exactly like the
-// real app: Prayer Dome branding, one stable notification per message, a deep
-// link that reopens the installed app (never a Chrome tab), and an in-app bell
-// that updates while the app is open.
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.8.0/firebase-messaging-compat.js');
+// /sw.js is the root worker on every page and now imports the Messaging SDK
+// itself, so in normal use FCM is delivered there. This file remains the
+// fallback for a device whose root worker is missing, and it behaves the same
+// way: Firebase draws the branded notification from the `notification` block,
+// and this handler only mirrors the message into the in-app bell. Calling
+// showNotification here as well would draw every push twice.
+importScripts('/assets/vendor/firebase-app-compat.js');
+importScripts('/assets/vendor/firebase-messaging-compat.js');
 
 const firebaseConfig = {
     apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
@@ -21,8 +21,6 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
-
-const LOGO = '/assets/logo-192.png';
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
@@ -40,71 +38,41 @@ function targetFor(data, action) {
     if (data.kind === 'live') return '/live.html';
     if (data.kind === 'news') return '/news.html';
     if (data.kind === 'prayer') return '/prayer.html';
+    if (data.kind === 'sermon') return '/sermons.html';
+    if (data.kind === 'event') return '/events.html';
     return '/index.html';
 }
 
-// Handle background messages. Registering this handler means *this* code draws
-// the notification (the FCM SDK no longer draws a second copy), which is what
-// keeps the icon, tag and deep link under our control.
+// Mirror every background message into an open app window. The SDK owns the
+// actual system notification (title, body, icon, tag and deep link).
 messaging.onBackgroundMessage((payload) => {
     const note = (payload && payload.notification) || {};
     const data = (payload && payload.data) || {};
-    const isVerse = data.kind === 'verse' || data.type === 'verse';
-
-    const title = note.title || data.title || 'Prayer Dome';
     const link = (payload && payload.fcmOptions && payload.fcmOptions.link) || targetFor(data);
-    const options = {
-        body: note.body || data.body || data.message || 'A new word from Prayer Dome',
-        icon: LOGO,
-        badge: LOGO,
-        image: note.image || data.image || undefined,
-        // A stable tag per message keeps the shade tidy and replaces a re-sent
-        // broadcast instead of stacking a second copy on the lock screen.
-        tag: data.tag || ('pd-' + (data.id || (link || 'update').replace(/[^a-z0-9]+/gi, '-').slice(0, 48))),
-        renotify: false,
-        requireInteraction: false,
-        silent: false,
-        vibrate: [180, 90, 180],
-        timestamp: Date.now(),
-        data: {
-            url: link,
-            id: data.id || null,
-            kind: data.kind || data.type || 'general',
-            reference: data.reference || null
-        },
-        actions: [{ action: 'open', title: 'Open Prayer Dome' }]
-    };
-
-    if (isVerse) {
-        options.actions = [
-            { action: 'read', title: 'Read in Bible' },
-            { action: 'pray', title: 'Pray now' }
-        ];
-    }
-
-    return Promise.all([
-        self.registration.showNotification(title, options),
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-            list.forEach((client) => client.postMessage({
-                type: 'pd-push-received',
-                notification: {
-                    id: data.id || options.tag,
-                    type: data.kind || data.type || 'general',
-                    title,
-                    message: options.body,
-                    link,
-                    time: new Date().toISOString()
-                }
-            }));
-        }).catch(() => {})
-    ]);
+    return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+        .then((list) => list.forEach((client) => client.postMessage({
+            type: 'pd-push-received',
+            notification: {
+                id: data.id || data.tag || note.title,
+                type: data.kind || data.type || 'general',
+                title: note.title || data.title || 'Prayer Dome',
+                message: note.body || data.body || data.message || '',
+                link,
+                time: new Date().toISOString()
+            }
+        })))
+        .catch(() => {});
 });
 
 // Handle notification clicks. Reuse a window that is already open (and focus
 // it) rather than opening a browser tab beside the installed app.
 self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
     const data = event.notification.data || {};
+    // Notifications drawn by the Messaging SDK carry their payload here and
+    // are already routed by the SDK's own click handler. Handling them again
+    // would open the same page twice.
+    if (data.FCM_MSG) return;
+    event.notification.close();
     let urlToOpen = targetFor(data, event.action);
     if (urlToOpen.startsWith('/') && urlToOpen.indexOf('source=') === -1) {
         urlToOpen += (urlToOpen.indexOf('?') === -1 ? '?' : '&') + 'source=notification';

@@ -195,7 +195,7 @@ def build_block(site, filename, page, has_manifest):
         '    <meta name="apple-mobile-web-app-capable" content="yes">',
         '    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
         f'    <meta name="apple-mobile-web-app-title" content="{site["siteName"]}">',
-        f'    <link rel="apple-touch-icon" href="{site["logo"]}">',
+        '    <link rel="apple-touch-icon" href="/assets/logo.png">',
         f'    <link rel="icon" type="image/png" href="{site["logo"]}">',
         "",
         "    <!-- Open Graph / Facebook / WhatsApp -->",
