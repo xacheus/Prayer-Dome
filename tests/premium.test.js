@@ -52,7 +52,7 @@ setTimeout(() => {
     t('marquee renders seeded announcements',
       (doc.querySelector('.pd-marquee-track')?.innerHTML || '').includes('Welcome to Prayer Dome'));
     t('notification panel exists', !!doc.getElementById('pdNotifPanel'));
-    t('language selector exists', !!doc.querySelector('.pd-lang-select'));
+    t('public language selector is retired', !doc.querySelector('.pd-lang-select'));
     t('featured scripture card renders Mark 7:37',
       (doc.querySelector('[data-pd-scripture]')?.innerHTML || '').includes('Mark 7:37'));
     t('splash verse renders Mark 7:37',

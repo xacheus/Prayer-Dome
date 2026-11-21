@@ -2,8 +2,9 @@
    Prayer Dome — certificate download
    --------------------------------------------------------------------------
    Renders Academy completion certificates to a canvas and downloads them as
-   PNG files. Runs entirely in the browser (no external libraries) so certificates
-   can be generated and downloaded offline, matching the rest of the Academy.
+   print-ready PDF files (with a PNG option for sharing). Runs entirely in the
+   browser — a tiny built-in PDF writer embeds the canvas as a JPEG, so there is
+   no external library and no network dependency.
 
    Usage:
      PDCertificate.download({ name, course, score, id, date });
@@ -61,6 +62,8 @@
         if (onPage) { done(onPage); return; }
         if (typeof Image === 'undefined') { done(null); return; }
         var img = new Image();
+        // A cloud-hosted logo must not taint the certificate canvas.
+        try { img.crossOrigin = 'anonymous'; } catch (e) {}
         img.onload = function () { done(img); };
         img.onerror = function () { done(null); };
         img.src = '/assets/logo.png';
@@ -367,6 +370,86 @@
     } catch (e) { return null; }
   }
 
+  /* ------------------------------------------------------------------ PDF
+     A certificate is an official document, so the primary download is a PDF.
+     Writing the five objects below ourselves keeps the page dependency-free
+     and makes the download work on slow mobile connections and offline. */
+  function jpegBytes(canvas) {
+    var dataUrl;
+    try { dataUrl = canvas.toDataURL('image/jpeg', 0.94); }
+    catch (e) { return null; }
+    if (!dataUrl || dataUrl.indexOf('data:image/jpeg') !== 0) return null;
+    var base64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
+    try {
+      var bin = atob(base64);
+      var bytes = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    } catch (e) { return null; }
+  }
+
+  function asciiLength(str) {
+    // Every PDF syntax byte we emit is ASCII; JPEG payload is counted in bytes.
+    return str.length;
+  }
+
+  function buildPdf(canvas, jpeg) {
+    var w = canvas.width || W;
+    var h = canvas.height || H;
+    // A4 landscape in PDF points (72 per inch), the standard paper every
+    // printer understands. The canvas is the same aspect ratio (1.414).
+    var pageW = 842;
+    var pageH = 595;
+    var content = 'q\n' + pageW + ' 0 0 ' + pageH + ' 0 0 cm\n/Im0 Do\nQ\n';
+    var objects = [
+      '<< /Type /Catalog /Pages 2 0 R >>',
+      '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + pageW + ' ' + pageH + '] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>',
+      '<< /Type /XObject /Subtype /Image /Width ' + w + ' /Height ' + h +
+        ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + jpeg.length + ' >>\nstream\n',
+      '<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream'
+    ];
+
+    var chunks = [];
+    var total = 0;
+    function push(part) {
+      if (typeof part === 'string') {
+        chunks.push(part);
+        total += asciiLength(part);
+      } else {
+        chunks.push(part);
+        total += part.length;
+      }
+    }
+
+    push('%PDF-1.4\n%PrayerDome\n');
+    var offsets = [0];
+    for (var i = 0; i < objects.length; i++) {
+      offsets.push(total);
+      push((i + 1) + ' 0 obj\n' + objects[i]);
+      if (i === 3) {
+        push(jpeg);
+        push('\nendstream\nendobj\n');
+      } else {
+        push('\nendobj\n');
+      }
+    }
+    var xref = total;
+    var xrefText = 'xref\n0 ' + (objects.length + 1) + '\n0000000000 65535 f \n';
+    for (var j = 1; j <= objects.length; j++) {
+      xrefText += ('0000000000' + offsets[j]).slice(-10) + ' 00000 n \n';
+    }
+    push(xrefText);
+    push('trailer\n<< /Size ' + (objects.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + xref + '\n%%EOF\n');
+    return new Blob(chunks, { type: 'application/pdf' });
+  }
+
+  function pdfBlob(canvas) {
+    var jpeg = jpegBytes(canvas);
+    if (!jpeg) return null;
+    return buildPdf(canvas, jpeg);
+  }
+
   function toBlobP(canvas) {
     return new Promise(function (resolve) {
       var settled = false;
@@ -408,13 +491,27 @@
     });
   }
 
+  function fileStem(opts) {
+    return 'prayer-dome-certificate-' + slug(opts.id || opts.name || 'member');
+  }
+
   function download(opts) {
+    opts = opts || {};
+    return render(opts).then(function (canvas) {
+      var blob = pdfBlob(canvas);
+      if (!blob) throw new Error('Could not generate the certificate PDF.');
+      saveBlob(blob, fileStem(opts) + '.pdf');
+      return true;
+    });
+  }
+
+  function downloadPng(opts) {
     opts = opts || {};
     return render(opts).then(function (canvas) {
       return toBlobP(canvas);
     }).then(function (blob) {
       if (!blob) throw new Error('Could not generate the certificate image.');
-      saveBlob(blob, 'prayer-dome-certificate-' + slug(opts.id || opts.name) + '.png');
+      saveBlob(blob, fileStem(opts) + '.png');
       return true;
     });
   }
@@ -448,6 +545,8 @@
 
   window.PDCertificate = {
     download: download,
+    downloadPdf: download,
+    downloadPng: downloadPng,
     bindButton: bindButton,
     render: render,
     preview: function (opts) {

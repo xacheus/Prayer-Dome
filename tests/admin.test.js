@@ -146,11 +146,12 @@ for (const [label, ok] of [
     html.includes('teamMemberModalTitle') && html.includes('adminTeamEditingId') && html.includes("updateDoc(doc(db, 'teamMembers'")],
   ['team editor supports a photo upload and URL',
     html.includes('uploadTeamMemberPhoto') && html.includes('teamMemberImageUrl')],
-  ['team editor can mark a member Late / Passed On / RIP',
-    html.includes('teamMemberStatus') && html.includes('value="late"') &&
-    html.includes('teamMemberLateLabel') && html.includes('teamMemberPassedAt')],
-  ['the public team page renders the memorial label',
-    fs.readFileSync(path.join(root, 'team.html'), 'utf8').includes('team-badge team-late-badge')]
+  ['team editor supports status and legacy memorial fields',
+    html.includes('teamMemberStatus') && html.includes('teamMemberLateLabel') && html.includes('teamMemberPassedAt')],
+  ['the admin team panel can permanently remove a member',
+    html.includes('deleteAdminTeamMemberById') && html.includes('> Remove</button>')],
+  ['the public team page hides passed-away and archived members',
+    /filter\(m => !m\.archived && !m\.deceased\)/.test(fs.readFileSync(path.join(root, 'team.html'), 'utf8'))]
 ]) {
   if (ok) console.log('PASS  ' + label);
   else { console.error('FAIL  ' + label); process.exitCode = 1; }

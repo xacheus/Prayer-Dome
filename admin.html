@@ -598,8 +598,6 @@
     <script src="/assets/pd-content-data.js" defer></script>
     <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-team-data.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
@@ -1096,13 +1094,12 @@
                         <select id="adminTeamFilter" class="form-control" style="width:auto; min-width:150px;" onchange="renderAdminTeam()">
                             <option value="all">Everyone</option>
                             <option value="serving">Serving now</option>
-                            <option value="late">Marked Late</option>
                             <option value="archived">Archived</option>
                         </select>
                         <button class="btn btn-outline btn-sm" type="button" onclick="loadAdminTeam()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
                     </div>
                     <p style="font-size:.76rem; color:var(--text-sub); margin:0 0 14px; line-height:1.6;">
-                        Names, photos, roles and the “Late” memorial label appear on the public <a href="/team" target="_blank" rel="noopener">Our Team</a> page immediately. Archiving hides a profile without deleting it; nothing is ever removed by accident.
+                        Names, photos, roles and bios appear on the public <a href="/team" target="_blank" rel="noopener">Our Team</a> page immediately. Use <strong>Remove</strong> to delete a member permanently, or <strong>Archive</strong> to hide a profile while keeping the record.
                     </p>
                     <div id="adminTeamList" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr)); gap:12px;">
                         <div style="grid-column:1/-1; text-align:center; padding:30px; color:var(--text-sub);"><div class="spinner" style="width:26px;height:26px;"></div></div>
@@ -1610,10 +1607,10 @@
             <div id="view-languages" class="section-view">
                 <div class="page-title"><span><i class="pd-i pd-i-languages"></i> Language Manager</span></div>
                 <div class="panel-card" style="max-width: 720px;">
-                    <div class="panel-header"><h3><i class="pd-i pd-i-globe"></i> Platform Languages <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">— the language selector at the top of every page</span></h3></div>
+                    <div class="panel-header"><h3><i class="pd-i pd-i-globe"></i> Scripture Language Packs <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">— which Bible languages are available to readers</span></h3></div>
                     <div style="padding: 20px;">
                         <div id="languageToggles"></div>
-                        <p style="font-size:.72rem; color:var(--text-sub); margin-top:16px;"><i class="pd-i pd-i-info"></i> Tumbuka, siSwati, Bemba and Nyanja content is a community draft awaiting review by fluent speakers (see translation-data.js). Toggling a language off hides it from the app's language selector.</p>
+                        <p style="font-size:.72rem; color:var(--text-sub); margin-top:16px;"><i class="pd-i pd-i-info"></i> Tumbuka, siSwati, Bemba and Nyanja content is a community draft awaiting review by fluent speakers (see translation-data.js). Toggling a language off removes it from the scripture reader.</p>
                     </div>
                 </div>
             </div>
@@ -1701,7 +1698,6 @@
                 <div class="form-group"><label>Profile status</label>
                     <select id="teamMemberStatus" class="form-control" onchange="toggleTeamLateFields()">
                         <option value="serving">Serving — shown as an active member</option>
-                        <option value="late">Late / passed on — shown with a memorial label</option>
                         <option value="archived">Archived — hidden from the public page</option>
                     </select>
                 </div>
@@ -3836,7 +3832,7 @@ window.toggleDarkMode = function() {
             const enabled = PDApp.store.get('languages', 'DEFAULT_LANGUAGES') || ['en'];
             const next = on ? (enabled.includes(code) ? enabled : enabled.concat(code)) : enabled.filter(c => c !== code);
             PDApp.store.set('languages', next);
-            toast(code.toUpperCase() + (on ? ' enabled — appears in the app language selector' : ' disabled'));
+            toast(code.toUpperCase() + (on ? ' enabled for scripture readers' : ' disabled'));
         };
 
         // ==================== TRANSLATION REVIEW (admin) ====================
@@ -4216,8 +4212,8 @@ window.toggleDarkMode = function() {
         /* ===== TEAM MANAGEMENT (full editor inside the console) =====
          * The roster lives in Firestore `teamMembers`, the same collection the
          * public /team page reads, so a change here appears there immediately.
-         * Adding, editing, re-ordering, archiving and marking a member as Late
-         * all happen without leaving the console.
+         * Adding, editing, re-ordering, archiving and permanent removal all
+         * happen without leaving the console.
          */
         let adminTeamCache = [];
         let adminTeamLoading = false;
@@ -4273,7 +4269,7 @@ window.toggleDarkMode = function() {
                 </div>`;
                 stats.innerHTML = chip('pd-i-users', all.length, 'On the roster', 'var(--accent-green)')
                     + chip('pd-i-user-check', serving, 'Serving now', '#15803d')
-                    + chip('pd-i-feather', late, 'Marked Late', '#a67c00')
+                    + chip('pd-i-feather', late, 'Hidden', '#a67c00')
                     + chip('pd-i-archive', archived, 'Archived', 'var(--text-sub)');
             }
 
@@ -4309,13 +4305,11 @@ window.toggleDarkMode = function() {
                     ? `<img src="${escapeHTML(member.image)}" alt="" loading="lazy" style="width:64px;height:64px;border-radius:16px;object-fit:cover;background:#eef2f8;flex-shrink:0;" onerror="this.onerror=null;this.style.display='none';this.nextElementSibling.style.display='grid';"><div style="display:none;width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0A4D9B,#07244d);color:#f6df8a;font-weight:800;place-items:center;flex-shrink:0;">${escapeHTML(teamInitials(member.name))}</div>`
                     : `<div style="width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#0A4D9B,#07244d);color:#f6df8a;font-weight:800;display:grid;place-items:center;flex-shrink:0;">${escapeHTML(teamInitials(member.name))}</div>`;
                 const statusBadge = status === 'late'
-                    ? `<span class="badge" style="background:#07244d;color:#f6df8a;"><i class="pd-i pd-i-feather"></i> ${escapeHTML(lateLabel)}</span>`
+                    ? `<span class="badge" style="background:#07244d;color:#f6df8a;"><i class="pd-i pd-i-eye-off"></i> Hidden</span>`
                     : status === 'archived'
                         ? '<span class="badge" style="background:#fef3c7;color:#92400e;">Archived</span>'
                         : '<span class="badge badge-success">Serving</span>';
-                const lateAction = status === 'late'
-                    ? `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberLate('${member.id}', false)" title="Return to serving"><i class="pd-i pd-i-user-check"></i> Serving</button>`
-                    : `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberLate('${member.id}', true)" title="Mark as passed on" style="color:#a67c00;border-color:rgba(212,175,55,.55);"><i class="pd-i pd-i-feather"></i> Mark Late</button>`;
+                const removeAction = `<button class="btn btn-sm btn-outline" type="button" onclick="deleteAdminTeamMemberById('${member.id}')" title="Remove this member permanently" style="color:#b91c1c;border-color:rgba(185,28,28,.35);"><i class="pd-i pd-i-trash"></i> Remove</button>`;
                 const archiveAction = status === 'archived'
                     ? `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberArchived('${member.id}', false)" title="Restore"><i class="pd-i pd-i-rotate-ccw"></i> Restore</button>`
                     : `<button class="btn btn-sm btn-outline" type="button" onclick="setTeamMemberArchived('${member.id}', true)" title="Archive"><i class="pd-i pd-i-archive"></i> Archive</button>`;
@@ -4338,8 +4332,8 @@ window.toggleDarkMode = function() {
                     ${status === 'late' && member.memorialNote ? `<div style="font-size:.72rem; color:var(--text-sub); line-height:1.5;"><i class="pd-i pd-i-heart" style="color:#a67c00;"></i> ${escapeHTML(member.memorialNote)}</div>` : ''}
                     <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:auto; border-top:1px solid var(--border-color); padding-top:10px;">
                         <button class="btn btn-sm btn-primary" type="button" onclick="openAdminTeamMember('${member.id}')"><i class="pd-i pd-i-pen"></i> Edit</button>
-                        ${lateAction}
                         ${archiveAction}
+                        ${removeAction}
                         <button class="btn btn-sm btn-outline" type="button" onclick="moveTeamMember('${member.id}', -1)" title="Move up" aria-label="Move up"><i class="pd-i pd-i-arrow-up"></i></button>
                         <button class="btn btn-sm btn-outline" type="button" onclick="moveTeamMember('${member.id}', 1)" title="Move down" aria-label="Move down"><i class="pd-i pd-i-arrow-down"></i></button>
                     </div>
@@ -4386,7 +4380,7 @@ window.toggleDarkMode = function() {
             set('teamMemberDescription', member?.description);
             set('teamMemberScripture', member?.scripture);
             set('teamMemberImageUrl', member?.image);
-            set('teamMemberStatus', member ? teamStatusOf(member) : 'serving');
+            set('teamMemberStatus', member ? (teamStatusOf(member) === 'late' ? 'archived' : teamStatusOf(member)) : 'serving');
             set('teamMemberLateLabel', member?.lateLabel || 'Late');
             set('teamMemberPassedAt', member?.passedAt);
             set('teamMemberMemorialNote', member?.memorialNote);
@@ -4479,23 +4473,35 @@ window.toggleDarkMode = function() {
             }
         };
 
-        window.deleteAdminTeamMember = async function() {
-            const member = adminTeamCache.find(m => m.id === adminTeamEditingId);
+        window.deleteAdminTeamMemberById = async function(id) {
+            const member = adminTeamCache.find(m => m.id === id);
             if (!member) return;
-            if (!confirm('Delete ' + member.name + ' permanently?\n\nThis cannot be undone. If you only want them hidden, choose Archived instead.')) return;
+            if (!confirm('Remove ' + member.name + ' from the team page permanently?\n\nThis cannot be undone. Their profile, photo and bio will be deleted. If you only want them hidden temporarily, use Archive instead.')) return;
             try {
                 await deleteDoc(doc(db, 'teamMembers', member.id));
-                closeModal('modalTeamMember');
-                toast('Team member deleted', 'info');
-                adminTeamEditingId = null;
+                if (adminTeamEditingId === id) {
+                    closeModal('modalTeamMember');
+                    adminTeamEditingId = null;
+                }
+                adminTeamCache = adminTeamCache.filter(m => m.id !== id);
+                renderAdminTeam();
+                toast(member.name + ' removed from the team', 'success');
                 await loadAdminTeam();
-            } catch (error) { toast('Could not delete right now', 'error'); }
+            } catch (error) {
+                console.error('Team delete failed:', error);
+                toast('Could not remove this member right now', 'error');
+            }
+        };
+
+        window.deleteAdminTeamMember = async function() {
+            if (!adminTeamEditingId) return;
+            return window.deleteAdminTeamMemberById(adminTeamEditingId);
         };
 
         window.setTeamMemberLate = async function(id, late) {
             const member = adminTeamCache.find(m => m.id === id);
             if (!member) return;
-            if (late && !confirm('Mark ' + member.name + ' as ‘Late’?\n\nTheir profile stays on the public team page with a clear memorial label. You can change it back at any time.')) return;
+            if (late && !confirm('Hide ' + member.name + ' from the public team page?')) return;
             try {
                 await updateDoc(doc(db, 'teamMembers', id), {
                     deceased: !!late,
@@ -4503,7 +4509,7 @@ window.toggleDarkMode = function() {
                     archived: false,
                     updatedAt: serverTimestamp()
                 });
-                toast(late ? member.name + ' is marked Late — the label is now on their profile.' : 'Status changed back to Serving', late ? 'info' : 'success');
+                toast(late ? member.name + ' is now hidden from the public team page.' : 'Status changed back to Serving', late ? 'info' : 'success');
                 await loadAdminTeam();
             } catch (error) { toast('Could not update the status right now', 'error'); }
         };

@@ -688,3 +688,56 @@ button,
     grid-template-columns: minmax(0, 1fr) !important;
   }
 }
+
+/* ------------------------------------------------ 8. horizontal filter rails
+   The ministry asked for one predictable gesture on a phone: filter/tab rows
+   stay on one line and swipe sideways, rather than stacking into a tall wall
+   of buttons. These rules come last so they win over page-level `flex-wrap`
+   and the earlier "wrap where they fit" mobile rule. */
+@media (max-width: 760px) {
+  :is(.category-tabs, .filter-bar, .filter-row, .filters, .filter-buttons,
+      .filter-chips, .cr-tabs, .cr-cat-chips, .pd-acad-filters,
+      .version-selector, .tab-container, .tabs, .tab-wrapper, .main-tabs,
+      .app-tabs, .calls-tab-header, .ai-filter, .pd-news-filters,
+      .news-filters, .resource-filters, .prayer-filters, .gallery-filters,
+      .event-filters) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    max-width: 100%;
+    padding-inline: 4px;
+    padding-bottom: 9px;
+    gap: 8px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 8px;
+    overscroll-behavior-x: contain;
+  }
+  :is(.category-tabs, .filter-bar, .filter-row, .filters, .filter-buttons,
+      .filter-chips, .cr-tabs, .cr-cat-chips, .pd-acad-filters,
+      .version-selector, .tab-container, .tabs, .tab-wrapper, .main-tabs,
+      .app-tabs, .calls-tab-header, .ai-filter, .pd-news-filters,
+      .news-filters, .resource-filters, .prayer-filters, .gallery-filters,
+      .event-filters)::-webkit-scrollbar {
+    display: none;
+    height: 0;
+  }
+  :is(.category-tabs, .filter-bar, .filter-row, .filters, .filter-buttons,
+      .filter-chips, .cr-tabs, .cr-cat-chips, .pd-acad-filters,
+      .version-selector, .tab-container, .tabs, .tab-wrapper, .main-tabs,
+      .app-tabs, .calls-tab-header, .ai-filter) > * {
+    flex: 0 0 auto !important;
+    max-width: min(86vw, 320px);
+    scroll-snap-align: start;
+    white-space: normal;
+  }
+  :is(.tab-container, .tabs, .tab-wrapper, .main-tabs) > :is(button, a, .tab, .tab-btn, .main-tab) {
+    min-width: max-content;
+    flex-basis: auto !important;
+  }
+  .app-tab { flex-basis: auto !important; }
+}

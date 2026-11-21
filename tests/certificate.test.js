@@ -57,7 +57,9 @@ function runHarness(opts, { logoOk = true, toBlobOk = true, toBlobHangs = false 
           const canvas = { width: 0, height: 0, getContext: () => { logs.drew = ctx; return ctx; } };
           if (toBlobOk) {
             canvas.toBlob = cb => { if (!toBlobHangs) cb({ fake: true }); };
-            canvas.toDataURL = () => 'data:image/png;base64,AAAA';
+            canvas.toDataURL = (type) => type === 'image/jpeg'
+              ? 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIQAxAAAAEf/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABBQJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF//9oADAMBAAIAAwAAABD/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAEDAQE/EH//xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oACAECAQE/EH//xAAUEAEAAAAAAAAAAAAAAAAAAAAA/9oACAEBAAE/EH//2Q==' 
+              : 'data:image/png;base64,AAAA';
           }
           return canvas;
         }
@@ -81,7 +83,7 @@ function assertOpsSane(ops) {
   const h1 = runHarness({ name: 'Jane Doe', course: 'Foundations of Prayer', score: 92, id: 'PD-FOUND-ABC123', date: '2026-08-09T10:00:00Z' });
   const ok1 = await h1.PC.download({ name: 'Jane Doe', course: 'Foundations of Prayer', score: 92, id: 'PD-FOUND-ABC123', date: '2026-08-09T10:00:00Z' });
   t('download() resolves when rendering succeeds', ok1 === true);
-  t('certificate PNG download is triggered with a sane filename', h1.logs.saved.length === 1 && /^prayer-dome-certificate-pd-found-abc123\.png$/.test(h1.logs.saved[0]), h1.logs.saved[0]);
+  t('certificate PDF download is triggered with a sane filename', h1.logs.saved.length === 1 && /^prayer-dome-certificate-pd-found-abc123\.pdf$/.test(h1.logs.saved[0]), h1.logs.saved[0]);
   const ops = h1.logs.drew ? h1.logs.drew.ops : [];
   t('drawing ops have finite in-range coordinates', assertOpsSane(ops), ops.length + ' ops');
   t('logo is drawn onto the certificate', ops.some(o => o[0] === 'drawImage'));
@@ -108,7 +110,13 @@ function assertOpsSane(ops) {
   const hHang = runHarness({}, { toBlobHangs: true });
   const hangOk = await hHang.PC.download({ name: 'Mobile Member', course: 'Prayer 101', id: 'PD-MOBILE-1' });
   t('download() falls back when the browser toBlob callback hangs',
-    hangOk === true && hHang.logs.saved[0] === 'prayer-dome-certificate-pd-mobile-1.png');
+    hangOk === true && hHang.logs.saved[0] === 'prayer-dome-certificate-pd-mobile-1.pdf');
+
+  // PNG remains available for sharing/printing from social apps.
+  const hPng = runHarness({ name: 'Share Me', course: 'Prayer 101', score: 90, id: 'PD-PNG-1' });
+  const pngOk = await hPng.PC.downloadPng({ name: 'Share Me', course: 'Prayer 101', score: 90, id: 'PD-PNG-1' });
+  t('downloadPng() still produces a PNG image',
+    pngOk === true && hPng.logs.saved[0] === 'prayer-dome-certificate-pd-png-1.png');
 
   // preview() renders a data URL (used for the account-page Print flow)
   const h5 = runHarness({ name: 'Print Me', course: 'Prayer 101', score: 85, id: 'PD-PRINT-1' });

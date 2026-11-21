@@ -309,6 +309,8 @@ def write_robots(site, cfg, present):
         "Disallow: /admin.html",
         "Disallow: /finance.html",
         "Disallow: /account.html",
+        "Disallow: /ai-video.html",
+        "Disallow: /resource-view.html",
         "",
         "# Block noisy SEO crawlers that add no value to a church site",
         "User-agent: AhrefsBot",

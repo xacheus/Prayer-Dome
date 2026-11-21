@@ -370,69 +370,120 @@
         }
         .upload-btn-small:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
 
-        /* Digital ID Card */
+        /* Official digital membership card */
         .digital-id-card {
-            width: 360px; 
-            min-height: 580px;
-            border-radius: 28px; 
+            width: min(100%, 620px);
             margin: 0 auto;
-            position: relative; 
-            overflow: hidden; 
-            color: white; 
-            padding: 25px;
-            background: var(--card-gradient); 
-            box-shadow: 0 30px 60px rgba(0,0,0,0.4);
-            border: 1px solid rgba(255,255,255,0.2); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+            border-radius: 24px;
+            padding: 24px;
+            background: linear-gradient(135deg, #07244d 0%, #0A4D9B 58%, #083b78 100%);
+            box-shadow: 0 30px 60px rgba(7, 36, 77, 0.35);
+            border: 1px solid rgba(246, 223, 138, 0.55);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            isolation: isolate;
+        }
+        .digital-id-card::before {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border: 1px solid rgba(246, 223, 138, 0.28);
+            border-radius: 17px;
+            pointer-events: none;
+            z-index: 0;
         }
         .digital-id-card::after {
-            content: ''; 
-            position: absolute; 
-            top: -50%; 
-            left: -50%; 
-            width: 200%; 
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.08), transparent);
-            transform: rotate(45deg); 
-            animation: shine 5s infinite;
+            content: '';
+            position: absolute;
+            top: -60%;
+            left: -60%;
+            width: 140%;
+            height: 220%;
+            background: linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.09) 50%, transparent 58%);
+            transform: rotate(22deg);
+            pointer-events: none;
+            z-index: 0;
+            animation: shine 7s infinite;
         }
-        @keyframes shine { 0% { left: -100%; } 100% { left: 100%; } }
+        @keyframes shine { 0% { left: -80%; } 55%, 100% { left: 100%; } }
 
+        .idc-top, .idc-body, .idc-foot, .idc-footline { position: relative; z-index: 2; }
+        .idc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+        .idc-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .idc-logo {
+            width: 48px; height: 48px; flex-shrink: 0;
+            background: #fff; border-radius: 11px; padding: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.22);
+        }
+        .idc-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .idc-org { font-size: .95rem; font-weight: 900; letter-spacing: .11em; line-height: 1.1; }
+        .idc-church { font-size: .54rem; letter-spacing: .1em; text-transform: uppercase; opacity: .82; line-height: 1.45; margin-top: 3px; }
+        .idc-kind {
+            flex-shrink: 0;
+            font-size: .52rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase;
+            color: #f6df8a; border: 1px solid rgba(246,223,138,.55);
+            border-radius: 50px; padding: 5px 10px; white-space: nowrap;
+        }
+
+        .idc-body { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 18px; align-items: start; }
         .card-photo-circle {
-            width: 120px; 
-            height: 120px; 
-            border-radius: 50%;
-            border: 4px solid var(--accent-gold); 
-            margin-top: 20px;
-            overflow: hidden; 
-            background: rgba(0,0,0,0.5);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3); 
-            position: relative; 
-            z-index: 2;
+            width: 118px; height: 118px; border-radius: 18px;
+            border: 3px solid #d4af37; overflow: hidden;
+            background: rgba(255,255,255,.12);
+            box-shadow: 0 8px 20px rgba(0,0,0,.28);
+            position: relative; z-index: 2; flex-shrink: 0;
         }
-        .card-photo-circle img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .card-name { font-size: 1.3rem; font-weight: 800; text-transform: uppercase; margin-top: 15px; letter-spacing: 1px; text-align: center; font-family: 'Poppins', serif; }
-        .card-id-num { color: var(--accent-gold); font-family: monospace; font-size: 14px; font-weight: 800; margin-bottom: 15px; text-align: center; letter-spacing: 1px; }
-        
-        .card-data-grid { 
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: 10px; 
-            width: 100%; 
-            background: rgba(255,255,255,0.12); 
-            padding: 12px; 
-            border-radius: 16px; 
-            text-align: left; 
-            margin: 15px 0;
+        .card-photo-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .idc-main { min-width: 0; }
+        .idc-label { font-size: .52rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; opacity: .65; }
+        .card-name {
+            font-size: clamp(1.05rem, 3.4vw, 1.45rem);
+            font-weight: 800; text-transform: uppercase;
+            letter-spacing: .03em; line-height: 1.22;
+            margin: 3px 0 5px; font-family: 'Poppins', serif;
+            overflow-wrap: anywhere;
         }
-        .data-box label { font-size: 8px; opacity: 0.8; text-transform: uppercase; display: block; font-weight: 800; letter-spacing: 1px; }
-        .data-box span { font-size: 11px; font-weight: 700; word-break: break-word; }
+        .card-id-num {
+            color: #f6df8a; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+            font-size: .82rem; font-weight: 800; letter-spacing: .09em;
+            overflow-wrap: anywhere; line-height: 1.35;
+        }
+        .card-data-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            width: 100%; background: rgba(255,255,255,.09);
+            border: 1px solid rgba(255,255,255,.14);
+            padding: 10px; border-radius: 12px; margin-top: 11px;
+        }
+        .data-box { min-width: 0; }
+        .data-box label {
+            font-size: .48rem; opacity: .72; text-transform: uppercase;
+            display: flex; align-items: center; gap: 4px; font-weight: 800;
+            letter-spacing: .09em; margin-bottom: 2px;
+        }
+        .data-box span {
+            display: block; font-size: .72rem; font-weight: 700; line-height: 1.4;
+            overflow-wrap: anywhere; word-break: break-word;
+        }
 
-        .card-barcode-wrap { background: white; width: 100%; padding: 8px; border-radius: 12px; margin-top: auto; min-height: 55px; display: flex; align-items: center; justify-content: center; }
-        .card-barcode-wrap svg { width: 100%; max-height: 50px; }
+        .idc-foot { display: flex; align-items: center; gap: 12px; border-top: 1px solid rgba(246,223,138,.32); padding-top: 12px; }
+        .card-barcode-wrap {
+            background: #fff; flex: 1; min-width: 0; padding: 5px 9px;
+            border-radius: 8px; min-height: 40px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .card-barcode-wrap svg { width: 100%; max-height: 32px; }
+        #statusBadge { margin: 0; flex-shrink: 0; }
+        .digital-id-card .status-approved { background: rgba(34,197,94,.2); color: #bbf7d0; border-color: rgba(187,247,208,.65); }
+        .digital-id-card .status-pending { background: rgba(245,158,11,.18); color: #fde68a; border-color: rgba(253,230,138,.6); }
+        .digital-id-card .status-rejected { background: rgba(239,68,68,.2); color: #fecaca; border-color: rgba(254,202,202,.55); }
+        .idc-footline {
+            text-align: center; font-size: .5rem; letter-spacing: .1em;
+            text-transform: uppercase; opacity: .68; margin-top: -4px;
+        }
 
         /* Benefits */
         .benefit-card { background: var(--bg-primary); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--border-color); transition: 0.3s; }
@@ -443,6 +494,12 @@
         .btn-primary { background: linear-gradient(135deg, var(--accent-green), var(--accent-green-light)); color: white; }
         .btn-primary:hover { transform: translateY(-3px); box-shadow: var(--shadow-glow); }
         .btn-retrieve { background: linear-gradient(135deg, var(--accent-blue), #2563eb); color: white; }
+        .btn-outline, .btn-secondary {
+            background: var(--bg-card); color: var(--text-main);
+            border: 1px solid var(--border-color);
+        }
+        .btn-outline:hover, .btn-secondary:hover { border-color: var(--accent-gold); transform: translateY(-2px); }
+        .card-actions .btn { white-space: normal; text-align: center; line-height: 1.3; }
         .btn-back { background: transparent; border: 2px solid var(--border-color); color: var(--text-primary); }
         .btn-back:hover { background: var(--bg-primary); transform: translateY(-2px); }
 
@@ -480,8 +537,6 @@
 
         @media (max-width: 600px) { 
             .form-grid { grid-template-columns: 1fr; }
-            .digital-id-card { width: 95%; min-height: auto; padding: 20px; }
-            .card-photo-circle { width: 90px; height: 90px; margin-top: 10px; }
             .selection-container { grid-template-columns: 1fr; gap: 15px; }
             .sub-selection-container { grid-template-columns: 1fr; gap: 15px; }
             .step-indicator { gap: 15px; padding: 12px; }
@@ -532,15 +587,46 @@
         .badge-icon { font-size: 2.4rem; display: block; margin-bottom: 8px; color: var(--accent-gold); filter: drop-shadow(0 4px 8px rgba(212,175,55,0.5)); }
         .badge-label { font-family: 'Poppins', serif; font-size: 1.15rem; font-weight: 800; color: var(--accent-gold); letter-spacing: 0.5px; }
         .badge-sub { font-size: 0.68rem; opacity: 0.75; margin-top: 4px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+        /* Card-only printing: paper shows the official card, not the app chrome. */
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            html, body { background: #fff !important; }
+            body * { visibility: hidden !important; }
+            #captureArea, #captureArea * { visibility: visible !important; }
+            #captureArea {
+                position: absolute !important;
+                left: 0; top: 0; width: 100%;
+                padding: 4mm; margin: 0;
+                display: flex; justify-content: center; align-items: flex-start;
+            }
+            .digital-id-card {
+                width: 170mm !important; max-width: 100% !important;
+                box-shadow: none !important;
+                -webkit-print-color-adjust: exact; print-color-adjust: exact;
+            }
+            .digital-id-card::after { display: none !important; }
+            .card-actions, .badge-spotlight, .loading-overlay, .toast-notification { display: none !important; }
+        }
+
+        @media (max-width: 600px) {
+            .digital-id-card { width: 100%; padding: 16px; border-radius: 20px; gap: 13px; }
+            .idc-body { grid-template-columns: 86px minmax(0, 1fr); gap: 12px; }
+            .card-photo-circle { width: 86px; height: 86px; border-radius: 14px; }
+            .idc-logo { width: 40px; height: 40px; }
+            .idc-org { font-size: .82rem; }
+            .idc-church { font-size: .46rem; }
+            .idc-kind { font-size: .44rem; padding: 4px 7px; }
+            .card-data-grid { grid-template-columns: 1fr; }
+            .idc-foot { flex-wrap: wrap; }
+            .card-barcode-wrap { flex-basis: 100%; }
+        }
     </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -994,43 +1080,55 @@
     <div id="cardSection" style="display: none;">
         <div id="captureArea">
             <div class="digital-id-card" id="digitalCard">
-                <div style="display: flex; justify-content: space-between; width: 100%; align-items: center; z-index: 2;">
-                    <div style="text-align: left;">
-                        <div style="font-weight: 900; font-size: 1rem;">PRAYER DOME</div>
-                        <div style="font-size: 7px; letter-spacing: 1.5px;">HOUSE OF PRAYER FOR ALL NATIONS</div>
+                <div class="idc-top">
+                    <div class="idc-brand">
+                        <div class="idc-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                        <div>
+                            <div class="idc-org">PRAYER DOME</div>
+                            <div class="idc-church">House of Prayer for All Nations<br>Official Member Identification</div>
+                        </div>
                     </div>
-                    <div style="width: 35px; height: 35px; background: white; border-radius: 8px; padding: 4px;">
-                        <img src="/assets/logo.png" style="width: 100%;">
+                    <div class="idc-kind">Member Card</div>
+                </div>
+
+                <div class="idc-body">
+                    <div class="card-photo-circle">
+                        <img id="idPhoto" src="/assets/avatar-default.svg" alt="Member photo">
+                    </div>
+                    <div class="idc-main">
+                        <div class="idc-label">Member name</div>
+                        <div class="card-name" id="idName">Member Name</div>
+                        <div class="card-id-num" id="idNumber">No Membership</div>
+                        <div class="card-data-grid">
+                            <div class="data-box"><label><i class="pd-i pd-i-church"></i> Church</label><span id="idChurch">Prayer Dome</span></div>
+                            <div class="data-box"><label><i class="pd-i pd-i-map-pin"></i> Branch</label><span id="idBranch">---</span></div>
+                            <div class="data-box"><label><i class="pd-i pd-i-tag"></i> Position</label><span id="idRole">MEMBER</span></div>
+                            <div class="data-box"><label><i class="pd-i pd-i-calendar"></i> Registered</label><span id="idDate">--/--/----</span></div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card-photo-circle">
-                    <img id="idPhoto" src="/assets/avatar-default.svg" alt="Member Photo">
+                <div class="idc-foot">
+                    <div class="card-barcode-wrap"><svg id="barcodeImg"></svg></div>
+                    <div id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> NO MEMBERSHIP</div>
                 </div>
-
-                <div class="card-name" id="idName">MEMBER NAME</div>
-                <div class="card-id-num" id="idNumber">No Membership</div>
-
-                <div class="card-data-grid">
-                    <div class="data-box"><label><i class="pd-i pd-i-church"></i> Branch</label><span id="idBranch">---</span></div>
-                    <div class="data-box"><label><i class="pd-i pd-i-tag"></i> Position</label><span id="idRole">MEMBER</span></div>
-                    <div class="data-box"><label><i class="pd-i pd-i-heart"></i> Marital</label><span id="idMarital">---</span></div>
-                    <div class="data-box"><label><i class="pd-i pd-i-calendar"></i> Registered</label><span id="idDate">--/--/----</span></div>
-                </div>
-
-                <div class="card-barcode-wrap">
-                    <svg id="barcodeImg"></svg>
-                </div>
-                
-                <div id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> NO MEMBERSHIP</div>
+                <div class="idc-footline">Verify this card at prayerdome.net/membership</div>
             </div>
         </div>
-        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
-            <button class="btn btn-primary" style="width: auto; padding: 14px 28px;" onclick="downloadID()">
-                <i class="pd-i pd-i-file-text"></i> DOWNLOAD ID CARD (PDF)
+        <div class="card-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
+            <button class="btn btn-primary" type="button" style="width: auto; padding: 13px 22px;" onclick="downloadID('pdf')">
+                <i class="pd-i pd-i-file-text"></i> Download PDF
             </button>
-            <button class="btn btn-secondary" style="width: auto; padding: 14px 28px;" onclick="openUpdateMembershipView()">
-                <i class="pd-i pd-i-square-pen"></i> UPDATE MEMBERSHIP INFO
+            <button class="btn btn-outline" type="button" style="width: auto; padding: 13px 22px;" onclick="downloadID('png')">
+                <i class="pd-i pd-i-image"></i> Save image
+            </button>
+            <button class="btn btn-outline" type="button" style="width: auto; padding: 13px 22px;" onclick="printID()">
+                <i class="pd-i pd-i-printer"></i> Print
+            </button>
+        </div>
+        <div style="display: flex; justify-content: center; margin-top: 12px;">
+            <button class="btn btn-secondary" type="button" style="width: auto; padding: 13px 22px;" onclick="openUpdateMembershipView()">
+                <i class="pd-i pd-i-square-pen"></i> Update membership info
             </button>
         </div>
         <div class="badge-spotlight" id="badgeSpotlight" style="display: none;">
@@ -1914,7 +2012,10 @@
     
     function renderCard(data) {
         const idPhoto = document.getElementById('idPhoto');
-        if (idPhoto) idPhoto.src = data.photoUrl || "/assets/avatar-default.svg";
+        if (idPhoto) {
+            idPhoto.onerror = () => { idPhoto.onerror = null; idPhoto.src = '/assets/avatar-default.svg'; };
+            idPhoto.src = data.photoUrl || data.photoURL || "/assets/avatar-default.svg";
+        }
         const idName = document.getElementById('idName');
         if (idName) idName.innerText = data.fullName || "MEMBER NAME";
         
@@ -1927,8 +2028,13 @@
                 statusBadge.className = 'status-badge status-approved';
             }
             try {
-                JsBarcode("#barcodeImg", data.membershipId, { format: "CODE128", lineColor: "#000", width: 2, height: 40, displayValue: false });
-            } catch(e) { console.error("Barcode error:", e); }
+                if (typeof JsBarcode === 'function') {
+                    JsBarcode("#barcodeImg", data.membershipId, { format: "CODE128", lineColor: "#000", width: 2, height: 40, displayValue: false });
+                } else {
+                    const barcode = document.getElementById('barcodeImg');
+                    if (barcode) barcode.innerHTML = '<text x="4" y="24" font-family="monospace" font-size="18" font-weight="700" fill="#07244d">' + String(data.membershipId).replace(/[<>&]/g, '') + '</text>';
+                }
+            } catch(e) { console.warn("Barcode unavailable:", e); }
         } else if (data.membershipId && data.status === 'pending') {
             const idNumber = document.getElementById('idNumber');
             if (idNumber) idNumber.innerText = data.membershipId;
@@ -1947,20 +2053,24 @@
             }
         }
         
+        const idChurch = document.getElementById('idChurch');
+        if (idChurch) idChurch.innerText = data.churchName || "Prayer Dome — House of Prayer for All Nations";
         const idBranch = document.getElementById('idBranch');
         if (idBranch) idBranch.innerText = data.branch || "Global";
         const idRole = document.getElementById('idRole');
         if (idRole) idRole.innerText = data.role ? data.role.toUpperCase() : "MEMBER";
-        const idMarital = document.getElementById('idMarital');
-        if (idMarital) idMarital.innerText = data.maritalStatus || "SINGLE";
         
-        let date = new Date();
-        if (data.createdAt) {
-            if (typeof data.createdAt.toDate === 'function') date = data.createdAt.toDate();
-            else if (data.createdAt.seconds) date = new Date(data.createdAt.seconds * 1000);
+        let date = null;
+        const rawDate = data.createdAt || data.registrationDate || data.joinedAt;
+        if (rawDate) {
+            if (typeof rawDate.toDate === 'function') date = rawDate.toDate();
+            else if (rawDate.seconds) date = new Date(rawDate.seconds * 1000);
+            else date = new Date(rawDate);
         }
         const idDate = document.getElementById('idDate');
-        if (idDate) idDate.innerText = moment(date).format('DD/MM/YYYY');
+        if (idDate) idDate.innerText = date && !Number.isNaN(date.getTime())
+            ? date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            : '—';
 
         // Recognition badge (awarded by admin)
         const spotlight = document.getElementById('badgeSpotlight');
@@ -2024,49 +2134,84 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    window.downloadID = () => {
+    window.downloadID = (format = 'pdf') => {
         const element = document.getElementById('digitalCard') || document.getElementById('captureArea');
         if (!element) {
-            showToast("ID Card element not found", "error");
+            showToast("ID card is not available yet", "error");
             return;
         }
-        showLoading("Generating ID Card PDF...");
+        const asImage = format === 'png';
+        showLoading(asImage ? "Preparing ID card image..." : "Preparing ID card PDF...");
+        const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const baseName = `PrayerDome-ID-${currentMemberData?.membershipId || 'Card'}-${stamp}`;
         html2canvas(element, {
-            useCORS: true, scale: 3, backgroundColor: null,
-            // Canvas capture cannot paint CSS-mask icons; inline them as images in the clone.
-            onclone: (doc) => { if (window.PDIcons) PDIcons.inline(doc.getElementById(element.id) || doc.body); }
+            useCORS: true,
+            scale: 3,
+            backgroundColor: '#ffffff',
+            // Canvas capture cannot paint CSS-mask icons; inline them in the clone.
+            onclone: (doc) => {
+                const target = doc.getElementById(element.id) || doc.body;
+                if (window.PDIcons) PDIcons.inline(target);
+                // A still, evenly lit card is what belongs in an official PDF.
+                const still = doc.createElement('style');
+                still.textContent = '.digital-id-card::after{display:none!important}';
+                (doc.head || doc.documentElement).appendChild(still);
+                target.querySelectorAll('.pd-i').forEach(icon => {
+                    icon.style.color = icon.classList.contains('pd-i-map-pin') ? '#f6df8a' : 'inherit';
+                });
+            }
         }).then(canvas => {
             const imgData = canvas.toDataURL("image/png");
+            if (asImage) {
+                const a = document.createElement('a');
+                a.href = imgData;
+                a.download = `${baseName}.png`;
+                a.click();
+                hideLoading();
+                showToast("ID card image saved", "success");
+                return;
+            }
             const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : (window.jsPDF || null);
             if (!jsPDFClass) {
                 const a = document.createElement('a');
                 a.href = imgData;
-                a.download = `PrayerDome-ID-${currentMemberData?.membershipId || 'Card'}-${moment().format('YYYYMMDD-HHmmss')}.png`;
+                a.download = `${baseName}.png`;
                 a.click();
                 hideLoading();
-                showToast("Downloaded ID Card image", "success");
+                showToast("PDF library unavailable — saved a high-quality image instead", "info");
                 return;
             }
             const imgWidth = canvas.width;
             const imgHeight = canvas.height;
-            const orientation = imgWidth > imgHeight ? 'l' : 'p';
             const pdf = new jsPDFClass({
-                orientation: orientation,
+                orientation: imgWidth > imgHeight ? 'l' : 'p',
                 unit: 'px',
-                format: [imgWidth, imgHeight]
+                format: [imgWidth, imgHeight],
+                hotfixes: ['px_scaling']
             });
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-            const fileName = `PrayerDome-ID-${currentMemberData?.membershipId || 'Card'}-${moment().format('YYYYMMDD-HHmmss')}.pdf`;
-            pdf.save(fileName);
+            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+            pdf.save(`${baseName}.pdf`);
             hideLoading();
-            showToast("ID Card downloaded as PDF!", "success");
+            showToast("ID card downloaded as PDF", "success");
         }).catch(err => {
             console.error("Download error:", err);
             hideLoading();
-            showToast("Error downloading ID Card PDF.", "error");
+            showToast("Could not prepare the ID card. Please try Print or a different browser.", "error");
         });
     };
-    
+
+    window.printID = () => {
+        const card = document.getElementById('digitalCard');
+        if (!card) {
+            showToast("ID card is not available yet", "error");
+            return;
+        }
+        // Make sure the card itself is on screen for the print stylesheet.
+        const section = document.getElementById('cardSection');
+        if (section) section.style.display = 'block';
+        setTimeout(() => window.print(), 120);
+    };
+
     function showLoading(msg = "Processing...") {
         const loader = document.getElementById('loader');
         const textEl = loader.querySelector('p');

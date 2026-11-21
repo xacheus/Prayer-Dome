@@ -448,9 +448,127 @@
             border-radius: 40px; 
             margin: 15px auto; 
             font-weight: 800; 
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            max-width: 100%;
             font-size: 0.9rem;
+            overflow-wrap: anywhere;
+            line-height: 1.35;
         }
+        .profile-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
+            gap: 10px;
+            margin: 18px 0 6px;
+            text-align: left;
+        }
+        .profile-detail-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 14px;
+            min-width: 0;
+        }
+        .profile-detail-item .pd-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .66rem;
+            font-weight: 800;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            color: var(--text-sub);
+            margin-bottom: 4px;
+        }
+        .profile-detail-item .pd-value {
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--text-main);
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+        .profile-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 6px; }
+        .profile-actions .btn { width: auto; }
+        .cert-card { min-width: 0; }
+        .cert-card .btn {
+            width: auto;
+            padding: 9px 15px;
+            font-size: .78rem;
+            line-height: 1.25;
+            text-align: center;
+            white-space: normal;
+        }
+        .cert-card {
+            position: relative;
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr);
+            gap: 14px !important;
+            align-items: stretch !important;
+            background: linear-gradient(180deg, #fffdf6, #fbf7ec) !important;
+            border: 1px solid rgba(201, 162, 39, .45) !important;
+            border-radius: 18px !important;
+            padding: 18px !important;
+            margin-bottom: 14px !important;
+            box-shadow: 0 8px 24px rgba(7, 36, 77, .06);
+        }
+        .cert-card::before {
+            content: '';
+            position: absolute; inset: 6px;
+            border: 1px solid rgba(201, 162, 39, .25);
+            border-radius: 13px; pointer-events: none;
+        }
+        body.dark-mode .cert-card { background: linear-gradient(180deg, #0f1c30, #0b1626) !important; }
+        .cert-card-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .cert-card-logo {
+            width: 44px; height: 44px; flex-shrink: 0; border-radius: 10px;
+            background: #fff; border: 1px solid rgba(201, 162, 39, .4); padding: 3px;
+        }
+        .cert-card-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .cert-card-eyebrow { font-size: .58rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #8f7410; }
+        body.dark-mode .cert-card-eyebrow { color: #f6df8a; }
+        .cert-card-org { font-family: 'Poppins', serif; font-size: .96rem; font-weight: 800; color: #1d2a6b; line-height: 1.25; }
+        body.dark-mode .cert-card-org { color: #e8eefc; }
+        .cert-card-seal {
+            margin-left: auto; width: 42px; height: 42px; flex-shrink: 0;
+            display: grid; place-items: center; border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #f6df8a, #c9a227 70%);
+            color: #5b4600; font-size: 1.05rem; border: 2px solid rgba(143, 116, 16, .35);
+            box-shadow: 0 3px 10px rgba(201, 162, 39, .25);
+        }
+        .cert-card-body { min-width: 0; padding: 2px 4px; }
+        .cert-card-recipient {
+            font-family: 'Playfair Display', Georgia, serif;
+            font-size: clamp(1.2rem, 4.2vw, 1.55rem);
+            font-weight: 700; color: #1d2a6b; line-height: 1.25;
+            overflow-wrap: anywhere; margin: 0 0 4px;
+        }
+        body.dark-mode .cert-card-recipient { color: #f6df8a; }
+        .cert-card-line { font-size: .78rem; color: var(--text-sub); line-height: 1.55; margin: 0; }
+        .cert-card-course { font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; }
+        .cert-card-meta {
+            display: flex; flex-wrap: wrap; gap: 6px 16px;
+            margin-top: 10px; font-size: .68rem; color: var(--text-sub);
+            overflow-wrap: anywhere;
+        }
+        .cert-card-meta b { color: var(--text-main); font-weight: 800; }
+        .cert-card-foot {
+            display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;
+            border-top: 1px solid rgba(201, 162, 39, .25); padding-top: 12px;
+        }
+        .cert-signature { flex: 1; min-width: 130px; }
+        .cert-signature-name { font-family: 'Great Vibes', 'Playfair Display', cursive; font-size: 1.35rem; color: #1d2a6b; line-height: 1.2; }
+        body.dark-mode .cert-signature-name { color: #f6df8a; }
+        .cert-signature-rule { height: 1px; background: rgba(107, 103, 92, .45); margin: 2px 0 4px; }
+        .cert-signature-label { font-size: .55rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .cert-card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        @media (max-width: 520px) {
+            .cert-card { padding: 14px !important; }
+            .cert-card-actions { width: 100%; }
+            .cert-card .btn { flex: 1 1 auto; }
+        }
+        #pNameDisplay { overflow-wrap: anywhere; line-height: 1.25; }
         .profile-stat-grid { 
             display: grid; 
             grid-template-columns: repeat(4, 1fr); 
@@ -577,14 +695,11 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <!-- Widget bridge: a tap on the home-screen / lock-screen verse widget opens
      the app and hands the route over, so the member lands on the studio. -->
 <script src="/assets/pd-widget.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <script src="/assets/pd-certificate.js" defer></script>
@@ -699,6 +814,15 @@
                         <span id="emailVerifiedBadge" class="verification-badge unverified" onclick="verifyEmail()"><i class="pd-i pd-i-mail"></i> <span id="emailStatusText">Verify Email</span></span>
                     </div>
                     <div class="membership-badge"><i class="pd-i pd-i-id-card"></i> <span id="pIdDisplay">Not Assigned</span></div>
+                    <div class="profile-detail-grid">
+                        <div class="profile-detail-item"><div class="pd-label"><i class="pd-i pd-i-mail"></i> Email</div><div class="pd-value" id="pEmailDisplay">—</div></div>
+                        <div class="profile-detail-item"><div class="pd-label"><i class="pd-i pd-i-church"></i> Church branch</div><div class="pd-value" id="pBranchDisplay">—</div></div>
+                        <div class="profile-detail-item"><div class="pd-label"><i class="pd-i pd-i-phone"></i> Phone</div><div class="pd-value" id="pPhoneDisplay">—</div></div>
+                        <div class="profile-detail-item"><div class="pd-label"><i class="pd-i pd-i-calendar"></i> Member since</div><div class="pd-value" id="pJoinedDisplay">—</div></div>
+                    </div>
+                    <div class="profile-actions">
+                        <a class="btn btn-outline btn-sm" href="/membership#card"><i class="pd-i pd-i-id-card"></i> My membership card</a>
+                    </div>
                 </div>
                 <div class="profile-stat-grid">
                     <div class="stat-item"><div class="stat-number" id="pPrayers">0</div><div class="stat-label">PRAYERS</div></div>
@@ -722,7 +846,7 @@
                         <h3 style="margin: 0; font-family: 'Poppins', serif; color: var(--accent-gold);"><i class="pd-i pd-i-award"></i> My Certificates</h3>
                         <span style="font-size: .72rem; color: var(--text-sub);">Earn them by passing Academy quizzes with 80% or higher.</span>
                     </div>
-                    <p style="font-size: .78rem; color: var(--text-sub); margin: 2px 0 14px;">Download or print your certificates anytime — the ministry team can see that you earned them.</p>
+                    <p style="font-size: .78rem; color: var(--text-sub); margin: 2px 0 14px;">Download a signed PDF or print your certificates anytime — the ministry team can verify every one.</p>
                     <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 14px;">
                         <i class="pd-i pd-i-id-card" style="color: var(--accent-gold);"></i>
                         <div style="flex:1; min-width: 180px;">
@@ -1331,90 +1455,134 @@
         };
 
         async function loadProfileData(user) {
-            const userSnap = await getDoc(doc(db, "users", user.uid));
-            const memberSnap = await getDoc(doc(db, "memberships", user.uid));
-
-            if (userSnap.exists()) {
-                currentUserData = userSnap.data();
-                const data = currentUserData;
-                const photoUrl = data.photoURL || user.photoURL || "/assets/avatar-default.svg";
-                currentPhotoUrl = photoUrl;
-
-                // Leadership Access (Admin / Finance links). The shared role
-                // layer paints from the durable session this device already
-                // proved, then confirms it against memberships/<uid> and
-                // users/<uid> with retries — so the card never disappears on a
-                // slow connection and a member never sees it.
-                const adminCard = document.getElementById('adminDashboardCard');
-                if (adminCard && window.PDApp && PDApp.roles) {
-                    adminCard.style.display = PDApp.roles.remembered(user) ? 'block' : 'none';
-                    PDApp.roles.finance(user).then((role) => {
-                        if (role === 'unknown') return; // unreachable Firestore: keep what we know
-                        adminCard.style.display = (role === 'finance' || role === 'admin') ? 'block' : 'none';
-                    });
+            // Read the profile and membership in parallel. Either read may fail
+            // on a weak connection; the view must still paint the signed-in
+            // member instead of showing a blank card or an endless placeholder.
+            let data = {};
+            let member = {};
+            try {
+                const [userRes, memberRes] = await Promise.allSettled([
+                    getDoc(doc(db, "users", user.uid)),
+                    getDoc(doc(db, "memberships", user.uid))
+                ]);
+                if (userRes.status === 'fulfilled' && userRes.value.exists()) {
+                    data = userRes.value.data() || {};
+                } else if (userRes.status === 'rejected') {
+                    console.warn('Profile read failed:', userRes.reason?.message || userRes.reason);
                 }
-                
-                document.getElementById('pNameDisplay').innerText = data.fullName || (data.email?.split('@')[0] || 'Member').charAt(0).toUpperCase();
-                document.getElementById('pRoleDisplay').innerText = data.ministry?.toUpperCase() || "MEMBER";
-                document.getElementById('pPhoto').src = photoUrl;
-                document.getElementById('pPrayers').innerText = data.prayerCount || 0;
-                document.getElementById('pWallet').innerText = "E" + (data.walletBalance || 0);
-                document.getElementById('pLevel').innerText = data.quizLevel || 1;
-                document.getElementById('pBioDisplay').innerHTML = data.bio || "No bio added yet.";
-                
-                if (data.createdAt?.toDate) {
-                    const days = Math.floor((Date.now() - data.createdAt.toDate().getTime()) / (1000 * 60 * 60 * 24));
-                    document.getElementById('pDaysActive').innerText = days;
-                } else {
-                    document.getElementById('pDaysActive').innerText = "0";
+                if (memberRes.status === 'fulfilled' && memberRes.value.exists()) {
+                    member = memberRes.value.data() || {};
                 }
-                
-                const ministries = data.ministries || [];
-                document.getElementById('pMinistriesDisplay').innerHTML = ministries.length ? ministries.map(m => `<span class="ministry-tag">${m}</span>`).join('') : "Not specified";
-                
-                const prayers = data.prayerCount || 0;
-                let level = "Seeker", progress = 0;
-                if (prayers < 10) { level = '<i class="pd-i pd-i-sprout" aria-hidden="true"></i> Seeker'; progress = (prayers / 10) * 25; }
-                else if (prayers < 50) { level = '<i class="pd-i pd-i-book-open" aria-hidden="true"></i> Disciple'; progress = 25 + ((prayers - 10) / 40) * 25; }
-                else if (prayers < 200) { level = '<i class="pd-i pd-i-flame" aria-hidden="true"></i> Warrior'; progress = 50 + ((prayers - 50) / 150) * 25; }
-                else { level = '<i class="pd-i pd-i-crown" aria-hidden="true"></i> Leader'; progress = 75 + Math.min((prayers - 200) / 300, 1) * 25; }
-                document.getElementById('spiritualLevel').innerHTML = level;
-                document.getElementById('spiritualProgress').style.width = `${progress}%`;
-                
-                document.getElementById('eName').value = data.fullName || "";
-                const phoneFull = data.phone || "";
-                let countryCode = "+268";
-                let phoneNumber = phoneFull;
-                const codeMatch = phoneFull.match(/^(\+\d+)/);
-                if (codeMatch) {
-                    countryCode = codeMatch[1];
-                    phoneNumber = phoneFull.substring(countryCode.length);
-                }
-                document.getElementById('eCountryCode').value = countryCode;
-                document.getElementById('ePhone').value = phoneNumber;
-                document.getElementById('eGender').value = data.gender || "Male";
-                document.getElementById('eBranch').value = data.branch || "Chama, Zambia";
-                document.getElementById('eBio').value = data.bio || "";
-                document.getElementById('eInterests').value = data.interests || "";
-                document.getElementById('editPhotoPreview').src = photoUrl;
-                
-                document.querySelectorAll('#ministryCheckboxes input').forEach(cb => {
-                    cb.checked = ministries.includes(cb.value);
-                });
-                
-                updateVerificationStatus();
+            } catch (e) {
+                console.warn('Profile loading failed:', e);
             }
-            document.getElementById('pIdDisplay').innerText = memberSnap.exists() ? memberSnap.data().membershipId : "Pending";
+
+            const email = data.email || user.email || '';
+            const fallbackName = user.displayName || (email ? email.split('@')[0] : '') || 'Prayer Dome Member';
+            const fullName = String(data.fullName || fallbackName).trim();
+            const photoUrl = data.photoURL || user.photoURL || "/assets/avatar-default.svg";
+            const display = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = value == null || value === '' ? '—' : String(value);
+            };
+
+            currentUserData = data;
+            currentPhotoUrl = photoUrl;
+
+            // Leadership access card (Admin / Finance links).
+            const adminCard = document.getElementById('adminDashboardCard');
+            if (adminCard && window.PDApp && PDApp.roles) {
+                adminCard.style.display = PDApp.roles.remembered(user) ? 'block' : 'none';
+                PDApp.roles.finance(user).then((role) => {
+                    if (role === 'unknown') return;
+                    adminCard.style.display = (role === 'finance' || role === 'admin') ? 'block' : 'none';
+                }).catch(() => {});
+            }
+
+            document.getElementById('pNameDisplay').innerText = fullName;
+            document.getElementById('pRoleDisplay').innerText = (data.ministry || data.role || 'Member').toUpperCase();
+            const photoEl = document.getElementById('pPhoto');
+            photoEl.src = photoUrl;
+            photoEl.onerror = () => { photoEl.onerror = null; photoEl.src = '/assets/avatar-default.svg'; };
+            display('pEmailDisplay', email);
+            display('pBranchDisplay', data.branch || 'Prayer Dome — House of Prayer for All Nations');
+            display('pPhoneDisplay', data.phone);
+            display('pPrayers', data.prayerCount || 0);
+            display('pWallet', 'E' + (data.walletBalance || 0));
+            display('pLevel', data.quizLevel || 1);
+            document.getElementById('pBioDisplay').textContent = data.bio || 'No bio added yet.';
+
+            let daysActive = 0;
+            const joined = data.createdAt?.toDate ? data.createdAt.toDate()
+                : (data.createdAt ? new Date(data.createdAt) : null);
+            if (joined && !Number.isNaN(joined.getTime())) {
+                daysActive = Math.max(0, Math.floor((Date.now() - joined.getTime()) / 86400000));
+                display('pJoinedDisplay', joined.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' }));
+            } else {
+                display('pJoinedDisplay', 'New member');
+            }
+            display('pDaysActive', daysActive);
+
+            const ministries = Array.isArray(data.ministries) ? data.ministries : [];
+            const ministriesEl = document.getElementById('pMinistriesDisplay');
+            if (ministries.length) {
+                ministriesEl.replaceChildren(...ministries.map(m => {
+                    const tag = document.createElement('span');
+                    tag.className = 'ministry-tag';
+                    tag.textContent = String(m);
+                    return tag;
+                }));
+            } else {
+                ministriesEl.textContent = 'Not specified';
+            }
+
+            const prayers = Number(data.prayerCount) || 0;
+            let level = '<i class="pd-i pd-i-sprout" aria-hidden="true"></i> Seeker';
+            let progress = (prayers / 10) * 25;
+            if (prayers >= 200) { level = '<i class="pd-i pd-i-crown" aria-hidden="true"></i> Leader'; progress = 75 + Math.min((prayers - 200) / 300, 1) * 25; }
+            else if (prayers >= 50) { level = '<i class="pd-i pd-i-flame" aria-hidden="true"></i> Warrior'; progress = 50 + ((prayers - 50) / 150) * 25; }
+            else if (prayers >= 10) { level = '<i class="pd-i pd-i-book-open" aria-hidden="true"></i> Disciple'; progress = 25 + ((prayers - 10) / 40) * 25; }
+            document.getElementById('spiritualLevel').innerHTML = level;
+            document.getElementById('spiritualProgress').style.width = `${Math.min(100, progress)}%`;
+
+            // Keep the edit form in sync with what is on screen.
+            const setValue = (id, value) => { const el = document.getElementById(id); if (el) el.value = value == null ? '' : value; };
+            setValue('eName', data.fullName || fullName);
+            const phoneFull = data.phone || '';
+            let countryCode = '+268';
+            let phoneNumber = phoneFull;
+            const codeMatch = phoneFull.match(/^(\+\d+)/);
+            if (codeMatch) {
+                countryCode = codeMatch[1];
+                phoneNumber = phoneFull.substring(countryCode.length);
+            }
+            setValue('eCountryCode', countryCode);
+            setValue('ePhone', phoneNumber);
+            setValue('eGender', data.gender || 'Male');
+            setValue('eBranch', data.branch || 'Chama, Zambia');
+            setValue('eBio', data.bio || '');
+            setValue('eInterests', data.interests || '');
+            const editPhoto = document.getElementById('editPhotoPreview');
+            if (editPhoto) editPhoto.src = photoUrl;
+            document.querySelectorAll('#ministryCheckboxes input').forEach(cb => {
+                cb.checked = ministries.includes(cb.value);
+            });
+
+            updateVerificationStatus();
+
+            // The membership number is official; when it has not been issued
+            // yet the card shows a clear pending label rather than blank text.
+            display('pIdDisplay', member.membershipId || 'Pending');
 
             // Certificates follow the profile — show the live profile name.
-            const profileName = data.fullName || (auth.currentUser && auth.currentUser.displayName) || '';
             const certProfileName = document.getElementById('certProfileName');
-            if (certProfileName && profileName) certProfileName.textContent = profileName;
+            if (certProfileName) certProfileName.textContent = fullName;
             try {
-                if (profileName) {
-                    window.PD_PROFILE = Object.assign({}, window.PD_PROFILE, { uid: auth.currentUser?.uid, fullName: profileName, displayName: profileName, email: data.email || (auth.currentUser && auth.currentUser.email) || '' });
-                    localStorage.setItem('pd_profile', JSON.stringify(window.PD_PROFILE));
-                }
+                window.PD_PROFILE = Object.assign({}, window.PD_PROFILE, {
+                    uid: user.uid, fullName, displayName: fullName, email,
+                    photoURL: photoUrl, membershipId: member.membershipId || ''
+                });
+                localStorage.setItem('pd_profile', JSON.stringify(window.PD_PROFILE));
             } catch (e) {}
         }
 
@@ -1455,18 +1623,36 @@
                 const date = parsedDate && !Number.isNaN(parsedDate.getTime())
                     ? parsedDate.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
                 const certDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : '';
-                return `<div class="cert-card" style="display:flex; gap:14px; align-items:center; flex-wrap:wrap; background: var(--bg-secondary, rgba(10,77,155,.04)); border:1px solid rgba(212,175,55,.3); border-radius:16px; padding:14px; margin-bottom:10px;">
-                    <div style="width:46px; height:46px; border-radius:14px; background: linear-gradient(135deg, #0A4D9B, #0a3d7a); display:flex; align-items:center; justify-content:center; color:#f6df8a; font-size:1.25rem; flex-shrink:0;"><i class="pd-i pd-i-badge-check"></i></div>
-                    <div style="flex:1; min-width:180px;">
-                        <h4 style="margin:0 0 2px; font-size:.95rem; color: var(--text-main);">${escapeHtml(c.course || c.title || 'Prayer Dome Academy')}</h4>
-                        <p style="margin:0; font-size:.75rem; color: var(--text-sub);">Score ${Math.round(c.score || 0)}% · Issued ${date}</p>
-                        <p style="margin:2px 0 0; font-size:.68rem; color: var(--accent-gold); font-family:monospace;">${escapeHtml(c.id || '')}</p>
+                return `<article class="cert-card">
+                    <div class="cert-card-head">
+                        <div class="cert-card-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                        <div style="min-width:0;">
+                            <div class="cert-card-eyebrow">Prayer Dome Academy</div>
+                            <div class="cert-card-org">Certificate of Completion</div>
+                        </div>
+                        <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
                     </div>
-                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                        <button class="btn btn-primary btn-sm cert-download-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-download"></i> Download</button>
-                        <button class="btn btn-outline btn-sm cert-print-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-printer"></i> Print</button>
+                    <div class="cert-card-body">
+                        <h4 class="cert-card-recipient">${escapeHtml(name)}</h4>
+                        <p class="cert-card-line">has successfully completed <span class="cert-card-course">${escapeHtml(c.course || c.title || 'Prayer Dome Academy')}</span>.</p>
+                        <div class="cert-card-meta">
+                            <span>Score <b>${Math.round(c.score || 0)}%</b></span>
+                            <span>Issued <b>${date}</b></span>
+                            <span>ID <b style="font-family:monospace;">${escapeHtml(c.id || '')}</b></span>
+                        </div>
                     </div>
-                </div>`;
+                    <div class="cert-card-foot">
+                        <div class="cert-signature">
+                            <div class="cert-signature-name">Prayer Dome</div>
+                            <div class="cert-signature-rule"></div>
+                            <div class="cert-signature-label">Founder &amp; Senior Pastor</div>
+                        </div>
+                        <div class="cert-card-actions">
+                            <button class="btn btn-primary btn-sm cert-download-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-download"></i> Download PDF</button>
+                            <button class="btn btn-outline btn-sm cert-print-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-printer"></i> Print</button>
+                        </div>
+                    </div>
+                </article>`;
             }).join('');
 
             listEl.querySelectorAll('.cert-download-btn').forEach(btn => {
@@ -1650,7 +1836,7 @@
                 document.getElementById('registerForm').style.display = 'none';
                 document.getElementById('profileSection').style.display = 'block';
                 const [profileResult] = await Promise.allSettled([
-                    ensureUserProfile(user).then(() => loadProfileData(user)),
+                    ensureUserProfile(user).catch((e) => console.warn('Profile bootstrap skipped:', e?.message || e)).then(() => loadProfileData(user)),
                     loadMyCertificates(),
                     checkEmailVerification()
                 ]);

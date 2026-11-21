@@ -320,13 +320,16 @@ async function main() {
       w.document.body.textContent === before);
   }
 
-  /* Every page must load the translation layer, or that page stays English. */
+  /* The public language picker has been retired, so pages no longer pay for
+     the phrase-pack payload or the DOM translation observer. The engine files
+     remain available (and fully tested above) for any page that opts in. */
   const pages = fs.readdirSync(ROOT).filter(f => f.endsWith('.html'));
-  const missing = pages.filter(p => {
-    const html = fs.readFileSync(path.join(ROOT, p), 'utf8');
-    return !html.includes('pd-phrases.js') || !html.includes('pd-i18n.js');
-  });
-  t('every html page ships the translation engine', missing.length === 0, missing.join(', '));
+  const withSelector = pages.filter(p =>
+    fs.readFileSync(path.join(ROOT, p), 'utf8').includes('pd-lang-select'));
+  t('no public page ships the retired language selector', withSelector.length === 0,
+    withSelector.join(', '));
+  t('the translation engine is still a valid standalone module',
+    enginePrc.includes('window.PDI18n') && phrasesSrc.includes('PD_PHRASES'));
 
   /* Curated Scripture keeps its own provenance workflow: machine text may
      never pose as Scripture. */

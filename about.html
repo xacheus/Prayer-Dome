@@ -659,6 +659,18 @@
             align-items: center;
             gap: 4px;
         }
+        .teaching-doc-card { text-decoration: none; color: inherit; }
+        .teaching-doc-ready {
+            color: #0A4D9B;
+            font-weight: 800;
+            background: rgba(10, 77, 155, .08);
+            border: 1px solid rgba(10, 77, 155, .18);
+            border-radius: 50px;
+            padding: 5px 10px;
+            align-self: flex-start;
+            margin-top: 4px;
+        }
+        body.dark-mode .teaching-doc-ready { color: #93c5fd; border-color: rgba(147,197,253,.35); background: rgba(147,197,253,.12); }
         .teaching-foot {
             color: var(--text-secondary);
             font-size: 0.8rem;
@@ -802,11 +814,8 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -1001,56 +1010,56 @@
                         <div class="teaching-icon"><i class="pd-i pd-i-file-text"></i></div>
                         <div>
                             <h3>Prayer Dome Zambia Teaching Library</h3>
-                            <p class="branch-lead">5 Teaching Documents — Pastor Zacheus Simbaya</p>
+                            <p class="branch-lead">5 teaching guides — Pastor Zacheus Simbaya</p>
                         </div>
                         <a href="documents/" class="teaching-link">View All &rarr;</a>
                     </div>
                     <div class="teaching-docs-grid">
-                        <div class="teaching-doc-card">
+                        <a class="teaching-doc-card" href="/documents/statement-of-faith.pdf" target="_blank" rel="noopener">
                             <div class="teaching-doc-icon"><i class="pd-i pd-i-file-text"></i></div>
                             <div class="teaching-doc-info">
-                                <span class="teaching-doc-title">Foundations of Faith</span>
-                                <span class="teaching-doc-desc">Core biblical teaching series</span>
-                                <span class="teaching-doc-size">PDF &mdash; 24 pages</span>
+                                <span class="teaching-doc-title">Statement of Faith</span>
+                                <span class="teaching-doc-desc">What Prayer Dome believes and teaches</span>
+                                <span class="teaching-doc-size">Guide &mdash; PDF</span>
                             </div>
-                            <span class="teaching-doc-status"><i class="pd-i pd-i-lock"></i> Coming Soon</span>
-                        </div>
-                        <div class="teaching-doc-card">
+                            <span class="teaching-doc-status teaching-doc-ready"><i class="pd-i pd-i-download"></i> Download</span>
+                        </a>
+                        <a class="teaching-doc-card" href="/documents/new-believers-guide.pdf" target="_blank" rel="noopener">
                             <div class="teaching-doc-icon"><i class="pd-i pd-i-file-text"></i></div>
                             <div class="teaching-doc-info">
-                                <span class="teaching-doc-title">The Power of Night Prayer</span>
-                                <span class="teaching-doc-desc">A guide to nighttime intercession</span>
-                                <span class="teaching-doc-size">PDF &mdash; 18 pages</span>
+                                <span class="teaching-doc-title">New Believer’s Growth Guide</span>
+                                <span class="teaching-doc-desc">First steps for a new life in Christ</span>
+                                <span class="teaching-doc-size">Booklet &mdash; PDF</span>
                             </div>
-                            <span class="teaching-doc-status"><i class="pd-i pd-i-lock"></i> Coming Soon</span>
-                        </div>
-                        <div class="teaching-doc-card">
+                            <span class="teaching-doc-status teaching-doc-ready"><i class="pd-i pd-i-download"></i> Download</span>
+                        </a>
+                        <a class="teaching-doc-card" href="/documents/prayer-watch-guide.pdf" target="_blank" rel="noopener">
                             <div class="teaching-doc-icon"><i class="pd-i pd-i-file-text"></i></div>
                             <div class="teaching-doc-info">
-                                <span class="teaching-doc-title">Prayer Changes Everything</span>
-                                <span class="teaching-doc-desc">How to pray and see results</span>
-                                <span class="teaching-doc-size">PDF &mdash; 22 pages</span>
+                                <span class="teaching-doc-title">Prayer Watch Guide</span>
+                                <span class="teaching-doc-desc">How to keep a faithful watch in prayer</span>
+                                <span class="teaching-doc-size">Guide &mdash; PDF</span>
                             </div>
-                            <span class="teaching-doc-status"><i class="pd-i pd-i-lock"></i> Coming Soon</span>
-                        </div>
-                        <div class="teaching-doc-card">
+                            <span class="teaching-doc-status teaching-doc-ready"><i class="pd-i pd-i-download"></i> Download</span>
+                        </a>
+                        <a class="teaching-doc-card" href="/documents/serving-teams-handbook.pdf" target="_blank" rel="noopener">
                             <div class="teaching-doc-icon"><i class="pd-i pd-i-file-text"></i></div>
                             <div class="teaching-doc-info">
-                                <span class="teaching-doc-title">Holy Spirit &amp; Gifts</span>
-                                <span class="teaching-doc-desc">Understanding spiritual gifts</span>
-                                <span class="teaching-doc-size">PDF &mdash; 20 pages</span>
+                                <span class="teaching-doc-title">Serving Teams Handbook</span>
+                                <span class="teaching-doc-desc">Serving with excellence in every ministry</span>
+                                <span class="teaching-doc-size">Handbook &mdash; PDF</span>
                             </div>
-                            <span class="teaching-doc-status"><i class="pd-i pd-i-lock"></i> Coming Soon</span>
-                        </div>
-                        <div class="teaching-doc-card">
+                            <span class="teaching-doc-status teaching-doc-ready"><i class="pd-i pd-i-download"></i> Download</span>
+                        </a>
+                        <a class="teaching-doc-card" href="/documents/small-group-guide.pdf" target="_blank" rel="noopener">
                             <div class="teaching-doc-icon"><i class="pd-i pd-i-file-text"></i></div>
                             <div class="teaching-doc-info">
-                                <span class="teaching-doc-title">Praise &amp; Worship</span>
-                                <span class="teaching-doc-desc">The heart of gathered worship</span>
-                                <span class="teaching-doc-size">PDF &mdash; 15 pages</span>
+                                <span class="teaching-doc-title">Small Group Guide</span>
+                                <span class="teaching-doc-desc">Leading a healthy Prayer Dome small group</span>
+                                <span class="teaching-doc-size">Guide &mdash; PDF</span>
                             </div>
-                            <span class="teaching-doc-status"><i class="pd-i pd-i-lock"></i> Coming Soon</span>
-                        </div>
+                            <span class="teaching-doc-status teaching-doc-ready"><i class="pd-i pd-i-download"></i> Download</span>
+                        </a>
                     </div>
                     <p class="teaching-foot">
                         Looking for a specific teaching? Contact Prayer Dome Zambia at info@prayerdome.net

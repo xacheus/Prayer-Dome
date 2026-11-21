@@ -482,110 +482,132 @@
         /* Team Grid */
         .team-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
-            gap: 30px;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+            gap: 24px;
             margin-bottom: 50px;
+            align-items: stretch;
         }
         .team-card {
             background: var(--bg-card);
-            border-radius: 28px;
+            border-radius: 22px;
             overflow: hidden;
             border: 1px solid var(--border-color);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 30px rgba(7, 36, 77, .06);
+            transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
             animation: fadeInUp 0.5s ease;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
         }
         .team-card:hover {
-            transform: translateY(-10px) scale(1.02);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--accent-gold);
+            transform: translateY(-6px);
+            box-shadow: 0 22px 45px rgba(7, 36, 77, .14);
+            border-color: rgba(212, 175, 55, .65);
         }
         .team-image {
             position: relative;
-            height: 320px;
+            height: 290px;
             overflow: hidden;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold));
+            background: linear-gradient(135deg, #e8eef8, #f8f4e8);
         }
         .team-image img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.6s ease;
+            object-position: center top;
+            transition: transform .5s ease;
         }
-        .team-card:hover .team-image img {
-            transform: scale(1.1);
-        }
-        .team-overlay {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: linear-gradient(to top, rgba(0,0,0,0.95), transparent);
-            padding: 25px;
-            transform: translateY(100%);
-            transition: transform 0.4s ease;
-        }
-        .team-card:hover .team-overlay {
-            transform: translateY(0);
-        }
-        .team-overlay p {
-            color: white;
-            font-size: 0.85rem;
-            line-height: 1.6;
-        }
+        .team-card:hover .team-image img { transform: scale(1.04); }
+        .team-overlay { display: none; }
         .team-info {
-            padding: 20px;
-            text-align: center;
+            padding: 18px 20px 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            flex: 1;
+            min-width: 0;
         }
         .team-name {
-            font-size: 1.3rem;
+            font-size: 1.12rem;
+            line-height: 1.3;
             font-weight: 800;
-            color: var(--accent-green);
-            margin-bottom: 5px;
+            color: var(--text-main, #0f172a);
+            margin: 0;
+            overflow-wrap: anywhere;
         }
         .team-title {
-            color: var(--accent-gold);
-            font-size: 0.85rem;
-            margin-bottom: 12px;
+            color: #8a6a00;
+            font-size: .76rem;
+            margin: 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            line-height: 1.45;
+            overflow-wrap: anywhere;
+        }
+        body.dark-mode .team-title { color: var(--accent-gold); }
+        .team-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .74rem;
             font-weight: 600;
+            color: var(--text-sub, #64748b);
+            overflow-wrap: anywhere;
+        }
+        .team-location i { color: var(--accent-gold); flex-shrink: 0; }
+        .team-bio {
+            font-size: .8rem;
+            line-height: 1.6;
+            color: var(--text-sub, #64748b);
+            margin: 2px 0 4px;
+            overflow-wrap: anywhere;
         }
         .team-badges {
             display: flex;
-            justify-content: center;
-            gap: 8px;
+            justify-content: flex-start;
+            gap: 6px;
             flex-wrap: wrap;
-            margin-bottom: 15px;
+            margin: 0;
         }
         .team-badge {
-            background: rgba(59,130,246,0.1);
+            background: rgba(10, 77, 155, 0.08);
             color: var(--accent-green);
-            padding: 4px 12px;
+            padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.7rem;
+            font-size: .64rem;
             font-weight: 700;
+            line-height: 1.4;
+            max-width: 100%;
+            overflow-wrap: anywhere;
         }
+        .team-badge i { margin-right: 3px; }
         .team-social {
             display: flex;
-            justify-content: center;
-            gap: 12px;
-            margin-top: 12px;
+            justify-content: flex-start;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 8px;
         }
         .team-social a {
-            width: 35px;
-            height: 35px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             background: var(--bg-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--accent-green);
-            transition: all 0.3s;
+            transition: all .2s ease;
             text-decoration: none;
+            flex-shrink: 0;
         }
         .team-social a:hover {
             background: var(--accent-green);
             color: white;
-            transform: rotate(360deg) scale(1.1);
+            transform: translateY(-2px);
         }
 
         @keyframes fadeInUp {
@@ -677,6 +699,8 @@
             .main-container { padding: 20px; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
             .team-grid { grid-template-columns: 1fr; }
+            .team-image { height: 240px; }
+            .team-name { font-size: 1.05rem; }
             .founder-featured { padding: 30px; }
             .founder-featured h1 { font-size: 1.8rem; }
             .category-tabs { gap: 8px; }
@@ -693,11 +717,8 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
-    <script src="/translation-data.js"></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
-<script src="/assets/pd-phrases.js" defer></script>
-<script src="/assets/pd-i18n.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <script src="/assets/pd-upload.js" defer></script>
@@ -810,7 +831,6 @@
                     <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Profile status
                         <select id="tmStatus" onchange="toggleTeamLateFields()" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;">
                             <option value="serving">Serving — active member</option>
-                            <option value="late">Late / passed on — memorial label</option>
                             <option value="archived">Archived — hidden from the page</option>
                         </select>
                     </label>
@@ -881,7 +901,7 @@
         function activeMembers() {
             if (TEAM_STATE.members && TEAM_STATE.members.length) {
                 return TEAM_STATE.members
-                    .filter(m => !m.archived)
+                    .filter(m => !m.archived && !m.deceased)
                     .sort((a, b) => (a.order || 999) - (b.order || 999) || String(a.name).localeCompare(String(b.name)));
             }
             return DEFAULT_TEAM;
@@ -921,36 +941,30 @@
                 return;
             }
             container.innerHTML = filtered.map((member, index) => {
-                const late = member.deceased === true;
-                const lateLabel = member.lateLabel || 'Late';
                 const safeName = String(member.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
+                const bio = String(member.description || '').trim();
+                const location = String(member.country || '').trim();
                 return `
-                <div class="team-card${late ? ' is-late' : ''}" style="animation-delay: ${index * 0.05}s">
+                <article class="team-card" style="animation-delay: ${index * 0.05}s">
                     <div class="team-image">
-                        <img src="${escTeam(member.image || '/assets/logo.png')}" alt="${escTeam(member.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='18px';this.style.background='#fff';">
-                        ${late ? `<span class="team-late-flag"><i class="pd-i pd-i-feather" aria-hidden="true"></i> ${escTeam(lateLabel)}</span>` : ''}
-                        <div class="team-overlay">
-                            <p>${escTeam(member.description || '')}</p>
-                        </div>
+                        <img src="${escTeam(member.image || '/assets/logo.png')}" alt="${escTeam(member.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='28px';this.style.background='#f8fafc';">
                     </div>
                     <div class="team-info">
-                        <div class="team-name">${escTeam(member.name)}</div>
-                        <div class="team-title">${escTeam(member.title || '')}</div>
-                        ${late && member.memorialNote ? `<div class="team-memorial"><i class="pd-i pd-i-heart"></i> ${escTeam(member.memorialNote)}</div>` : ''}
+                        <h3 class="team-name">${escTeam(member.name || 'Team member')}</h3>
+                        <p class="team-title">${escTeam(member.title || member.role || 'Prayer Dome Team')}</p>
+                        ${location ? `<div class="team-location"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i><span>${escTeam(location)}</span></div>` : ''}
+                        ${bio ? `<p class="team-bio">${escTeam(bio)}</p>` : ''}
                         <div class="team-badges">
                             <span class="team-badge"><i class="pd-i ${member.category === 'founder' ? 'pd-i-crown' : member.category === 'worship' ? 'pd-i-music' : member.category === 'ministries' ? 'pd-i-church' : 'pd-i-flag'}"></i> ${escTeam(getCategoryName(member.category))}</span>
-                            ${member.country ? `<span class="team-badge"><i class="pd-i pd-i-globe"></i> ${escTeam(member.country)}</span>` : ''}
-                            ${member.role ? `<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${escTeam(member.role)}</span>` : ''}
-                            ${late ? `<span class="team-badge team-late-badge"><i class="pd-i pd-i-feather"></i> ${escTeam(lateLabel)}${member.passedAt ? ' · ' + escTeam(String(member.passedAt).slice(0, 4)) : ''}</span>` : ''}
+                            ${member.role && member.title ? `<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${escTeam(member.role)}</span>` : ''}
                         </div>
                         <div class="team-social">
-                            <a href="#" onclick="shareTeamMember('${safeName}')" aria-label="Share"><i class="pd-i pd-i-share-2"></i></a>
-                            <a href="#" onclick="${late ? `rememberMember('${safeName}')` : `prayForMember('${safeName}')`}" aria-label="${late ? 'Honour this member' : 'Pray for this member'}"><i class="pd-i ${late ? 'pd-i-heart' : 'pd-i-hands-praying'}"></i></a>
-                            ${member.email ? `<a href="mailto:${escTeam(member.email)}" title="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>` : `<a href="#" onclick="contactMember('${safeName}')" aria-label="Contact"><i class="pd-i pd-i-mail"></i></a>`}
-                            ${member.phone && !late ? `<a href="tel:${escTeam(member.phone)}" title="Call ${escTeam(member.name)}"><i class="pd-i pd-i-phone"></i></a>` : ''}
+                            <a href="#" onclick="shareTeamMember('${safeName}');return false;" aria-label="Share ${escTeam(member.name)}"><i class="pd-i pd-i-share-2"></i></a>
+                            <a href="#" onclick="prayForMember('${safeName}');return false;" aria-label="Pray for ${escTeam(member.name)}"><i class="pd-i pd-i-hands-praying"></i></a>
+                            ${member.email ? `<a href="mailto:${escTeam(member.email)}" title="Email ${escTeam(member.name)}" aria-label="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>` : `<a href="#" onclick="contactMember('${safeName}');return false;" aria-label="Contact ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>`}
                         </div>
                     </div>
-                </div>`;
+                </article>`;
             }).join('');
         }
 
@@ -1034,7 +1048,7 @@
             const quote = document.getElementById('founderQuote');
             if (founder.image && img && img.src !== founder.image) img.src = founder.image;
             if (name && founder.name) name.textContent = founder.name;
-            if (title && founder.title) title.innerHTML = '<i class="pd-i pd-i-crown"></i> ' + escTeam(founder.title) + (founder.deceased ? ' <span class="team-badge team-late-badge" style="margin-left:8px;"><i class="pd-i pd-i-feather"></i> ' + escTeam(founder.lateLabel || 'Late') + '</span>' : '');
+            if (title && founder.title) title.innerHTML = '<i class="pd-i pd-i-crown" aria-hidden="true"></i> ' + escTeam(founder.title);
             if (quote && founder.description) quote.textContent = '"' + founder.description + (founder.scripture ? ' – ' + founder.scripture : '') + '"';
         }
 
@@ -1144,7 +1158,7 @@
             document.getElementById('tmDescription').value = member?.description || '';
             document.getElementById('tmScripture').value = member?.scripture || '';
             document.getElementById('tmStatus').value = member
-                ? (member.archived ? 'archived' : member.deceased ? 'late' : 'serving')
+                ? (member.archived || member.deceased ? 'archived' : 'serving')
                 : 'serving';
             document.getElementById('tmLateLabel').value = member?.lateLabel || 'Late';
             document.getElementById('tmPassedAt').value = member?.passedAt || '';
@@ -1214,8 +1228,7 @@
                     description: document.getElementById('tmDescription').value.trim(),
                     scripture: document.getElementById('tmScripture').value.trim(),
                     image: photoUrl || '',
-                    // The memorial state is part of the member, not a deletion:
-                    // their card stays on the page with a clear Late label.
+                    // Passed-away records are never shown on the public page.
                     deceased: status === 'late',
                     lateLabel: status === 'late' ? (document.getElementById('tmLateLabel').value || 'Late') : '',
                     passedAt: status === 'late' ? (document.getElementById('tmPassedAt').value || '') : '',
