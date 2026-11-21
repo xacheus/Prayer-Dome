@@ -260,7 +260,7 @@ main { max-width:1120px; margin:0 auto; padding:0 20px; }
 .section-title h2 { font-size:1.5rem; font-weight:900; }
 .section-title .rule { flex:1; height:1px; background:var(--border-color); }
 
-.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:22px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%, 300px), 1fr)); gap:22px; }
 
 /* ---------- Sermon card ---------- */
 .sermon-card {
@@ -459,6 +459,7 @@ body.dark-mode .nav-link.active { color:#fcd34d; }
 </style>
 
 <link rel="stylesheet" href="/assets/pd-brand.css">
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
 </head>
 <body class="pd-bottom-nav-page">
 

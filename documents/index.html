@@ -62,7 +62,7 @@
         .intro { text-align: center; color: var(--text-secondary); font-size: .95rem; margin-bottom: 26px; }
         .documents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
             gap: 20px;
         }
         .doc-card {
@@ -158,6 +158,7 @@
             .doc-card { animation: none !important; }
         }
     </style>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
 </head>
 <body>
     <header class="header">

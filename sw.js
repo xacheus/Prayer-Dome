@@ -3,7 +3,7 @@
 // shade) even when the app is closed — see /assets/pd-verse-data.js.
 try { importScripts('/assets/pd-verse-data.js'); } catch (e) { /* verses unavailable offline */ }
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v35';
+const CACHE_NAME = 'prayer-dome-v36';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -22,6 +22,7 @@ const PRECACHE = [
     '/translate.html',
     '/translation-data.js',
     '/assets/pd-brand.css',
+    '/assets/pd-responsive-fix.css',
     // Icon system (Lucide SVG icons); needed by every page, including offline.
     '/assets/pd-icons.css',
     '/assets/pd-icons.js',

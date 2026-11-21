@@ -1,0 +1,688 @@
+/*!
+ * Prayer Dome — universal text containment and phone reflow
+ * ===========================================================================
+ * Loaded last on every page (after its inline <style>) so it can neutralise
+ * legacy nowrap labels, fixed widths and hover-only panels without fighting
+ * the design system:
+ *
+ *   • no word leaves its tab, pill, button, card, header or table cell
+ *   • long names, roles and bios wrap instead of being clipped
+ *   • filter rows wrap, and scroll sideways when there are many options
+ *   • cards grow with their content and clip only their own decoration
+ *   • a 360 px phone never scrolls sideways
+ */
+
+/* ---------------------------------------------------------------- 1. roots */
+html,
+body {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip; /* guard only; the rules below stop the overflow */
+}
+
+@supports not (overflow: clip) {
+  html,
+  body {
+    overflow-x: hidden;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Flex/grid children default to min-width:auto, the usual reason a long word
+   pushes a card wider than the screen. */
+* {
+  min-width: 0;
+}
+
+img,
+video,
+canvas,
+iframe,
+embed,
+object {
+  max-width: 100%;
+  height: auto;
+}
+
+svg {
+  max-width: 100%;
+}
+
+/* Oversized decorative glows are clipped to the viewport. */
+.pd-aurora,
+[class*="aurora"],
+[class*="glow-orb"],
+[class*="bg-orb"] {
+  max-width: 100vw;
+  overflow: hidden;
+}
+
+/* --------------------------------------------------------- 2. text wrapping */
+h1, h2, h3, h4, h5, h6,
+p, li, dt, dd, blockquote, figcaption,
+label, legend, summary,
+td, th,
+strong, em, small, b, i, u, s,
+a, button, span {
+  overflow-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+}
+
+h1, h2, h3, h4, h5, h6,
+p, li, label, blockquote, figcaption {
+  white-space: normal;
+  text-wrap: pretty;
+  hyphens: auto;
+  text-overflow: clip;
+}
+
+/* ------------------------------------------------------ 3. buttons and pills */
+button,
+.btn,
+.pd-btn,
+.pd-acad-btn,
+.btn-sm,
+.action-chip,
+.filter-chip,
+.filter-btn,
+.tab-btn,
+.tab-item,
+.app-tab,
+.main-tab,
+.cr-tab,
+.category-btn,
+.version-btn,
+.pill,
+.badge,
+.team-badge,
+.pd-acad-chip,
+.news-cat,
+.pd-news-cat,
+.pd-news-cat-pill,
+.online-pill,
+.live-pill,
+.draft-pill,
+.duration-pill,
+.connection-pill,
+.lang-pill,
+.amt-chip,
+.cr-chip,
+.cr-pill,
+.suggestion-chip,
+.topic-chip {
+  max-width: 100%;
+  min-width: 0;
+  height: auto;
+  white-space: normal;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.3;
+  text-overflow: clip;
+}
+
+button,
+.btn,
+.pd-btn,
+.action-chip,
+.filter-chip,
+.filter-btn,
+.tab-btn,
+.app-tab,
+.main-tab,
+.category-btn,
+.version-btn {
+  text-align: center;
+}
+
+/* ------------------------------------------------- 4. tabs and filter rows */
+.category-tabs,
+.filter-bar,
+.filter-row,
+.filters,
+.filter-buttons,
+.filter-chips,
+.tabs,
+.app-tabs,
+.main-tabs,
+.cr-tabs,
+.cr-cat-chips,
+.tab-container,
+.tab-wrapper,
+.pd-acad-filters,
+.pd-reaction-bar,
+.team-badges,
+.hero-cta,
+.share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.category-tabs,
+.filter-bar,
+.filter-row,
+.filters,
+.filter-buttons,
+.filter-chips,
+.cr-tabs,
+.cr-cat-chips,
+.pd-acad-filters,
+.version-selector {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 4px 4px 10px 2px; /* room for focus rings and the last pill */
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.category-tabs > *,
+.filter-bar > *,
+.filter-row > *,
+.filters > *,
+.filter-buttons > *,
+.filter-chips > *,
+.cr-tabs > *,
+.cr-cat-chips > *,
+.pd-acad-filters > *,
+.version-selector > * {
+  flex: 0 1 auto;
+}
+
+.category-tabs {
+  flex-wrap: wrap;
+}
+
+.category-btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  text-align: center;
+  padding-inline: clamp(12px, 4vw, 24px);
+}
+
+/* --------------------------------------------------------------- 5. cards */
+[class*="card"],
+[class*="panel"],
+[class*="tile"] {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:is(.team-card, .event-card, .event-item, .prayer-card, .news-card,
+    .pd-news-card, .sermon-card, .gallery-item, .archive-card, .upcoming-card,
+    .branch-card, .review-card, .book-progress-card, .setup-card, .stat-card,
+    .panel-card, .content-card, .glass-card, .pd-acad-card, .pd-card,
+    .kpi-card, .portal-item, .pdm-lounge-card, .digital-id-card) {
+  overflow: hidden;
+  height: auto;
+  max-width: 100%;
+  min-width: 0;
+}
+
+:is(.team-card, .event-card, .event-item, .prayer-card, .news-card,
+    .pd-news-card, .sermon-card, .gallery-item, .archive-card, .upcoming-card,
+    .branch-card, .review-card, .book-progress-card, .setup-card, .stat-card,
+    .panel-card, .content-card, .glass-card, .pd-acad-card, .pd-card,
+    .kpi-card, .portal-item, .pdm-lounge-card) :is(h1, h2, h3, h4, h5, h6,
+    p, li, label, small, strong, span) {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Page headers built from .logo-area + .header-actions: keep control labels
+   on one line and let the brand take the remaining width. */
+.logo-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.brand-text {
+  min-width: 0;
+}
+
+.header-actions {
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 100%;
+}
+
+.theme-btn,
+.back-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+  max-width: 100%;
+}
+
+/* ------------------------------------------------- 6. team page layout */
+/* The bio is the reason the card exists, so it is never a hover-only layer:
+   the portrait is a normal block and the bio flows underneath it. The card
+   grows; nothing is clipped or left outside. */
+.team-image {
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.team-image > img {
+  width: 100%;
+  height: 320px;
+  flex: 0 0 auto;
+  object-fit: cover;
+}
+
+.team-overlay {
+  position: static;
+  transform: none !important;
+  width: 100%;
+  max-width: 100%;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #07244d, #07244def);
+}
+
+.team-overlay:has(p:empty) {
+  display: none;
+}
+
+.team-overlay p {
+  margin: 0;
+  color: #fff;
+  font-size: .84rem;
+  line-height: 1.6;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.team-card:hover {
+  transform: none;
+}
+
+.team-card:hover .team-image img {
+  transform: none;
+}
+
+.team-header {
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.team-header .logo-area {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.team-header .brand-text {
+  min-width: 0;
+}
+
+.team-header .brand-text h1,
+.team-header .brand-text p {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.team-header .header-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+
+.team-header .back-btn,
+.team-header .theme-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.team-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  max-width: 100%;
+  min-width: 0;
+}
+
+.team-card {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.team-name,
+.team-title,
+.team-memorial,
+.team-overlay p {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  text-overflow: clip;
+  overflow: visible;
+}
+
+.team-badges {
+  justify-content: center;
+}
+
+.team-badge {
+  max-width: 100%;
+}
+
+.team-image {
+  min-width: 0;
+}
+
+/* Card media frames are flex children of a <button> card and the UA centres
+   them; stretch them so an unloaded image cannot collapse the frame and push
+   its duration badge off-screen. */
+.sermon-card,
+.news-card,
+.pd-news-card,
+.event-card,
+.team-card {
+  align-items: stretch;
+}
+
+:is(.card-media, .card-image, .card-thumb, .card-cover, .news-image,
+    .event-image, .team-image) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Chat header room name and description were inline nowrap + ellipsis. */
+#currentRoomName,
+#currentRoomDesc {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.chat-area-header {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chat-area-title,
+.chat-area-title h2,
+.chat-area-title p {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.chat-actions {
+  flex-shrink: 0;
+}
+
+/* ---------------------------------------------- 7. the 360 px phone layout */
+@media (max-width: 600px) {
+  :is(.main-container, .container, .content, .page-container, .main-content,
+      .pd-page, .pd-section, .wrapper) {
+    padding-left: 16px;
+    padding-right: 16px;
+    max-width: 100%;
+  }
+
+  :is(.team-grid, .gallery-grid, .reviews-grid, .pod-grid, .sermons-grid,
+      .news-grid, .pd-news-grid, .events-grid, .facebook-posts-grid,
+      .pd-acad-grid-3, .pd-acad-grid-4, .testimonies-grid, .services-grid,
+      .values-grid, .teaching-docs-grid, .prayer-grid, .radio-grid,
+      .video-grid, .list) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    max-width: 100%;
+  }
+
+  .stats-grid,
+  .portal-grid,
+  .kpi-grid,
+  .profile-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .portal-item,
+  .stat-card,
+  .kpi-card {
+    padding: 14px 10px;
+  }
+
+  .stat-number {
+    font-size: clamp(1.4rem, 8vw, 2.1rem);
+  }
+
+  .stat-label {
+    font-size: .7rem;
+    letter-spacing: 0;
+    line-height: 1.3;
+  }
+
+  /* Legacy inline min-widths on form rows and cards. */
+  [style*="min-width: 2"],
+  [style*="min-width:2"],
+  [style*="min-width: 3"],
+  [style*="min-width:3"] {
+    min-width: 0 !important;
+  }
+
+  .founder-featured {
+    padding: 26px 18px;
+    border-radius: 24px;
+  }
+
+  .founder-featured h1 {
+    font-size: clamp(1.55rem, 8vw, 2.2rem);
+  }
+
+  .founder-featured h3 {
+    font-size: clamp(1rem, 5.4vw, 1.25rem);
+  }
+
+  .founder-featured p {
+    font-size: .95rem;
+    line-height: 1.65;
+  }
+
+  .founder-image {
+    width: 132px;
+    height: 132px;
+  }
+
+  .team-image > img {
+    height: clamp(220px, 72vw, 300px);
+  }
+
+  .team-overlay {
+    padding: 13px 16px;
+  }
+
+  .team-overlay p {
+    font-size: .82rem;
+    line-height: 1.55;
+  }
+
+  .team-header {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .team-header .logo-ring {
+    width: 40px;
+    height: 40px;
+  }
+
+  .team-header .brand-text h1 {
+    font-size: .98rem;
+    letter-spacing: .4px;
+    line-height: 1.15;
+  }
+
+  .team-header .brand-text p {
+    font-size: .55rem;
+    letter-spacing: .6px;
+  }
+
+  .team-header .back-btn,
+  .team-header .theme-btn {
+    padding: 8px 11px;
+    font-size: .78rem;
+    gap: 6px;
+  }
+
+  /* Filter rows stay reachable: wrap where they fit, scroll inside their own
+     row where there are many options, never sideways on the page. */
+  :is(.filter-bar, .filter-row, .filters, .filter-buttons, .filter-chips,
+      .cr-tabs, .cr-cat-chips, .pd-acad-filters, .version-selector) {
+    flex-wrap: wrap;
+    overflow-x: auto;
+    padding-inline-end: 18px;
+    scroll-padding-inline: 8px;
+  }
+
+  .category-btn,
+  .filter-chip,
+  .filter-btn,
+  .tab-btn,
+  .app-tab,
+  .main-tab,
+  .version-btn {
+    flex: 1 1 auto;
+    max-width: 100%;
+  }
+
+  .app-tabs {
+    flex-wrap: wrap;
+    border-radius: 20px;
+  }
+
+  .app-tab {
+    flex: 1 1 calc(50% - 10px);
+  }
+
+  .calendar-header {
+    gap: 8px;
+  }
+
+  .current-month {
+    font-size: clamp(1.05rem, 6vw, 1.4rem);
+    overflow-wrap: anywhere;
+  }
+
+  .calendar-container {
+    padding: 14px;
+    border-radius: 20px;
+  }
+
+  .calendar-nav button {
+    padding: 8px 12px;
+  }
+
+  .calendar-day {
+    padding: 4px;
+    border-radius: 10px;
+  }
+
+  .action-chip {
+    max-width: 100%;
+    flex: 0 1 auto;
+    justify-content: center;
+  }
+
+  .chat-area-header {
+    padding-inline: 12px;
+  }
+
+  .chat-area-title h2 {
+    font-size: 1rem;
+  }
+
+  .chat-area-title p {
+    font-size: .72rem;
+    line-height: 1.4;
+  }
+
+  .archive-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .share-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .live-layout {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
+
+  table {
+    max-width: 100%;
+  }
+
+  td,
+  th {
+    overflow-wrap: anywhere;
+  }
+
+  .modal-card,
+  .modal-content,
+  .event-modal-content {
+    width: min(100% - 20px, 640px) !important;
+    max-width: calc(100vw - 20px) !important;
+    max-height: calc(100dvh - 20px);
+    overflow-y: auto;
+  }
+
+  .toast,
+  .pd-toast {
+    max-width: calc(100vw - 24px);
+    white-space: normal;
+  }
+}
+
+/* Tiny phones (iPhone SE / 320 px) get one step tighter. */
+@media (max-width: 380px) {
+  .category-tabs,
+  .filter-bar,
+  .filter-row,
+  .filters,
+  .filter-buttons,
+  .filter-chips {
+    gap: 6px;
+  }
+
+  .category-btn {
+    padding-inline: 10px;
+    font-size: .78rem;
+  }
+
+  .app-tab {
+    flex-basis: 100%;
+  }
+
+  .portal-grid,
+  .stats-grid,
+  .kpi-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
