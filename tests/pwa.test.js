@@ -130,6 +130,9 @@ t('sw.js still handles push and notification clicks for the installed app',
   sw.includes("addEventListener('push'") && sw.includes("addEventListener('notificationclick'"));
 t('sw.js cache version was bumped for the admin-network-only change',
   /const CACHE_NAME = 'prayer-dome-v\d+';/.test(sw));
+t('sw.js fetches JavaScript and CSS fresh so a deploy shows on the first load',
+  /const isCode = [^;]*\\\.\(\?:js\|css\)/i.test(sw) &&
+  /if \(isCode\)[\s\S]*?fetch\(req\)[\s\S]*?caches\.match\(req\)/.test(sw));
 
 /* ------------------------------------------------ registration on all pages */
 const appJs = read('assets/pd-app.js');
@@ -138,6 +141,9 @@ t('the shared app layer owns PWA registration', appJs.includes('var pwa = {') &&
   appJs.includes('pwa: pwa'));
 t('PWA registration runs from PDApp.init', /modules = \[[\s\S]*?\['pwa', pwa\.init\]/.test(appJs));
 t('PWA registration can be turned off per page', appJs.includes("getAttribute('data-pd-sw') === 'off'"));
+t('a waiting worker raises a visible Refresh bar and forces an update check',
+  appJs.includes('watchUpdate: function (reg)') && appJs.includes('pdUpdateBar') &&
+  appJs.includes("worker.postMessage('SKIP_WAITING')") && /setTimeout\(check, 2500\)/.test(appJs));
 t('the packaged Android app skips the worker (local assets, no bridge interference)',
   appJs.includes('isNativeApp: function ()') && /if \(pwa\.isNativeApp\(\)\) return Promise\.resolve\(null\)/.test(appJs));
 const registerDeviceBlock = appJs.slice(appJs.indexOf('registerDevice: function'), appJs.indexOf('saveToken: function'));
