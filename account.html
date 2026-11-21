@@ -1687,7 +1687,12 @@
             if (!auth.currentUser) return certs;
 
             try {
-                const request = getDocs(query(collection(db, "certificates"), where("userId", "==", auth.currentUser.uid), orderBy("date", "desc"), limit(100)));
+                // Read every certificate for this member without a composite
+                // index. `where(userId) + orderBy(date)` needs a custom Firestore
+                // index; on a fresh project that query fails and a member would
+                // never see certificates earned on another device. Sorting in
+                // memory is instant at this scale and works everywhere.
+                const request = getDocs(query(collection(db, "certificates"), where("userId", "==", auth.currentUser.uid), limit(100)));
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Certificate sync timed out')), 6000));
                 const snap = await Promise.race([request, timeout]);
                 snap.forEach(d => {
@@ -1696,6 +1701,12 @@
                         certs.push({ id: c.id, lessonId: c.lessonId, title: c.course || c.title, course: c.course || c.title, score: c.score, date: c.date, name: c.name, downloads: c.downloads || 0 });
                     }
                 });
+                const timeOf = (value) => {
+                    const raw = value && typeof value.toDate === 'function' ? value.toDate() : value;
+                    const d = raw ? new Date(raw) : null;
+                    return d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+                };
+                certs.sort((a, b) => timeOf(b.date) - timeOf(a.date));
                 renderMyCertificateCards(listEl, certs);
             } catch (e) {
                 // The local certificate library remains fully usable offline.
