@@ -56,7 +56,9 @@ function invoke(modulePath, method = 'GET') {
     config.functions['api/*.js'].includeFiles.includes('pd-content-data.js'));
   test('automatic deployments are limited to the production branch',
     config.git && config.git.deploymentEnabled.main === true &&
-    config.git.deploymentEnabled['**'] === false);
+    config.git.deploymentEnabled['**'] === false &&
+    config.git.deploymentEnabled['*'] === false &&
+    config.git.deploymentEnabled['arena/**'] === false);
 
   for (const section of ['rewrites', 'redirects', 'headers']) {
     const sources = (config[section] || []).map(item => item.source);

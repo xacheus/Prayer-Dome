@@ -9,7 +9,9 @@
   "git": {
     "deploymentEnabled": {
       "main": true,
-      "**": false
+      "*": false,
+      "**": false,
+      "arena/**": false
     }
   },
   "functions": {
