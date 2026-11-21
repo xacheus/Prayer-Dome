@@ -2667,8 +2667,58 @@
         if (pwa.isNativeApp()) return Promise.resolve(null);
         // Only http(s) origins can own a service worker (file:// cannot).
         if (!/^https?:$/.test(location.protocol)) return Promise.resolve(null);
-        return navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function () { return null; });
+        return navigator.serviceWorker.register('/sw.js', { scope: '/' }).then(function (reg) {
+          // Ask for a fresh worker on every load (and when the app returns to
+          // the foreground) so a merged deploy is picked up without waiting for
+          // the browser's own 24-hour check. The worker calls skipWaiting(), so
+          // an update activates as soon as it is downloaded.
+          var check = function () { try { reg.update(); } catch (e) {} };
+          setTimeout(check, 2500);
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) check();
+          });
+          pwa.watchUpdate(reg);
+          return reg;
+        }).catch(function () { return null; });
       } catch (e) { return Promise.resolve(null); }
+    },
+    /* A small, dismissible bar instead of a silent stale screen. It only
+       appears when a *new* worker is waiting behind the running one. */
+    watchUpdate: function (reg) {
+      if (!reg) return;
+      var offer = function (worker) {
+        if (!worker || !navigator.serviceWorker.controller) return;
+        if (document.getElementById('pdUpdateBar')) return;
+        var bar = document.createElement('div');
+        bar.id = 'pdUpdateBar';
+        bar.setAttribute('role', 'status');
+        bar.style.cssText = 'position:fixed;left:12px;right:12px;bottom:14px;z-index:2147483000;display:flex;align-items:center;gap:12px;max-width:560px;margin:0 auto;padding:12px 14px;border-radius:16px;background:#07244d;color:#fff;box-shadow:0 18px 42px rgba(7,36,77,.35);font:600 13px/1.4 system-ui,sans-serif;';
+        bar.innerHTML = '<i class="pd-i pd-i-refresh-cw" style="color:#f6df8a;font-size:18px;" aria-hidden="true"></i>' +
+          '<span style="flex:1;">A new Prayer Dome update is ready.</span>' +
+          '<button type="button" style="border:0;border-radius:10px;padding:8px 13px;background:#f6df8a;color:#07244d;font:800 12px system-ui,sans-serif;cursor:pointer;">Refresh</button>' +
+          '<button type="button" aria-label="Dismiss" style="border:0;background:transparent;color:#cbd5e1;font-size:18px;cursor:pointer;padding:0 2px;">&times;</button>';
+        var buttons = bar.querySelectorAll('button');
+        buttons[0].addEventListener('click', function () {
+          buttons[0].textContent = 'Updating…';
+          buttons[0].disabled = true;
+          try { worker.postMessage('SKIP_WAITING'); } catch (e) {}
+          // controllerchange reloads; this is a safety net for browsers that
+          // do not fire it promptly.
+          setTimeout(function () { location.reload(); }, 1800);
+        });
+        buttons[1].addEventListener('click', function () { bar.remove(); });
+        document.body.appendChild(bar);
+      };
+      if (reg.waiting) offer(reg.waiting);
+      reg.addEventListener('updatefound', function () {
+        var worker = reg.installing;
+        if (!worker) return;
+        worker.addEventListener('statechange', function () {
+          if (worker.state === 'installed') offer(worker);
+        });
+      });
+      // Do not reload on our own: a member may be mid-prayer or mid-form. The
+      // bar's Refresh button reloads once the new worker has taken over.
     },
     installPrompt: function () { return pwa._deferred; },
     /* A dismissible "Add Prayer Dome to your home screen" card for pages that

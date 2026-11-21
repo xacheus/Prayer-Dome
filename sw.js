@@ -3,7 +3,7 @@
 // shade) even when the app is closed — see /assets/pd-verse-data.js.
 try { importScripts('/assets/pd-verse-data.js'); } catch (e) { /* verses unavailable offline */ }
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v34';
+const CACHE_NAME = 'prayer-dome-v35';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -183,6 +183,26 @@ self.addEventListener('fetch', event => {
 
     const isHTML = req.mode === 'navigate' ||
                    (req.headers.get('accept') || '').includes('text/html');
+
+    // Code updates must show on the very first load after a deploy. Stale-
+    // while-revalidate would hand the page the previous pd-app.js once, so a
+    // member could reopen the app and still see the old build. Fetch fresh
+    // JavaScript/CSS, fall back to the cached copy only when offline.
+    const isCode = url.origin === self.location.origin && /\.(?:js|css)$/i.test(url.pathname);
+    if (isCode) {
+        event.respondWith(
+            fetch(req)
+                .then(res => {
+                    if (cacheableResponse(res)) {
+                        const copy = res.clone();
+                        caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {});
+                    }
+                    return res;
+                })
+                .catch(() => caches.match(req))
+        );
+        return;
+    }
 
     if (isHTML) {
         event.respondWith(
