@@ -22,10 +22,23 @@ body {
   overflow-x: clip; /* guard only; the rules below stop the overflow */
 }
 
+html {
+  overflow-y: auto; /* the document itself must always scroll vertically */
+}
+
 @supports not (overflow: clip) {
   html,
   body {
     overflow-x: hidden;
+  }
+}
+
+/* Smooth scrolling for anchor links and in-page movement; visitors who asked
+   for reduced motion get instant scrolling (brand stylesheet overrides this
+   under prefers-reduced-motion: reduce). */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
   }
 }
 
