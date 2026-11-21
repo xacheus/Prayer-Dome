@@ -121,8 +121,8 @@ function installFakeEars(window) {
     /layout:\s*'companion'/.test(GAME) && /back:\s*\{\s*href:\s*'\/'/.test(GAME) && /log:\s*true/.test(GAME));
   t('the show runs at the member\'s reading pace (the Continue button)',
     /pace:\s*'manual'/.test(GAME));
-  t('the hostess script is loaded before the mascot engine',
-    GAME.indexOf('pd-domey-lady.js') > -1 && GAME.indexOf('pd-domey-lady.js') < GAME.indexOf('pd-mascot.js'));
+  t('the game page loads no 3D hostess script',
+    !/pd-domey-lady\.js/.test(GAME) && !/pd-domey3d\.js/.test(GAME));
 
   /* The hostess herself is protected by scripts/audit-domey.mjs (22 geometric
      checks); here we protect the engine contract she plugs into. */

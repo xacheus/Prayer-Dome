@@ -391,8 +391,8 @@ function installFakeEars(window) {
   t('the game page tells the member what Domey can do (and that nothing is recorded)',
     /domeyMicNote/.test(GAME) && /Nothing is recorded/.test(GAME) &&
     /<strong>repeat<\/strong>, <strong>hint<\/strong>/.test(GAME));
-  t('the stage is enlarged so the mouth and hands are easy to see',
-    /#panel-talk \.pd-mascot/.test(GAME) && /#panel-talk \.pdm-stage/.test(GAME));
+  t('the game page mounts Domey as a voice-only stage',
+    /id="domeyStage"/.test(GAME) && /render: 'svg'/.test(GAME));
 
   /* ---------------------------------- 5. the bell always displays something */
   const gameDom = new JSDOM(GAME, {

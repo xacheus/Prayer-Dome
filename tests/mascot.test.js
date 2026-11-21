@@ -240,9 +240,9 @@ const SW = read('sw.js');
   t('the game show feeds real Bible questions into the host',
     /PDDomeyQuestions\.forMascot/.test(GAME) && /PDMascot\.show\(/.test(GAME) &&
     /\/assets\/pd-domey-questions\.js/.test(GAME));
-  t('the game page builds the character in three dimensions',
-    /\/assets\/pd-domey3d\.js/.test(GAME) && /render: 'auto'/.test(GAME) &&
-    /renderer3d\.fit\(\)/.test(GAME));
+  t('the game page renders voice only, no three-dimensional character',
+    !/\/assets\/pd-domey3d\.js/.test(GAME) && /render: 'svg'/.test(GAME) &&
+    !/renderer3d\.fit\(\)/.test(GAME));
   t('correct answers earn Faith Points and badges in the member journey',
     /addXP\(gain\)/.test(GAME) && /unlockBadge\('word-seeker'\)/.test(GAME));
   t('the host is silenced when the member switches game or leaves the tab',
