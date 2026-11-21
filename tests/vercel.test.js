@@ -54,11 +54,11 @@ function invoke(modulePath, method = 'GET') {
     config.functions && config.functions['api/*.js'] &&
     config.functions['api/*.js'].maxDuration === 10 &&
     config.functions['api/*.js'].includeFiles.includes('pd-content-data.js'));
-  test('automatic deployments are limited to the production branch',
+  test('automatic deployments are enabled for arena branches and main',
     config.git && config.git.deploymentEnabled.main === true &&
     config.git.deploymentEnabled['**'] === false &&
     config.git.deploymentEnabled['*'] === false &&
-    config.git.deploymentEnabled['arena/**'] === false);
+    config.git.deploymentEnabled['arena/**'] === true);
 
   for (const section of ['rewrites', 'redirects', 'headers']) {
     const sources = (config[section] || []).map(item => item.source);

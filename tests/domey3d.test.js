@@ -205,14 +205,14 @@ function evalOnWindow(source) {
 
   /* ------------------------------------------- 3. the game page wiring */
   const GAME = read('game.html');
-  t('the game page loads the 3D engine and the question bank',
-    /\/assets\/pd-domey3d\.js/.test(GAME) && /\/assets\/pd-domey-questions\.js/.test(GAME) &&
+  t('the game page loads the mascot voice and question bank, no 3D engine',
+    !/\/assets\/pd-domey3d\.js/.test(GAME) && /\/assets\/pd-domey-questions\.js/.test(GAME) &&
     /\/assets\/pd-mascot\.js/.test(GAME));
-  t('the page mounts the host in 3D, with the drawing as the safety net',
-    /render:\s*'auto'/.test(GAME) && /PDMascot\.mount\(/.test(GAME));
-  t('the character is re-framed when the stage changes size',
-    /renderer3d\.fit\(\)/.test(GAME) && /addEventListener\('resize', fitDomey\)/.test(GAME) &&
-    /orientationchange/.test(GAME));
+  t('the page mounts the host in voice-only SVG mode',
+    /render:\s*'svg'/.test(GAME) && /PDMascot\.mount\(/.test(GAME));
+  t('no 3D re-framing: the voice-only page does not resize a canvas',
+    !/renderer3d\.fit\(\)/.test(GAME) && !/addEventListener\('resize', fitDomey\)/.test(GAME) &&
+    !/orientationchange/.test(GAME));
   t('the page plays from the real bank, not a handful of sample questions',
     /PDDomeyQuestions\.forMascot/.test(GAME) && !/QUIZ_BANK/.test(GAME));
   t('the page shows which topics and how many questions Domey has',

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Talk with Domey — 3D Bible Quiz Host | Prayer Dome</title>
+  <title>Talk with Domey — Bible Quiz Voice | Prayer Dome</title>
   <link rel="manifest" href="/manifest.json">
   <meta name="description" content="Play the Prayer Dome Bible challenge with Domey: 1,248 Bible questions across 14 topics, spoken out loud, with four choices and the scripture behind every answer.">
   <meta name="theme-color" content="#0A4D9B">
@@ -21,17 +21,9 @@
   <!-- Domey, the talking 3D hostess: she greets you out loud, asks Bible
        questions and listens to your answer. Shared with the Live page. -->
   <link rel="stylesheet" href="/assets/pd-mascot.css">
-  <!-- The real 3D engine (three.js, vendored so it works offline), the
-       hostess herself (pure geometry — no download, no model to wait for) and
-       the 1,248-question Bible bank she draws her rounds from. -->
-  <!-- Import map: any module that imports the bare name "three" resolves to
-       the vendored three.js (r165), so there is only one copy. It must come
-       before any module script. -->
-  <script type="importmap">{"imports":{"three":"/assets/three.module.min.js"}}</script>
-  <script src="/assets/three.module.min.js" type="module" defer></script>
-  <script src="/assets/pd-domey3d.js" defer></script>
-  <script src="/assets/pd-domey-lady.js" defer></script>
-  <script src="/assets/pd-domey-human.js" defer></script>
+  <!-- Domey's voice (speech synthesis) and her question bank: no 3D model,
+       no WebGL canvas, no three.js — just the spoken Word and the written
+       conversation below it. -->
   <script src="/assets/pd-domey-questions.js" defer></script>
   <script src="/assets/pd-sfx.js" defer></script>
   <script src="/assets/pd-mascot.js" defer></script>
@@ -108,21 +100,11 @@
       .game-stat-card .lbl { font-size: .85rem; }
     }
 
-    /* Domey is the star of this page: the companion stage fills the width and
-       keeps her whole — head to feet — whatever the screen. */
-    #panel-talk .pd-mascot { grid-template-columns: minmax(0, 1fr); }
-    #panel-talk .pdm-stage { min-height: clamp(340px, 62vh, 520px); }
-    #panel-talk .pdm-char-wrap { width: 92%; }
-
-    /* The 3D character: a real WebGL canvas laid over the CSS stage. The stage
-       keeps its shape, so she is framed the same on every screen, and the
-       drawn character is hidden while the 3D one is up. */
-    #panel-talk .pdm-canvas3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-    #panel-talk .pd-mascot.pdm-render-3d .pdm-char-wrap { display: none; }
+    /* Domey is the voice host: her words and the conversation sit below, so
+       the page is easy to scroll and nothing covers the content. */
     #domeyTopicChips .pd-acad-chip { transition: transform .15s ease, border-color .15s ease; }
     #domeyTopicChips .pd-acad-chip:hover { transform: translateY(-2px); border-color: var(--pd-gold); }
     #domeyBadges .badge-item { cursor: default; }
-    #domeyStage { min-height: 340px; }
 
     /* ---- The game, polished: one warm stage, clearly playable controls ---- */
     .game-hero::before {
@@ -151,9 +133,6 @@
     #domeyTopicChips .pd-acad-chip[data-topic]:active { transform: scale(.97); }
     #domeyBadges .badge-item { transition: transform .2s ease, box-shadow .2s ease; }
     #domeyBadges .badge-item.unlocked:hover { transform: translateY(-3px); box-shadow: var(--pd-shadow-md); }
-    #domeyCreditWrap { max-width: 780px; margin: 12px auto 0; }
-    #domeyCreditWrap summary { cursor: pointer; font-size: .74rem; color: var(--pd-acad-muted); text-align: center; }
-    #domeyCreditWrap p { margin: 8px 0 0; }
     @media (prefers-reduced-motion: reduce) {
       .game-hero::before { animation: none; }
     }
@@ -240,23 +219,15 @@
     <p class="pd-acad-chip gold" style="margin-top:14px;"><i class="pd-i pd-i-sparkles"></i> Talk to her — she really does hear you, and she answers back</p>
   </section>
 
-  <!-- TALK WITH DOMEY — the 3D hostess who speaks, hears you and acts.
-       The companion layout keeps every word below her face: a compact bar
-       (back · round · correct · XP) above, her full body centre stage, the
-       dialogue card with her message and the microphone underneath, then the
-       four A–D choices, the typed-answer row and the written conversation. -->
+  <!-- TALK WITH DOMEY — Domey speaks the questions out loud, listens to your
+       answers, and the whole conversation is written below so you can read
+       along. No 3D model, no WebGL canvas — just voice and text. -->
   <section class="pd-acad-card" id="panel-talk" style="padding:24px; margin-bottom:16px;">
     <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px;">
       <h2 style="margin:0; font-family:Poppins,sans-serif; color:var(--pd-acad-blue); font-size:1.35rem;"><i class="pd-i pd-i-mic-vocal" style="color:var(--pd-gold);"></i> Talk with Domey</h2>
-      <span class="pd-acad-chip gold" id="domeyRenderChip" style="margin-left:auto;"><i class="pd-i pd-i-sparkles"></i> Warming up the 3D stage…</span>
     </div>
-    <p style="color:var(--pd-acad-muted); margin:0 0 18px; line-height:1.6;">Domey is the Prayer Dome 3D hostess: a friendly woman in royal blue and gold who blinks, looks at you and moves naturally while she talks — her lips follow every word she says. Answer by talking, by tapping <strong>A, B, C or D</strong>, or by typing. Ask her to <em>repeat</em>, ask for a <em>hint</em>, or say <em>skip</em>. She replies out loud and explains the scripture behind every question, and the whole conversation is written below so you can read along.</p>
-
-    <div id="domeyStage" role="img" aria-label="Domey, your 3D Bible quiz hostess"></div>
-    <details id="domeyCreditWrap">
-      <summary><i class="pd-i pd-i-info"></i> 3D model credits</summary>
-      <p id="domeyCredit" style="color:var(--pd-acad-muted); font-size:.74rem; margin:8px 2px 0; line-height:1.55;">Domey appears instantly as a character modelled in code, then upgrades on capable devices to a licensed, rigged human model with real facial expressions and hand gestures. Rendered with three.js (MIT licence); the model is VRM1_Constraint_Twist_Sample © 2022 pixiv Inc., used under the VRM Public License 1.0 (free for commercial use).</p>
-    </details>
+    <p style="color:var(--pd-acad-muted); margin:0 0 18px; line-height:1.6;">Domey reads each Bible question out loud, listens to your answer, and explains the scripture behind every answer. Answer by talking, by tapping <strong>A, B, C or D</strong>, or by typing. Ask her to <em>repeat</em>, ask for a <em>hint</em>, or say <em>skip</em>. The whole conversation is written below so you can read along.</p>
+    <div id="domeyStage" aria-hidden="true"></div>
 
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;">
       <button class="pd-acad-btn pd-acad-btn-primary" id="domeyStartBtn" type="button"><i class="pd-i pd-i-play"></i> Start the show</button>
@@ -490,8 +461,6 @@
   var domeyBusy = false;
   var domeyBest = Number(localStorage.getItem('pd_domey_best') || 0);
   var domeyBestTotal = Number(localStorage.getItem('pd_domey_best_total') || 5);
-  var domeyFitQueued = false;
-
   function domeyRounds() {
     var select = document.getElementById('domeyRoundsSelect');
     var wanted = select ? parseInt(select.value, 10) : 5;
@@ -507,8 +476,7 @@
       stopBtn: document.getElementById('domeyStopBtn'),
       best: document.getElementById('domeyBestChip'),
       mic: document.getElementById('domeyMicChip'),
-      summary: document.getElementById('domeySummary'),
-      render: document.getElementById('domeyRenderChip')
+      summary: document.getElementById('domeySummary')
     };
   }
 
@@ -540,44 +508,6 @@
         : 'Tap <strong>Start the show</strong> and Domey will ask for your microphone so she can hear your answers. Nothing is recorded, and you can always tap a choice or type instead.');
   }
 
-  /* The 3D character is drawn into a canvas, so it has to be told whenever the
-     stage changes size — a rotated phone, a resized window, the summary card
-     opening under her. One fit per frame is enough. */
-  function fitDomey() {
-    if (!domey || !domey.renderer3d || domeyFitQueued) return;
-    domeyFitQueued = true;
-    requestAnimationFrame(function () {
-      domeyFitQueued = false;
-      try { domey.renderer3d.fit(); } catch (e) {}
-    });
-  }
-
-  function onDomeyRenderer(kind) {
-    var chip = domeyElements().render;
-    var model = domey && domey.root ? domey.root.getAttribute('data-pdm-model') : '';
-    var label;
-    if (kind === '3d') label = model === 'lady' ? 'Domey in 3D • her lips follow her voice' : '3D character • lips live';
-    else label = 'Drawing mode (no WebGL here)';
-    if (chip) chip.innerHTML = '<i class="pd-i pd-i-sparkles"></i> ' + label;
-    fitDomey();
-  }
-
-  /* The realistic model downloads in the background after the stage is live.
-     The chip says which character the member is actually looking at, so a
-     slow connection never leaves them guessing. */
-  function onDomeyCharacter(state) {
-    var chip = domeyElements().render;
-    if (!chip) return;
-    if (state === 'loading') {
-      chip.innerHTML = '<i class="pd-i pd-i-sparkles"></i> Domey is here • bringing her realistic face';
-    } else if (state === 'human') {
-      chip.innerHTML = '<i class="pd-i pd-i-star"></i> Domey in 3D • realistic model, live lips and gestures';
-    } else {
-      chip.innerHTML = '<i class="pd-i pd-i-sparkles"></i> Domey in 3D • stylised model (light device)';
-    }
-    fitDomey();
-  }
-
   function ensureDomey() {
     if (domey || !window.PDMascot) return domey;
     var ui = domeyElements();
@@ -587,41 +517,27 @@
       role: 'Prayer Dome Bible host',
       lang: (document.documentElement.lang || 'en').slice(0, 2) || 'en',
       placeholder: 'Type your answer, or tap a choice…',
-      // The learning-experience layout: progress bar above her, dialogue card
-      // and every word below her — nothing is ever drawn over her face.
       layout: 'companion',
       back: { href: '/', label: 'Home' },
       log: true,
-      // Build the real 3D character when the browser can, and keep the drawn
-      // one as the safety net when it cannot.
-      render: 'auto'
+      // No 3D model: voice only, with the conversation shown below.
+      render: 'svg'
     });
     domey.on('mic', function (on) {
       var chip = domeyElements().mic;
       if (chip) chip.innerHTML = '<i class="pd-i ' + (on ? 'pd-i-mic' : 'pd-i-mic-off') + '"></i> ' + (on ? 'Listening for your voice' : 'Voice answers ready');
       updateDomeyMicNote(on);
     });
-    domey.on('renderer', onDomeyRenderer);
-    domey.on('character', onDomeyCharacter);
-    if (domey.is3D && domey.is3D()) onDomeyRenderer('3d');
-    // The upgrade may already have started while this page was mounting, so the
-    // chip reads the state on the character itself rather than waiting for an
-    // event it has missed.
-    onDomeyCharacter(domey.root.getAttribute('data-pdm-character') || 'lady');
     renderDomeyStats();
     updateDomeyMicNote(false);
-    fitDomey();
     return domey;
   }
 
-  /* Greet the member the moment the page is ready: Domey waves hello, so the
-     character is alive before the show even starts. */
+  /* Greet the member the moment the page is ready: Domey speaks hello. */
   function wakeDomey() {
     var host = ensureDomey();
     if (!host) return null;
-    host.act('wave', 1600);
     host.setStatus('Tap Start the show and talk to me');
-    fitDomey();
     return host;
   }
 
@@ -668,7 +584,6 @@
       '</div>';
     var again = document.getElementById('domeyPlayAgain');
     if (again) again.addEventListener('click', function () { startDomeyShow(); });
-    fitDomey();
   }
 
   function startDomeyShow() {
@@ -682,7 +597,6 @@
     if (host.canHear()) host.enableMic();
     if (ui.startBtn) { ui.startBtn.disabled = true; ui.startBtn.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> Domey is talking…'; }
     domeyBusy = true;
-    fitDomey();
     var rounds = domeyRounds();
     var answeredRight = 0;
 
@@ -845,12 +759,8 @@
       if (ui.startBtn) ui.startBtn.innerHTML = '<i class="pd-i pd-i-play"></i> Start the show';
       domeyBusy = false;
     });
-    // The 3D canvas has to follow the stage as it grows and shrinks.
-    window.addEventListener('resize', fitDomey);
-    window.addEventListener('orientationchange', fitDomey);
     document.addEventListener('visibilitychange', function () {
       if (document.hidden && domey) domey.stop();
-      else fitDomey();
     });
     window.addEventListener('pagehide', function () { if (domey) domey.destroy(); });
 

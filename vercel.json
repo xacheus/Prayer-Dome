@@ -11,7 +11,7 @@
       "main": true,
       "*": false,
       "**": false,
-      "arena/**": false
+      "arena/**": true
     }
   },
   "functions": {

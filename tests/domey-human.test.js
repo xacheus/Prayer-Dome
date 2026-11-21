@@ -75,14 +75,13 @@ t('the bundle imports only the bare "three" name (mapped to the vendored build)'
 /* ------------------------------------------------------ 2. the page wiring */
 
 const game = read('game.html');
-const importMapAt = game.indexOf('"importmap"');
-const threeAt = game.indexOf('/assets/three.module.min.js" type="module"');
-t('the game page maps "three" with an import map before any module script',
-  importMapAt > -1 && importMapAt < threeAt && /"three":"\/assets\/three\.module\.min\.js"/.test(game));
-t('the game page loads the hostess, the realistic rig and the host',
-  /pd-domey-lady\.js/.test(game) && /pd-domey-human\.js/.test(game) && /pd-mascot\.js/.test(game));
+t('the game page no longer loads three.js or any 3D model script',
+  !/three\.module\.min\.js/.test(game) && !/pd-domey3d\.js/.test(game) &&
+  !/pd-domey-lady\.js/.test(game) && !/pd-domey-human\.js/.test(game));
+t('the game page still loads the mascot (voice) and the question bank',
+  /pd-mascot\.js/.test(game) && /pd-domey-questions\.js/.test(game));
 t('the retired photogrammetry head is not shipped to the page', !/pd-domey-scan\.js/.test(game));
-t('the game page credits the model and its licence', /VRM Public License 1\.0/.test(game));
+t('the game page no longer credits the 3D model licence', !/VRM Public License 1\.0/.test(game));
 
 const human = read('assets/pd-domey-human.js');
 t('the human module loads the bundle and model from this site only',
