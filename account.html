@@ -747,6 +747,51 @@
                         <button class="btn btn-outline" style="width:auto;" id="notifPermissionBtn" onclick="requestAppNotifications()"><i class="pd-i pd-i-bell"></i> Allow Notifications</button>
                     </div>
 
+                    <!-- Live health of this device's push channel. If a member
+                         says "I am not getting notifications", the answer is
+                         here instead of in a support ticket. -->
+                    <div id="notifHealthCard" style="background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                            <strong style="font-size:.88rem; flex:1; min-width:150px;"><i class="pd-i pd-i-activity"></i> This device</strong>
+                            <button class="btn btn-outline" type="button" style="width:auto; padding:7px 12px; font-size:.74rem;" onclick="sendTestNotification()"><i class="pd-i pd-i-send"></i> Send test</button>
+                            <button class="btn btn-outline" type="button" style="width:auto; padding:7px 12px; font-size:.74rem;" onclick="refreshNotifHealth()"><i class="pd-i pd-i-refresh-cw"></i> Re-check</button>
+                        </div>
+                        <div id="notifHealthList" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:8px; margin-top:10px; font-size:.74rem; color:var(--text-sub);"></div>
+                    </div>
+
+                    <details style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+                        <summary style="cursor:pointer; font-size:.84rem; font-weight:700;"><i class="pd-i pd-i-sliders-horizontal"></i> What should reach my phone?</summary>
+                        <p style="font-size:.72rem; color:var(--text-sub); margin:8px 0 10px;">These switches control what reaches your phone’s notification shade and lock screen — even when the app is closed. Everything still appears in the bell inside the app.</p>
+                        <div id="notifPrefList" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:8px;"></div>
+                    </details>
+
+                    <!-- Daily prayer reminder: the only reminder that reaches a
+                         closed phone, because the Cloud Function schedules it. -->
+                    <div id="prayerReminderRow" style="background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <div style="min-width:160px; flex:1;">
+                                <strong style="font-size:.88rem;"><i class="pd-i pd-i-clock"></i> Daily prayer reminder</strong><br>
+                                <small id="prayerReminderState" style="font-size:.72rem; color: var(--text-sub);">Choose a time to be reminded to pray.</small>
+                            </div>
+                            <input type="time" id="prayerReminderTime" aria-label="Prayer reminder time" style="width:auto; min-width:120px; padding:9px 10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-primary); color:inherit; font:inherit;">
+                            <label style="display:flex; align-items:center; gap:7px; font-size:.76rem; font-weight:600; cursor:pointer;">
+                                <input type="checkbox" id="prayerReminderOn" style="width:18px; height:18px; accent-color:var(--accent-green,#0A4D9B);"> On
+                            </label>
+                            <button class="btn btn-outline" type="button" style="width:auto; padding:8px 12px; font-size:.76rem;" onclick="savePrayerReminder()"><i class="pd-i pd-i-check"></i> Save</button>
+                        </div>
+                    </div>
+
+                    <!-- App display: a true full-screen mode for anyone who
+                         opened Prayer Dome in a browser tab and wants no URL or
+                         system bars. Installed apps already open this way. -->
+                    <div id="appDisplayRow" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
+                        <div style="min-width:0;">
+                            <strong style="font-size:.88rem;"><i class="pd-i pd-i-maximize"></i> App display</strong><br>
+                            <small id="appDisplayState" style="font-size:.72rem; color: var(--text-sub);">Checking…</small>
+                        </div>
+                        <button class="btn btn-outline" style="width:auto;" id="appDisplayBtn" onclick="toggleAppFullscreen()"><i class="pd-i pd-i-maximize"></i> Full screen</button>
+                    </div>
+
                     <!-- Install-to-home-screen row: shown only when the
                          browser offers an install prompt (or on iOS, where the
                          prompt has to be done manually from the Share menu). -->
@@ -1595,6 +1640,8 @@
                 if (window.PDApp) {
                     PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, auth });
                     PDApp.notifications.registerDevice(user.uid);
+                    PDApp.notifications.syncPreferences();
+                    PDApp.notifications.syncReminder();
                 }
                 document.getElementById('authTabs').style.display = 'none';
                 document.getElementById('loginForm').style.display = 'none';
@@ -1662,12 +1709,147 @@
         }
 
         window.requestAppNotifications = async () => {
+            // iOS only delivers web push to an app that has been added to the
+            // Home Screen; asking in a Safari tab produces a silent denial.
+            const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+                (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+            if (iOS && !(window.PDApp && PDApp.app && PDApp.app.installed())) {
+                if (window.PDApp) PDApp.toast('On iPhone or iPad, tap Share → “Add to Home Screen”, then allow notifications inside the app.', 'info');
+                return;
+            }
             const perm = window.PDApp && PDApp.notifications
                 ? await PDApp.notifications.requestPermission()
                 : await Notification.requestPermission();
             refreshNotifPermissionUI();
+            refreshNotifHealth();
             if (perm === 'granted' && window.PDApp) PDApp.toast('Notifications are on', 'success');
         };
+
+        /* ---------------- notification health + test ---------------- */
+        function healthRow(icon, label, value, ok) {
+            const colour = ok === true ? '#15803d' : ok === false ? '#b91c1c' : 'var(--text-sub)';
+            const badge = ok === true ? 'pd-i-circle-check' : ok === false ? 'pd-i-triangle-alert' : 'pd-i-info';
+            return `<div style="display:flex; align-items:flex-start; gap:7px; min-width:0;">
+                <i class="pd-i ${badge}" style="color:${colour}; font-size:.9rem; margin-top:1px;"></i>
+                <span style="min-width:0;"><strong style="display:block; color:var(--text-main); font-size:.74rem;">${label}</strong>${value}</span>
+            </div>`;
+        }
+
+        window.refreshNotifHealth = function() {
+            const list = document.getElementById('notifHealthList');
+            if (!list || !window.PDApp || !PDApp.notifications) return;
+            const d = PDApp.notifications.diagnostics();
+            const installed = d.installed;
+            const iOSTab = /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !installed;
+            const permissionText = d.permission === 'granted'
+                ? 'Allowed'
+                : d.permission === 'denied'
+                    ? 'Blocked — change it in device settings'
+                    : d.permission === 'unsupported'
+                        ? 'Not supported by this browser'
+                        : iOSTab ? 'Add to Home Screen first' : 'Not allowed yet';
+            const pushText = d.token
+                ? (d.pendingToken ? 'Waiting for sign-in' : 'Registered for push')
+                : 'Not registered yet';
+            list.innerHTML =
+                healthRow('bell', 'Permission', permissionText, d.permission === 'granted') +
+                healthRow('smartphone', 'App mode', installed ? 'Installed app' : 'Browser tab', installed) +
+                healthRow('radio', 'Push channel', pushText, d.token && !d.pendingToken) +
+                healthRow('wifi', 'Service worker', d.serviceWorker === 'unknown' ? 'Checking…' : d.serviceWorker, d.serviceWorker === 'active' ? true : null) +
+                healthRow('clock', 'Last registered', d.tokenSavedAt ? new Date(d.tokenSavedAt).toLocaleString() : '—', null);
+        };
+
+        window.sendTestNotification = async function() {
+            if (!window.PDApp || !PDApp.notifications) return;
+            const ok = await PDApp.notifications.testDevice();
+            refreshNotifHealth();
+            PDApp.toast(ok
+                ? 'Test sent — check your notification shade (and the lock screen).'
+                : 'Allow notifications first, then try again.', ok ? 'success' : 'error');
+        };
+
+        function renderNotifPrefs() {
+            const host = document.getElementById('notifPrefList');
+            if (!host || !window.PDApp || !PDApp.notifications) return;
+            const prefs = PDApp.notifications.preferences();
+            const types = PDApp.notifications.types();
+            host.innerHTML = Object.keys(types).map(key => `
+                <label style="display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; cursor:pointer;">
+                    <span style="font-size:.76rem; font-weight:600;">${types[key]}</span>
+                    <input type="checkbox" data-notif-pref="${key}" ${prefs[key] !== false ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--accent-green,#0A4D9B);">
+                </label>`).join('');
+            host.querySelectorAll('[data-notif-pref]').forEach(input => {
+                input.addEventListener('change', () => {
+                    PDApp.notifications.setPreference(input.getAttribute('data-notif-pref'), input.checked);
+                    PDApp.toast(input.checked ? 'Notifications for this category are on' : 'Notifications for this category are off');
+                });
+            });
+        }
+
+        function renderPrayerReminder() {
+            const row = document.getElementById('prayerReminderRow');
+            if (!row || !window.PDApp || !PDApp.notifications) return;
+            const value = PDApp.notifications.reminder();
+            const time = document.getElementById('prayerReminderTime');
+            const on = document.getElementById('prayerReminderOn');
+            const state = document.getElementById('prayerReminderState');
+            if (time && document.activeElement !== time) time.value = value.time || '07:00';
+            if (on && document.activeElement !== on) on.checked = !!value.on;
+            if (state) {
+                state.textContent = value.on
+                    ? `A reminder is sent every day at ${value.time} (${Intl.DateTimeFormat().resolvedOptions().timeZone || 'your local time'}).`
+                    : 'Choose a time to be reminded to pray.';
+            }
+        }
+
+        window.savePrayerReminder = function() {
+            if (!window.PDApp || !PDApp.notifications) return;
+            const time = (document.getElementById('prayerReminderTime') || {}).value || '';
+            const on = !!(document.getElementById('prayerReminderOn') || {}).checked;
+            if (on && !time) { PDApp.toast('Choose a time first.', 'error'); return; }
+            PDApp.notifications.setReminder(time, on);
+            renderPrayerReminder();
+            PDApp.toast(on ? `Daily prayer reminder set for ${time}` : 'Daily prayer reminder turned off', 'success');
+            if (on && (typeof Notification === 'undefined' || Notification.permission !== 'granted')) {
+                PDApp.toast('Allow notifications on this device so the reminder can reach your phone.', 'info');
+            }
+        };
+
+        window.toggleAppFullscreen = async function() {
+            if (!window.PDApp || !PDApp.app) return;
+            const active = PDApp.app.isFullscreen();
+            const ok = active ? await PDApp.app.exitFullscreen() : await PDApp.app.enterFullscreen();
+            refreshAppDisplay();
+            if (!ok) PDApp.toast('This browser does not allow full-screen from here.', 'error');
+        };
+
+        function refreshAppDisplay() {
+            const state = document.getElementById('appDisplayState');
+            const btn = document.getElementById('appDisplayBtn');
+            if (!state || !btn || !window.PDApp || !PDApp.app) return;
+            const installed = PDApp.app.installed();
+            const full = PDApp.app.isFullscreen();
+            state.textContent = installed
+                ? 'Installed — Prayer Dome already opens without a URL bar or browser menu.'
+                : full ? 'Full screen is on. Everything outside the app is hidden.'
+                    : 'Install the app (or go full screen) to remove the URL bar and browser menu.';
+            btn.innerHTML = full
+                ? '<i class="pd-i pd-i-x"></i> Exit full screen'
+                : '<i class="pd-i pd-i-maximize"></i> Full screen';
+            if (!PDApp.app.fullscreenSupported()) btn.style.display = 'none';
+            else btn.style.display = '';
+        }
+
+        document.addEventListener('pd:notif-diagnostics', refreshNotifHealth);
+        document.addEventListener('pd:installed', () => { refreshNotifHealth(); refreshAppDisplay(); });
+        document.addEventListener('fullscreenchange', refreshAppDisplay);
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) return;
+            refreshNotifPermissionUI();
+            refreshNotifHealth();
+            refreshAppDisplay();
+        });
+        try { refreshNotifHealth(); renderNotifPrefs(); renderPrayerReminder(); refreshAppDisplay(); } catch (e) {}
 
         /* ---------------- install to home screen ---------------- */
         // PDApp.pwa (assets/pd-app.js) registers the service worker and keeps
@@ -1711,7 +1893,16 @@
         window.addEventListener('load', refreshInstallAppUI);
 
         refreshNotifPermissionUI();
-        document.addEventListener('DOMContentLoaded', refreshNotifPermissionUI);
+        refreshNotifHealth();
+        renderNotifPrefs();
+        refreshAppDisplay();
+        document.addEventListener('DOMContentLoaded', () => {
+            refreshNotifPermissionUI();
+            refreshNotifHealth();
+            renderNotifPrefs();
+            refreshAppDisplay();
+        });
+        window.addEventListener('load', () => setTimeout(() => { refreshNotifHealth(); refreshAppDisplay(); }, 1200));
 window.toggleDarkMode = function() {
     var dark = (window.PDApp && PDApp.theme ? PDApp.theme.isDark() : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
     document.body.classList.toggle('dark-mode', dark);

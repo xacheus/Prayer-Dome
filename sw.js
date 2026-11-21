@@ -3,7 +3,7 @@
 // shade) even when the app is closed — see /assets/pd-verse-data.js.
 try { importScripts('/assets/pd-verse-data.js'); } catch (e) { /* verses unavailable offline */ }
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v32';
+const CACHE_NAME = 'prayer-dome-v34';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -62,6 +62,8 @@ const PRECACHE = [
     '/assets/pd-quiz-session.js',
     '/assets/pd-nav.js',
     '/assets/pd-app.js',
+    '/assets/pd-sfx.js',
+    '/assets/pd-team-data.js',
     '/assets/pd-phrases.js',
     '/assets/pd-i18n.js',
     '/assets/pd-cloud-video.js',
@@ -346,36 +348,149 @@ self.addEventListener('sync', event => {
 
 // ---------------------------------------------------------------------------
 // Push — server-sent verses, live alerts and ministry notices.
+//
+// This worker owns the root scope, so it is also the worker Firebase Cloud
+// Messaging delivers to (PDApp.notifications passes this registration to
+// getToken). The payload may therefore arrive in any of the shapes FCM uses:
+//
+//   { notification: { title, body, icon, image }, data: {...}, fcmOptions }
+//   { title, body, ... }                       (a plain web-push payload)
+//   { data: { ... } }                          (data-only message)
+//
+// All of them are normalised here, so a message never falls through and never
+// appears twice. The notification is drawn with Prayer Dome branding, a stable
+// tag and the right deep link, then the open app is told so its bell updates
+// without waiting for a reload.
 // ---------------------------------------------------------------------------
-self.addEventListener('push', event => {
-    let payload = {};
-    try { payload = event.data ? event.data.json() : {}; } catch (e) {
+function pushPayload(event) {
+    var payload = {};
+    try {
+        payload = event.data ? event.data.json() : {};
+    } catch (e) {
         payload = { notification: { title: 'Prayer Dome', body: event.data ? event.data.text() : '' } };
     }
-    const note = payload.notification || payload;
-    const data = payload.data || {};
-    const title = note.title || 'Prayer Dome';
-    const options = {
-        body: note.body || note.message || '',
+    if (!payload || typeof payload !== 'object') payload = {};
+    var note = payload.notification || payload;
+    var data = payload.data || payload.notification && payload.notification.data || {};
+    // FCM serialises every data value as a string; keep the ones we read tidy.
+    var flat = {};
+    Object.keys(data || {}).forEach(function (k) {
+        var v = data[k];
+        flat[k] = (v && typeof v === 'object') ? JSON.stringify(v) : v;
+    });
+    var link = (payload.fcmOptions && payload.fcmOptions.link) || flat.url || flat.link || flat.click_action || '';
+    return {
+        title: note.title || flat.title || 'Prayer Dome',
+        body: note.body || note.message || flat.body || flat.message || 'A new word from Prayer Dome',
+        icon: note.icon || flat.icon || '/assets/logo-192.png',
+        image: note.image || flat.image || undefined,
+        tag: flat.tag || ('pd-' + (flat.id || (link ? link.replace(/[^a-z0-9]+/gi, '-').slice(0, 40) : Date.now()))),
+        kind: String(flat.kind || flat.type || 'general').toLowerCase(),
+        link: link,
+        id: flat.id || null,
+        reference: flat.reference || null,
+        data: flat
+    };
+}
+
+function targetForPush(note) {
+    if (note.link) {
+        if (/^https?:\/\//i.test(note.link)) {
+            try {
+                var url = new URL(note.link);
+                if (url.origin === self.location.origin) return url.pathname + url.search + url.hash;
+            } catch (e) {}
+            return note.link;
+        }
+        return note.link.charAt(0) === '/' ? note.link : '/' + note.link;
+    }
+    if (note.reference) return '/bible.html?verse=' + encodeURIComponent(note.reference);
+    if (note.kind === 'live') return '/live.html';
+    if (note.kind === 'news') return '/news.html';
+    if (note.kind === 'prayer') return '/prayer.html';
+    if (note.kind === 'verse' || note.kind === 'scripture') return '/bible.html';
+    if (note.kind === 'sermon' || note.kind === 'devotional') return '/sermons.html';
+    if (note.kind === 'event') return '/events.html';
+    return '/index.html';
+}
+
+function notificationOptions(note) {
+    var options = {
+        body: note.body,
         icon: note.icon || '/assets/logo-192.png',
         badge: '/assets/logo-192.png',
         image: note.image || undefined,
-        // A stable tag per message id keeps a notification from arriving twice.
-        tag: data.tag || note.tag || ('pd-' + (data.id || Date.now())),
+        // A stable tag means a re-sent broadcast replaces the old card instead
+        // of stacking duplicates on the lock screen.
+        tag: note.tag,
         renotify: false,
+        requireInteraction: false,
+        silent: false,
+        vibrate: [180, 90, 180],
+        timestamp: Date.now(),
         data: {
-            url: data.url || data.link || (data.screen ? '/' + data.screen + '.html' : '/index.html'),
-            id: data.id || null,
-            kind: data.kind || 'general'
-        }
+            url: targetForPush(note),
+            id: note.id,
+            kind: note.kind,
+            reference: note.reference
+        },
+        actions: [
+            { action: 'open', title: 'Open Prayer Dome' }
+        ]
     };
-    if (data.kind === 'verse') {
+    if (note.kind === 'verse' || note.kind === 'scripture') {
         options.actions = [
             { action: 'read', title: 'Read in Bible' },
             { action: 'pray', title: 'Pray now' }
         ];
     }
-    event.waitUntil(self.registration.showNotification(title, options));
+    return options;
+}
+
+self.addEventListener('push', event => {
+    var note = pushPayload(event);
+    event.waitUntil(
+        Promise.all([
+            self.registration.showNotification(note.title, notificationOptions(note)),
+            // Keep the in-app bell in step when the app happens to be open.
+            clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
+                list.forEach(client => {
+                    client.postMessage({
+                        type: 'pd-push-received',
+                        notification: {
+                            id: note.id || note.tag,
+                            type: note.kind,
+                            title: note.title,
+                            message: note.body,
+                            link: targetForPush(note),
+                            time: new Date().toISOString()
+                        }
+                    });
+                });
+            }).catch(() => {})
+        ])
+    );
+});
+
+// Some browsers rotate a push subscription on their own. Re-subscribe quietly
+// with the same VAPID key so a member is never silently dropped.
+self.addEventListener('pushsubscriptionchange', event => {
+    event.waitUntil((async () => {
+        try {
+            const old = event.oldSubscription;
+            if (!old) return;
+            const key = old.options && old.options.applicationServerKey;
+            const fresh = await self.registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: key
+            });
+            const list = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+            list.forEach(client => client.postMessage({
+                type: 'pd-push-subscription-changed',
+                subscription: fresh && fresh.toJSON ? fresh.toJSON() : null
+            }));
+        } catch (e) { /* the app re-registers on its next load */ }
+    })());
 });
 
 // ---------------------------------------------------------------------------
@@ -391,7 +506,15 @@ self.addEventListener('notificationclick', event => {
         : '/bible.html';
     if (event.action === 'pray') target = '/prayer.html';
 
-    const path = target.startsWith('/') ? target : '/' + target + '.html';
+    let path;
+    if (/^https?:\/\//i.test(target)) path = target;
+    else if (target.startsWith('/')) path = target;
+    else path = '/' + target.replace(/^\.?\/+/, '') + (/\.html($|\?)/.test(target) ? '' : '.html');
+    // A deep link stays a deep link; add the source only for analytics-free
+    // routing inside the app, never rewrite an external URL.
+    if (path.startsWith('/') && path.indexOf('source=') === -1) {
+        path += (path.indexOf('?') === -1 ? '?' : '&') + 'source=notification';
+    }
     const base = path.split('?')[0];
 
     event.waitUntil(

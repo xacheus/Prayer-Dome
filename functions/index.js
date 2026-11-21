@@ -14,6 +14,139 @@ if (!admin.getApps().length) {
   admin.initializeApp();
 }
 
+const verseBank = require('./verse-bank');
+
+/* Notifications must look identical on every surface: the web push card, the
+   Android shade and the notification the installed PWA draws. Absolute URLs
+   are required by the Web Push and APNs transports, so they are built once
+   here instead of being left as page-relative paths (which silently lose
+   their icon on Android). */
+const SITE_URL = process.env.PD_SITE_URL || 'https://prayerdome.net';
+const PUSH_ICON = SITE_URL + '/assets/logo-192.png';
+const PUSH_BADGE = SITE_URL + '/assets/logo-192.png';
+
+function absoluteUrl(value, fallback) {
+  if (!value || typeof value !== 'string') return fallback || SITE_URL + '/index.html';
+  if (/^https?:\/\//i.test(value)) return value;
+  return SITE_URL + (value.charAt(0) === '/' ? value : '/' + value);
+}
+
+function normaliseKind(value) {
+  const raw = String(value || 'general').toLowerCase();
+  const aliases = { scripture: 'verse', urgent: 'general', announcement: 'news', notice: 'news' };
+  const kind = aliases[raw] || raw;
+  return ['verse', 'live', 'news', 'prayer', 'sermon', 'devotional', 'event', 'general'].includes(kind)
+    ? kind
+    : 'general';
+}
+
+/** Drop devices whose owner switched this category off on their account page. */
+async function filterTokensByPreference(tokens, kind) {
+  if (!tokens.length) return tokens;
+  try {
+    const db = admin.firestore();
+    const [prefsSnap, tokenSnap] = await Promise.all([
+      db.collection('userNotificationPrefs').get(),
+      db.collection('userTokens').get()
+    ]);
+    const prefsByUser = {};
+    prefsSnap.forEach((doc) => {
+      const row = doc.data() || {};
+      if (row.prefs) prefsByUser[row.uid || doc.id] = row.prefs;
+    });
+    if (!Object.keys(prefsByUser).length) return tokens;   // everyone still on
+    const userByToken = {};
+    tokenSnap.forEach((doc) => {
+      const row = doc.data() || {};
+      if (row.token && row.userId) userByToken[row.token] = row.userId;
+    });
+    return tokens.filter((token) => {
+      const prefs = prefsByUser[userByToken[token]];
+      return !prefs || prefs[kind] !== false;
+    });
+  } catch (error) {
+    console.warn('Could not read notification preferences; sending to all:', error.message);
+    return tokens;
+  }
+}
+
+function linkFor(record) {
+  if (record && (record.link || record.url)) return absoluteUrl(record.link || record.url);
+  const kind = normaliseKind(record && record.type);
+  if (record && record.screen) return absoluteUrl('/' + String(record.screen).replace(/^\/+/, '') + '.html');
+  if (kind === 'live') return absoluteUrl('/live.html');
+  if (kind === 'news') return absoluteUrl('/news.html');
+  if (kind === 'prayer') return absoluteUrl('/prayer.html');
+  if (kind === 'sermon' || kind === 'devotional') return absoluteUrl('/sermons.html');
+  if (kind === 'event') return absoluteUrl('/events.html');
+  if (kind === 'verse') return absoluteUrl('/bible.html');
+  return absoluteUrl('/index.html');
+}
+
+function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
+  const message = {
+    tokens,
+    notification: {
+      title: title || 'Prayer Dome',
+      body: body || '',
+      ...(image ? { image: absoluteUrl(image) } : {})
+    },
+    data: {
+      // FCM data values must all be strings.
+      url: absoluteUrl(link),
+      link: absoluteUrl(link),
+      kind: normaliseKind(kind),
+      id: String(id || ''),
+      tag: String(tag || ('pd-' + (id || Date.now())))
+    },
+    webpush: {
+      fcmOptions: { link: absoluteUrl(link) },
+      notification: {
+        icon: PUSH_ICON,
+        badge: PUSH_BADGE,
+        ...(image ? { image: absoluteUrl(image) } : {}),
+        tag: String(tag || ('pd-' + (id || Date.now()))),
+        vibrate: [180, 90, 180]
+      }
+    },
+    android: {
+      priority: 'high',
+      notification: {
+        channelId: 'prayer_dome_updates',
+        icon: 'logo_notification',
+        color: '#0A4D9B',
+        sound: 'default'
+      }
+    },
+    apns: {
+      payload: { aps: { sound: 'default', 'mutable-content': 1 } }
+    }
+  };
+  return message;
+}
+
+async function disableDeadTokens(response, tokens) {
+  if (!response || !response.failureCount) return;
+  const dead = [];
+  response.responses.forEach((entry, index) => {
+    if (entry.success) return;
+    const code = (entry.error && entry.error.code) || '';
+    if (code.includes('registration-token-not-registered') || code.includes('invalid-registration-token')) {
+      dead.push(tokens[index]);
+    }
+  });
+  if (!dead.length) return;
+  const db = admin.firestore();
+  for (const token of dead) {
+    try {
+      const snap = await db.collection('userTokens').where('token', '==', token).get();
+      snap.forEach((doc) => doc.ref.update({ active: false, invalidReason: 'token_expired' }));
+    } catch (error) {
+      console.warn('Could not retire an expired token:', error.message);
+    }
+  }
+}
+
 // Dynamic social sharing pages for news and testimony links.
 exports.share = functions.https.onRequest((req, res) => shareHandler(req, res));
 
@@ -141,70 +274,107 @@ exports.prayerReminderDispatch = functions.pubsub
   .timeZone('Africa/Lusaka')
   .onRun(async () => {
     const db = admin.firestore();
-    const now = new Date();
-    const currentMinutes = now.getHours() * 60 + now.getMinutes();
-
-    try {
-      // Find users whose reminder window contains the current time.
-      // reminderTime is stored as "HH:MM" in local time (Africa/Lusaka).
-      const usersSnap = await db.collection('userReminders')
-        .where('reminderTime', '!=', null)
-        .get();
-
-      const dispatches = [];
-      usersSnap.forEach(doc => {
-        const ud = doc.data();
-        if (!ud.reminderTime || ud.reminderTime === '') return;
-        const [rh, rm] = ud.reminderTime.split(':').map(Number);
-        const userMinutes = rh * 60 + rm;
-        // Send if within 15 minutes of the scheduled time (to account
-        // for the 15-min poll interval).
-        const diff = Math.abs(currentMinutes - userMinutes);
-        if (diff <= 15 || diff >= 1385) { // also catch midnight wrap
-          dispatches.push({ id: doc.id, ...ud });
-        }
-      });
-
-      if (dispatches.length === 0) return null;
-
-      const tokens = [];
-      for (const ud of dispatches) {
-        if (ud.fcmToken && ud.notifications !== false) {
-          tokens.push({ token: ud.fcmToken, userId: ud.userId });
-        }
-      }
-
-      if (tokens.length === 0) return null;
-
-      const payload = {
-        notification: {
-          title: 'Prayer Time — Prayer Dome',
-          body: 'Take a moment to lift your requests to God. He is listening.',
-          icon: '/assets/logo.png',
-          badge: '/assets/logo.png'
-        },
-        data: {
-          click_action: 'FLUTTER_NOTIFICATION_CLICK',
-          screen: 'prayer'
-        },
-        tokens: tokens.map(t => t.token)
-      };
-
-      const response = await admin.messaging().sendEachForMulticast(payload);
-      console.log(`Prayer reminders sent to ${response.successCount}/${tokens.length} users.`);
-
-      // Log each dispatch.
-      const batch = db.batch();
-      for (const t of tokens) {
-        const logRef = db.collection('reminderLogs').doc();
-        batch.set(logRef, {
-          userId: t.userId,
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          success: true
+    // Date#getHours() is UTC, even inside a scheduled function. Compute the
+    // wall clock in each member's own timezone instead, or every reminder
+    // fires at the wrong hour. The ministry default is Africa/Lusaka.
+    const formatters = {};
+    const clockIn = (timeZone) => {
+      const tz = timeZone || 'Africa/Lusaka';
+      if (!formatters[tz]) {
+        formatters[tz] = new Intl.DateTimeFormat('en-GB', {
+          timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit', hour12: false
         });
       }
-      await batch.commit();
+      const parts = formatters[tz].formatToParts(new Date());
+      const at = (type) => (parts.find((p) => p.type === type) || {}).value;
+      return {
+        date: `${at('year')}-${at('month')}-${at('day')}`,
+        minutes: (parseInt(at('hour'), 10) || 0) * 60 + (parseInt(at('minute'), 10) || 0)
+      };
+    };
+    const baseClock = clockIn('Africa/Lusaka');
+    const localDate = baseClock.date;
 
+    try {
+      const usersSnap = await db.collection('userReminders').get();
+      const due = [];
+      usersSnap.forEach((doc) => {
+        const row = doc.data() || {};
+        if (row.notifications === false || !row.reminderTime) return;
+        const clock = clockIn(row.timeZone);
+        if (row.lastSentDate === clock.date) return;      // already sent today
+        const [rh, rm] = String(row.reminderTime).split(':').map(Number);
+        if (!Number.isFinite(rh) || !Number.isFinite(rm)) return;
+        const target = rh * 60 + rm;
+        // The scheduler runs every quarter hour. Send in the 15-minute window
+        // *after* the chosen minute, never before it, and only once a day.
+        const after = (clock.minutes - target + 1440) % 1440;
+        if (after <= 14) due.push({ id: doc.id, ...row, clockDate: clock.date });
+      });
+
+      if (!due.length) return null;
+
+      // Resolve every reminder to that member's registered devices, honouring
+      // the category switch they set on the account page.
+      const [tokenSnap, prefsSnap] = await Promise.all([
+        db.collection('userTokens').get(),
+        db.collection('userNotificationPrefs').get()
+      ]);
+      const tokensByUser = {};
+      const seenTokens = {};
+      tokenSnap.forEach((doc) => {
+        const row = doc.data() || {};
+        if (!row.token || row.active === false) return;
+        // The same token is stored twice (owner alias + device doc); send once.
+        if (seenTokens[row.token]) return;
+        seenTokens[row.token] = true;
+        (tokensByUser[row.userId] = tokensByUser[row.userId] || []).push(row.token);
+      });
+      const prefsByUser = {};
+      prefsSnap.forEach((doc) => {
+        const row = doc.data() || {};
+        if (row.prefs) prefsByUser[row.uid || doc.id] = row.prefs;
+      });
+
+      const recipients = [];
+      due.forEach((row) => {
+        const prefs = prefsByUser[row.userId || row.id];
+        if (prefs && prefs.prayer === false) return;
+        const tokens = tokensByUser[row.userId || row.id] || (row.fcmToken ? [row.fcmToken] : []);
+        tokens.forEach((token) => recipients.push({ token, userId: row.userId || row.id, reminderId: row.id }));
+      });
+      if (!recipients.length) return null;
+
+      const message = pushMessage({
+        tokens: recipients.map((r) => r.token),
+        title: 'Prayer Time — Prayer Dome',
+        body: 'Take a moment to lift your requests to God. He is listening.',
+        kind: 'prayer',
+        link: '/prayer.html',
+        tag: 'pd-reminder-' + localDate,
+        id: 'reminder-' + localDate
+      });
+      const response = await admin.messaging().sendEachForMulticast(message);
+      console.log(`Prayer reminders sent to ${response.successCount}/${recipients.length} devices.`);
+
+      const sentUsers = new Set();
+      const batch = db.batch();
+      const sentDates = {};
+      due.forEach((row) => { sentDates[row.id] = row.clockDate; });
+      recipients.forEach((recipient, index) => {
+        if (response.responses[index] && response.responses[index].success) sentUsers.add(recipient.reminderId);
+        batch.set(db.collection('reminderLogs').doc(), {
+          userId: recipient.userId,
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          success: !!(response.responses[index] && response.responses[index].success)
+        });
+      });
+      sentUsers.forEach((id) => batch.set(db.collection('userReminders').doc(id), {
+        lastSentDate: sentDates[id] || localDate,
+        lastSentAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }));
+      await batch.commit();
       return null;
     } catch (err) {
       console.error('Prayer reminder dispatch failed:', err);
@@ -213,122 +383,246 @@ exports.prayerReminderDispatch = functions.pubsub
   });
 
 // ==========================================
-// Send Push Notification (existing — kept)
+// Send Push Notification
 // ==========================================
+// The admin console writes one `notifications` document containing the title,
+// message, link and the device tokens to reach. This trigger fans it out to
+// FCM. It is idempotent: an edited or re-saved document is never sent twice.
 exports.sendPushNotification = functions.firestore
   .document('notifications/{notificationId}')
   .onCreate(async (snap, context) => {
-    const notification = snap.data();
-    const { title, message, tokens, type } = notification;
+    const notification = snap.data() || {};
+    if (notification.status === 'sent' || notification.status === 'sending') return null;
 
-    if (!tokens || tokens.length === 0) {
-      console.log('No tokens to send to');
+    const tokens = Array.isArray(notification.tokens) ? notification.tokens : [];
+    const validTokens = [...new Set(tokens.filter((token) => typeof token === 'string' && token.length > 20))];
+
+    if (!validTokens.length) {
+      console.log('Notification has no recipients; leaving it in-app only.');
+      await snap.ref.set({ status: 'in-app', recipients: 0 }, { merge: true });
       return null;
     }
 
-    const validTokens = tokens.filter(token => token && token.length > 20);
-    if (validTokens.length === 0) {
-      console.log('No valid tokens');
+    const title = notification.title || 'Prayer Dome';
+    const body = notification.message || notification.body || '';
+    const kind = normaliseKind(notification.type || notification.kind);
+    const link = linkFor(notification);
+    const allowedTokens = await filterTokensByPreference(validTokens, kind);
+    if (!allowedTokens.length) {
+      console.log('Every registered device muted this category; notification stays in-app.');
+      await snap.ref.set({ status: 'in-app', recipients: 0, filteredByPreference: true }, { merge: true });
       return null;
     }
-
-    const payload = {
-      notification: {
-        title: title,
-        body: message,
-        icon: '/assets/logo.png',
-        badge: '/assets/logo.png',
-        vibrate: '200,100,200',
-        sound: 'default'
-      },
-      data: {
-        click_action: 'FLUTTER_NOTIFICATION_CLICK',
-        screen: type || 'news'
-      }
-    };
+    const message = pushMessage({
+      tokens: allowedTokens,
+      title,
+      body,
+      image: notification.image || notification.imageUrl || null,
+      kind,
+      link,
+      id: context.params.notificationId,
+      tag: notification.tag || ('pd-' + context.params.notificationId)
+    });
 
     try {
-      const response = await admin.messaging().sendEachForMulticast({
-        tokens: validTokens,
-        ...payload
-      });
-
-      console.log(`Sent to ${response.successCount} devices, failed: ${response.failureCount}`);
-
-      await snap.ref.update({
-        status: 'sent',
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        successCount: response.successCount,
-        failureCount: response.failureCount
-      });
-
-      if (response.failureCount > 0) {
-        const failedTokens = [];
-        response.responses.forEach((resp, idx) => {
-          if (!resp.success) {
-            failedTokens.push(validTokens[idx]);
-            console.error(`Failed token: ${validTokens[idx]}`, resp.error);
-          }
-        });
-
-        for (const failedToken of failedTokens) {
-          const tokensQuery = await admin.firestore()
-            .collection('userTokens')
-            .where('token', '==', failedToken)
-            .get();
-
-          tokensQuery.forEach(doc => {
-            doc.ref.update({ active: false, invalidReason: 'token_expired' });
-          });
-        }
+      await snap.ref.set({ status: 'sending' }, { merge: true });
+      // FCM accepts at most 500 tokens per multicast call. Fan out in chunks
+      // so a growing church never silently loses the members past 500.
+      let successCount = 0;
+      let failureCount = 0;
+      for (let i = 0; i < allowedTokens.length; i += 500) {
+        const chunk = allowedTokens.slice(i, i + 500);
+        const response = await admin.messaging().sendEachForMulticast({ ...message, tokens: chunk });
+        successCount += response.successCount;
+        failureCount += response.failureCount;
+        await disableDeadTokens(response, chunk);
       }
 
-      return response;
+      console.log(`Notification "${title}" sent to ${successCount} devices, failed: ${failureCount}`);
+      await snap.ref.set({
+        status: 'sent',
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        successCount,
+        failureCount,
+        link
+      }, { merge: true });
+
+      return { successCount, failureCount };
     } catch (error) {
       console.error('Error sending notifications:', error);
-      await snap.ref.update({
-        status: 'failed',
-        error: error.message
-      });
+      await snap.ref.set({ status: 'failed', error: error.message }, { merge: true });
       return null;
     }
   });
 
-// Test notification handler (existing — kept)
+// Test notification handler — powers the admin's "test my device" button.
 exports.sendTestNotification = functions.firestore
   .document('test_notifications/{testId}')
   .onCreate(async (snap, context) => {
-    const test = snap.data();
-    const { title, message, token } = test;
-
+    const test = snap.data() || {};
+    const token = test.token;
     if (!token) return null;
 
-    const payload = {
-      notification: {
-        title: title,
-        body: message,
-        icon: '/assets/logo.png'
-      }
+    const link = absoluteUrl(test.link || '/account.html');
+    const message = {
+      token,
+      ...pushMessage({
+        tokens: [token],
+        title: test.title || 'Prayer Dome test notification',
+        body: test.message || 'Notifications are working on this device.',
+        kind: 'general',
+        link,
+        id: context.params.testId,
+        tag: 'pd-test-' + context.params.testId
+      })
     };
+    delete message.tokens;
 
     try {
-      const response = await admin.messaging().send({
-        token: token,
-        ...payload
-      });
-
+      const response = await admin.messaging().send(message);
       console.log('Test notification sent:', response);
-      await snap.ref.update({
+      await snap.ref.set({
         status: 'sent',
         sentAt: admin.firestore.FieldValue.serverTimestamp()
-      });
+      }, { merge: true });
       return response;
     } catch (error) {
       console.error('Test notification failed:', error);
-      await snap.ref.update({
-        status: 'failed',
-        error: error.message
+      await snap.ref.set({ status: 'failed', error: error.message }, { merge: true });
+      return null;
+    }
+  });
+
+// ==========================================
+// Scheduled daily verse push
+// ==========================================
+// Works when the app is closed. Every member who switched verse alerts on has a
+// `userVerseSettings/{uid}` document (the app mirrors its local settings there)
+// with their four slot times and timezone. This function wakes every 15
+// minutes, finds the slots that are due in each member's own timezone, and
+// sends the same branded verse card the service worker would have drawn.
+//
+// An administrator can override the verse for a day by writing
+// `verseSchedule/{YYYY-MM-DD}` with { text, reference, translation, slots }.
+exports.dailyVerseDispatch = functions.pubsub
+  .schedule('*/15 * * * *')
+  .timeZone('Africa/Lusaka')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const now = new Date();
+
+    try {
+      const settingsSnap = await db.collection('userVerseSettings')
+        .where('enabled', '==', true)
+        .get();
+      if (settingsSnap.empty) return null;
+
+      const specialCache = new Map();
+      // A member can mute Scripture alerts on their account page; the bell
+      // still shows the verse, but their phone stays quiet.
+      const prefsSnap = await db.collection('userNotificationPrefs').get();
+      const prefsByUser = {};
+      prefsSnap.forEach((doc) => {
+        const row = doc.data() || {};
+        if (row.prefs) prefsByUser[row.uid || doc.id] = row.prefs;
       });
+
+      for (const doc of settingsSnap.docs) {
+        const settings = doc.data() || {};
+        const uid = settings.uid || doc.id;
+        if (prefsByUser[uid] && prefsByUser[uid].verse === false) continue;
+        // getTimezoneOffset() is UTC - local, so Lusaka (UTC+2) is -120.
+        const offset = Number.isFinite(Number(settings.timezoneOffset)) ? Number(settings.timezoneOffset) : -120;
+        // JavaScript's getTimezoneOffset() is UTC - local, in minutes.
+        const local = new Date(now.getTime() - offset * 60000);
+        const localMinutes = local.getUTCHours() * 60 + local.getUTCMinutes();
+        const localDate = local.toISOString().slice(0, 10);
+        const lastSent = settings.lastSent || {};
+
+        const dueSlots = [];
+        for (const slot of verseBank.SLOTS) {
+          const conf = (settings.slots && settings.slots[slot.id]) || {};
+          if (conf.on === false) continue;
+          if (lastSent[slot.id] === localDate) continue;
+          const [hour, minute] = String(conf.time || slot.defaultTime).split(':').map(Number);
+          const due = (Number.isFinite(hour) ? hour : 0) * 60 + (Number.isFinite(minute) ? minute : 0);
+          const diff = localMinutes - due;
+          if (diff >= 0 && diff <= 14) dueSlots.push({ slot, due });
+        }
+        if (!dueSlots.length) continue;
+
+        // One verse override lookup per calendar date.
+        if (!specialCache.has(localDate)) {
+          let special = null;
+          try {
+            const specialSnap = await db.doc(`verseSchedule/${localDate}`).get();
+            if (specialSnap.exists) {
+              const value = specialSnap.data() || {};
+              if (value.text && value.reference) special = value;
+            }
+          } catch (error) { /* the override is optional */ }
+          specialCache.set(localDate, special);
+        }
+        const special = specialCache.get(localDate);
+
+        const tokenSnap = await db.collection('userTokens')
+          .where('userId', '==', uid)
+          .get();
+        const tokens = [];
+        const seen = new Set();
+        tokenSnap.forEach((tokenDoc) => {
+          const row = tokenDoc.data() || {};
+          if (row.token && row.active !== false && !seen.has(row.token)) {
+            seen.add(row.token);
+            tokens.push(row.token);
+          }
+        });
+        if (!tokens.length) continue;
+
+        for (const { slot } of dueSlots) {
+          let verse = verseBank.verseFor(slot.id, local);
+          if (special && (special.slots === 'all' || String(special.slots || '').includes(slot.id))) {
+            verse = {
+              ...verse,
+              text: special.text,
+              reference: special.reference,
+              translation: special.translation || 'NIV',
+              slotLabel: special.title || verse.slotLabel
+            };
+          }
+          const title = `${verse.slotLabel} · Prayer Dome`;
+          const body = `\u201C${verse.text}\u201D\n\u2014 ${verse.reference} (${verse.translation || 'NIV'})`;
+          const message = pushMessage({
+            tokens,
+            title,
+            body,
+            kind: 'verse',
+            link: '/bible.html?verse=' + encodeURIComponent(verse.reference),
+            id: `${localDate}-${slot.id}-${uid}`,
+            tag: `pd-verse-${slot.id}-${localDate}`
+          });
+          try {
+            const response = await admin.messaging().sendEachForMulticast(message);
+            await db.collection('verseDispatchLogs').add({
+              uid,
+              date: localDate,
+              slot: slot.id,
+              successCount: response.successCount,
+              failureCount: response.failureCount,
+              dispatchedAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+            await disableDeadTokens(response, tokens);
+          } catch (error) {
+            console.error(`Verse dispatch failed for ${uid}/${slot.id}:`, error.message);
+          }
+          lastSent[slot.id] = localDate;
+        }
+
+        await doc.ref.set({ lastSent, lastDispatchAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      }
+      return null;
+    } catch (error) {
+      console.error('Daily verse dispatch failed:', error);
       return null;
     }
   });

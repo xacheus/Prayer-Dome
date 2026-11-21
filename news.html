@@ -738,7 +738,10 @@
     };
 
     try {
-        const newsQuery = query(collection(db, "news"), orderBy("createdAt", "desc"), limit(100));
+        // No orderBy: older stories in this collection predate createdAt and
+        // Firestore would silently drop documents that lack the field. Sort in
+        // memory instead so every published story appears.
+        const newsQuery = query(collection(db, "news"), limit(100));
         onSnapshot(newsQuery, applyNewsSnapshot, (error) => console.warn('News sync unavailable:', error));
     } catch (error) {
         console.warn('News sync unavailable:', error);

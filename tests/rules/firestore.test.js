@@ -41,6 +41,25 @@ const assert = require('node:assert/strict');
       await assertFails(getDoc(doc(other, `${collection}/owned`)));
       await assertSucceeds(updateDoc(doc(member, `${collection}/owned`), { active: true }));
     }
+    // Public content: anyone can read, only admins can change it.
+    for (const collection of ['news', 'teamMembers']) {
+      await assertSucceeds(setDoc(doc(admin, `${collection}/entry`), { published: true, name: 'Entry' }));
+      await assertSucceeds(getDoc(doc(guest, `${collection}/entry`)));
+      await assertFails(setDoc(doc(member, `${collection}/forged`), { published: true }));
+      await assertFails(updateDoc(doc(member, `${collection}/entry`), { name: 'Changed' }));
+    }
+    // The in-app bell reads a token-free public feed; guests may read it.
+    await assertSucceeds(setDoc(doc(admin, 'publicNotifications/notice'), { title: 'Hello', message: 'World', inApp: true }));
+    await assertSucceeds(getDoc(doc(guest, 'publicNotifications/notice')));
+    await assertFails(setDoc(doc(member, 'publicNotifications/forged'), { title: 'Forged' }));
+
+    // Notification switches are private to the member and read by the server.
+    await assertSucceeds(setDoc(doc(member, 'userNotificationPrefs/member'), { uid: 'member', prefs: { news: false } }));
+    await assertSucceeds(getDoc(doc(member, 'userNotificationPrefs/member')));
+    await assertFails(getDoc(doc(other, 'userNotificationPrefs/member')));
+    await assertFails(setDoc(doc(other, 'userNotificationPrefs/member'), { uid: 'other' }));
+    await assertSucceeds(getDoc(doc(admin, 'userNotificationPrefs/member')));
+
     for (const collection of ['prayers', 'testimonies', 'gallery']) {
       await assertFails(setDoc(doc(member, `${collection}/new`), { userId: 'member', status: 'approved' }));
       await assertFails(setDoc(doc(member, `${collection}/new`), { userId: 'other', status: 'pending' }));

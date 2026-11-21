@@ -933,6 +933,38 @@
   var READ_KEY = 'pd_notif_read_ids';
   var READ_SIG_KEY = 'pd_notif_read_sigs';
   var SHOWN_KEY = 'pd_notif_shown_ids';
+  var PREF_KEY = 'pd_notif_prefs';
+  var PENDING_TOKEN_KEY = 'pd_push_pending';
+  var TOPIC_PREF_KEY = 'pd_notif_topic_prefs';
+
+  /* What a member wants on their *device* (lock screen / shade). Everything
+     still appears in the bell — these switches only decide what interrupts
+     them. The defaults are the useful ones: every category on. */
+  var NOTIF_TYPES = {
+    verse: 'Daily Bible verse',
+    live: 'Live service alerts',
+    prayer: 'Prayer and care updates',
+    news: 'News and announcements',
+    sermon: 'Sermons and devotionals',
+    event: 'Events and reminders',
+    general: 'Other ministry notices'
+  };
+  function readPrefs() {
+    var saved = lsGet(PREF_KEY, null);
+    var prefs = {};
+    Object.keys(NOTIF_TYPES).forEach(function (k) { prefs[k] = true; });
+    if (saved && typeof saved === 'object') {
+      Object.keys(NOTIF_TYPES).forEach(function (k) {
+        if (saved[k] === false) prefs[k] = false;
+      });
+    }
+    return prefs;
+  }
+  function typeAllowed(type) {
+    var key = String(type || 'general').toLowerCase();
+    if (!NOTIF_TYPES[key]) key = 'general';
+    return readPrefs()[key] !== false;
+  }
 
   /* Web-push identity. The VAPID public key is the Web Push certificate from
      the Prayer Dome Firebase project — it is a public value, safe to ship. */
@@ -1089,20 +1121,40 @@
       if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         setTimeout(function () { notifications.registerDevice(); }, 2500);
       }
-      // A dismissed system notification counts as seen.
+      // Messages from the worker: a dismissed system notification counts as
+      // seen, and a push that arrived while the app is open is added to the
+      // bell immediately (the worker already drew the notification).
       if (navigator.serviceWorker) {
         navigator.serviceWorker.addEventListener('message', function (event) {
           var msg = event.data || {};
           if (msg.type === 'pd-notification-dismissed' && msg.id) notifications.markRead(msg.id);
+          if (msg.type === 'pd-push-received' && msg.notification) {
+            notifications.push(msg.notification, { silent: true, localOnly: true });
+          }
         });
       }
-      // Firestore live mirror (liveStatus style): watch notifications in real time.
-      if (fb && fb.db && fb.collection && fb.query && fb.orderBy && fb.limit && fb.getDocs) {
-        var q = fb.query(fb.collection(fb.db, 'notifications'), fb.orderBy('createdAt', 'desc'), fb.limit(20));
-        fb.getDocs(q).then(function (snap) {
+      // If a token was issued before sign-in, upload it as soon as we know who
+      // this is, and again whenever the app returns to the foreground.
+      notifications.flushPendingToken();
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) notifications.flushPendingToken();
+      });
+      document.addEventListener('pd:role', function () { notifications.flushPendingToken(); });
+      setTimeout(function () { notifications.flushPendingToken(); }, 4000);
+      // Firestore live mirror: an admin broadcast reaches the bell of every
+      // open app within a second, not only the next reload. onSnapshot is used
+      // where the page supplied it; older pages fall back to one read.
+      if (fb && fb.db && fb.collection && fb.query && fb.orderBy && fb.limit && (fb.onSnapshot || fb.getDocs)) {
+        var q = fb.query(fb.collection(fb.db, 'publicNotifications'), fb.orderBy('createdAt', 'desc'), fb.limit(20));
+        var applyRemote = function (snap) {
           var remote = [];
           snap.forEach(function (d) {
             var x = d.data();
+            // Token-bearing push records are intentionally unreadable to
+            // members; a mirror without tokens carries the bell entry. The
+            // `latest_alert` state document is not an announcement — skip it
+            // and anything that was not explicitly mirrored as in-app.
+            if (d.id === 'latest_alert' || x.inApp !== true) return;
             remote.push({
               id: d.id, type: x.type || 'general', title: x.title || 'Update',
               message: x.message || '', link: x.link || null,
@@ -1111,7 +1163,14 @@
             });
           });
           if (remote.length) notifications.merge(remote);
-        }).catch(function () {});
+        };
+        try {
+          if (fb.onSnapshot) {
+            notifications._remoteUnsub = fb.onSnapshot(q, applyRemote, function () {});
+          } else {
+            fb.getDocs(q).then(applyRemote).catch(function () {});
+          }
+        } catch (e) { /* the in-app centre still works from local state */ }
       }
     },
 
@@ -1279,16 +1338,22 @@
           msgMod.onMessage(messaging, function (payload) {
             var note = (payload && payload.notification) || {};
             var data = (payload && payload.data) || {};
+            // The service worker has already raised the system notification;
+            // only reflect it in the bell. localOnly stops a second Firestore
+            // record, and silent avoids a duplicate toast on top of the tray
+            // notification. The id is the server record id, so the mirror
+            // snapshot updates this same row instead of adding another.
             notifications.push({
               id: data.id || note.title,
               type: data.kind || data.type || 'general',
               title: note.title || data.title || 'Prayer Dome',
               message: note.body || data.body || data.message || '',
               link: data.url || data.link || null
-            });
+            }, { localOnly: true, silent: true });
           });
 
-          notifications.saveToken(token, member, 'web');
+              notifications.saveToken(token, member, 'web');
+          notifications.syncPreferences();
           return token;
         } catch (e) {
           return null;   // push is a bonus; the in-app centre still works
@@ -1303,20 +1368,39 @@
     saveToken: function (token, uid, platform) {
       if (!token) return;
       var member = uid || (fb && fb.auth && fb.auth.currentUser && fb.auth.currentUser.uid) || window.PD_UID || null;
-      if (localStorage.getItem('pd_push_token') === token &&
-          localStorage.getItem('pd_push_uid') === String(member)) return;
       localStorage.setItem('pd_push_token', token);
+      localStorage.setItem('pd_push_token_saved', String(Date.now()));
       localStorage.setItem('pd_push_uid', String(member));
-      // The security rules require a signed-in owner, so anonymous visitors
-      // keep the token locally until they sign in.
-      if (!member || !fb || !fb.db || !fb.setDoc || !fb.doc) return;
-      fsSet(fb.doc(fb.db, 'userTokens', member), {
+
+      // The security rules require a signed-in owner, so an anonymous visitor
+      // keeps the token on the device and it is uploaded the moment they sign
+      // in (flushPendingToken). Losing it here is why some members never
+      // received a push: they allowed notifications on the welcome screen,
+      // before creating an account.
+      if (!member || !fb || !fb.db || !fb.setDoc || !fb.doc) {
+        lsSet(PENDING_TOKEN_KEY, { token: token, platform: platform || 'web', at: Date.now() });
+        return;
+      }
+      lsSet(PENDING_TOKEN_KEY, null);
+
+      // One document per *device*, not per member: the same account on a phone
+      // and a tablet used to overwrite one token with the other, so only the
+      // last device ever received anything. The uid document is kept too for
+      // the admin's "test my device" button, which looks it up by uid.
+      var hash = 0;
+      for (var i = 0; i < token.length; i += 1) hash = ((hash << 5) - hash + token.charCodeAt(i)) | 0;
+      var deviceId = String(member) + '__' + Math.abs(hash).toString(36);
+      var record = {
         token: token,
         userId: member,
         platform: platform || 'web',
         active: true,
+        installed: !!(window.PDApp && PDApp.app && PDApp.app.installed()),
+        userAgent: String(navigator.userAgent || '').slice(0, 180),
         updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
-      });
+      };
+      fsSet(fb.doc(fb.db, 'userTokens', String(member)), record);
+      fsSet(fb.doc(fb.db, 'userTokens', deviceId), record);
     },
 
     /* Show the notification on the device itself. Android and installed iOS
@@ -1325,6 +1409,9 @@
     notifyDevice: function (n) {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
       if (idList(SHOWN_KEY).indexOf(n.id) > -1) return;
+      // The member's switches are honoured here, before anything reaches the
+      // operating system: a muted category never interrupts them.
+      if (!typeAllowed(n.type)) return;
       rememberId(SHOWN_KEY, n.id, 200);
 
       var options = {
@@ -1477,6 +1564,123 @@
 
     unread: function () {
       return notifications.items.filter(function (n) { return !n.read; }).length;
+    },
+
+    preferences: function () { return readPrefs(); },
+    setPreference: function (type, on) {
+      var prefs = readPrefs();
+      var key = String(type || 'general').toLowerCase();
+      if (!NOTIF_TYPES[key]) key = 'general';
+      prefs[key] = !!on;
+      lsSet(PREF_KEY, prefs);
+      broadcast('notif-prefs', prefs);
+      notifications.syncPreferences();
+      return prefs;
+    },
+    /* Server pushes must respect the same switches, otherwise turning "News"
+       off would silence the bell but still buzz the phone. The preference
+       document is read by the Cloud Function before it sends a category. */
+    syncPreferences: function () {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      var prefs = readPrefs();
+      if (!current || !fb || !fb.db || !fb.doc || !fb.setDoc) return Promise.resolve(false);
+      return Promise.resolve(fb.setDoc(fb.doc(fb.db, 'userNotificationPrefs', current.uid), {
+        uid: current.uid,
+        prefs: prefs,
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true })).then(function () { return true; }).catch(function () { return false; });
+    },
+    reminder: function () {
+      try {
+        var raw = JSON.parse(localStorage.getItem('pd_prayer_reminder') || '{}');
+        return { time: raw.time || '', on: !!raw.on };
+      } catch (e) { return { time: '', on: false }; }
+    },
+    /* Daily prayer reminder. The preference lives in localStorage so the
+       service worker can read it offline, and in userReminders so the
+       scheduled Cloud Function can reach a closed phone. */
+    setReminder: function (time, on) {
+      var clean = /^\d{2}:\d{2}$/.test(String(time || '')) ? String(time) : '';
+      var value = { time: clean, on: !!on && !!clean };
+      try { localStorage.setItem('pd_prayer_reminder', JSON.stringify(value)); } catch (e) {}
+      broadcast('notif-reminder', value);
+      notifications.syncReminder();
+      return value;
+    },
+    syncReminder: function () {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      var value = notifications.reminder();
+      if (!current || !fb || !fb.db || !fb.doc || !fb.setDoc) return Promise.resolve(false);
+      return Promise.resolve(fb.setDoc(fb.doc(fb.db, 'userReminders', current.uid), {
+        userId: current.uid,
+        reminderTime: value.on ? value.time : '',
+        notifications: value.on,
+        platform: 'web',
+        timeZone: (function () { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Lusaka'; } catch (e) { return 'Africa/Lusaka'; } })(),
+        updatedAt: fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString()
+      }, { merge: true })).then(function () { return true; }).catch(function () { return false; });
+    },
+    types: function () { return NOTIF_TYPES; },
+
+    /* A single, honest answer to "why am I not getting notifications?".
+       Shown on the account page, so a member can fix it themselves. */
+    diagnostics: function () {
+      var mode = (window.PDApp && PDApp.app) ? PDApp.app.mode() : 'browser';
+      var permission = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
+      var out = {
+        permission: permission,
+        supported: typeof Notification !== 'undefined' && !!navigator.serviceWorker,
+        installed: mode === 'standalone' || mode === 'fullscreen' || mode === 'minimal-ui' || mode === 'native',
+        displayMode: mode,
+        token: localStorage.getItem('pd_push_token') || '',
+        tokenSavedAt: Number(localStorage.getItem('pd_push_token_saved') || 0),
+        pendingToken: !!localStorage.getItem(PENDING_TOKEN_KEY),
+        serviceWorker: 'unknown',
+        platform: 'web'
+      };
+      try {
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) out.platform = 'android';
+        else if (/iPad|iPhone|iPod/.test(navigator.userAgent || '')) out.platform = 'ios';
+      } catch (e) {}
+      if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function (reg) {
+          out.serviceWorker = reg.active ? 'active' : 'installing';
+          out.scope = reg.scope || '';
+          document.dispatchEvent(new CustomEvent('pd:notif-diagnostics', { detail: out }));
+        }).catch(function () { out.serviceWorker = 'unavailable'; });
+      }
+      return out;
+    },
+
+    /** A real notification on this device, so the member can prove it works. */
+    testDevice: function () {
+      if (typeof Notification === 'undefined') return Promise.resolve(false);
+      var ask = Notification.permission === 'granted'
+        ? Promise.resolve('granted')
+        : notifications.requestPermission();
+      return Promise.resolve(ask).then(function (perm) {
+        if (perm !== 'granted') return false;
+        var n = {
+          id: 'test-' + Date.now(),
+          type: 'general',
+          title: 'Prayer Dome notifications are on',
+          message: 'This is how a verse, live alert or prayer update will appear.',
+          link: '/account.html',
+          time: new Date().toISOString()
+        };
+        notifications.notifyDevice(n);
+        return true;
+      });
+    },
+
+    /** Try again to upload a token that was issued before sign-in. */
+    flushPendingToken: function () {
+      var pending = lsGet(PENDING_TOKEN_KEY, null);
+      if (!pending || !pending.token) return Promise.resolve(false);
+      var current = fb && fb.auth && fb.auth.currentUser;
+      if (!current) return Promise.resolve(false);
+      notifications.saveToken(pending.token, current.uid, pending.platform || 'web');
+      return Promise.resolve(true);
     },
 
     syncBadge: function () {
@@ -1772,7 +1976,14 @@
   /* ------------------------------------------------------------------ news */
   var news = {
     list: function () {
-      return (store.get('news', 'DEFAULT_NEWS') || []).filter(function (n) { return n && n.published; });
+      return (store.get('news', 'DEFAULT_NEWS') || [])
+        .filter(function (n) { return n && n.published; })
+        .slice()
+        .sort(function (a, b) {
+          var at = new Date(a.date || a.createdAt || 0).getTime() || 0;
+          var bt = new Date(b.date || b.createdAt || 0).getTime() || 0;
+          return bt - at;   // newest first, every page
+        });
     },
     get: function (id) {
       var all = store.get('news', 'DEFAULT_NEWS') || [];
@@ -1786,6 +1997,7 @@
       for (var i = 0; i < all.length; i++) if (all[i].id === n.id) idx = i;
       if (idx >= 0) all[idx] = n; else all.unshift(n);
       store.set('news', all);
+      var write = Promise.resolve(false);
       if (fb && fb.db && fb.collection && fb.serverTimestamp) {
         var payload = Object.assign({}, n, {
           id: n.id,
@@ -1793,20 +2005,38 @@
           socialImage: n.socialImage || n.featuredImage || n.image || '',
           updatedAt: fb.serverTimestamp()
         });
+        delete payload.sync;
         if (fb.setDoc && fb.doc) {
           if (!payload.createdAt) payload.createdAt = fb.serverTimestamp();
-          fb.setDoc(fb.doc(fb.db, 'news', n.id), payload, { merge: true }).catch(function () {});
+          write = fb.setDoc(fb.doc(fb.db, 'news', n.id), payload, { merge: true })
+            .then(function () { return true; }).catch(function () { return false; });
         } else if (fb.addDoc) {
           payload.createdAt = fb.serverTimestamp();
-          fb.addDoc(fb.collection(fb.db, 'news'), payload).catch(function () {});
+          write = fb.addDoc(fb.collection(fb.db, 'news'), payload)
+            .then(function () { return true; }).catch(function () { return false; });
         }
       }
+      // A non-enumerable handle lets the admin console wait for the Firestore
+      // write before it re-reads the collection (otherwise a fast refresh can
+      // show the old title for a second). It is invisible to JSON/storage.
+      try { Object.defineProperty(n, 'sync', { value: write, enumerable: false, configurable: true }); } catch (e) {}
       broadcast('news', n);
       return n;
+    },
+    update: function (id, patch) {
+      var existing = news.get(id);
+      if (!existing) return null;
+      return news.publish(Object.assign({}, existing, patch || {}, { id: id }));
     },
     remove: function (id) {
       var all = store.get('news', 'DEFAULT_NEWS') || [];
       store.set('news', all.filter(function (n) { return n.id !== id; }));
+      // Deleting the card locally is not enough: the News Centre listens to the
+      // Firestore collection, so without this the story came straight back on
+      // the next snapshot. Use deleteDoc when the page supplied it.
+      if (fb && fb.db && fb.doc && fb.deleteDoc) {
+        try { fb.deleteDoc(fb.doc(fb.db, 'news', id)).catch(function () {}); } catch (e) {}
+      }
       broadcast('news:remove', { id: id });
     }
   };
@@ -2210,6 +2440,191 @@
     init: function(){ layout.ensure(); }
   };
 
+  /* ------------------------------------------------------- installed app shell
+   * The difference between "a website in a browser tab" and "the Prayer Dome
+   * app" is almost entirely chrome: the URL bar, the browser's own splash, the
+   * rubber-band scroll and the white flash between pages. None of that can be
+   * scripted away inside a tab — browsers forbid it — but every one of them is
+   * gone the moment the app is opened from the home screen in standalone mode.
+   * This module makes that installed experience feel like one native app:
+   *
+   *   • the app's own name, icon, status-bar colour and splash, never Chrome's;
+   *   • no rubber-band / pull-to-refresh bounce, no scrollbars, no tap delays;
+   *   • safe-area padding on notched phones (the header clears the notch);
+   *   • an optional true full-screen mode for members who want zero system UI;
+   *   • one clear, branded install invitation for anyone still in a tab.
+   *
+   * It is deliberately inert in the admin console (which runs its own shell)
+   * and on browsers without the APIs — the page always works.
+   * --------------------------------------------------------------- */
+  var appShell = {
+    CSS: ''
+      + '@supports (padding: max(0px)){body.pd-app-mode{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}}'
+      + 'html.pd-app-mode{overscroll-behavior-y:none;background:#07244d;}'
+      + 'body.pd-app-mode{overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;}'
+      + 'body.pd-app-mode ::-webkit-scrollbar{width:0;height:0;}'
+      + 'body.pd-app-mode .pd-topbar{padding-top:max(10px,env(safe-area-inset-top));}'
+      + 'body.pd-app-mode .pd-drawer{padding-top:max(18px,env(safe-area-inset-top));}'
+      + 'body.pd-app-mode .pd-footer{padding-bottom:max(20px,env(safe-area-inset-bottom));}'
+      + 'body.pd-app-mode a,body.pd-app-mode button,body.pd-app-mode [role="button"]{touch-action:manipulation;}'
+      + 'body.pd-app-mode .pd-topbar,body.pd-app-mode .pd-drawer,body.pd-app-mode .pd-footer{-webkit-user-select:none;user-select:none;}'
+      + 'body.pd-fullscreen .pd-topbar{padding-top:max(8px,env(safe-area-inset-top));}'
+      + '#pdAppSplash{position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;'
+      + 'align-items:center;justify-content:center;gap:18px;background:radial-gradient(ellipse 80% 60% at 50% 38%,rgba(212,175,55,.24),transparent 58%),linear-gradient(160deg,#0a3d7a 0%,#0A4D9B 48%,#07244d 100%);'
+      + 'color:#fff;transition:opacity .42s ease,visibility .42s ease;font-family:Poppins,Inter,sans-serif;text-align:center;padding:32px;}'
+      + '#pdAppSplash.pd-splash-out{opacity:0;visibility:hidden;pointer-events:none;}'
+      + '#pdAppSplash img{width:104px;height:104px;border-radius:26px;background:rgba(255,255,255,.96);padding:10px;box-shadow:0 18px 50px rgba(0,0,0,.34);}'
+      + '#pdAppSplash .pd-splash-name{font-size:1.18rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase;}'
+      + '#pdAppSplash .pd-splash-tag{font-size:.78rem;color:rgba(255,255,255,.78);letter-spacing:.04em;margin-top:-8px;}'
+      + '#pdAppSplash .pd-splash-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#d4af37;margin:0 4px;animation:pdSplashPulse 1.25s ease-in-out infinite;}'
+      + '#pdAppSplash .pd-splash-dot:nth-child(2){animation-delay:.16s}#pdAppSplash .pd-splash-dot:nth-child(3){animation-delay:.32s}'
+      + '@keyframes pdSplashPulse{0%,80%,100%{opacity:.28;transform:translateY(0)}40%{opacity:1;transform:translateY(-4px)}}'
+      + 'body.pd-installed .pd-install-only{display:none!important;}'
+      + '@media (prefers-reduced-motion:reduce){#pdAppSplash .pd-splash-dot{animation:none;opacity:.8}}',
+    mode: function () {
+      try {
+        if (pwa && pwa.isNativeApp()) return 'native';
+        var modes = ['fullscreen', 'standalone', 'minimal-ui', 'browser'];
+        for (var i = 0; i < modes.length; i += 1) {
+          if (window.matchMedia && window.matchMedia('(display-mode: ' + modes[i] + ')').matches) return modes[i];
+        }
+        if (navigator.standalone === true) return 'standalone';
+      } catch (e) {}
+      return 'browser';
+    },
+    installed: function () {
+      var mode = appShell.mode();
+      return mode === 'standalone' || mode === 'fullscreen' || mode === 'minimal-ui' || mode === 'native';
+    },
+    ensureMeta: function () {
+      var metas = {
+        'application-name': 'Prayer Dome',
+        'mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-capable': 'yes',
+        'apple-mobile-web-app-title': 'Prayer Dome',
+        'apple-mobile-web-app-status-bar-style': 'black-translucent',
+        'format-detection': 'telephone=no',
+        'theme-color': '#0A4D9B'
+      };
+      Object.keys(metas).forEach(function (name) {
+        var el = document.querySelector('meta[name="' + name + '"]');
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute('name', name);
+          document.head.appendChild(el);
+        }
+        if (!el.getAttribute('content')) el.setAttribute('content', metas[name]);
+      });
+      var touch = document.querySelector('link[rel="apple-touch-icon"]');
+      if (!touch) {
+        touch = document.createElement('link');
+        touch.rel = 'apple-touch-icon';
+        document.head.appendChild(touch);
+      }
+      // An apple-touch-icon has to be same-origin to be picked up by iOS when
+      // the app is added to the home screen. Old pages pointed at the live host.
+      try { touch.href = '/assets/logo.png'; } catch (e) {}
+    },
+    injectStyles: function () {
+      if (document.getElementById('pdAppShellStyles')) return;
+      var style = document.createElement('style');
+      style.id = 'pdAppShellStyles';
+      style.textContent = appShell.CSS;
+      document.head.appendChild(style);
+    },
+    splash: function () {
+      if (!appShell.installed()) return;
+      if (document.getElementById('pdAppSplash')) return;
+      try {
+        if (sessionStorage.getItem('pd_splash_seen') === '1') return;
+        sessionStorage.setItem('pd_splash_seen', '1');
+      } catch (e) {}
+      var el = document.createElement('div');
+      el.id = 'pdAppSplash';
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-label', 'Prayer Dome is opening');
+      el.innerHTML = '<img src="' + BRAND_LOGO + '" alt="" width="104" height="104">'
+        + '<div class="pd-splash-name">Prayer Dome</div>'
+        + '<div class="pd-splash-tag">A House of Prayer for All Nations</div>'
+        + '<div aria-hidden="true"><span class="pd-splash-dot"></span><span class="pd-splash-dot"></span><span class="pd-splash-dot"></span></div>';
+      document.body.appendChild(el);
+      var hide = function () {
+        if (!el || el.classList.contains('pd-splash-out')) return;
+        el.classList.add('pd-splash-out');
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 460);
+      };
+      window.addEventListener('load', function () { setTimeout(hide, 260); });
+      setTimeout(hide, 2600);
+    },
+    setBadge: function (count) {
+      try {
+        if (count > 0 && navigator.setAppBadge) navigator.setAppBadge(count);
+        else if (navigator.clearAppBadge) navigator.clearAppBadge();
+      } catch (e) {}
+    },
+    fullscreenSupported: function () {
+      try {
+        var el = document.documentElement;
+        return !!(el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen);
+      } catch (e) { return false; }
+    },
+    isFullscreen: function () {
+      try { return !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement); }
+      catch (e) { return false; }
+    },
+    enterFullscreen: function () {
+      var el = document.documentElement;
+      var request = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (!request) return Promise.resolve(false);
+      try {
+        var result = request.call(el, { navigationUI: 'hide' });
+        return Promise.resolve(result).then(function () { return true; }).catch(function () { return false; });
+      } catch (e) { return Promise.resolve(false); }
+    },
+    exitFullscreen: function () {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (!exit) return Promise.resolve(false);
+      try { return Promise.resolve(exit.call(document)).then(function () { return true; }).catch(function () { return false; }); }
+      catch (e) { return Promise.resolve(false); }
+    },
+    toggleFullscreen: function () {
+      return appShell.isFullscreen() ? appShell.exitFullscreen() : appShell.enterFullscreen();
+    },
+    init: function () {
+      try {
+        appShell.ensureMeta();
+        if (layout.enabled()) appShell.injectStyles();
+        var mode = appShell.mode();
+        var root = document.documentElement;
+        root.setAttribute('data-pd-display', mode);
+        if (appShell.installed()) {
+          document.body.classList.add('pd-app-mode');
+          document.body.classList.add('pd-installed');
+          if (mode === 'fullscreen') document.body.classList.add('pd-fullscreen');
+          appShell.splash();
+        }
+        // A member who installed the app should hear about it exactly once.
+        window.addEventListener('appinstalled', function () {
+          document.body.classList.add('pd-installed');
+          document.dispatchEvent(new CustomEvent('pd:installed'));
+        });
+        // Keep the standalone styling correct when a tab is promoted to the
+        // app (Chrome applies the display mode without a reload in some flows).
+        if (window.matchMedia) {
+          ['(display-mode: standalone)', '(display-mode: fullscreen)'].forEach(function (query) {
+            try {
+              var mq = window.matchMedia(query);
+              var apply = function () { if (mq.matches) document.body.classList.add('pd-app-mode', 'pd-installed'); };
+              apply();
+              if (mq.addEventListener) mq.addEventListener('change', apply);
+              else if (mq.addListener) mq.addListener(apply);
+            } catch (e) {}
+          });
+        }
+      } catch (e) { /* the page must never break because of the shell */ }
+    }
+  };
+
   /* --------------------------------------------------------------- PWA glue
    * One place that keeps the installable-app contract working on *every*
    * page (the marketing pages, the member account and the admin console):
@@ -2372,6 +2787,7 @@
     live: live,
     news: news,
     layout: layout,
+    app: appShell,
     pwa: pwa,
     roles: roles,
     academyNav: academyNav,
@@ -2385,6 +2801,7 @@
       // Each module is isolated: one failure must never break the rest.
       var modules = [
         ['layout', layout.init],
+        ['appShell', appShell.init],
         ['pwa', pwa.init],
         ['ui', ui.init], ['i18n', i18n.init], ['location', location.init],
         ['announcements', announcements.init], ['notifications', notifications.init],

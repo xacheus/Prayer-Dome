@@ -2,10 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Talk with Domey — 3D Bible Quiz Host | Prayer Dome</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="description" content="Talk with Domey, the Prayer Dome 3D host: she speaks out loud, her lips follow her voice, and she hears your answers through 1,248 Bible questions across 14 topics.">
+  <meta name="description" content="Play the Prayer Dome Bible challenge with Domey: 1,248 Bible questions across 14 topics, spoken out loud, with four choices and the scripture behind every answer.">
+  <meta name="theme-color" content="#0A4D9B">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Prayer Dome">
   <link rel="icon" type="image/png" href="/assets/logo.png">
   <link rel="apple-touch-icon" href="/assets/logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -29,6 +33,7 @@
   <script src="/assets/pd-domey-lady.js" defer></script>
   <script src="/assets/pd-domey-human.js" defer></script>
   <script src="/assets/pd-domey-questions.js" defer></script>
+  <script src="/assets/pd-sfx.js" defer></script>
   <script src="/assets/pd-mascot.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
@@ -118,6 +123,40 @@
     #domeyTopicChips .pd-acad-chip:hover { transform: translateY(-2px); border-color: var(--pd-gold); }
     #domeyBadges .badge-item { cursor: default; }
     #domeyStage { min-height: 340px; }
+
+    /* ---- The game, polished: one warm stage, clearly playable controls ---- */
+    .game-hero::before {
+      content: ""; position: absolute; inset: -40% -10% auto; height: 180%;
+      background: radial-gradient(ellipse at 50% 20%, rgba(212,175,55,.42), transparent 62%);
+      pointer-events: none; animation: gameGlow 9s ease-in-out infinite alternate;
+    }
+    @keyframes gameGlow { from { transform: translateY(-8px) scale(1); opacity: .55; } to { transform: translateY(10px) scale(1.06); opacity: .95; } }
+    .game-hero > * { position: relative; z-index: 1; }
+    .game-hero .pd-acad-eyebrow { color: var(--pd-gold-soft); }
+    .game-hero h1 { letter-spacing: -.02em; text-shadow: 0 8px 30px rgba(0,0,0,.28); }
+    .game-hero .pd-acad-btn { margin: 4px; }
+    .game-hero .pd-acad-chip.gold { background: rgba(212,175,55,.16); border-color: rgba(212,175,55,.45); color: #fff; }
+    #panel-talk { position: relative; overflow: hidden; border-color: rgba(212,175,55,.34) !important; }
+    #panel-talk::after {
+      content: ""; position: absolute; inset: auto -30% -55% -30%; height: 70%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.16), transparent 65%);
+      pointer-events: none;
+    }
+    .domey-sound-btn { display: inline-flex; align-items: center; gap: 7px; }
+    .domey-sound-btn[data-on="false"] { opacity: .62; }
+    #panel-talk .pd-acad-btn { min-height: 46px; }
+    #domeySummary { animation: summaryIn .35s ease both; }
+    @keyframes summaryIn { from { opacity: 0; transform: translateY(12px) scale(.985); } to { opacity: 1; transform: none; } }
+    #domeyTopicChips .pd-acad-chip[data-topic] { background: rgba(10,77,155,.05); }
+    #domeyTopicChips .pd-acad-chip[data-topic]:active { transform: scale(.97); }
+    #domeyBadges .badge-item { transition: transform .2s ease, box-shadow .2s ease; }
+    #domeyBadges .badge-item.unlocked:hover { transform: translateY(-3px); box-shadow: var(--pd-shadow-md); }
+    #domeyCreditWrap { max-width: 780px; margin: 12px auto 0; }
+    #domeyCreditWrap summary { cursor: pointer; font-size: .74rem; color: var(--pd-acad-muted); text-align: center; }
+    #domeyCreditWrap p { margin: 8px 0 0; }
+    @media (prefers-reduced-motion: reduce) {
+      .game-hero::before { animation: none; }
+    }
   </style>
 
   <script src="/assets/pd-verse-data.js" defer></script>
@@ -196,10 +235,11 @@
 </header>
 
 <main class="game-wrap">
+  <div data-pd-install-banner></div>
   <section class="game-hero">
-    <span class="pd-acad-eyebrow"><i class="pd-i pd-i-mic-vocal"></i> TALK WITH DOMEY • 3D BIBLE HOST</span>
-    <h1>Talk with Domey in 3D</h1>
-    <p>Domey is your 3D host in royal blue and gold: she speaks out loud with lips that follow her voice, she holds her Bible, she hears your answer when you speak — and her question bank holds <strong id="domeyBankTotal">1,000+</strong> Bible questions across 14 topics. Tap <strong>Start the show</strong>, then simply talk to her: say your answer, or tap A, B, C or D.</p>
+    <span class="pd-acad-eyebrow"><i class="pd-i pd-i-gamepad-2"></i> THE PRAYER DOME BIBLE CHALLENGE</span>
+    <h1>Play the Bible Challenge</h1>
+    <p><strong id="domeyBankTotal">1,000+</strong> Bible questions across 14 topics. Domey reads each question out loud, gives you four choices and the scripture behind the answer. Answer by tapping, typing or speaking — then carry on at your own pace.</p>
     <div>
       <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="talkWithDomey()"><i class="pd-i pd-i-play"></i> Talk with Domey</button>
       <button class="pd-acad-btn pd-acad-btn-ghost" type="button" onclick="chooseDomeyTopic()" style="border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-list"></i> Choose a topic</button>
@@ -220,11 +260,15 @@
     <p style="color:var(--pd-acad-muted); margin:0 0 18px; line-height:1.6;">Domey is the Prayer Dome 3D hostess: a friendly woman in royal blue and gold who blinks, looks at you and moves naturally while she talks — her lips follow every word she says. Answer by talking, by tapping <strong>A, B, C or D</strong>, or by typing. Ask her to <em>repeat</em>, ask for a <em>hint</em>, or say <em>skip</em>. She replies out loud and explains the scripture behind every question, and the whole conversation is written below so you can read along.</p>
 
     <div id="domeyStage" role="img" aria-label="Domey, your 3D Bible quiz hostess"></div>
-    <p id="domeyCredit" style="color:var(--pd-acad-muted); font-size:.78rem; margin:8px 2px 0; line-height:1.5;">Domey appears instantly as a character modelled in code, then upgrades on capable devices to a licensed, rigged human model with real facial expressions and hand gestures. Rendered with three.js (MIT licence); the model is VRM1_Constraint_Twist_Sample © 2022 pixiv Inc., used under the VRM Public License 1.0 (free for commercial use).</p>
+    <details id="domeyCreditWrap">
+      <summary><i class="pd-i pd-i-info"></i> 3D model credits</summary>
+      <p id="domeyCredit" style="color:var(--pd-acad-muted); font-size:.74rem; margin:8px 2px 0; line-height:1.55;">Domey appears instantly as a character modelled in code, then upgrades on capable devices to a licensed, rigged human model with real facial expressions and hand gestures. Rendered with three.js (MIT licence); the model is VRM1_Constraint_Twist_Sample © 2022 pixiv Inc., used under the VRM Public License 1.0 (free for commercial use).</p>
+    </details>
 
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;">
       <button class="pd-acad-btn pd-acad-btn-primary" id="domeyStartBtn" type="button"><i class="pd-i pd-i-play"></i> Start the show</button>
       <button class="pd-acad-btn pd-acad-btn-ghost" id="domeyStopBtn" type="button" style="border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-square"></i> Stop talking</button>
+      <button class="pd-acad-btn pd-acad-btn-ghost domey-sound-btn" id="domeySfxBtn" type="button" style="border:1px solid var(--pd-acad-border);" aria-pressed="true" title="Turn game sound effects on or off"><i class="pd-i pd-i-volume-2"></i> <span>Sound on</span></button>
       <span class="pd-acad-chip" id="domeyBestChip"><i class="pd-i pd-i-trophy"></i> Best score: —</span>
       <span class="pd-acad-chip" id="domeyMicChip"><i class="pd-i pd-i-mic"></i> Voice answers ready</span>
     </div>
@@ -732,6 +776,25 @@
     }
   }
 
+  /* ---------------------------- sound control ---------------------------- */
+  function renderSfxButton() {
+    var btn = document.getElementById('domeySfxBtn');
+    if (!btn || !window.PDSFX) return;
+    var on = PDSFX.enabled();
+    btn.dataset.on = on ? 'true' : 'false';
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    btn.innerHTML = '<i class="pd-i ' + (on ? 'pd-i-volume-2' : 'pd-i-volume-x') + '"></i> <span>' + (on ? 'Sound on' : 'Sound off') + '</span>';
+  }
+
+  window.toggleDomeySound = function () {
+    if (!window.PDSFX) return;
+    PDSFX.toggle();
+    renderSfxButton();
+    if (window.PDApp && PDApp.toast) {
+      PDApp.toast(PDSFX.enabled() ? 'Game sounds on' : 'Game sounds off — Domey still speaks', PDSFX.enabled() ? 'success' : 'info');
+    }
+  };
+
   window.startDomeyShow = startDomeyShow;
   window.talkWithDomey = function () {
     var stage = document.getElementById('panel-talk');
@@ -764,8 +827,24 @@
     // Domey is the whole page: wake her up and let her wave hello.
     wakeDomey();
 
+    renderSfxButton();
+    var sfxBtn = document.getElementById('domeySfxBtn');
+    if (sfxBtn) sfxBtn.addEventListener('click', window.toggleDomeySound);
+
+    // Friendly UI ticks: choices, topic chips and the two primary controls.
+    // Guarded so a screen reader's synthetic click never turns into a chorus.
+    document.addEventListener('click', function (event) {
+      if (!window.PDSFX) return;
+      var hit = event.target && event.target.closest
+        ? event.target.closest('.pdm-choice, #domeyTopicChips [data-topic], #domeyStartBtn, #domeyStopBtn')
+        : null;
+      if (!hit) return;
+      PDSFX.unlock();
+      PDSFX.play(hit.id === 'domeyStartBtn' ? 'select' : 'tap');
+    }, true);
+
     var domeyStart = document.getElementById('domeyStartBtn');
-    if (domeyStart) domeyStart.addEventListener('click', function () { startDomeyShow(); });
+    if (domeyStart) domeyStart.addEventListener('click', function () { if (window.PDSFX) PDSFX.unlock(); startDomeyShow(); });
     var domeyStop = document.getElementById('domeyStopBtn');
     if (domeyStop) domeyStop.addEventListener('click', function () {
       if (domey) { domey.hurry(); domey.stop(); domey.setStatus('Stopped — tap Start the show when you are ready'); }

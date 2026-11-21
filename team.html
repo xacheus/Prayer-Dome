@@ -594,6 +594,30 @@
         }
 
         /* Footer */
+        /* A member who has gone home to the Lord keeps their place on the
+           page, with a clear, dignified label rather than a blank card. */
+        .team-late-flag {
+            position: absolute; top: 12px; left: 12px; z-index: 3;
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(7, 36, 77, .88); color: #f6df8a;
+            border: 1px solid rgba(246, 223, 138, .55);
+            border-radius: 50px; padding: 5px 11px;
+            font-size: .62rem; font-weight: 900; letter-spacing: .09em;
+            text-transform: uppercase; backdrop-filter: blur(6px);
+            box-shadow: 0 6px 18px rgba(0,0,0,.25);
+        }
+        .team-card.is-late .team-image img { filter: saturate(.55) contrast(1.02); }
+        .team-card.is-late .team-info { background: linear-gradient(180deg, rgba(212,175,55,.10), transparent 58%); }
+        .team-card.is-late .team-name { color: #6b5200; }
+        body.dark-mode .team-card.is-late .team-name { color: #f6df8a; }
+        .team-memorial {
+            margin: 8px 16px 0; padding: 8px 10px; border-radius: 10px;
+            background: rgba(212,175,55,.12); border: 1px solid rgba(212,175,55,.32);
+            font-size: .72rem; color: var(--text-sub, #64748b); line-height: 1.5;
+        }
+        .team-late-badge { background: rgba(7,36,77,.9) !important; color: #f6df8a !important; }
+        .team-late-badge i { color: #f6df8a !important; }
+
         .team-footer {
             background: var(--bg-secondary);
             margin-top: 60px;
@@ -781,6 +805,20 @@
                     </div>
                     <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Description<input id="tmDescription" maxlength="300" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
                     <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Favourite scripture <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmScripture" maxlength="60" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+                    <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Profile status
+                        <select id="tmStatus" onchange="toggleTeamLateFields()" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;">
+                            <option value="serving">Serving — active member</option>
+                            <option value="late">Late / passed on — memorial label</option>
+                            <option value="archived">Archived — hidden from the page</option>
+                        </select>
+                    </label>
+                    <div id="tmLateFields" style="display:none; border:1px solid rgba(212,175,55,.4); background:rgba(212,175,55,.08); border-radius:12px; padding:12px; gap:10px;">
+                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Memorial label
+                            <select id="tmLateLabel" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"><option value="Late">Late</option><option value="Passed On">Passed On</option><option value="RIP">RIP</option><option value="Home with the Lord">Home with the Lord</option></select>
+                        </label>
+                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Date of passing <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmPassedAt" type="date" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Memorial note <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmMemorialNote" maxlength="160" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+                    </div>
                     <div id="teamEditorError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:12px;padding:10px 12px;font-size:.8rem;"></div>
                 </div>
                 <div style="display:flex; gap:10px; padding:0 20px 20px;">
@@ -825,27 +863,12 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="/assets/pd-team-data.js"></script>
     <script>
-        // Built-in roster: seeds Firestore on first admin edit and doubles as
-        // the offline/fallback presentation of the team.
-        const DEFAULT_TEAM = [
-            { name: "Seedwell K. Masuku", title: "Founder & Senior Pastor", category: "founder", image: "https://i.ibb.co/RTbNh1hB/founder-2.jpg", description: "Visionary leader called to raise prayer warriors across nations. Founder of Prayer Dome Ministry with a heart for intercession and revival.", country: "Eswatini/Zambia", scripture: "Matthew 21:13" },
-            { name: "Pastor Philmon Gumbi", title: "Prayer Dome Pastor - Eswatini", category: "eswatini", image: "https://i.ibb.co/6c7wRtJW/philmon.jpg", description: "Committed to leading prayer services and preaching the Word. Passionate about seeing lives transformed through the power of prayer.", country: "Eswatini", role: "Senior Pastor" },
-            { name: "Pastor Sabelo Simelane", title: "Prayer Dome Pastor - Eswatini", category: "eswatini", image: "https://i.ibb.co/tp58qGfQ/sabelo-1.jpg", description: "Focuses on intercession, counseling, and encouraging members. Dedicated to spiritual growth and discipleship.", country: "Eswatini", role: "Pastor" },
-            { name: "Pastor Dumsani Nxumalo", title: "Prayer Dome Pastor - Eswatini", category: "eswatini", image: "https://i.ibb.co/gFgBhyqG/dumisa.jpg", description: "Leads worship and prayer sessions. Anointed worship leader with a heart for prophetic worship.", country: "Eswatini", role: "Worship Pastor" },
-            { name: "Pastor Andile Makhanya", title: "Prayer Dome Pastor - Eswatini", category: "eswatini", image: "https://i.ibb.co/xqHjHqr6/ma.jpg", description: "Serves with dedication and spiritual leadership. Committed to teaching and equipping believers.", country: "Eswatini", role: "Teaching Pastor" },
-            { name: "Pastor Jerome Mkhabela", title: "Prayer Dome Pastor - Eswatini", category: "eswatini", image: "https://i.ibb.co/ksTrfSfp/alan.jpg", description: "Committed to preaching the Word of God. Passionate about evangelism and outreach.", country: "Eswatini", role: "Evangelist" },
-            { name: "Pastor Zacheus Simbaya", title: "Prayer Dome Pastor - Zambia", category: "zambia", image: "https://i.ibb.co/B2r1xPLb/pst.jpg", description: "Devoted to spiritual growth and leadership development. Oversees Prayer Dome Zambia operations.", country: "Zambia", role: "Lead Pastor" },
-            { name: "Pastor Alex Mushawa", title: "Prayer Dome Pastor - Zambia", category: "zambia", image: "https://i.ibb.co/sJMzbpQC/al-1.jpg", description: "Faithfully serves in ministry focusing on teaching. Passionate about youth discipleship.", country: "Zambia", role: "Associate Pastor" },
-            { name: "Nomvula Masuku", title: "Praise & Worship Leader", category: "worship", image: "https://i.ibb.co/ksK9tLk1/pnw.jpg", description: "Leads worship and oversees Compassionate Ministry. Anointed singer with a heart for prophetic worship.", country: "Eswatini", role: "Worship Director" },
-            { name: "Tengetile Mkhabela", title: "Secretary - Worship Ministry", category: "worship", image: "https://i.ibb.co/21YBRMzK/nom.jpg", description: "Ensures proper communication and organization. Coordinates worship team schedules and events.", country: "Eswatini", role: "Administrator" },
-            { name: "Nondumiso Simelane", title: "Compassionate Ministry - Eswatini", category: "worship", image: "https://i.ibb.co/qFL3KxMr/tenge.jpg", description: "Leads caring and support initiatives for people. Coordinates outreach and community support programs.", country: "Eswatini", role: "Outreach Coordinator" },
-            { name: "Gabsile Makhanya", title: "Praise & Worship Leader", category: "worship", image: "https://i.ibb.co/27zgJ7fL/cnc.jpg", description: "Leads worship and oversees Compassionate Ministry. Gifted vocalist and worship leader.", country: "Eswatini", role: "Worship Leader" },
-            { name: "Petrina Kumwenda", title: "Praise and Worship - Zambia", category: "worship", image: "https://i.ibb.co/S4G3vhMt/pet.jpg", description: "Devoted praise and worshiper using her gift of music. Leads worship in Zambia services.", country: "Zambia", role: "Worship Leader" },
-            { name: "Compassionate Ministry", title: "Children's Ministry", category: "ministries", image: "https://i.ibb.co/rG15FCg5/cd.jpg", description: "Dedicated to nurturing spiritual growth of children. Weekly Sunday school and children's programs.", country: "Eswatini", role: "Children's Ministry" },
-            { name: "Ngculwini Prayer Dome", title: "Prayer Center - Eswatini", category: "ministries", image: "https://i.ibb.co/qKCwrZ1/pd.jpg", description: "Vibrant prayer community dedicated to intercession. 24/7 prayer coverage and weekly prayer meetings.", country: "Eswatini", role: "Prayer Center" },
-            { name: "Hluthi Prayer Dome", title: "Prayer Center - Eswatini", category: "ministries", image: "https://i.ibb.co/Kc7HhZd1/lv.jpg", description: "Growing community of believers committed to prayer. Evangelism and discipleship programs.", country: "Eswatini", role: "Prayer Center" }
-        ];
+        // Built-in roster: assets/pd-team-data.js is the one source of truth.
+        // It seeds Firestore on the first admin edit and is the offline
+        // fallback presentation of the team.
+        const DEFAULT_TEAM = (window.PD_TEAM_DEFAULT || []).map(m => Object.assign({}, m));
 
         let currentFilter = "all";
 
@@ -860,6 +883,12 @@
                     .sort((a, b) => (a.order || 999) - (b.order || 999) || String(a.name).localeCompare(String(b.name)));
             }
             return DEFAULT_TEAM;
+        }
+
+        function escTeam(value) {
+            return String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[ch]));
         }
 
         window.renderTeam = renderTeam;
@@ -889,31 +918,38 @@
                 container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-sub,#64748b);"><i class="pd-i pd-i-users" style="font-size:1.6rem;opacity:.4;display:block;margin-bottom:10px;"></i>No team members in this category yet.</div>';
                 return;
             }
-            container.innerHTML = filtered.map((member, index) => `
-                <div class="team-card" style="animation-delay: ${index * 0.05}s">
+            container.innerHTML = filtered.map((member, index) => {
+                const late = member.deceased === true;
+                const lateLabel = member.lateLabel || 'Late';
+                const safeName = String(member.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
+                return `
+                <div class="team-card${late ? ' is-late' : ''}" style="animation-delay: ${index * 0.05}s">
                     <div class="team-image">
-                        <img src="${member.image}" alt="${member.name}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='18px';this.style.background='#fff';">
+                        <img src="${escTeam(member.image || '/assets/logo.png')}" alt="${escTeam(member.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='18px';this.style.background='#fff';">
+                        ${late ? `<span class="team-late-flag"><i class="pd-i pd-i-feather" aria-hidden="true"></i> ${escTeam(lateLabel)}</span>` : ''}
                         <div class="team-overlay">
-                            <p>${member.description}</p>
+                            <p>${escTeam(member.description || '')}</p>
                         </div>
                     </div>
                     <div class="team-info">
-                        <div class="team-name">${member.name}</div>
-                        <div class="team-title">${member.title}</div>
+                        <div class="team-name">${escTeam(member.name)}</div>
+                        <div class="team-title">${escTeam(member.title || '')}</div>
+                        ${late && member.memorialNote ? `<div class="team-memorial"><i class="pd-i pd-i-heart"></i> ${escTeam(member.memorialNote)}</div>` : ''}
                         <div class="team-badges">
-                            <span class="team-badge"><i class="pd-i ${member.category === 'founder' ? 'pd-i-crown' : member.category === 'worship' ? 'pd-i-music' : member.category === 'ministries' ? 'pd-i-church' : 'pd-i-flag'}"></i> ${getCategoryName(member.category)}</span>
-                            ${member.country ? `<span class="team-badge"><i class="pd-i pd-i-globe"></i> ${member.country}</span>` : ''}
-                            ${member.role ? `<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${member.role}</span>` : ''}
+                            <span class="team-badge"><i class="pd-i ${member.category === 'founder' ? 'pd-i-crown' : member.category === 'worship' ? 'pd-i-music' : member.category === 'ministries' ? 'pd-i-church' : 'pd-i-flag'}"></i> ${escTeam(getCategoryName(member.category))}</span>
+                            ${member.country ? `<span class="team-badge"><i class="pd-i pd-i-globe"></i> ${escTeam(member.country)}</span>` : ''}
+                            ${member.role ? `<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${escTeam(member.role)}</span>` : ''}
+                            ${late ? `<span class="team-badge team-late-badge"><i class="pd-i pd-i-feather"></i> ${escTeam(lateLabel)}${member.passedAt ? ' · ' + escTeam(String(member.passedAt).slice(0, 4)) : ''}</span>` : ''}
                         </div>
                         <div class="team-social">
-                            <a href="#" onclick="shareTeamMember('${member.name}')" aria-label="Share"><i class="pd-i pd-i-share-2"></i></a>
-                            <a href="#" onclick="prayForMember('${member.name}')" aria-label="Pray for this member"><i class="pd-i pd-i-hands-praying"></i></a>
-                            ${member.email ? `<a href="mailto:${member.email}" title="Email ${member.name}"><i class="pd-i pd-i-mail"></i></a>` : `<a href="#" onclick="contactMember('${member.name}')" aria-label="Contact"><i class="pd-i pd-i-mail"></i></a>`}
-                            ${member.phone ? `<a href="tel:${member.phone}" title="Call ${member.name}"><i class="pd-i pd-i-phone"></i></a>` : ''}
+                            <a href="#" onclick="shareTeamMember('${safeName}')" aria-label="Share"><i class="pd-i pd-i-share-2"></i></a>
+                            <a href="#" onclick="${late ? `rememberMember('${safeName}')` : `prayForMember('${safeName}')`}" aria-label="${late ? 'Honour this member' : 'Pray for this member'}"><i class="pd-i ${late ? 'pd-i-heart' : 'pd-i-hands-praying'}"></i></a>
+                            ${member.email ? `<a href="mailto:${escTeam(member.email)}" title="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>` : `<a href="#" onclick="contactMember('${safeName}')" aria-label="Contact"><i class="pd-i pd-i-mail"></i></a>`}
+                            ${member.phone && !late ? `<a href="tel:${escTeam(member.phone)}" title="Call ${escTeam(member.name)}"><i class="pd-i pd-i-phone"></i></a>` : ''}
                         </div>
                     </div>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
         }
 
         function getCategoryName(category) {
@@ -955,6 +991,10 @@
             confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
         };
 
+        window.rememberMember = function(name) {
+            showToast(`Honouring the memory of ${name}. “Well done, good and faithful servant.”`, 'info');
+        };
+
         window.contactMember = function(name) {
             showToast(`Contact information for ${name} is available in the church directory.`, 'info');
         };
@@ -969,7 +1009,8 @@
             }
             const toast = document.createElement('div');
             toast.className = `toast ${type === 'error' ? 'error' : ''}`;
-            toast.innerHTML = `<i class="pd-i ${type === 'success' ? 'pd-i-circle-check' : 'pd-i-info'}"></i> ${message}`;
+            toast.innerHTML = `<i class="pd-i ${type === 'success' ? 'pd-i-circle-check' : 'pd-i-info'}"></i><span></span>`;
+            toast.querySelector('span').textContent = message;
             document.getElementById('toastContainer').appendChild(toast);
             setTimeout(() => toast.remove(), 3500);
         }
@@ -991,7 +1032,7 @@
             const quote = document.getElementById('founderQuote');
             if (founder.image && img && img.src !== founder.image) img.src = founder.image;
             if (name && founder.name) name.textContent = founder.name;
-            if (title && founder.title) title.innerHTML = '<i class="pd-i pd-i-crown"></i> ' + founder.title;
+            if (title && founder.title) title.innerHTML = '<i class="pd-i pd-i-crown"></i> ' + escTeam(founder.title) + (founder.deceased ? ' <span class="team-badge team-late-badge" style="margin-left:8px;"><i class="pd-i pd-i-feather"></i> ' + escTeam(founder.lateLabel || 'Late') + '</span>' : '');
             if (quote && founder.description) quote.textContent = '"' + founder.description + (founder.scripture ? ' – ' + founder.scripture : '') + '"';
         }
 
@@ -1009,15 +1050,15 @@
             const sorted = members.slice().sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0) || (a.order || 999) - (b.order || 999));
             list.innerHTML = sorted.map(m => `
                 <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border-color,#e5eaf2);border-radius:14px;padding:10px 14px;${m.archived ? 'opacity:.55;' : ''}">
-                    <img src="${m.image || '/assets/logo.png'}" alt="" style="width:44px;height:44px;border-radius:12px;object-fit:cover;background:#eef2f8;" onerror="this.src='/assets/logo.png'">
+                    <img src="${escTeam(m.image || '/assets/logo.png')}" alt="" style="width:44px;height:44px;border-radius:12px;object-fit:cover;background:#eef2f8;" onerror="this.src='/assets/logo.png'">
                     <div style="flex:1;min-width:0;">
-                        <div style="font-weight:800;font-size:.85rem;">${m.name} ${m.archived ? '<span style="font-size:.62rem;background:#fef3c7;color:#92400e;border-radius:50px;padding:2px 8px;font-weight:800;">ARCHIVED</span>' : ''}</div>
-                        <div style="font-size:.72rem;color:var(--text-sub,#64748b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${m.title || ''}${m.email ? ' · ' + m.email : ''}${m.phone ? ' · ' + m.phone : ''}</div>
+                        <div style="font-weight:800;font-size:.85rem;">${escTeam(m.name)} ${m.archived ? '<span style="font-size:.62rem;background:#fef3c7;color:#92400e;border-radius:50px;padding:2px 8px;font-weight:800;">ARCHIVED</span>' : ''} ${m.deceased ? '<span style="font-size:.62rem;background:#07244d;color:#f6df8a;border-radius:50px;padding:2px 8px;font-weight:800;">' + escTeam(String(m.lateLabel || 'LATE').toUpperCase()) + '</span>' : ''}</div>
+                        <div style="font-size:.72rem;color:var(--text-sub,#64748b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escTeam(m.title || '')}${m.email ? ' · ' + escTeam(m.email) : ''}${m.phone ? ' · ' + escTeam(m.phone) : ''}</div>
                     </div>
                     ${m.archived
-                        ? `<button class="category-btn" onclick="restoreTeamMember('${m.id}')" title="Restore"><i class="pd-i pd-i-rotate-ccw"></i></button>`
-                        : `<button class="category-btn" onclick="openTeamEditor('${m.id}')" title="Edit"><i class="pd-i pd-i-pen"></i></button>
-                           <button class="category-btn" onclick="archiveTeamMember('${m.id}')" title="Archive" style="color:#b45309;"><i class="pd-i pd-i-archive"></i></button>`}
+                        ? `<button class="category-btn" onclick="restoreTeamMember('${escTeam(m.id)}')" title="Restore"><i class="pd-i pd-i-rotate-ccw"></i></button>`
+                        : `<button class="category-btn" onclick="openTeamEditor('${escTeam(m.id)}')" title="Edit"><i class="pd-i pd-i-pen"></i></button>
+                           <button class="category-btn" onclick="archiveTeamMember('${escTeam(m.id)}')" title="Archive" style="color:#b45309;"><i class="pd-i pd-i-archive"></i></button>`}
                 </div>
             `).join('');
         }
@@ -1052,9 +1093,13 @@
         /* ---------- load the roster ---------- */
         async function loadTeam() {
             try {
-                const snap = await getDocs(query(collection(db, 'teamMembers'), orderBy('order', 'asc')));
+                // No orderBy: a document saved by an older console has no
+                // `order` field, and Firestore would silently leave it out of
+                // the roster. Sort in memory instead.
+                const snap = await getDocs(collection(db, 'teamMembers'));
                 const members = [];
                 snap.forEach(d => members.push(Object.assign({ id: d.id }, d.data())));
+                members.sort((a, b) => (a.order || 999) - (b.order || 999));
                 state.members = members;
                 window.renderTeam && window.renderTeam();
             } catch (e) {
@@ -1096,11 +1141,25 @@
             document.getElementById('tmPhone').value = member?.phone || '';
             document.getElementById('tmDescription').value = member?.description || '';
             document.getElementById('tmScripture').value = member?.scripture || '';
+            document.getElementById('tmStatus').value = member
+                ? (member.archived ? 'archived' : member.deceased ? 'late' : 'serving')
+                : 'serving';
+            document.getElementById('tmLateLabel').value = member?.lateLabel || 'Late';
+            document.getElementById('tmPassedAt').value = member?.passedAt || '';
+            document.getElementById('tmMemorialNote').value = member?.memorialNote || '';
+            toggleTeamLateFields();
             document.getElementById('tmPhotoPreview').src = photoUrl || '/assets/logo.png';
             document.getElementById('tmPhotoState').textContent = 'Photos open your device picker and upload automatically.';
             document.getElementById('teamEditorError').style.display = 'none';
             document.getElementById('teamEditorOverlay').style.display = 'flex';
         }
+        window.toggleTeamLateFields = function () {
+            var status = document.getElementById('tmStatus');
+            var fields = document.getElementById('tmLateFields');
+            if (!status || !fields) return;
+            fields.style.display = status.value === 'late' ? 'grid' : 'none';
+        };
+
         window.openTeamEditor = function (id) {
             const member = id && state.members ? state.members.find(m => m.id === id) : null;
             openEditor(member || null);
@@ -1141,6 +1200,7 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> Saving…';
             try {
+                const status = document.getElementById('tmStatus').value;
                 const data = {
                     name,
                     title: document.getElementById('tmTitle').value.trim(),
@@ -1152,7 +1212,13 @@
                     description: document.getElementById('tmDescription').value.trim(),
                     scripture: document.getElementById('tmScripture').value.trim(),
                     image: photoUrl || '',
-                    archived: false,
+                    // The memorial state is part of the member, not a deletion:
+                    // their card stays on the page with a clear Late label.
+                    deceased: status === 'late',
+                    lateLabel: status === 'late' ? (document.getElementById('tmLateLabel').value || 'Late') : '',
+                    passedAt: status === 'late' ? (document.getElementById('tmPassedAt').value || '') : '',
+                    memorialNote: status === 'late' ? (document.getElementById('tmMemorialNote').value.trim() || '') : '',
+                    archived: status === 'archived',
                     updatedAt: serverTimestamp()
                 };
                 if (editorId) {
@@ -1163,9 +1229,10 @@
                     data.createdAt = serverTimestamp();
                     await setDoc(doc(collection(db, 'teamMembers')), data);
                 }
+                const wasEdit = !!editorId;
                 window.closeTeamEditor();
                 await loadTeam();
-                window.showToast && window.showToast(editorId ? 'Team member updated' : 'Team member added', 'success');
+                window.showToast && window.showToast(wasEdit ? 'Team member updated' : 'Team member added', 'success');
             } catch (e) {
                 console.error(e);
                 teamEditorError(e.code === 'permission-denied'

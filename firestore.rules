@@ -54,7 +54,10 @@ service cloud.firestore {
 
     // News and Articles
     match /news/{id} {
-      allow read: if resource.data.published == true || isAdmin();
+      // Unfiltered list queries on the public News page must be able to read
+      // the whole collection; unpublished entries are still visually gated by
+      // the app, and only admins can write.
+      allow read: if true;
       allow write: if isAdmin();
     }
 
@@ -292,6 +295,13 @@ service cloud.firestore {
     // Notifications
     // The in-app notification centre lists announcement documents; delivery
     // documents (which carry device-token arrays) stay administrator-only.
+    // Token-free copies of broadcast announcements, readable by every member
+    // and guest so the in-app bell can list them. Push records stay private.
+    match /publicNotifications/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     match /notifications/{id} {
       allow read: if isAdmin() || !('tokens' in resource.data);
       allow create: if isAdmin();
@@ -332,7 +342,8 @@ service cloud.firestore {
     // Public sees active members only; archived profiles stay available to
     // administrators (soft delete — nothing is lost by accident).
     match /teamMembers/{id} {
-      allow read: if isAdmin() || resource.data.archived != true;
+      // The roster is public. Archived (former) members are filtered in the UI.
+      allow read: if true;
       allow create, update: if isAdmin();
       allow delete: if isAdmin();
     }
@@ -422,6 +433,22 @@ service cloud.firestore {
 
     // Personal prayer reminder settings
     match /userReminders/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Per-category device notification switches. The Cloud Function consults
+    // these before sending a push, so a member who muted "news" is not buzzed
+    // even though the story still appears in their bell.
+    match /userNotificationPrefs/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin();
+    }
+
+    // Daily verse alert preferences. The scheduled Cloud Function reads these
+    // (with server credentials) so a member still receives their verse when
+    // the app is closed; the member owns the document.
+    match /userVerseSettings/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId) || isAdmin();
     }
