@@ -128,3 +128,28 @@ assert.match(overflowCss, /\.team-overlay:has\(p:empty\)\s*\{\s*display:\s*none/
 assert.match(overflowCss, /@media \(max-width:\s*600px\)/);
 assert.match(overflowCss, /grid-template-columns:\s*minmax\(0,\s*1fr\)\s*!important/,
   'Narrow screens must force oversized card grids into one column');
+
+// --- Scroll safety: the document must scroll on every route -------------
+const brandCss = fs.readFileSync(path.join(ROOT, 'assets/pd-brand.css'), 'utf8');
+
+assert.match(brandCss, /\.pd-notif-pop-overlay\s*\{[^}]*pointer-events:\s*none/,
+  'The closed notification overlay must not intercept taps or scroll gestures');
+assert.match(brandCss, /\.pd-notif-pop-overlay\.pd-notif-pop-open\s*\{[^}]*pointer-events:\s*auto/,
+  'The open notification overlay must receive taps');
+
+// Vertical scrolling stays on at the document root on every page
+// (the temporary drawer scroll lock is scoped to body.pd-nav-open only).
+assert.match(overflowCss, /html\s*\{[^}]*overflow-y:\s*auto/,
+  '<html> must keep vertical scrolling on every route');
+
+// Smooth scrolling for anchor/in-page navigation; reduced motion wins.
+assert.match(overflowCss, /@media\s*\(prefers-reduced-motion:\s*no-preference\)\s*\{[\s\S]*?html\s*\{[^}]*scroll-behavior:\s*smooth/,
+  'Anchor navigation should scroll smoothly');
+
+// Full-screen overlays that ship with the brand system must not trap scroll
+// when they are closed: they only become hit-testable in their open state.
+for (const overlay of ['.pd-drawer-overlay', '.pd-splash', '.pd-acad-quiz-overlay']) {
+  assert.match(brandCss, new RegExp('\\' + overlay + '\\s*\\{[^}]*pointer-events:\\s*none'),
+    overlay + ' must be pointer-transparent when closed');
+}
+console.log('Scroll-safety checks passed for all pages.');

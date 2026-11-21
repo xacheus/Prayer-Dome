@@ -2406,9 +2406,17 @@ body.dark-mode .pd-chat-item .pd-chat-name { color: #93c5fd; }
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
-  opacity: 0; transition: opacity 0.25s ease;
+  opacity: 0;
+  /* CRITICAL: a closed (opacity 0) overlay must never sit on top of the page
+     and swallow taps or scroll gestures. Without pointer-events: none this
+     full-screen overlay blocks scrolling on every route after it is injected. */
+  pointer-events: none;
+  transition: opacity 0.25s ease;
 }
-.pd-notif-pop-overlay.pd-notif-pop-open { opacity: 1; }
+.pd-notif-pop-overlay.pd-notif-pop-open {
+  opacity: 1;
+  pointer-events: auto;
+}
 .pd-notif-pop {
   position: relative;
   max-width: 420px; width: 100%;
