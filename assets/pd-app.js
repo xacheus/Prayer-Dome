@@ -1008,6 +1008,9 @@
     listEl: null,
     panelEl: null,
     listId: 'pdNotifList',
+    // The last service-worker state that was announced to the page. It stops
+    // diagnostics() from announcing the same state over and over.
+    _swState: '',
     /**
      * The notification centre must exist on every page that shows a bell.
      *
@@ -1685,7 +1688,15 @@
     types: function () { return NOTIF_TYPES; },
 
     /* A single, honest answer to "why am I not getting notifications?".
-       Shown on the account page, so a member can fix it themselves. */
+       Shown on the account page, so a member can fix it themselves.
+
+       The event below is fired ONLY when the service-worker state actually
+       changed. It used to fire on every single call, and the account page
+       answered that event by calling diagnostics() again — which queued
+       another microtask that fired the event again. That was an endless
+       microtask loop: the page froze solid (no taps, no scrolling) and the
+       browser ran out of memory. The guard keeps the event meaningful and
+       makes the loop impossible. */
     diagnostics: function () {
       var mode = (window.PDApp && PDApp.app) ? PDApp.app.mode() : 'browser';
       var permission = (typeof Notification !== 'undefined') ? Notification.permission : 'unsupported';
@@ -1708,6 +1719,10 @@
         navigator.serviceWorker.ready.then(function (reg) {
           out.serviceWorker = reg.active ? 'active' : 'installing';
           out.scope = reg.scope || '';
+          // Only announce a real change. Announcing every time turned the
+          // account page into an endless microtask loop (see above).
+          if (notifications._swState === out.serviceWorker) return;
+          notifications._swState = out.serviceWorker;
           document.dispatchEvent(new CustomEvent('pd:notif-diagnostics', { detail: out }));
         }).catch(function () { out.serviceWorker = 'unavailable'; });
       }
@@ -2884,6 +2899,75 @@
       pwa.installBanner();
     }
   };
+
+  /* ============================================================ interaction
+   * The three guards below exist because of one rule: no single component
+   * may ever take the whole application away from the member.
+   * ==================================================================== */
+
+  /* 1. Third-party animation must never break a working action.
+        The celebration confetti comes from a CDN. When that CDN is blocked
+        (slow network, data saver, corporate proxy) `confetti(...)` threw a
+        ReferenceError inside the same try/catch that reported the real
+        result — so a member who had signed in successfully was told the
+        sign-in had failed. A safe no-op keeps the flow honest. */
+  if (typeof window.confetti !== 'function') {
+    window.confetti = function () { return null; };
+  }
+
+  /* 2. A loading overlay may never trap the page.
+        Several pages open a full-screen "Authenticating…" overlay before
+        their sign-in code runs. If that code never arrives (blocked CDN,
+        offline phone, a stalled request) the overlay stayed on top for good
+        and the page looked frozen with nothing clickable. Any overlay that
+        is still up after this long is released again, so the member always
+        gets the page back. */
+  var LOADER_SELECTOR = '#globalLoader, #customLoader, .loader-overlay, .spinner-overlay, [data-pd-loader]';
+  var LOADER_TIMEOUT = 20000;
+  setInterval(function () {
+    var overlays;
+    try { overlays = document.querySelectorAll(LOADER_SELECTOR); } catch (e) { return; }
+    for (var i = 0; i < overlays.length; i += 1) {
+      var el = overlays[i];
+      var cs;
+      try { cs = getComputedStyle(el); } catch (e) { continue; }
+      if (cs.display === 'none' || cs.visibility === 'hidden') {
+        // Hidden again: arm the guard afresh the next time it appears.
+        try { delete el.dataset.pdLoaderSeen; } catch (e) {}
+        continue;
+      }
+      if (el.dataset && el.dataset.pdLoaderSeen) continue;
+      try { el.dataset.pdLoaderSeen = '1'; } catch (e) { continue; }
+      setTimeout(function (node) {
+        return function () {
+          if (!node || !node.isConnected) return;
+          var style;
+          try { style = getComputedStyle(node); } catch (e) { return; }
+          if (style.display === 'none' || style.visibility === 'hidden') return;
+          node.style.display = 'none';
+          toast('That is taking longer than expected. You can keep using the page while it finishes.', 'info');
+        };
+      }(el), LOADER_TIMEOUT);
+    }
+  }, 2000);
+
+  /* 3. A button whose handler did not load must say so.
+        Pages wire some controls with inline `onclick="…"` attributes. When
+        the script that defines those functions never ran, the tap produced a
+        silent ReferenceError and the member simply thought the button was
+        broken. Now the page explains what happened. */
+  var lastHandlerHint = 0;
+  window.addEventListener('error', function (event) {
+    var message = (event && event.message) || '';
+    var match = /^(\w+) is not defined$/.exec(message);
+    if (!match) return;
+    var name = match[1];
+    if (['PDApp', 'PDNav', 'PDMotion', 'PDIcons', 'PDCertificate', 'PDI18n'].indexOf(name) !== -1) return;
+    var now = Date.now();
+    if (now - lastHandlerHint < 6000) return;
+    lastHandlerHint = now;
+    toast('That action needs the sign-in service. Please check your connection and try again.', 'error');
+  });
 
   /* ---------------------------------------------------------------- public */
   window.PDApp = {

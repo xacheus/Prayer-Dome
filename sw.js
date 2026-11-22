@@ -77,7 +77,11 @@ try {
 } catch (e) { /* offline install: the raw push handler still covers plain JSON */ }
 
 // Bump CACHE_NAME whenever the precache list changes.
-const CACHE_NAME = 'prayer-dome-v40';
+// v41 — the shared stylesheet and the app layer changed (document scrolling,
+// the notification-diagnostics loop and the loading-overlay guard). A new
+// name makes the worker re-precache the fixed files at once, so a returning
+// visitor is not left on the old, frozen copy.
+const CACHE_NAME = 'prayer-dome-v41';
 
 // Shell assets worth having available offline.
 const PRECACHE = [

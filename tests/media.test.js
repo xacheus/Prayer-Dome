@@ -178,8 +178,12 @@ const styleBlocks = (html) =>
     stickyRisk.length === 0, stickyRisk.join(', '));
 
   const brandCss = read('assets/pd-brand.css');
+  /* "clip" is the stronger form of the same rule: it stops sideways
+     scrolling without turning the element into a scroll container, so the
+     opposite axis is not silently turned into "auto" (which is what made
+     long pages swallow the wheel). Both forms are accepted. */
   t('the shared stylesheet blocks sideways scrolling app-wide',
-    brandCss.includes(':where(body)') && brandCss.includes('overflow-x: hidden'));
+    brandCss.includes(':where(body)') && /overflow-x:\s*(hidden|clip)/.test(brandCss));
   t('the shared stylesheet keeps media inside the viewport',
     brandCss.includes(':where(img, video, canvas, svg, iframe)'));
 
