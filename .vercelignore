@@ -28,6 +28,7 @@
 # Functions package is not needed by Vercel.
 functions/*
 !functions/share.js
+!functions/brevo.js
 !functions/translate.js
 
 # Only the public-bundle builder and the postinstall hook are needed during

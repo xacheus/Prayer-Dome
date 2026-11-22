@@ -4,11 +4,13 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const shareHandler = require('./share');
+const brevo = require('./brevo');
 const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
 const { defineSecret } = require('firebase-functions/params');
 const { signUpload } = require('./cloudinary');
 const cloudinaryApiSecret = defineSecret('CLOUDINARY_API_SECRET');
+const brevoApiKey = defineSecret('BREVO_API_KEY');
 
 if (!admin.getApps().length) {
   admin.initializeApp();
@@ -183,6 +185,71 @@ exports.share = functions.https.onRequest((req, res) => shareHandler(req, res));
 // functions/translate.js for the plain module this wraps — the identical
 // module also runs as api/translate.js on Vercel.
 exports.translate = functions.https.onRequest((req, res) => translateHandler(req, res));
+
+// ==========================================
+// Brevo email (verification + support newsletter)
+// ==========================================
+// A signed-in member may request a fresh verification message, but not in a
+// loop: three per minute is enough for a real inbox and stops a script from
+// burning the ministry's Brevo quota. The map is per function instance.
+const brevoVerificationHits = new Map();
+function allowBrevoVerification(uid) {
+  const now = Date.now();
+  const hits = (brevoVerificationHits.get(uid) || []).filter((at) => now - at < 60 * 1000);
+  if (hits.length >= 3) { brevoVerificationHits.set(uid, hits); return false; }
+  hits.push(now);
+  brevoVerificationHits.set(uid, hits);
+  if (brevoVerificationHits.size > 2000) {
+    for (const [key, times] of brevoVerificationHits) {
+      if (!times.some((at) => now - at < 60 * 1000)) brevoVerificationHits.delete(key);
+    }
+  }
+  return true;
+}
+
+
+// Verification email: Firebase still owns the account and the verification
+// state, but the message is delivered by Brevo from the ministry's authenticated
+// domain instead of the generic firebaseapp.com sender. The account is never
+// blocked if Brevo is unavailable — the client falls back to Firebase's own
+// sendEmailVerification().
+exports.sendBrevoVerificationEmail = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.token.email) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in before requesting a verification email.');
+  }
+  if (context.auth.token.email_verified) {
+    return { sent: false, reason: 'already-verified' };
+  }
+  if (!brevo.isConfigured(process.env)) {
+    return { sent: false, reason: 'not-configured' };
+  }
+  if (!allowBrevoVerification(context.auth.uid)) {
+    throw new functions.https.HttpsError('resource-exhausted', 'Please wait a minute before requesting another email.');
+  }
+  const email = context.auth.token.email;
+  const name = String((data && data.name) || context.auth.token.name || '').slice(0, 80);
+  let link;
+  try {
+    link = await admin.auth().generateEmailVerificationLink(email, {
+      url: SITE_URL + '/account?verified=1'
+    });
+  } catch (error) {
+    console.error('Could not generate a verification link:', error.message);
+    throw new functions.https.HttpsError('internal', 'The verification link could not be created.');
+  }
+  try {
+    return await brevo.sendVerificationEmail({ email, name, link, env: process.env });
+  } catch (error) {
+    console.error('Brevo verification email failed:', error.code || error.message);
+    throw new functions.https.HttpsError('unavailable', 'Email delivery is temporarily unavailable.');
+  }
+});
+
+// Newsletter / updates signup used by the support page. The same handler runs
+// through api/system.js on Vercel; this export gives Firebase Hosting parity.
+exports.brevoSubscribe = functions.runWith({ secrets: [brevoApiKey] }).https.onRequest((req, res) => {
+  brevo.newsletterHandler(req, res);
+});
 
 // ==========================================
 // Secure Server-Side Cloudinary Signing

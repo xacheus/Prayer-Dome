@@ -1753,6 +1753,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, getDocs, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
         /* The imports above resolved, so the sign-in service is reachable and
            the page can leave its "signing in is unavailable" state. */
@@ -1769,6 +1770,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const cloudFunctions = getFunctions(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
@@ -1868,6 +1870,29 @@
             }
         };
 
+        /* Verification email delivery.
+           Firebase still owns the account and the verified flag. The callable
+           asks the server to send the verification link through Brevo from the
+           ministry's authenticated domain; if Brevo is not configured, the
+           function is not deployed, or delivery fails, the member still gets
+           Firebase's own message. Verification is optional — no feature is
+           gated on it. */
+        async function sendVerificationEmailForCurrentUser() {
+            const user = auth.currentUser;
+            if (!user) throw new Error('Please sign in first.');
+            try {
+                const sendThroughBrevo = httpsCallable(cloudFunctions, 'sendBrevoVerificationEmail');
+                const result = await sendThroughBrevo({ name: user.displayName || '' });
+                const data = result && result.data ? result.data : {};
+                if (data.sent) return 'brevo';
+                if (data.reason === 'already-verified') return 'already-verified';
+            } catch (error) {
+                console.warn('Brevo verification email unavailable; using Firebase email.', error && error.message);
+            }
+            await sendEmailVerification(user);
+            return 'firebase';
+        }
+
         window.__pdVerifyEmail = async () => {
             if (!auth.currentUser) return showToast("Please login first", "error");
         
@@ -1879,7 +1904,7 @@
             }
         
             try {
-                await sendEmailVerification(auth.currentUser);
+                await sendVerificationEmailForCurrentUser();
                 document.getElementById('verifyEmailAddress').innerText = auth.currentUser.email;
                 document.getElementById('emailVerifyModal').style.display = 'flex';
                 showToast("Verification email sent! Check your spam folder.", "success");
@@ -1890,8 +1915,8 @@
 
         window.__pdSendEmailVerificationCode = async () => {
             try {
-                await sendEmailVerification(auth.currentUser);
-                showToast("Verification email resent! Check spam folder.", "success");
+                await sendVerificationEmailForCurrentUser();
+                showToast("Verification email resent! Check your inbox and spam folder.", "success");
             } catch (e) {
                 showToast(e.message, "error");
             }
@@ -1998,7 +2023,7 @@
                 });
                 // Email verification is helpful but must not turn a successful
                 // registration into a failed one when the mail service is delayed.
-                sendEmailVerification(cred.user).catch((error) => console.warn('Verification email error:', error));
+                sendVerificationEmailForCurrentUser().catch((error) => console.warn('Verification email error:', error));
                 showToast('Registration successful! Please verify your email from your inbox.', 'success');
                 pdConfetti({ particleCount: 150, spread: 70 });
             } catch (error) {

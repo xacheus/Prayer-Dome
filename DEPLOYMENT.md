@@ -48,8 +48,14 @@ when Play reports "signed with the wrong key".
 1. Import this repository using the existing `vercel.json` (Other framework,
    Node 22, build `node scripts/build-vercel.mjs`, output `dist`). Do not publish
    the repository root as a static directory.
-2. The upload filter includes both shared API handlers and the lockfile. Keep
-   `functions/translate.js` and `functions/share.js` in serverless uploads.
+2. The upload filter includes the shared API handlers and the lockfile. Keep
+   `functions/translate.js`, `functions/share.js` and `functions/brevo.js` in
+   serverless uploads.
+   The Hobby plan allows at most **12 Serverless Functions per deployment**, so
+   `/api/health` and `/api/newsletter` are both rewritten to `api/system.js`
+   rather than shipped as separate files. `tests/vercel.test.js` fails if a
+   thirteenth function is added; consolidate an endpoint instead of upgrading
+   the plan.
 3. Automatic deployments are intentionally enabled only for `main`; this work
    stays on the session branch. Use a manual preview deployment or review/merge
    before a production deployment. The local preview is not a Vercel deployment.
@@ -130,6 +136,64 @@ source. If an edition is missing from the account, the reader shows a
 "setup required" note — with the free Starter-plan steps attached in
 `GET /api/bible?action=setup&version=NIV|MSG` — and no text from any other
 translation.
+
+### Brevo email (verification + updates)
+
+Brevo delivers two kinds of mail; both are optional and both fail safely.
+
+1. **Account verification.** The `sendBrevoVerificationEmail` callable asks
+   Firebase Admin for a real verification link, then Brevo sends it from the
+   ministry's authenticated sender. Accounts keep working while unverified, and
+   if Brevo is not configured the account page quietly falls back to Firebase's
+   own `sendEmailVerification()`.
+2. **Support-page updates.** The support page form posts one consenting address
+   to `POST /api/newsletter` (Vercel) or the `brevoSubscribe` function (Firebase
+   Hosting). With a list and double opt-in template configured, Brevo sends the
+   confirmation email; otherwise the contact is added to the list directly.
+   Every request is validated server-side and the API key never reaches the
+   browser.
+
+Create a free Brevo account, verify the sender address (or the
+`prayerdome.net` domain so any mailbox on it can send), and optionally create a
+contact list plus a double opt-in template. A sender that has not been verified
+in Brevo will be rejected — do not invent a From address.
+
+Set the secret in Secret Manager for Firebase Functions (the same secret name is
+bound to both exported functions):
+
+```sh
+firebase functions:secrets:set BREVO_API_KEY --project <project-id>
+```
+
+Set the API key and non-secret settings as Vercel environment variables, then
+redeploy — existing deployments do not pick up new variables:
+
+```sh
+vercel env add BREVO_API_KEY production
+vercel env add BREVO_SENDER_EMAIL production  # default noreply@prayerdome.net
+vercel env add BREVO_SENDER_NAME production   # default Prayer Dome
+vercel env add BREVO_LIST_ID production       # optional numeric list id
+vercel env add BREVO_DOI_TEMPLATE_ID production # optional numeric DOI template
+```
+
+For Firebase Functions, put the non-secret settings in
+`functions/.env.<project-id>` (copy `functions/.env.example`) as well, then run
+`firebase deploy --only functions --project <project-id>`. Deploying functions
+requires the `BREVO_API_KEY` secret to exist; create it first or the deploy stops
+before changing anything.
+
+Check the endpoint after deploying (it must return JSON, not an HTML page):
+
+```sh
+curl -i -X POST https://prayerdome.net/api/newsletter \
+  -H 'content-type: application/json' \
+  -d '{"email":"you@example.com","consent":true}'
+```
+
+`200` with `"ok":true` means the address was accepted; `503 NOT_CONFIGURED`
+means the key is missing on that host; `502 BREVO_UNAVAILABLE` means Brevo
+rejected the request (check the sender verification and the key). The
+`doubleOptIn` field tells the page whether to ask the member to confirm.
 
 ### Cloudinary callable function
 

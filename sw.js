@@ -84,7 +84,10 @@ try {
 // v43 — branch locations, the public card-verification page and the grouped
 // admin console shipped. A new cache name retires the previous shell so a
 // returning member gets the new navigation and card pages immediately.
-const CACHE_NAME = 'prayer-dome-v43';
+// v44 — the support page gained information sections and the Brevo update
+// form. The form script is precached so the page's markup and behaviour stay
+// in step after an upgrade.
+const CACHE_NAME = 'prayer-dome-v44';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -148,6 +151,7 @@ const PRECACHE = [
     '/assets/pd-quiz-session.js',
     '/assets/pd-nav.js',
     '/assets/pd-app.js',
+    '/assets/pd-newsletter.js',
     '/assets/pd-sfx.js',
     '/assets/pd-team-data.js',
     '/assets/pd-team-store.js',

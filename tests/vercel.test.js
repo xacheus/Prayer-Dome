@@ -14,7 +14,7 @@ function test(name, condition, detail = '') {
   console.log(`${condition ? 'PASS' : 'FAIL'}  ${name}${detail ? `  ${detail}` : ''}`);
 }
 
-function invoke(modulePath, method = 'GET') {
+function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
   const handler = require(path.join(ROOT, modulePath));
   const headers = {};
   let body = '';
@@ -32,7 +32,8 @@ function invoke(modulePath, method = 'GET') {
   const request = {
     method,
     headers: { host: 'prayerdome.net', 'x-forwarded-proto': 'https' },
-    query: {},
+    query,
+    body: requestBody,
     url: '/'
   };
   return Promise.resolve(handler(request, response)).then(() => ({
@@ -54,6 +55,13 @@ function invoke(modulePath, method = 'GET') {
     config.functions && config.functions['api/*.js'] &&
     config.functions['api/*.js'].maxDuration === 10 &&
     config.functions['api/*.js'].includeFiles.includes('pd-content-data.js'));
+
+  const apiFunctions = fs.readdirSync(path.join(ROOT, 'api')).filter(name => name.endsWith('.js'));
+  test('the API stays within the 12-function Hobby plan limit',
+    apiFunctions.length <= 12, `${apiFunctions.length} functions in api/`);
+  const newsletterRewrite = (config.rewrites || []).find(rule => rule.source === '/api/newsletter');
+  test('/api/newsletter is routed through the consolidated system function',
+    newsletterRewrite && newsletterRewrite.destination.startsWith('/api/system?op=newsletter'));
   test('automatic deployments are enabled for arena branches and main',
     config.git && config.git.deploymentEnabled.main === true &&
     config.git.deploymentEnabled['**'] === false &&
@@ -168,10 +176,14 @@ function invoke(modulePath, method = 'GET') {
   const head = await invoke('api/radio.js', 'HEAD');
   test('read-only APIs support bodyless HEAD probes', head.status === 200 && head.body === '');
 
-  const health = await invoke('api/health.js');
+  const health = await invoke('api/system.js');
   test('/api/health is available for deployment monitoring',
     health.status === 200 && health.json.ok === true && health.json.service === 'prayer-dome' &&
     health.headers['cache-control'] === 'no-store');
+
+  const newsletterProbe = await invoke('api/system.js', 'GET', null, { op: 'newsletter' });
+  test('/api/newsletter reaches the Brevo handler and stays POST-only',
+    newsletterProbe.status === 405 && newsletterProbe.headers.allow === 'POST');
 
   const ignore = fs.readFileSync(path.join(ROOT, '.vercelignore'), 'utf8');
   test('.vercelignore excludes the repository by default and allows required sources',

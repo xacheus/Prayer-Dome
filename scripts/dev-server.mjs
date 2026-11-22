@@ -1,11 +1,12 @@
 // Local preview of the public build and dependency-free Vercel handlers.
 import { createServer } from 'node:http';
-import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const ROOT = fileURLToPath(new URL('../dist/', import.meta.url));
+const VERCEL = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
 const PORT = process.env.PORT || 8000;
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.png': 'image/png',
@@ -29,11 +30,23 @@ const server = createServer(async (req, res) => {
       res.writeHead(400); return res.end('Bad request');
     }
     if (pathname.startsWith('/api/')) {
-      const name = pathname.slice(5).replace(/\.js$/, '');
+      // Mirror the concrete /api rewrites from vercel.json so the preview uses
+      // the same consolidated function the deployed site does (for example
+      // /api/health and /api/newsletter both resolve to api/system.js).
+      const rewrite = (VERCEL.rewrites || []).find((rule) => rule.source === pathname &&
+        String(rule.destination || '').startsWith('/api/'));
+      let target = pathname;
+      const query = new URLSearchParams(url.searchParams);
+      if (rewrite) {
+        const destination = new URL(rewrite.destination, 'http://preview');
+        target = destination.pathname;
+        for (const [key, value] of destination.searchParams) query.set(key, value);
+      }
+      const name = target.slice(5).replace(/\.js$/, '');
       if (!/^[a-z-]+$/.test(name) || !existsSync(new URL(`../api/${name}.js`, import.meta.url))) {
         res.writeHead(404); return res.end('Not found');
       }
-      req.query = Object.fromEntries(url.searchParams);
+      req.query = Object.fromEntries(query);
       let body = '';
       for await (const chunk of req) {
         body += chunk;
