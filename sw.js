@@ -81,7 +81,7 @@ try {
 // the notification-diagnostics loop and the loading-overlay guard). A new
 // name makes the worker re-precache the fixed files at once, so a returning
 // visitor is not left on the old, frozen copy.
-const CACHE_NAME = 'prayer-dome-v41';
+const CACHE_NAME = 'prayer-dome-v42';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -143,6 +143,7 @@ const PRECACHE = [
     '/assets/pd-app.js',
     '/assets/pd-sfx.js',
     '/assets/pd-team-data.js',
+    '/assets/pd-team-store.js',
     '/assets/pd-cloud-video.js',
     // Domey, the talking hostess used by the game and the Live lounge.
     '/assets/pd-mascot.css',

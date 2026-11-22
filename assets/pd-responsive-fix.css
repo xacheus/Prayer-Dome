@@ -97,7 +97,10 @@ td, th,
 strong, em, small, b, i, u, s,
 a, button, span {
   overflow-wrap: break-word;
-  word-break: break-word;
+  /* Words break between words by default; only a single token wider than the
+     line is split (overflow-wrap above). `word-break: break-word` here used to
+     make short words break mid-word inside narrow cards. */
+  word-break: normal;
   max-width: 100%;
 }
 
@@ -147,10 +150,31 @@ button,
   min-width: 0;
   height: auto;
   white-space: normal;
+  /* Words wrap between words. `word-break: break-word` used to split
+     "Dashboard" into "Dashbo/ard" (and worse, one letter per line) whenever a
+     button's label column was squeezed by an icon and 28 px of padding. */
   overflow-wrap: break-word;
-  word-break: break-word;
+  word-break: normal;
+  hyphens: none;
   line-height: 1.3;
   text-overflow: clip;
+}
+
+/* An icon is never the element that gets squeezed: it keeps its box, and the
+   label keeps enough room for at least one whole word. */
+button > i,
+button > .pd-i,
+.btn > i,
+.btn > .pd-i,
+.pd-btn > i,
+.pd-btn > .pd-i,
+.action-chip > i,
+.filter-chip > i,
+.filter-btn > i,
+.tab-btn > i,
+.category-btn > i {
+  flex: 0 0 auto;
+  max-width: none;
 }
 
 button,

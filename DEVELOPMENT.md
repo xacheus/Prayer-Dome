@@ -136,6 +136,23 @@ security launch gates and outstanding verification.
   needs the `microphone` permission delegated to `https://three.ws`
   (`Permissions-Policy` in `vercel.json`, plus `allow="… microphone …"` on
   the iframe).
+- **Team members** — `assets/pd-team-store.js` is the single record model used
+  by both `/team` and **Admin Dashboard → Team Management**. A record has
+  `name`, `title`, `role`, `department`, `category`, `country`, `image`,
+  `description`, `responsibilities`, `scripture`, `dateJoined`, `status`
+  (`active | inactive | deceased | former`), `published`, `showInMemorial`,
+  `priority` (lower appears first), `passedAt`, `lateLabel`,
+  `memorialMessage`, `createdAt` and `updatedAt`. Two collections keep privacy
+  real: `teamMembers/{id}` holds only public-safe profile data (readable
+  publicly only when `published == true`), while `teamMemberContacts/{id}`
+  holds the optional email/phone and is administrator-only in
+  `firestore.rules`. An email appears on the public card only when
+  `emailPublic` is on; `publicEmail` is the sole address in the public
+  document. Photo upload reuses `PDUpload` (Cloudinary), and the console writes
+  both documents in one batch. Existing records are upgraded automatically the
+  first time an administrator opens the Team view: private fields move to the
+  contact store and the previous visibility is preserved. Never hard-delete a
+  member who is `inactive`, `deceased` or `former` — change the status instead.
 - **Uploads** — `assets/pd-upload.js`: native device picker → preview →
   background upload with progress/retry to the ministry's media buckets.
 - **Certificates** — `assets/pd-certificate.js` renders certificates on
