@@ -133,6 +133,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
     <script src="/assets/pd-upload.js"></script>
     
     <style>
@@ -370,120 +371,220 @@
         }
         .upload-btn-small:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
 
-        /* Official digital membership card */
-        .digital-id-card {
-            width: min(100%, 620px);
-            margin: 0 auto;
+        /* ============================================================
+           Official digital membership card — CR80 proportions
+           85.6 mm x 54 mm = 1.586:1, landscape. The old card was a tall
+           column; a real ID card is horizontal, so the front and the back
+           are two separate faces with a fixed aspect ratio.
+           ============================================================ */
+        .id-card-stack { display: grid; gap: 16px; justify-items: center; width: 100%; }
+        .cr80-card {
             position: relative;
             overflow: hidden;
+            isolation: isolate;
+            width: min(100%, 520px);
+            aspect-ratio: 85.6 / 54;
+            border-radius: 14px;
+            padding: clamp(10px, 2.5cqi, 18px);
             color: #fff;
-            border-radius: 24px;
-            padding: 24px;
-            background: linear-gradient(135deg, #07244d 0%, #0A4D9B 58%, #083b78 100%);
-            box-shadow: 0 30px 60px rgba(7, 36, 77, 0.35);
-            border: 1px solid rgba(246, 223, 138, 0.55);
+            background:
+                radial-gradient(120% 120% at 100% 0%, rgba(246, 223, 138, .18), transparent 45%),
+                linear-gradient(135deg, #07244d 0%, #0A4D9B 58%, #083b78 100%);
+            border: 1px solid rgba(246, 223, 138, .55);
+            box-shadow: 0 18px 40px rgba(7, 36, 77, .28);
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            isolation: isolate;
+            gap: 6px;
+            container-type: inline-size;
         }
-        .digital-id-card::before {
+        .cr80-card::before {
             content: '';
             position: absolute;
-            inset: 8px;
-            border: 1px solid rgba(246, 223, 138, 0.28);
-            border-radius: 17px;
+            inset: 5px;
+            border: 1px solid rgba(246, 223, 138, .28);
+            border-radius: 10px;
             pointer-events: none;
             z-index: 0;
         }
-        .digital-id-card::after {
-            content: '';
+        .cr80-card > * { position: relative; z-index: 1; }
+        .cr80-card::after {
+            content: 'PD';
             position: absolute;
-            top: -60%;
-            left: -60%;
-            width: 140%;
-            height: 220%;
-            background: linear-gradient(90deg, transparent 42%, rgba(255,255,255,0.09) 50%, transparent 58%);
-            transform: rotate(22deg);
-            pointer-events: none;
+            right: -8px;
+            bottom: -22px;
+            font: 900 5.4rem/1 'Poppins', serif;
+            color: rgba(246, 223, 138, .07);
+            letter-spacing: -2px;
             z-index: 0;
-            animation: shine 7s infinite;
-        }
-        @keyframes shine { 0% { left: -80%; } 55%, 100% { left: 100%; } }
-
-        .idc-top, .idc-body, .idc-foot, .idc-footline { position: relative; z-index: 2; }
-        .idc-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-        .idc-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-        .idc-logo {
-            width: 48px; height: 48px; flex-shrink: 0;
-            background: #fff; border-radius: 11px; padding: 4px;
-            box-shadow: 0 4px 12px rgba(0,0,0,.22);
-        }
-        .idc-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
-        .idc-org { font-size: .95rem; font-weight: 900; letter-spacing: .11em; line-height: 1.1; }
-        .idc-church { font-size: .54rem; letter-spacing: .1em; text-transform: uppercase; opacity: .82; line-height: 1.45; margin-top: 3px; }
-        .idc-kind {
-            flex-shrink: 0;
-            font-size: .52rem; font-weight: 900; letter-spacing: .13em; text-transform: uppercase;
-            color: #f6df8a; border: 1px solid rgba(246,223,138,.55);
-            border-radius: 50px; padding: 5px 10px; white-space: nowrap;
+            pointer-events: none;
         }
 
-        .idc-body { display: grid; grid-template-columns: 118px minmax(0, 1fr); gap: 18px; align-items: start; }
-        .card-photo-circle {
-            width: 118px; height: 118px; border-radius: 18px;
-            border: 3px solid #d4af37; overflow: hidden;
-            background: rgba(255,255,255,.12);
-            box-shadow: 0 8px 20px rgba(0,0,0,.28);
-            position: relative; z-index: 2; flex-shrink: 0;
+        .cr80-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .cr80-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .cr80-logo {
+            width: clamp(26px, 8cqi, 38px);
+            height: clamp(26px, 8cqi, 38px);
+            flex: 0 0 auto;
+            background: #fff;
+            border-radius: 7px;
+            padding: 2px;
+            box-shadow: 0 3px 9px rgba(0, 0, 0, .22);
         }
-        .card-photo-circle img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .idc-main { min-width: 0; }
-        .idc-label { font-size: .52rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; opacity: .65; }
-        .card-name {
-            font-size: clamp(1.05rem, 3.4vw, 1.45rem);
-            font-weight: 800; text-transform: uppercase;
-            letter-spacing: .03em; line-height: 1.22;
-            margin: 3px 0 5px; font-family: 'Poppins', serif;
-            overflow-wrap: anywhere;
-        }
-        .card-id-num {
-            color: #f6df8a; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-            font-size: .82rem; font-weight: 800; letter-spacing: .09em;
-            overflow-wrap: anywhere; line-height: 1.35;
-        }
-        .card-data-grid {
-            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-            width: 100%; background: rgba(255,255,255,.09);
-            border: 1px solid rgba(255,255,255,.14);
-            padding: 10px; border-radius: 12px; margin-top: 11px;
-        }
-        .data-box { min-width: 0; }
-        .data-box label {
-            font-size: .48rem; opacity: .72; text-transform: uppercase;
-            display: flex; align-items: center; gap: 4px; font-weight: 800;
-            letter-spacing: .09em; margin-bottom: 2px;
-        }
-        .data-box span {
-            display: block; font-size: .72rem; font-weight: 700; line-height: 1.4;
-            overflow-wrap: anywhere; word-break: break-word;
+        .cr80-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .cr80-org { font-size: clamp(.62rem, 3.1cqi, .9rem); font-weight: 900; letter-spacing: .1em; line-height: 1.1; }
+        .cr80-sub { font-size: clamp(.4rem, 1.7cqi, .54rem); letter-spacing: .09em; text-transform: uppercase; opacity: .82; line-height: 1.35; margin-top: 1px; }
+        .cr80-kind {
+            flex: 0 0 auto;
+            font-size: clamp(.4rem, 1.7cqi, .54rem);
+            font-weight: 900;
+            letter-spacing: .11em;
+            text-transform: uppercase;
+            color: #f6df8a;
+            border: 1px solid rgba(246, 223, 138, .55);
+            border-radius: 999px;
+            padding: 3px 8px;
+            white-space: nowrap;
         }
 
-        .idc-foot { display: flex; align-items: center; gap: 12px; border-top: 1px solid rgba(246,223,138,.32); padding-top: 12px; }
-        .card-barcode-wrap {
-            background: #fff; flex: 1; min-width: 0; padding: 5px 9px;
-            border-radius: 8px; min-height: 40px;
-            display: flex; align-items: center; justify-content: center;
+        .cr80-main {
+            display: grid;
+            grid-template-columns: clamp(52px, 17cqi, 82px) minmax(0, 1fr);
+            gap: clamp(7px, 2.4cqi, 14px);
+            align-items: stretch;
+            flex: 1;
+            min-height: 0;
         }
-        .card-barcode-wrap svg { width: 100%; max-height: 32px; }
-        #statusBadge { margin: 0; flex-shrink: 0; }
-        .digital-id-card .status-approved { background: rgba(34,197,94,.2); color: #bbf7d0; border-color: rgba(187,247,208,.65); }
-        .digital-id-card .status-pending { background: rgba(245,158,11,.18); color: #fde68a; border-color: rgba(253,230,138,.6); }
-        .digital-id-card .status-rejected { background: rgba(239,68,68,.2); color: #fecaca; border-color: rgba(254,202,202,.55); }
-        .idc-footline {
-            text-align: center; font-size: .5rem; letter-spacing: .1em;
-            text-transform: uppercase; opacity: .68; margin-top: -4px;
+        .cr80-photo {
+            width: 100%;
+            height: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            border: 2px solid #d4af37;
+            overflow: hidden;
+            background: rgba(255, 255, 255, .12);
         }
+        .cr80-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cr80-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .cr80-label {
+            display: block;
+            font-size: clamp(.38rem, 1.55cqi, .5rem);
+            font-weight: 800;
+            letter-spacing: .13em;
+            text-transform: uppercase;
+            opacity: .68;
+            line-height: 1.2;
+        }
+        .cr80-name {
+            font-size: clamp(.82rem, 4.1cqi, 1.3rem);
+            font-weight: 800;
+            line-height: 1.15;
+            text-transform: uppercase;
+            letter-spacing: .02em;
+            margin: 1px 0 2px;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        .cr80-id {
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+            font-size: clamp(.58rem, 2.5cqi, .8rem);
+            font-weight: 800;
+            letter-spacing: .07em;
+            color: #f6df8a;
+            line-height: 1.3;
+            overflow-wrap: break-word;
+        }
+        .cr80-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 10px;
+            margin-top: 4px;
+            background: rgba(255, 255, 255, .08);
+            border: 1px solid rgba(255, 255, 255, .14);
+            border-radius: 8px;
+            padding: clamp(4px, 1.6cqi, 8px);
+        }
+        .cr80-grid > div { min-width: 0; }
+        .cr80-grid span:last-child {
+            display: block;
+            font-size: clamp(.52rem, 2.2cqi, .72rem);
+            font-weight: 700;
+            line-height: 1.35;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+
+        .cr80-barcode {
+            margin-top: clamp(3px, 1.2cqi, 6px);
+            padding: 2px 4px;
+            background: #fff;
+            border-radius: 4px;
+            line-height: 0;
+        }
+        .cr80-barcode svg { display: block; width: 100%; height: clamp(14px, 5.4cqi, 24px); }
+
+        .cr80-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            border-top: 1px solid rgba(246, 223, 138, .3);
+            padding-top: 4px;
+            font-size: clamp(.38rem, 1.6cqi, .52rem);
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            opacity: .92;
+        }
+        .cr80-foot .status-badge {
+            margin: 0;
+            flex: 0 0 auto;
+            font-size: clamp(.4rem, 1.6cqi, .52rem);
+            padding: 3px 8px;
+        }
+        .cr80-verify { opacity: .8; }
+        .digital-id-card .status-approved, .cr80-card .status-approved { background: rgba(34,197,94,.22); color: #d1fae5; border-color: rgba(187,247,208,.7); }
+        .cr80-card .status-pending { background: rgba(245,158,11,.2); color: #fde68a; border-color: rgba(253,230,138,.65); }
+        .cr80-card .status-rejected { background: rgba(239,68,68,.22); color: #fecaca; border-color: rgba(254,202,202,.6); }
+
+        /* ---- the back face ---- */
+        .cr80-back { background: linear-gradient(135deg, #fdfcf7 0%, #f4f7fc 55%, #e9eff8 100%); color: #10233f; border-color: rgba(10, 77, 155, .35); }
+        .cr80-back::before { border-color: rgba(10, 77, 155, .18); }
+        .cr80-back::after { color: rgba(10, 77, 155, .06); }
+        .cr80-back .cr80-org { color: #07244d; }
+        .cr80-back .cr80-sub { color: #5b6b82; opacity: 1; }
+        .cr80-back .cr80-kind { color: #8a6d1a; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .12); }
+        .cr80-back-body {
+            display: grid;
+            grid-template-columns: clamp(44px, 15cqi, 66px) minmax(0, 1fr) minmax(80px, 30cqi);
+            gap: clamp(7px, 2.4cqi, 14px);
+            flex: 1;
+            min-height: 0;
+        }
+        .cr80-qr {
+            background: #fff;
+            border: 1px solid rgba(10, 77, 155, .2);
+            border-radius: 7px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            text-align: center;
+        }
+        .cr80-qr svg, .cr80-qr img { width: 100%; height: auto; max-height: 100%; display: block; }
+        .cr80-qr small { font-size: clamp(.32rem, 1.3cqi, .44rem); color: #5b6b82; letter-spacing: .05em; text-transform: uppercase; }
+        .cr80-qr-fallback { font-size: .4rem; color: #5b6b82; word-break: break-all; }
+        .cr80-back-info { display: grid; gap: 3px; align-content: start; min-width: 0; }
+        .cr80-back-info .cr80-label { color: #5b6b82; opacity: 1; }
+        .cr80-back-info strong { font-size: clamp(.52rem, 2.2cqi, .72rem); line-height: 1.35; font-weight: 700; overflow-wrap: break-word; }
+        .cr80-sign { display: flex; flex-direction: column; justify-content: flex-end; text-align: center; min-width: 0; }
+        .cr80-sign img { max-height: clamp(22px, 8cqi, 38px); max-width: 100%; object-fit: contain; margin: 0 auto 2px; }
+        .cr80-sign-line { border-top: 1px solid #10233f; margin: 2px 2px 3px; }
+        .cr80-sign small { font-size: clamp(.32rem, 1.3cqi, .44rem); letter-spacing: .05em; text-transform: uppercase; color: #5b6b82; line-height: 1.3; }
+        .cr80-sign .cr80-sign-name { font-size: clamp(.44rem, 1.8cqi, .58rem); font-weight: 800; color: #10233f; line-height: 1.25; }
+        .cr80-foot-back { border-top-color: rgba(10, 77, 155, .22); color: #5b6b82; }
+        .cr80-note { text-align: center; font-size: .68rem; color: var(--text-sub); margin-top: 10px; letter-spacing: .04em; }
 
         /* Benefits */
         .benefit-card { background: var(--bg-primary); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--border-color); transition: 0.3s; }
@@ -590,36 +691,38 @@
 
         /* Card-only printing: paper shows the official card, not the app chrome. */
         @media print {
-            @page { size: A4 landscape; margin: 10mm; }
+            /* Print the card at its real size: CR80 is 85.6 mm x 54 mm.
+               Front and back print one below the other, never stretched. */
+            @page { size: A4 portrait; margin: 12mm; }
             html, body { background: #fff !important; }
             body * { visibility: hidden !important; }
             #captureArea, #captureArea * { visibility: visible !important; }
             #captureArea {
                 position: absolute !important;
                 left: 0; top: 0; width: 100%;
-                padding: 4mm; margin: 0;
-                display: flex; justify-content: center; align-items: flex-start;
+                margin: 0; padding: 0;
             }
-            .digital-id-card {
-                width: 170mm !important; max-width: 100% !important;
+            .id-card-stack { display: block !important; }
+            .cr80-card {
+                width: 85.6mm !important;
+                height: 54mm !important;
+                max-width: 100% !important;
+                aspect-ratio: auto !important;
+                margin: 0 0 8mm !important;
                 box-shadow: none !important;
+                border-radius: 3.18mm !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
                 -webkit-print-color-adjust: exact; print-color-adjust: exact;
             }
-            .digital-id-card::after { display: none !important; }
-            .card-actions, .badge-spotlight, .loading-overlay, .toast-notification { display: none !important; }
+            .card-actions, .badge-spotlight, .loading-overlay, .toast-notification, .cr80-note { display: none !important; }
         }
 
         @media (max-width: 600px) {
-            .digital-id-card { width: 100%; padding: 16px; border-radius: 20px; gap: 13px; }
-            .idc-body { grid-template-columns: 86px minmax(0, 1fr); gap: 12px; }
-            .card-photo-circle { width: 86px; height: 86px; border-radius: 14px; }
-            .idc-logo { width: 40px; height: 40px; }
-            .idc-org { font-size: .82rem; }
-            .idc-church { font-size: .46rem; }
-            .idc-kind { font-size: .44rem; padding: 4px 7px; }
-            .card-data-grid { grid-template-columns: 1fr; }
-            .idc-foot { flex-wrap: wrap; }
-            .card-barcode-wrap { flex-basis: 100%; }
+            .cr80-card { width: 100%; border-radius: 12px; }
+            .cr80-main { grid-template-columns: 64px minmax(0, 1fr); }
+            .cr80-back-body { grid-template-columns: 48px minmax(0, 1fr) minmax(76px, 30%); }
+            .cr80-grid { gap: 3px 8px; }
         }
     </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
@@ -1076,44 +1179,90 @@
         </div>
     </div>
 
-    <!-- CARD SECTION -->
+    <!-- CARD SECTION — CR80 landscape card, front and back -->
     <div id="cardSection" style="display: none;">
         <div id="captureArea">
-            <div class="digital-id-card" id="digitalCard">
-                <div class="idc-top">
-                    <div class="idc-brand">
-                        <div class="idc-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
-                        <div>
-                            <div class="idc-org">PRAYER DOME</div>
-                            <div class="idc-church">House of Prayer for All Nations<br>Official Member Identification</div>
+            <div class="id-card-stack">
+                <!-- FRONT -->
+                <div class="cr80-card cr80-front" id="digitalCardFront" role="img" aria-label="Prayer Dome membership card, front">
+                    <div class="cr80-head">
+                        <div class="cr80-brand">
+                            <div class="cr80-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                            <div>
+                                <div class="cr80-org">PRAYER DOME</div>
+                                <div class="cr80-sub">House of Prayer for All Nations</div>
+                            </div>
+                        </div>
+                        <div class="cr80-kind">Member Card</div>
+                    </div>
+
+                    <div class="cr80-main">
+                        <div class="cr80-photo">
+                            <img id="idPhoto" src="/assets/avatar-default.svg" alt="Member photograph">
+                        </div>
+                        <div class="cr80-info">
+                            <span class="cr80-label">Member name</span>
+                            <div class="cr80-name" id="idName">Member Name</div>
+                            <div class="cr80-id" id="idNumber">No Membership</div>
+                            <div class="cr80-grid">
+                                <div><span class="cr80-label">Category</span><span id="idCategory">Member</span></div>
+                                <div><span class="cr80-label">Date joined</span><span id="idDate">—</span></div>
+                                <div><span class="cr80-label">Branch</span><span id="idBranch">—</span></div>
+                                <div><span class="cr80-label">Position</span><span id="idRole">MEMBER</span></div>
+                            </div>
                         </div>
                     </div>
-                    <div class="idc-kind">Member Card</div>
+
+                    <div class="cr80-foot">
+                        <span id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> NO MEMBERSHIP</span>
+                        <span class="cr80-verify">prayerdome.net/verify</span>
+                    </div>
                 </div>
 
-                <div class="idc-body">
-                    <div class="card-photo-circle">
-                        <img id="idPhoto" src="/assets/avatar-default.svg" alt="Member photo">
+                <!-- BACK -->
+                <div class="cr80-card cr80-back" id="digitalCardBack" role="img" aria-label="Prayer Dome membership card, back">
+                    <div class="cr80-head">
+                        <div class="cr80-brand">
+                            <div class="cr80-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                            <div>
+                                <div class="cr80-org">PRAYER DOME</div>
+                                <div class="cr80-sub" id="idBackChurch">Chama · Mahlabane · Hluthi</div>
+                            </div>
+                        </div>
+                        <div class="cr80-kind">Official ID</div>
                     </div>
-                    <div class="idc-main">
-                        <div class="idc-label">Member name</div>
-                        <div class="card-name" id="idName">Member Name</div>
-                        <div class="card-id-num" id="idNumber">No Membership</div>
-                        <div class="card-data-grid">
-                            <div class="data-box"><label><i class="pd-i pd-i-church"></i> Church</label><span id="idChurch">Prayer Dome</span></div>
-                            <div class="data-box"><label><i class="pd-i pd-i-map-pin"></i> Branch</label><span id="idBranch">---</span></div>
-                            <div class="data-box"><label><i class="pd-i pd-i-tag"></i> Position</label><span id="idRole">MEMBER</span></div>
-                            <div class="data-box"><label><i class="pd-i pd-i-calendar"></i> Registered</label><span id="idDate">--/--/----</span></div>
+
+                    <div class="cr80-back-body">
+                        <div class="cr80-qr">
+                            <div id="idQr" aria-label="Verification QR code"></div>
+                            <small>Scan to verify</small>
+                        </div>
+                        <div class="cr80-back-info">
+                            <div><span class="cr80-label">Membership</span><strong id="idBackMembership">—</strong></div>
+                            <div><span class="cr80-label">Website</span><strong>prayerdome.net</strong></div>
+                            <div><span class="cr80-label">Contact</span><strong id="idBackContact">+268 7658 1804 · info@prayerdome.net</strong></div>
+                            <div><span class="cr80-label">Issued by</span><strong id="idChurch">Prayer Dome Ministry</strong></div>
+                        </div>
+                        <div class="cr80-sign">
+                            <img id="idSignature" src="" alt="" hidden>
+                            <div class="cr80-sign-line"></div>
+                            <small>Authorized signature</small>
+                            <span class="cr80-sign-name" id="idSignName">Pastor Seedwell K. Masuku</span>
+                            <small id="idSignRole">Founder &amp; Senior Pastor</small>
                         </div>
                     </div>
-                </div>
 
-                <div class="idc-foot">
-                    <div class="card-barcode-wrap"><svg id="barcodeImg"></svg></div>
-                    <div id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> NO MEMBERSHIP</div>
+                    <div class="cr80-barcode" aria-label="Membership barcode">
+                        <svg id="barcodeImg" role="img" aria-label="Membership number barcode"></svg>
+                    </div>
+
+                    <div class="cr80-foot cr80-foot-back">
+                        <span>If found, please return to the nearest Prayer Dome branch.</span>
+                        <span id="idBackId">—</span>
+                    </div>
                 </div>
-                <div class="idc-footline">Verify this card at prayerdome.net/membership</div>
             </div>
+            <p class="cr80-note"><i class="pd-i pd-i-id-card" aria-hidden="true"></i> Standard CR80 card · 85.6 mm × 54 mm · 1.586:1</p>
         </div>
         <div class="card-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
             <button class="btn btn-primary" type="button" style="width: auto; padding: 13px 22px;" onclick="downloadID('pdf')">
@@ -1156,6 +1305,53 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+
+    /* The card template (church contact block + authorised signatory) is
+       managed in Admin → Membership Cards. Cache it per device so the card
+       renders with the ministry's current template, even offline. */
+    (async function loadCardTemplateFromCloud() {
+        try {
+            // The template is readable to signed-in members only (it contains
+            // the authorised signature image), so wait for Firebase to restore
+            // — or establish — the session before asking for it.
+            if (!auth.currentUser) {
+                await new Promise(function (resolve) {
+                    let settled = false;
+                    const unsubscribe = onAuthStateChanged(auth, function (user) {
+                        if (settled || !user) return;
+                        settled = true;
+                        try { unsubscribe(); } catch (e) {}
+                        resolve();
+                    });
+                    setTimeout(function () {
+                        if (settled) return;
+                        settled = true;
+                        try { unsubscribe(); } catch (e) {}
+                        resolve();
+                    }, 5000);
+                });
+            }
+            if (!auth.currentUser) return;
+            const snap = await getDoc(doc(db, 'membershipCardSettings', 'main'));
+            if (!snap.exists()) return;
+            const data = snap.data() || {};
+            if (!data.signatoryName) return;
+            localStorage.setItem('pd_membership_card_template', JSON.stringify({
+                churchName: data.churchName || 'Prayer Dome Ministry',
+                signatoryName: data.signatoryName,
+                signatoryRole: data.signatoryRole || '',
+                phone: data.phone || '',
+                email: data.email || '',
+                signature: data.signature || ''
+            }));
+            if (typeof renderAuthorizedSignature === 'function') renderAuthorizedSignature();
+            if (typeof currentMemberData !== 'undefined' && currentMemberData && typeof renderCard === 'function') {
+                renderCard(currentMemberData);
+            }
+        } catch (error) {
+            console.warn('Card template unavailable; the device copy is used.', error && error.message);
+        }
+    })();
 
     let currentUser = null;
     let currentMemberData = null;
@@ -2010,6 +2206,86 @@
         }
     };
     
+    /* The card template is managed in Admin → Membership Cards. Only an
+       administrator can save an authorized signature image; the member page
+       simply displays what the ministry has approved. When no template is
+       stored, the ministry signatory's printed name is shown with a signature
+       line — never a fabricated copy of a real person's signature. */
+    function cardTemplate() {
+        const defaults = {
+            churchName: 'Prayer Dome Ministry',
+            signatoryName: 'Pastor Seedwell K. Masuku',
+            signatoryRole: 'Founder & Senior Pastor',
+            phone: '+268 7658 1804',
+            email: 'info@prayerdome.net',
+            signature: ''
+        };
+        try {
+            const raw = localStorage.getItem('pd_membership_card_template');
+            if (!raw) return defaults;
+            const saved = JSON.parse(raw);
+            return Object.assign(defaults, saved && typeof saved === 'object' ? saved : {});
+        } catch (error) {
+            return defaults;
+        }
+    }
+
+    function renderAuthorizedSignature() {
+        const template = cardTemplate();
+        const nameEl = document.getElementById('idSignName');
+        const roleEl = document.getElementById('idSignRole');
+        const imageEl = document.getElementById('idSignature');
+        if (nameEl) nameEl.innerText = template.signatoryName;
+        if (roleEl) roleEl.innerText = template.signatoryRole;
+        if (imageEl) {
+            if (template.signature) {
+                imageEl.src = template.signature;
+                imageEl.alt = 'Authorized signature of ' + template.signatoryName;
+                imageEl.hidden = false;
+            } else {
+                imageEl.removeAttribute('src');
+                imageEl.alt = '';
+                imageEl.hidden = true;
+            }
+        }
+    }
+
+    /* QR payload: the public verification page with the membership number.
+       It resolves through the admin-issued `membershipVerification` record, so
+       scanning it never exposes an email, phone number or national ID. */
+    function verificationUrl(memberId) {
+        return 'https://prayerdome.net/verify?id=' + encodeURIComponent(memberId || '');
+    }
+
+    function renderCardQr(memberId, approved) {
+        const host = document.getElementById('idQr');
+        if (!host) return;
+        host.innerHTML = '';
+        if (!memberId) {
+            host.innerHTML = '<span class="cr80-qr-fallback">QR issued with the card</span>';
+            return;
+        }
+        if (typeof qrcode !== 'function') {
+            host.innerHTML = '<span class="cr80-qr-fallback">prayerdome.net/verify</span>';
+            return;
+        }
+        try {
+            const qr = qrcode(0, 'M');
+            qr.addData(verificationUrl(memberId) + (approved ? '' : '&status=pending'));
+            qr.make();
+            host.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+            const svg = host.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.setAttribute('role', 'img');
+                svg.setAttribute('aria-label', 'QR code to verify membership ' + memberId);
+            }
+        } catch (error) {
+            host.innerHTML = '<span class="cr80-qr-fallback">prayerdome.net/verify</span>';
+        }
+    }
+
     function renderCard(data) {
         const idPhoto = document.getElementById('idPhoto');
         if (idPhoto) {
@@ -2029,7 +2305,7 @@
             }
             try {
                 if (typeof JsBarcode === 'function') {
-                    JsBarcode("#barcodeImg", data.membershipId, { format: "CODE128", lineColor: "#000", width: 2, height: 40, displayValue: false });
+                    JsBarcode("#barcodeImg", data.membershipId, { format: "CODE128", lineColor: "#07244d", background: "#ffffff", width: 1.2, height: 36, margin: 0, displayValue: false });
                 } else {
                     const barcode = document.getElementById('barcodeImg');
                     if (barcode) barcode.innerHTML = '<text x="4" y="24" font-family="monospace" font-size="18" font-weight="700" fill="#07244d">' + String(data.membershipId).replace(/[<>&]/g, '') + '</text>';
@@ -2071,6 +2347,34 @@
         if (idDate) idDate.innerText = date && !Number.isNaN(date.getTime())
             ? date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
             : '—';
+
+        // ----- CR80 back face: category, membership line, QR and signature -----
+        const category = data.category || data.membershipType || data.memberCategory ||
+            (data.role ? 'Member' : 'Member');
+        const memberId = data.membershipId || '';
+        const approved = data.status === 'approved';
+
+        const idCategory = document.getElementById('idCategory');
+        if (idCategory) idCategory.innerText = category;
+        const backMembership = document.getElementById('idBackMembership');
+        if (backMembership) {
+            backMembership.innerText = memberId
+                ? memberId + ' · ' + category + (approved ? '' : ' · pending')
+                : 'Not issued yet';
+        }
+        const backId = document.getElementById('idBackId');
+        if (backId) backId.innerText = memberId || 'No membership number';
+        const backChurch = document.getElementById('idBackChurch');
+        if (backChurch) {
+            backChurch.innerText = data.churchName || 'Chama · Mahlabane · Hluthi';
+        }
+        const backContact = document.getElementById('idBackContact');
+        if (backContact) {
+            const template = cardTemplate();
+            backContact.innerText = [template.phone, template.email].filter(Boolean).join(' · ');
+        }
+        renderCardQr(memberId, approved);
+        renderAuthorizedSignature();
 
         // Recognition badge (awarded by admin)
         const spotlight = document.getElementById('badgeSpotlight');
@@ -2134,74 +2438,93 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    window.downloadID = (format = 'pdf') => {
-        const element = document.getElementById('digitalCard') || document.getElementById('captureArea');
-        if (!element) {
+    window.downloadID = async (format = 'pdf') => {
+        const front = document.getElementById('digitalCardFront');
+        const back = document.getElementById('digitalCardBack');
+        if (!front) {
             showToast("ID card is not available yet", "error");
             return;
         }
+        const faces = [front, back].filter(Boolean);
         const asImage = format === 'png';
-        showLoading(asImage ? "Preparing ID card image..." : "Preparing ID card PDF...");
+        showLoading(asImage ? "Preparing ID card images..." : "Preparing ID card PDF...");
         const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const baseName = `PrayerDome-ID-${currentMemberData?.membershipId || 'Card'}-${stamp}`;
-        html2canvas(element, {
+        const capture = (node) => html2canvas(node, {
             useCORS: true,
             scale: 3,
             backgroundColor: '#ffffff',
-            // Canvas capture cannot paint CSS-mask icons; inline them in the clone.
             onclone: (doc) => {
-                const target = doc.getElementById(element.id) || doc.body;
+                const target = doc.getElementById(node.id) || doc.body;
                 if (window.PDIcons) PDIcons.inline(target);
-                // A still, evenly lit card is what belongs in an official PDF.
-                const still = doc.createElement('style');
-                still.textContent = '.digital-id-card::after{display:none!important}';
-                (doc.head || doc.documentElement).appendChild(still);
-                target.querySelectorAll('.pd-i').forEach(icon => {
-                    icon.style.color = icon.classList.contains('pd-i-map-pin') ? '#f6df8a' : 'inherit';
-                });
             }
-        }).then(canvas => {
-            const imgData = canvas.toDataURL("image/png");
+        });
+        try {
+            const canvases = [];
+            for (const face of faces) {
+                canvases.push(await capture(face));
+            }
+
             if (asImage) {
-                const a = document.createElement('a');
-                a.href = imgData;
-                a.download = `${baseName}.png`;
-                a.click();
+                // Both faces in one tall PNG, with a small gap between them.
+                const gap = 24;
+                const width = Math.max(...canvases.map(c => c.width));
+                const height = canvases.reduce((sum, c) => sum + c.height, 0) + gap * (canvases.length - 1);
+                const sheet = document.createElement('canvas');
+                sheet.width = width;
+                sheet.height = height;
+                const ctx = sheet.getContext('2d');
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                let y = 0;
+                canvases.forEach((canvas, index) => {
+                    ctx.drawImage(canvas, Math.round((width - canvas.width) / 2), y);
+                    y += canvas.height + (index < canvases.length - 1 ? gap : 0);
+                });
+                const link = document.createElement('a');
+                link.href = sheet.toDataURL('image/png');
+                link.download = `${baseName}.png`;
+                link.click();
                 hideLoading();
-                showToast("ID card image saved", "success");
+                showToast("Membership card saved — front and back", "success");
                 return;
             }
+
             const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : (window.jsPDF || null);
             if (!jsPDFClass) {
-                const a = document.createElement('a');
-                a.href = imgData;
-                a.download = `${baseName}.png`;
-                a.click();
+                // Honest fallback: no PDF library means a high-quality image,
+                // not a broken file.
+                const link = document.createElement('a');
+                link.href = canvases[0].toDataURL('image/png');
+                link.download = `${baseName}.png`;
+                link.click();
                 hideLoading();
                 showToast("PDF library unavailable — saved a high-quality image instead", "info");
                 return;
             }
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
+            const first = canvases[0];
             const pdf = new jsPDFClass({
-                orientation: imgWidth > imgHeight ? 'l' : 'p',
+                orientation: first.width > first.height ? 'l' : 'p',
                 unit: 'px',
-                format: [imgWidth, imgHeight],
+                format: [first.width, first.height],
                 hotfixes: ['px_scaling']
             });
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
+            canvases.forEach((canvas, index) => {
+                if (index > 0) pdf.addPage([canvas.width, canvas.height], canvas.width > canvas.height ? 'l' : 'p');
+                pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+            });
             pdf.save(`${baseName}.pdf`);
             hideLoading();
-            showToast("ID card downloaded as PDF", "success");
-        }).catch(err => {
+            showToast("Membership card downloaded — front and back", "success");
+        } catch (err) {
             console.error("Download error:", err);
             hideLoading();
-            showToast("Could not prepare the ID card. Please try Print or a different browser.", "error");
-        });
+            showToast("Could not prepare the card. Please try Print or a different browser.", "error");
+        }
     };
 
     window.printID = () => {
-        const card = document.getElementById('digitalCard');
+        const card = document.getElementById('digitalCardFront');
         if (!card) {
             showToast("ID card is not available yet", "error");
             return;

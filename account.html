@@ -124,7 +124,7 @@
 }
     </script>
     <!-- PD-SEO:END -->
-    
+
     <link rel="stylesheet" href="/assets/pd-icons.css">
     <script src="/assets/pd-icons.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
@@ -186,7 +186,7 @@
             background: rgba(255,255,255,0.9);
         }
         body.dark-mode .auth-header { background: rgba(15,23,42,0.95); }
-        
+    
         .logo-area {
             display: flex;
             align-items: center;
@@ -463,7 +463,7 @@
             transition: 0.2s;
         }
         .camera-overlay:hover { transform: scale(1.1); }
-        
+    
         .membership-badge { 
             background: linear-gradient(135deg, var(--accent-green), #0a3d7a); 
             color: white; 
@@ -981,7 +981,28 @@
         /* The Google button stays white in dark mode, so its label and mark stay dark. */
         body.dark-mode .btn-google { color: #1f2937; }
         body.dark-mode .btn-google:hover { background: #f1f5f9; }
-    </style>
+
+        /* Achievements (profile) */
+        .achievement-stat {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color, var(--border));
+            border-radius: 12px;
+            padding: 10px 8px;
+            text-align: center;
+            min-width: 0;
+        }
+        .achievement-stat strong { display: block; font-family: 'Poppins', serif; font-size: 1.25rem; color: var(--accent-green); line-height: 1.2; }
+        .achievement-stat span { display: block; font-size: .62rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-sub); margin-top: 2px; }
+        .achievement-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.4);
+            color: #8a6d1a; border-radius: 999px; padding: 4px 10px;
+            font-size: .7rem; font-weight: 800; line-height: 1.3;
+            max-width: 100%; overflow-wrap: break-word;
+        }
+        body.dark-mode .achievement-chip { color: #f6df8a; }
+
+</style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
@@ -1021,7 +1042,7 @@
 
         <!-- LOGIN SCREEN -->
         <div id="loginForm" class="auth-card">
-            <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-log-in"></i> Welcome Back</h2>
+            <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-log-in"></i> Sign In</h2>
             <p style="text-align: center; color: var(--text-sub); margin-bottom: 30px;">Sign in to continue your spiritual journey</p>
             <form onsubmit="handleLogin(event)">
                 <div class="form-group">
@@ -1035,8 +1056,9 @@
                 </div>
                 <button type="submit" class="btn btn-primary">Sign In <i class="pd-i pd-i-arrow-right"></i></button>
             </form>
-            <div style="text-align: center; margin: 20px 0;">
+            <div style="text-align: center; margin: 20px 0; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;">
                 <a href="#" onclick="openResetModal()" style="color: var(--accent-green); font-size: 0.85rem; text-decoration: none; font-weight: 600;">Forgot Password?</a>
+                <a href="#" onclick="switchTab('register'); return false;" style="color: var(--accent-gold); font-size: 0.85rem; text-decoration: none; font-weight: 700;">New here? Register</a>
             </div>
             <div style="text-align: center; margin: 25px 0; color: var(--text-sub); font-size: 0.8rem; position: relative;">
                 <span style="background: var(--bg-card); padding: 0 15px;">OR CONTINUE WITH</span>
@@ -1046,9 +1068,9 @@
 
         <!-- REGISTRATION SCREEN -->
         <div id="registerForm" class="auth-card" style="display: none;">
-            <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-user-plus"></i> Join the Family</h2>
+            <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-user-plus"></i> Register</h2>
             <p style="text-align: center; color: var(--text-sub); margin-bottom: 25px;">Create your account to access all features</p>
-            
+        
             <div style="text-align: center; margin-bottom: 20px;">
                 <div class="avatar-frame"><img id="regPreview" src="/assets/avatar-default.svg"></div>
                 <button type="button" onclick="uploadPhoto('register')" class="btn btn-outline" style="width: auto; padding: 8px 20px; margin-top: 10px;"><i class="pd-i pd-i-camera"></i> Upload Photo</button>
@@ -1126,6 +1148,22 @@
                     <div style="display: flex; justify-content: space-between; font-size: 0.7rem; margin-top: 8px;">
                         <span><i class="pd-i pd-i-sprout" aria-hidden="true"></i> Seeker</span><span><i class="pd-i pd-i-book-open" aria-hidden="true"></i> Disciple</span><span><i class="pd-i pd-i-flame" aria-hidden="true"></i> Warrior</span><span><i class="pd-i pd-i-crown" aria-hidden="true"></i> Leader</span>
                     </div>
+                </div>
+
+                <!-- ACHIEVEMENTS — reading from the same progress the games and
+                     Academy write, so nothing here is invented. -->
+                <div class="achievements-card" style="background: var(--bg-primary); border-radius: 20px; padding: 18px; margin: 15px 0; border: 1px solid rgba(212,175,55,.35);">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
+                        <h3 style="margin: 0; font-family: 'Poppins', serif; color: var(--accent-gold); font-size: 1.05rem;"><i class="pd-i pd-i-trophy"></i> Achievements</h3>
+                        <span style="font-size: .7rem; color: var(--text-sub);">Earned in games, quizzes and the Academy</span>
+                    </div>
+                    <div class="achievement-stats" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 96px), 1fr)); gap: 8px; margin-bottom: 12px;">
+                        <div class="achievement-stat"><strong id="pXpDisplay">0</strong><span>Faith points</span></div>
+                        <div class="achievement-stat"><strong id="pLevelDisplay">1</strong><span>Level</span></div>
+                        <div class="achievement-stat"><strong id="pBadgeCount">0</strong><span>Badges</span></div>
+                        <div class="achievement-stat"><strong id="pCertificateCount">0</strong><span>Certificates</span></div>
+                    </div>
+                    <div id="pAchievementsList" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
                 </div>
                 <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0;"><p id="pBioDisplay">No bio added yet.</p></div>
                 <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0;"><div id="pMinistriesDisplay">Not specified</div></div>
@@ -1377,7 +1415,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- ==================================================================
          The account page interface layer.
          This is a CLASSIC script on purpose. Everything in it works with
@@ -1775,7 +1813,7 @@
                 showToast("Please use a valid email address (gmail.com, outlook.com, etc.)", "error");
                 return;
             }
-            
+        
             showLoading();
             try {
                 await sendPasswordResetEmail(auth, email);
@@ -1800,12 +1838,12 @@
                 showToast('Please type DELETE to confirm account deletion', 'error');
                 return;
             }
-            
+        
             if (!auth.currentUser) {
                 showToast('No user logged in', 'error');
                 return;
             }
-            
+        
             showLoading();
             try {
                 await deleteDoc(doc(db, "users", auth.currentUser.uid));
@@ -1832,14 +1870,14 @@
 
         window.__pdVerifyEmail = async () => {
             if (!auth.currentUser) return showToast("Please login first", "error");
-            
+        
             await auth.currentUser.reload();
             if (auth.currentUser.emailVerified) {
                 showToast("Your email is already verified!", "success");
                 updateVerificationStatus();
                 return;
             }
-            
+        
             try {
                 await sendEmailVerification(auth.currentUser);
                 document.getElementById('verifyEmailAddress').innerText = auth.currentUser.email;
@@ -1874,7 +1912,7 @@
             }
             return false;
         }
-        
+    
         async function handleEmailVerificationLink() {
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get('mode');
@@ -1917,7 +1955,7 @@
                 hideLoading();
             }
         };
-        
+    
         window.__pdHandleRegister = async (e) => {
             e.preventDefault();
             const name = document.getElementById('rName').value.trim();
@@ -1928,16 +1966,16 @@
             const phoneNum = document.getElementById('rPhone').value.trim();
             const fullPhone = `${countryCode}${phoneNum}`;
             const photoUrl = document.getElementById('uploadedPhoto').value || "/assets/avatar-default.svg";
-            
+        
             if (!name || !isValidEmail(email)) {
                 showToast('Enter your full name and a valid email address.', 'error');
                 return;
             }
-            
+        
             if (!phoneNum) return showToast('Please enter your phone number.', 'error');
             if(pass !== confirm) return showToast("Passwords don't match", "error");
             if(pass.length < 6) return showToast("Password must be at least 6 characters", "error");
-            
+        
             showLoading();
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -1970,17 +2008,17 @@
                 hideLoading();
             }
         };
-        
+    
         window.__pdHandleLogin = async (e) => {
             e.preventDefault();
             const email = document.getElementById('lEmail').value.trim().toLowerCase();
             const password = document.getElementById('lPass').value;
-            
+        
             if (!isValidEmail(email)) {
                 showToast('Enter a valid email address.', 'error');
                 return;
             }
-            
+        
             showLoading();
             try {
                 await signInWithEmailAndPassword(auth, email, password);
@@ -1999,10 +2037,10 @@
             const phoneNum = document.getElementById('ePhone').value;
             const fullPhone = `${countryCode}${phoneNum}`;
             const ministries = Array.from(document.querySelectorAll('#ministryCheckboxes input:checked')).map(cb => cb.value);
-            
+        
             const currentPhoto = document.getElementById('pPhoto').src;
             const finalPhotoUrl = currentPhotoUrl || currentPhoto;
-            
+        
             const updates = {
                 fullName: document.getElementById('eName').value,
                 phone: fullPhone,
@@ -2014,7 +2052,7 @@
                 photoURL: finalPhotoUrl,
                 updatedAt: serverTimestamp()
             };
-            
+        
             showLoading();
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), updates);
@@ -2022,7 +2060,7 @@
                     displayName: updates.fullName,
                     photoURL: finalPhotoUrl
                 });
-                
+            
                 showToast("Profile updated successfully!", "success");
                 toggleEdit(false);
                 await loadProfileData(auth.currentUser);
@@ -2156,6 +2194,9 @@
             // yet the card shows a clear pending label rather than blank text.
             display('pIdDisplay', member.membershipId || 'Pending');
 
+            renderAchievements();
+            loadCloudAchievements(user.uid);
+
             // Certificates follow the profile — show the live profile name.
             const certProfileName = document.getElementById('certProfileName');
             if (certProfileName) certProfileName.textContent = fullName;
@@ -2166,6 +2207,79 @@
                 });
                 localStorage.setItem('pd_profile', JSON.stringify(window.PD_PROFILE));
             } catch (e) {}
+        }
+
+        /* Achievements come from the same local progress the games and
+           Academy already write. Nothing is invented; an empty account shows
+           zeroes and an invitation, not fake awards. */
+        /* A member who played on another phone still sees their real progress.
+           The cloud copy is merged (never replaced) with this device's copy, and
+           only the higher totals win, so a brief offline session cannot erase a
+           streak or a badge. */
+        async function loadCloudAchievements(uid) {
+            if (!uid) return;
+            try {
+                const snap = await getDoc(doc(db, 'users', uid, 'game', 'progress'));
+                if (!snap.exists()) return;
+                const cloud = snap.data() || {};
+                let local = {};
+                try { local = JSON.parse(localStorage.getItem('pd_faith_journey_data')) || {}; } catch (e) {}
+                const badges = Array.from(new Set(
+                    (Array.isArray(local.badges) ? local.badges : [])
+                        .concat(Array.isArray(cloud.badges) ? cloud.badges : [])
+                ));
+                const merged = {
+                    xp: Math.max(Number(local.xp) || 0, Number(cloud.xp) || 0),
+                    level: Math.max(Number(local.level) || 1, Number(cloud.level) || 1),
+                    streak: Math.max(Number(local.streak) || 0, Number(cloud.streak) || 0),
+                    badges: badges.length ? badges : ['first-step'],
+                    lastPlayed: cloud.lastPlayed || local.lastPlayed || '',
+                    lastVisit: cloud.lastVisit || local.lastVisit || ''
+                };
+                localStorage.setItem('pd_faith_journey_data', JSON.stringify(merged));
+                renderAchievements();
+            } catch (error) {
+                // Offline, or the rules do not allow this read: the local card
+                // already shows the device's own progress.
+                console.warn('Cloud achievements unavailable:', error && error.message);
+            }
+        }
+
+        function renderAchievements() {
+            let journey = {};
+            try { journey = JSON.parse(localStorage.getItem('pd_faith_journey_data')) || {}; } catch (e) {}
+            let academy = {};
+            try { academy = JSON.parse(localStorage.getItem('pd_academy_progress')) || {}; } catch (e) {}
+            const xp = Number(journey.xp) || 0;
+            const level = Number(journey.level) || 1;
+            const badges = Array.isArray(journey.badges) ? journey.badges : [];
+            const certificates = Array.isArray(academy.certificates) ? academy.certificates : [];
+            const set = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+            set('pXpDisplay', xp);
+            set('pLevelDisplay', level);
+            set('pBadgeCount', badges.length);
+            set('pCertificateCount', certificates.length);
+            const host = document.getElementById('pAchievementsList');
+            if (!host) return;
+            const labels = {
+                'first-step': 'First Step',
+                'word-seeker': 'Word Seeker',
+                'prayer-warrior': 'Prayer Warrior',
+                'streak-builder': 'Streak Builder',
+                'quiz-champion': 'Quiz Champion'
+            };
+            const esc = (value) => String(value == null ? '' : value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            const chips = badges.map((id) => '<span class="achievement-chip"><i class="pd-i pd-i-medal" aria-hidden="true"></i> ' +
+                esc(labels[id] || String(id).replace(/-/g, ' ')) + '</span>');
+            if (certificates.length) {
+                chips.push('<span class="achievement-chip"><i class="pd-i pd-i-award" aria-hidden="true"></i> ' +
+                    certificates.length + ' Academy certificate' + (certificates.length === 1 ? '' : 's') + '</span>');
+            }
+            host.innerHTML = chips.length
+                ? chips.join('')
+                : '<span style="font-size:.78rem;color:var(--text-sub);">Play a Bible challenge or pass an Academy quiz to earn your first achievement.</span>';
         }
 
         // ==================== MY CERTIFICATES ====================
@@ -2308,10 +2422,10 @@
 
         function updateVerificationStatus() {
             if (!auth.currentUser) return;
-            
+        
             const emailBadge = document.getElementById('emailVerifiedBadge');
             const emailStatus = document.getElementById('emailStatusText');
-            
+        
             if (auth.currentUser.emailVerified) {
                 emailBadge.className = 'verification-badge verified';
                 emailStatus.innerText = 'Verified';
@@ -2360,7 +2474,7 @@
                 event.target.value = '';
             }
         };
-        
+    
         window.__pdChangeProfilePhoto = () => {
             if (!auth.currentUser) {
                 showToast("Please login first", "error");
@@ -2368,7 +2482,7 @@
             }
             uploadPhoto('profile');
         };
-        
+    
         /* The admin console sends members here with ?next=admin. As soon as the
          * signed-in account is confirmed as an administrator we hand them
          * straight over — one Prayer Dome sign-in covers the whole platform, so

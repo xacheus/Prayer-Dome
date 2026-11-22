@@ -81,7 +81,10 @@ try {
 // the notification-diagnostics loop and the loading-overlay guard). A new
 // name makes the worker re-precache the fixed files at once, so a returning
 // visitor is not left on the old, frozen copy.
-const CACHE_NAME = 'prayer-dome-v42';
+// v43 — branch locations, the public card-verification page and the grouped
+// admin console shipped. A new cache name retires the previous shell so a
+// returning member gets the new navigation and card pages immediately.
+const CACHE_NAME = 'prayer-dome-v43';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -111,6 +114,10 @@ const PRECACHE = [
     '/video.html',
     '/quiz.html',
     '/membership.html',
+    '/locations.html',
+    '/verify.html',
+    '/assets/pd-locations-data.js',
+    '/assets/pd-locations.js',
     '/support.html',
     '/team.html',
     '/account.html',

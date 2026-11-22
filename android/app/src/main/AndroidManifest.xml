@@ -23,6 +23,20 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Firebase Cloud Messaging defaults. The channels themselves are
+                 created by the web layer (pd-app.js — prayer_dome_*), because a
+                 channel needs a human-readable name and importance that only
+                 the app can choose at runtime. -->
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_icon"
+                android:resource="@drawable/ic_notification" />
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_color"
+                android:resource="@color/colorAccent" />
+            <meta-data
+                android:name="com.google.firebase.messaging.default_notification_channel_id"
+                android:value="prayer_dome_general" />
+
             <!-- Open canonical Prayer Dome HTTPS links in this native app.
                  Digital Asset Links currently verifies www.prayerdome.net;
                  prayerdome.net itself redirects, which Android will not follow

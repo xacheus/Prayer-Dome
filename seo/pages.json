@@ -279,6 +279,23 @@
       "schema": "webpage",
       "priority": "0.4",
       "changefreq": "yearly"
+    },
+    "locations.html": {
+      "path": "/locations",
+      "title": "Prayer Dome Locations | Find a Church Near You",
+      "description": "Find the Prayer Dome branch closest to you in Chama, Mahlabane, Hluthi or Cork. Real service times, directions, phone numbers and distance from where you are.",
+      "keywords": "prayer dome locations, church near me, prayer dome chama, prayer dome mahlabane, prayer dome hluthi, prayer dome cork, church directions",
+      "schema": "webpage",
+      "priority": "0.8",
+      "changefreq": "monthly"
+    },
+    "verify.html": {
+      "path": "/verify",
+      "title": "Verify a Prayer Dome Membership Card",
+      "description": "Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.",
+      "keywords": "prayer dome membership verification, verify membership card, church id card check",
+      "schema": "webpage",
+      "noindex": true
     }
   }
 }

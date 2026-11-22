@@ -500,6 +500,91 @@ service cloud.firestore {
       allow write: if isOwner(userId) || isAdmin();
     }
 
+    // ==========================================
+    // Church locations (public directory, admin managed)
+    // ==========================================
+    match /churchLocations/{id} {
+      // A visitor may read only branches that are open. Closed or planned
+      // branches stay visible to administrators.
+      allow read: if isAdmin() || resource.data.status == 'active';
+      allow create, update: if isAdmin() &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.country is string &&
+        request.resource.data.country.size() <= 80 &&
+        request.resource.data.status in ['active', 'planned', 'closed'] &&
+        request.resource.data.lat is number &&
+        request.resource.data.lat >= -90 && request.resource.data.lat <= 90 &&
+        request.resource.data.lng is number &&
+        request.resource.data.lng >= -180 && request.resource.data.lng <= 180 &&
+        (!('mapUrl' in request.resource.data) ||
+          (request.resource.data.mapUrl is string && request.resource.data.mapUrl.size() <= 400));
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Daily challenges (public read when published)
+    // ==========================================
+    match /dailyChallenges/{id} {
+      allow read: if isAdmin() || resource.data.published == true;
+      allow create, update: if isAdmin() &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 140 &&
+        request.resource.data.published is bool &&
+        (!('date' in request.resource.data) ||
+          (request.resource.data.date is string && request.resource.data.date.size() == 10)) &&
+        (!('points' in request.resource.data) ||
+          (request.resource.data.points is number &&
+           request.resource.data.points >= 0 && request.resource.data.points <= 500));
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Membership card verification projection
+    // ==========================================
+    // Deliberately contains only what is printed on the card. Email, phone,
+    // national ID and the member's signature are never copied here, so a
+    // public scan cannot leak private contact information.
+    match /membershipVerification/{id} {
+      // A card checks one exact number through /verify (a get). Listing the
+      // whole verification register would expose every member's number and
+      // name, so enumeration stays administrator-only.
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update: if isAdmin() &&
+        request.resource.data.membershipId is string &&
+        request.resource.data.membershipId.size() > 0 &&
+        request.resource.data.membershipId.size() <= 40 &&
+        request.resource.data.status in ['pending', 'approved', 'rejected', 'revoked'] &&
+        (!('displayName' in request.resource.data) ||
+          (request.resource.data.displayName is string &&
+           request.resource.data.displayName.size() <= 120));
+      allow delete: if isAdmin();
+    }
+
+    // ==========================================
+    // Document Studio (official letters, memos, certificates)
+    // ==========================================
+    // Drafts, approvals, published documents and the signature audit trail are
+    // ministry records. Nothing here is public: the console exports a document
+    // to PDF/DOCX/PNG/JPG when it is ready to be shared.
+    match /documents/{id} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Membership card template (brand, signatory, authorized signature image).
+    // Readable only by a signed-in member — the card they display uses it — and
+    // writable only by an administrator, so a signature image cannot be replaced
+    // by anyone else and cannot be lifted anonymously from the project.
+    match /membershipCardSettings/{id} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // Live prayer requests raised during a broadcast (public feed, signed-in authors)
     match /livePrayers/{id} {
       allow read: if true;

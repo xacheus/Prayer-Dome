@@ -1,5 +1,5 @@
 {
-  "name": "Prayer Dome \u2014 Daily Prayer, Bible & Christian Community",
+  "name": "Prayer Dome — Daily Prayer, Bible & Christian Community",
   "short_name": "Prayer Dome",
   "description": "Pray, study the Bible, join daily devotionals, watch live services and grow with the Prayer Dome community.",
   "id": "/",
@@ -7,9 +7,9 @@
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "fullscreen",
     "standalone",
-    "minimal-ui"
+    "minimal-ui",
+    "fullscreen"
   ],
   "orientation": "any",
   "background_color": "#0A4D9B",
@@ -116,7 +116,7 @@
       "sizes": "1672x941",
       "type": "image/jpeg",
       "form_factor": "wide",
-      "label": "Prayer Dome \u2014 Worship and Prayer"
+      "label": "Prayer Dome — Worship and Prayer"
     },
     {
       "src": "/assets/logo.png",

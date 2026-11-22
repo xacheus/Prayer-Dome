@@ -6,6 +6,7 @@ Allow: /
 Disallow: /account
 Disallow: /admin
 Disallow: /finance
+Disallow: /verify
 Disallow: /admin.html
 Disallow: /finance.html
 Disallow: /account.html

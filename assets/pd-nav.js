@@ -70,6 +70,7 @@
         { href: '/testimony', icon: 'sparkles', label: 'Testimonies', key: 'nav.testimony' },
         { href: '/events', icon: 'calendar-days', label: 'Events', key: 'nav.events' },
         { href: '/gallery', icon: 'images', label: 'Gallery', key: 'nav.gallery' },
+        { href: '/locations', icon: 'map-pin', label: 'Locations' },
         { href: '/news', icon: 'newspaper', label: 'Christian News', key: 'nav.news' }
       ]
     },
@@ -87,7 +88,7 @@
       id: 'personal',
       label: 'Personal',
       items: [
-        { href: '/account', icon: 'circle-user', label: 'My Account', key: 'nav.account' },
+        { href: '/account', icon: 'circle-user', label: 'My Profile', key: 'nav.account' },
         { href: '/widgets', icon: 'smartphone', label: 'Verse Widget' },
         { href: '/membership', icon: 'id-card', label: 'Membership' },
         { href: '/give', icon: 'heart', label: 'Give', key: 'nav.give' },
@@ -101,6 +102,7 @@
     { href: '/about', icon: 'church', label: 'About', key: 'nav.about' },
     { href: '/contact', icon: 'mail', label: 'Contact', key: 'nav.contact' },
     { href: '/team', icon: 'users', label: 'Team', key: 'nav.team' },
+    { href: '/verify', icon: 'shield-check', label: 'Verify a card' },
     { href: '/privacy', icon: 'shield-check', label: 'Privacy' }
   ];
 
@@ -113,7 +115,7 @@
     { href: '/lessons', icon: 'graduation-cap', label: 'Learn', key: 'nav.teaching' },
     { href: '/game', icon: 'gamepad-2', label: 'Play' },
     { href: '/prayer', icon: 'hands-praying', label: 'Pray', key: 'nav.pray' },
-    { href: '/account', icon: 'circle-user', label: 'Account', key: 'nav.account' }
+    { href: '/account', icon: 'circle-user', label: 'Profile', key: 'nav.account' }
   ];
 
   /* Routes that belong to a section without being the section's own URL (a

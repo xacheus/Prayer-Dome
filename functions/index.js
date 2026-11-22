@@ -86,6 +86,20 @@ function linkFor(record) {
   return absoluteUrl('/index.html');
 }
 
+/* One Android channel per notification category, matching the channels the app
+   creates in assets/pd-app.js. A channel owns its importance and lock-screen
+   visibility, so a member can mute events without missing a live service. */
+const ANDROID_CHANNELS = {
+  verse: 'prayer_dome_verse',
+  live: 'prayer_dome_live',
+  prayer: 'prayer_dome_prayer',
+  news: 'prayer_dome_news',
+  sermon: 'prayer_dome_sermon',
+  devotional: 'prayer_dome_sermon',
+  event: 'prayer_dome_events',
+  general: 'prayer_dome_general'
+};
+
 function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
   const message = {
     tokens,
@@ -126,8 +140,8 @@ function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
     android: {
       priority: 'high',
       notification: {
-        channelId: 'prayer_dome_updates',
-        icon: 'logo_notification',
+        channelId: ANDROID_CHANNELS[normaliseKind(kind)] || 'prayer_dome_general',
+        icon: 'ic_notification',
         color: '#0A4D9B',
         sound: 'default'
       }

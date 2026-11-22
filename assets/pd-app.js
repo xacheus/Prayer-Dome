@@ -584,7 +584,7 @@
         'nav.sermons': { en: 'Sermons', tum: 'Maupharazgi', ssw: 'Tintshumayelo', bem: 'Icilengo', nya: 'Ulaliki' },
         'nav.assistant': { en: 'Assistant', tum: 'Wovwiri', ssw: 'Umsiti', bem: 'Umwafwilisha', nya: 'Wothandiza' },
         'nav.chat': { en: 'Chat', tum: 'Kudumbiskana', ssw: 'Ingcoco', bem: 'Ukulanshana', nya: 'Kukambirana' },
-        'nav.account': { en: 'Account', tum: 'Akaunti', ssw: 'I-akhawunti', bem: 'Akaunti', nya: 'Akaunti' },
+        'nav.account': { en: 'Profile', tum: 'Akaunti', ssw: 'I-akhawunti', bem: 'Akaunti', nya: 'Akaunti' },
         'nav.teaching': { en: 'Teaching', tum: 'Masambiro', ssw: 'Kufundzisa', bem: 'Amasambilo', nya: 'Kuphunzitsa' },
         'nav.stories': { en: 'Stories', tum: 'Nkhani', ssw: 'Tindzaba', bem: 'Ifyano', nya: 'Nkhani' },
         'nav.resources': { en: 'Resources', tum: 'Vya Kukhwaska', ssw: 'Tinsita', bem: 'Ifyakubomfya', nya: 'Zothandizira' },
@@ -1002,6 +1002,46 @@
     rememberId(READ_SIG_KEY, signature(n), 300);
   }
 
+  /* Android 8+ delivers notifications through a named channel, and the
+     channel — not the payload — owns importance, sound and lock-screen
+     visibility. One channel per category lets a member silence "Events" in
+     Android settings without silencing "Live service". These ids are mirrored
+     in AndroidManifest.xml's default_notification_channel_id. */
+  var NATIVE_CHANNELS = [
+    { id: 'prayer_dome_general', name: 'Prayer Dome', description: 'Church announcements and ministry notices', importance: 4, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
+    { id: 'prayer_dome_verse', name: 'Daily Bible verse', description: 'The verse of the day', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
+    { id: 'prayer_dome_live', name: 'Live services', description: 'When Prayer Dome goes live', importance: 5, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
+    { id: 'prayer_dome_prayer', name: 'Prayer and care', description: 'Prayer requests and pastoral care updates', importance: 4, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
+    { id: 'prayer_dome_news', name: 'News and announcements', description: 'What is happening at Prayer Dome', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
+    { id: 'prayer_dome_sermon', name: 'Sermons and devotionals', description: 'New teaching and devotionals', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
+    { id: 'prayer_dome_events', name: 'Events and reminders', description: 'Services, conferences and reminders', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' }
+  ];
+  function nativeChannelId(type) {
+    var key = String(type || 'general').toLowerCase();
+    if (key === 'tf') key = 'general';
+    if (key === 'events') key = 'event';
+    return {
+      verse: 'prayer_dome_verse',
+      live: 'prayer_dome_live',
+      prayer: 'prayer_dome_prayer',
+      news: 'prayer_dome_news',
+      sermon: 'prayer_dome_sermon',
+      devotional: 'prayer_dome_sermon',
+      event: 'prayer_dome_events',
+      general: 'prayer_dome_general'
+    }[key] || 'prayer_dome_general';
+  }
+  /* LocalNotifications needs a stable positive 32-bit id per item, otherwise
+     two different announcements can replace each other in the shade. */
+  function nativeNotificationId(id) {
+    var str = String(id || 'prayer-dome');
+    var hash = 0;
+    for (var i = 0; i < str.length; i += 1) {
+      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash || 1) % 2147483600 || 1;
+  }
+
   var notifications = {
     items: lsGet('pd_notifications', []),
     badgeEl: null,
@@ -1119,7 +1159,13 @@
       });
       // If the member already allowed notifications, make sure this device is
       // registered for push so admin announcements actually arrive.
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      var nativePush = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
+      if (nativePush && nativePush.addListener) {
+        // Channels and listeners exist from the first launch, so a push that
+        // arrives before the member ever visits Settings still lands on the
+        // right channel with the right lockscreen visibility.
+        setTimeout(function () { notifications.bindNativePush(nativePush); }, 800);
+      } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
         setTimeout(function () { notifications.registerDevice(); }, 2500);
       }
       // Settings follow the member across devices. Read them once the session
@@ -1274,7 +1320,8 @@
           .then(function (res) {
             var granted = res && (res.receive === 'granted' || res.display === 'granted');
             if (granted && window.Capacitor.Plugins.PushNotifications) {
-              try { window.Capacitor.Plugins.PushNotifications.register(); } catch (e) {}
+              notifications.bindNativePush(window.Capacitor.Plugins.PushNotifications,
+                window.PD_UID || (fb && fb.auth && fb.auth.currentUser && fb.auth.currentUser.uid) || null);
             }
             if (granted) notifications.registerDevice();
             return granted ? 'granted' : 'denied';
@@ -1294,6 +1341,99 @@
     },
 
     /**
+     * Android-only glue. Capacitor's push plugin fires `pushNotificationReceived`
+     * instead of drawing a notification while the app is in the foreground, so
+     * without this an announcement arriving during a service was silent. It
+     * also creates the per-category channels and routes a tap on a notification
+     * to the page it belongs to.
+     */
+    bindNativePush: function (push, member) {
+      if (!push || !push.addListener) return;
+      if (notifications._nativeBound) {
+        // Permission may just have been granted on a later tap; ask again for
+        // a token rather than leaving the device unregistered.
+        try { if (push.register) push.register(); } catch (e) { /* denied */ }
+        return;
+      }
+      notifications._nativeBound = true;
+
+      if (push.createChannel) {
+        NATIVE_CHANNELS.forEach(function (channel) {
+          try {
+            var call = push.createChannel(channel);
+            if (call && call.catch) call.catch(function () { /* exists already */ });
+          } catch (e) { /* Android < 8 has no channels */ }
+        });
+      }
+
+      try {
+        push.addListener('registration', function (token) {
+          notifications.saveToken(token && token.value, member, 'android');
+        });
+      } catch (e) { /* plugin without event support */ }
+
+      try {
+        push.addListener('registrationError', function (error) {
+          console.warn('[Push] Android registration failed', error && error.error);
+        });
+      } catch (e) { /* ignore */ }
+
+      try {
+        push.addListener('pushNotificationReceived', function (notification) {
+          notification = notification || {};
+          var data = notification.data || {};
+          var item = {
+            id: data.id || data.tag || ('push-' + Date.now()),
+            type: data.kind || data.type || 'general',
+            title: notification.title || data.title || 'Prayer Dome',
+            message: notification.body || data.body || data.message || '',
+            link: data.url || data.link || null,
+            time: new Date().toISOString()
+          };
+          notifications.push(item, { localOnly: true, silent: true });
+          notifications.showNative(item);
+        });
+      } catch (e) { /* ignore */ }
+
+      try {
+        push.addListener('pushNotificationActionPerformed', function (action) {
+          var data = (action && action.notification && action.notification.data) || {};
+          var target = data.url || data.link || '/notifications';
+          try { window.location.assign(target); } catch (e) { /* stays put */ }
+        });
+      } catch (e) { /* ignore */ }
+
+      try { push.register(); } catch (e) { /* permission not granted yet */ }
+    },
+
+    /**
+     * Draw a foreground push natively. It goes through the category channel,
+     * so Android's own lock-screen privacy setting and the member's channel
+     * choice still decide whether the content is shown on the lock screen.
+     */
+    showNative: function (n) {
+      var local = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+      if (!local || !local.schedule) return false;
+      if (!typeAllowed(n.type)) return false;
+      try {
+        var call = local.schedule({
+          notifications: [{
+            id: nativeNotificationId(n.id),
+            title: n.title || 'Prayer Dome',
+            body: n.message || '',
+            channelId: nativeChannelId(n.type),
+            smallIcon: 'ic_notification',
+            iconColor: '#D4AF37',
+            schedule: { at: new Date(Date.now() + 250) },
+            extra: { url: n.link || '/notifications', id: n.id, kind: n.type || 'general' }
+          }]
+        });
+        if (call && call.catch) call.catch(function () { /* user denied */ });
+      } catch (e) { return false; }
+      return true;
+    },
+
+    /**
      * Register this device with Firebase Cloud Messaging so an announcement
      * published from the Admin Dashboard actually pops on the phone — even
      * with the app closed.
@@ -1307,25 +1447,20 @@
      */
     registerDevice: function (uid) {
       if (notifications._registering) return notifications._registering;
-      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return Promise.resolve(null);
 
       var member = uid || (fb && fb.auth && fb.auth.currentUser && fb.auth.currentUser.uid) || window.PD_UID || null;
 
-      // Packaged Android app: Capacitor hands us the FCM token.
+      // Packaged Android app: Capacitor hands us the FCM token. This is checked
+      // before the browser `Notification` guard because an Android WebView does
+      // not expose a granted web Notification permission — the native plugin is
+      // the source of truth there.
       var push = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications;
       if (push && push.addListener) {
-        if (!notifications._nativeBound) {
-          notifications._nativeBound = true;
-          try {
-            push.addListener('registration', function (t) {
-              notifications.saveToken(t && t.value, member, 'android');
-            });
-            push.register();
-          } catch (e) { /* the plugin is unavailable on this build */ }
-        }
+        notifications.bindNativePush(push, member);
         return Promise.resolve(null);
       }
 
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return Promise.resolve(null);
       if (!navigator.serviceWorker || !window.indexedDB) return Promise.resolve(null);
 
       notifications._registering = (async function () {
