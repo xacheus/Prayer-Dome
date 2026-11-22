@@ -2401,35 +2401,40 @@ body.dark-mode .pd-chat-item .pd-chat-name { color: #93c5fd; }
 
 /* --- Friendly "Allow notifications?" in-app pop-up ---------------------- */
 .pd-notif-pop-overlay {
-  position: fixed; inset: 0; z-index: 1100;
-  background: rgba(7, 36, 77, 0.55);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  padding: 20px 20px 100px;
   opacity: 0;
-  /* CRITICAL: a closed (opacity 0) overlay must never sit on top of the page
-     and swallow taps or scroll gestures. Without pointer-events: none this
-     full-screen overlay blocks scrolling on every route after it is injected. */
+  /* Bottom-anchored sheet: never covers the full page, never blocks scroll.
+     The page behind stays fully tappable and scrollable at all times. */
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: translateY(100%);
 }
 .pd-notif-pop-overlay.pd-notif-pop-open {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 .pd-notif-pop {
   position: relative;
-  max-width: 420px; width: 100%;
+  max-width: 420px;
+  width: 100%;
   background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 28px;
+  border-radius: 28px 28px 0 0;
   padding: 30px 26px 24px;
   text-align: center;
-  box-shadow: 0 30px 60px -16px rgba(7, 36, 77, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.18);
-  transform: translateY(18px) scale(0.96);
+  box-shadow: 0 -30px 60px -16px rgba(7, 36, 77, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.18);
+  transform: translateY(100%);
   transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
   overflow: hidden;
 }
-.pd-notif-pop-overlay.pd-notif-pop-open .pd-notif-pop { transform: translateY(0) scale(1); }
+.pd-notif-pop-overlay.pd-notif-pop-open .pd-notif-pop { transform: translateY(0); }
 body.dark-mode .pd-notif-pop {
   background: linear-gradient(160deg, #0f172a 0%, #1e293b 100%);
   color: #f1f5f9;
