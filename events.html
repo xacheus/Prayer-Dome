@@ -703,7 +703,7 @@
                 <div class="form-group"><label>Duration</label><select id="eventDuration"><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option><option value="180">3 hours</option></select></div>
                 <div class="form-group"><label>Location *</label><input type="text" id="eventLocation" required placeholder="e.g., Prayer Dome Zambia / Online"></div>
                 <div class="form-group"><label>Category *</label><select id="eventCategory"><option value="Service">Sunday Service</option><option value="Prayer">Prayer Meeting</option><option value="Bible Study">Bible Study</option><option value="Worship">Worship Night</option><option value="Outreach">Outreach</option><option value="Conference">Conference</option></select></div>
-                <div class="form-group"><label>Speaker/Host</label><input type="text" id="eventSpeaker" placeholder="e.g., Pastor Seedwell Masuku"></div>
+                <div class="form-group"><label>Speaker/Host</label><input type="text" id="eventSpeaker" placeholder="e.g., Seedwell K. Khayalethu Masuku"></div>
                 <div class="form-group"><label>Description</label><textarea id="eventDescription" rows="3" placeholder="Event description..."></textarea></div>
                 <div class="form-group"><label>Max Participants (0 = unlimited)</label><input type="number" id="eventMaxAttendees" value="0" min="0"></div>
                 <div class="form-group"><label>Event Image</label><input type="file" id="eventImage" accept="image/*"></div>
@@ -737,7 +737,7 @@
         let currentYear = currentDate.getFullYear();
 
         const defaultEvents = [
-            { title: "Sunday Service", date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + (7 - new Date().getDay()) % 7), time: "09:00", duration: 120, location: "Prayer Dome Zambia & Online", category: "Service", speaker: "Pastor Seedwell Masuku", description: "Join us for powerful worship and the Word of God.", maxAttendees: 0 },
+            { title: "Sunday Service", date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + (7 - new Date().getDay()) % 7), time: "09:00", duration: 120, location: "PRAYER DOME & Online", category: "Service", speaker: "Seedwell K. Khayalethu Masuku", description: "Join us for powerful worship and the Word of God.", maxAttendees: 0 },
             { title: "Wednesday Prayer Meeting", date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + (3 - new Date().getDay() + 7) % 7), time: "18:00", duration: 60, location: "Online via Zoom", category: "Prayer", speaker: "Prayer Team", description: "Midweek prayer and intercession.", maxAttendees: 0 },
             { title: "Friday Healing Service", date: new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate() + (5 - new Date().getDay() + 7) % 7), time: "17:00", duration: 90, location: "Prayer Dome Eswatini", category: "Service", speaker: "Pastor Philmon Gumbi", description: "Special service focused on healing and deliverance.", maxAttendees: 0 }
         ];

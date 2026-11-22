@@ -1,7 +1,7 @@
 'use strict';
 // Run against the local emulator only. No production credentials are used.
 const { initializeTestEnvironment, assertFails, assertSucceeds } = require('@firebase/rules-unit-testing');
-const { doc, setDoc, updateDoc, getDoc, deleteField, increment } = require('firebase/firestore');
+const { doc, setDoc, updateDoc, getDoc, getDocs, collection, deleteField, increment } = require('firebase/firestore');
 const { readFileSync } = require('node:fs');
 const assert = require('node:assert/strict');
 
@@ -97,6 +97,58 @@ const assert = require('node:assert/strict');
       await assertSucceeds(updateDoc(doc(admin, `${collection}/new`), { status: 'approved' }));
       await assertSucceeds(getDoc(doc(guest, `${collection}/new`)));
     }
+    // Billing: the browser may read only its own records and never change money.
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      await setDoc(doc(db, 'paymentRequests/PD-SUB-test'), {
+        userId: 'member', status: 'pending_verification', amount: 5, currency: 'USD'
+      });
+    });
+    await assertSucceeds(getDoc(doc(member, 'paymentRequests/PD-SUB-test')));
+    await assertFails(getDoc(doc(other, 'paymentRequests/PD-SUB-test')));
+    await assertFails(getDoc(doc(guest, 'paymentRequests/PD-SUB-test')));
+    await assertFails(setDoc(doc(member, 'paymentRequests/forged'), { userId: 'member', status: 'approved' }));
+    await assertFails(updateDoc(doc(member, 'paymentRequests/PD-SUB-test'), { status: 'approved' }));
+    await env.withSecurityRulesDisabled(async (context) => {
+      const db = context.firestore();
+      for (const path of ['subscriptions/sub_test', 'walletTransactions/wt_test', 'billingAudit/audit']) {
+        await setDoc(doc(db, path), { userId: 'member', status: 'active', amount: 5 });
+      }
+    });
+    for (const path of ['subscriptions/sub_test', 'walletTransactions/wt_test', 'billingAudit/audit']) {
+      await assertFails(setDoc(doc(member, path), { userId: 'member', status: 'active' }));
+      await assertFails(updateDoc(doc(member, path), { status: 'approved' }));
+    }
+    await assertSucceeds(setDoc(doc(member, 'wallets/member'), { userId: 'member', balance: 0, currency: 'USD' }));
+    await assertSucceeds(updateDoc(doc(member, 'wallets/member'), { pin: '1234' }));
+    await assertFails(updateDoc(doc(member, 'wallets/member'), { balance: 9999 }));
+    await assertFails(setDoc(doc(member, 'wallets/other'), { userId: 'other', balance: 0, currency: 'USD' }));
+    await assertSucceeds(getDoc(doc(member, 'wallets/member')));
+    await assertFails(getDoc(doc(other, 'wallets/member')));
+
+    // Public card verification is a single-document get, never a list.
+    const card = {
+      membershipId: 'PD-2026-0001', userId: 'member', displayName: 'Member',
+      status: 'approved', verificationRef: 'PDV-0123456789abcdef0123'
+    };
+    await assertSucceeds(setDoc(doc(admin, 'membershipVerification/PD-2026-0001'), card));
+    await assertSucceeds(getDoc(doc(guest, 'membershipVerification/PD-2026-0001')));
+    await assertSucceeds(getDoc(doc(member, 'membershipVerification/PD-2026-0001')));
+    await assertFails(getDocs(collection(guest, 'membershipVerification')));
+    await assertFails(setDoc(doc(member, 'membershipVerification/forged'), card));
+    await assertSucceeds(setDoc(doc(admin, 'membershipVerificationRefs/PDV-ref'), card));
+    await assertSucceeds(getDoc(doc(guest, 'membershipVerificationRefs/PDV-ref')));
+    await assertFails(getDocs(collection(guest, 'membershipVerificationRefs')));
+    await assertFails(setDoc(doc(member, 'membershipVerificationHistory/entry'), { action: 'issued' }));
+
+    // The fixed founder identity is public; only an administrator can replace
+    // the stored signature images.
+    await assertSucceeds(setDoc(doc(admin, 'settings/founder'), {
+      founderName: 'SEEDWELL K. KHAYALETHU MASUKU', founderTitle: 'Founder and President'
+    }));
+    await assertSucceeds(getDoc(doc(guest, 'settings/founder')));
+    await assertFails(setDoc(doc(member, 'settings/founder'), { founderName: 'Someone else' }));
+
     console.log('Firestore authorization regression checks passed.');
   } finally { await env.cleanup(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

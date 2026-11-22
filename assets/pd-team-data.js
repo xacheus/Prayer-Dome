@@ -11,8 +11,8 @@
   'use strict';
   var TEAM = [
   {
-    "name": "Seedwell K. Masuku",
-    "title": "Founder & Senior Pastor",
+    "name": "Seedwell K. Khayalethu Masuku",
+    "title": "Founder and President",
     "category": "founder",
     "image": "https://i.ibb.co/RTbNh1hB/founder-2.jpg",
     "description": "Visionary leader called to raise prayer warriors across nations. Founder of Prayer Dome Ministry with a heart for intercession and revival.",

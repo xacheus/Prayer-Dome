@@ -7,6 +7,7 @@ const shareHandler = require('./share');
 const brevo = require('./brevo');
 const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
+const billingModule = require('./billing');
 const { defineSecret } = require('firebase-functions/params');
 const { signUpload } = require('./cloudinary');
 const cloudinaryApiSecret = defineSecret('CLOUDINARY_API_SECRET');
@@ -734,3 +735,8 @@ exports.dailyVerseDispatch = functions.pubsub
 exports.getFacebookCampaignStatus = facebookCampaign.getFacebookCampaignStatus;
 exports.generateFacebookCampaign = facebookCampaign.generateFacebookCampaign;
 exports.facebookCampaignScheduler = facebookCampaign.facebookCampaignScheduler;
+
+// Support-plan billing, verified payments and wallet credits. One callable keeps
+// the privileged money path in one auditable place.
+exports.billing = billingModule.billing;
+exports.expireSupportSubscriptions = billingModule.expireJob;

@@ -124,7 +124,7 @@ t('the challenge falls back to the Lusaka weekday plan when offline',
 /* -------------------------------------------------------- membership ID card */
 t('the membership page renders a CR80 card', membership.includes('cr80'));
 t('the card QR encodes the public verification URL',
-  membership.includes('https://prayerdome.net/verify?id='));
+  membership.includes("https://prayerdome.net/verify?") && membership.includes("'ref='") && membership.includes("'id='"));
 t('the card QR is only drawn when a membership number exists',
   membership.includes('membershipId'));
 t('the card template is synced from Firestore',
