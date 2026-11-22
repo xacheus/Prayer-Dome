@@ -790,3 +790,154 @@ button,
   }
   .app-tab { flex-basis: auto !important; }
 }
+
+/* ==========================================================================
+   5. PROFESSIONALISATION PASS — global typography, geometry and controls
+   --------------------------------------------------------------------------
+   The application grew several card systems (24 px, 20 px and 32 px radii,
+   15 px/28 px buttons, 40 px card padding). On a phone that read as oversized
+   bubbles with labels squeezed between an icon and a lot of padding. These
+   late rules bring every page onto one scale without touching the bespoke
+   full-screen shells (chat, live, admin) that deliberately set their own.
+   ========================================================================== */
+
+/* ---- root typography ---------------------------------------------------- */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  line-height: 1.24;
+  letter-spacing: -0.01em;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: none;
+}
+
+p, li {
+  line-height: 1.62;
+}
+
+/* Names, positions and titles always read left-to-right. A container may be
+   narrow; a person's name must never stack one letter per line. */
+h1, h2, h3, h4, h5, h6,
+[class*="name"], [class*="title"], [class*="heading"],
+.founder-name, .card-name, .team-name, .cr80-name, .idc-org {
+  writing-mode: horizontal-tb !important;
+  text-orientation: mixed !important;
+  word-break: normal !important;
+  overflow-wrap: break-word;
+}
+
+/* ---- one card geometry -------------------------------------------------- */
+ .glass-card, .content-card, .branch-card, .portal-item, .game-stat-card,
+  .review-card, .pd-acad-card, .auth-card, .team-card, .panel-card, .modal-card,
+  .stat-card, .settings-block, .spiritual-card, .notif-card, .care-form-card,
+  .req-card, .benefit-card, .contact-form-card, .contact-info-card,
+  .video-card, .event-card, .news-card, .sermon-card, .resource-card {
+  border-radius: 16px;
+}
+
+/* Padding that grows with the viewport instead of staying at 40 px on a
+   360 px phone (where 80 px of the width was gone before any content). */
+ .auth-card, .glass-card, .content-card, .contact-form-card,
+  .contact-info-card, .care-form-card, .settings-block {
+  padding: clamp(16px, 4.4vw, 26px);
+}
+
+/* ---- compact, readable buttons ------------------------------------------ */
+.btn,
+.btn-submit,
+.btn-primary,
+.btn-outline,
+.btn-secondary,
+.pd-acad-btn,
+.pd-btn,
+.upload-btn-small {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: clamp(10px, 2.2vw, 12px) clamp(14px, 3.4vw, 20px);
+  border-radius: 10px;
+  font-size: clamp(0.82rem, 2.6vw, 0.95rem);
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+/* Full-width buttons keep their width; a side-by-side pair still fits,
+   because the label no longer needs 56 px of horizontal padding. */
+.btn[style*="width: auto"] { width: auto; }
+
+.btn > i,
+.btn > .pd-i,
+.btn-submit > i,
+.pd-acad-btn > i,
+.pd-btn > i,
+.upload-btn-small > i {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+/* Icon-only buttons stay square and tappable. */
+.btn[aria-label]:not(:has(span)):not(:has(strong)) {
+  min-width: 44px;
+}
+
+/* A pair of action buttons must never squeeze a two-word label into a
+   vertical stack on a small phone: they wrap to their own rows instead. */
+ .profile-actions, .card-actions, .admin-actions-row, .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+ .profile-actions > .btn, .card-actions > .btn, .admin-actions-row > .btn {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+/* ---- consistent, accessible interaction -------------------------------- */
+a,
+button,
+input,
+select,
+textarea,
+[tabindex] {
+  -webkit-tap-highlight-color: rgba(10, 77, 155, 0.12);
+}
+
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible,
+textarea:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--accent-gold, #d4af37);
+  outline-offset: 2px;
+}
+
+/* iOS zooms the whole page when a focused field is under 16 px. */
+@media (max-width: 820px) {
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1rem);
+  }
+}
+
+
+/* ---- keep decoration from becoming a layout bug ------------------------- */
+ .branch-card > *, .content-card > *, .glass-card > *, .pd-acad-card > *,
+  .team-card > *, .news-card > *, .event-card > *, .review-card > * {
+  min-width: 0;
+}

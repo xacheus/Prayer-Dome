@@ -112,6 +112,8 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="/assets/pd-upload.js"></script>
+    <script src="/assets/pd-locations-data.js"></script>
+    <script src="/assets/pd-daily-challenge.js" defer></script>
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -502,6 +504,54 @@
            light brand tint (#93c5fd) and controls without a colour get readable text. */
         body.dark-mode .nav-link.active,
         body.dark-mode .portal-icon { color: #93c5fd; }
+
+        /* ---------------- Daily Challenge (Africa/Lusaka weekday) ------------- */
+        .dc-wrap { margin: 18px 16px 0; }
+        .dc-card {
+            background: linear-gradient(160deg, #ffffff, #f6f9ff);
+            border: 1px solid var(--border-color, #dbe3ee);
+            border-radius: 18px;
+            padding: clamp(14px, 4vw, 22px);
+            box-shadow: 0 10px 26px rgba(7,36,77,.08);
+        }
+        .dc-card.is-done { border-color: #86efac; }
+        .dc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .dc-ribbon {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: linear-gradient(135deg, var(--accent-green, #0A4D9B), #083b78);
+            color: #fff; border-radius: 999px; padding: 5px 12px;
+            font-size: .68rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+        }
+        .dc-date { display: inline-flex; align-items: center; gap: 5px; font-size: .76rem; font-weight: 700; color: var(--text-sub, #5b6b82); }
+        .dc-points {
+            display: inline-flex; align-items: center; gap: 5px; margin-left: auto;
+            font-size: .7rem; font-weight: 900; color: #8a6d1a;
+            background: rgba(212,175,55,.14); border: 1px solid rgba(212,175,55,.4);
+            border-radius: 999px; padding: 4px 10px;
+        }
+        .dc-title { margin: 0 0 6px; font: 800 clamp(1rem, 3.8vw, 1.25rem)/1.3 'Poppins', serif; color: var(--text-primary, #0f172a); }
+        .dc-desc { margin: 0 0 12px; font-size: .88rem; line-height: 1.6; color: var(--text-secondary, #5b6b82); }
+        .dc-activities { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 7px; }
+        .dc-activities li { display: flex; align-items: flex-start; gap: 8px; font-size: .84rem; line-height: 1.5; }
+        .dc-activities li > i { flex: 0 0 auto; margin-top: 2px; color: var(--accent-green, #0A4D9B); }
+        .dc-verse { margin: 0 0 12px; font-size: .8rem; font-weight: 700; color: #8a6d1a; }
+        .dc-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .dc-done-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            flex: 1 1 220px; min-width: 0; min-height: 44px; padding: 10px 16px;
+            border: 1px solid var(--accent-green, #0A4D9B); border-radius: 10px;
+            background: var(--accent-green, #0A4D9B); color: #fff;
+            font: 800 .84rem/1.3 'Inter', sans-serif; cursor: pointer; text-align: center;
+            overflow-wrap: break-word;
+        }
+        .dc-done-btn.is-done { background: #ecfdf3; color: #14532d; border-color: #86efac; cursor: default; }
+        .dc-total { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-weight: 800; color: #8a6d1a; }
+        .dc-tz { margin: 10px 0 0; font-size: .68rem; line-height: 1.5; color: var(--text-sub, #5b6b82); }
+        .dc-tz > i { color: var(--accent-gold, #d4af37); }
+        @media (max-width: 380px) {
+            .dc-points { margin-left: 0; }
+            .dc-done-btn { flex: 1 1 100%; }
+        }
     </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
@@ -550,6 +600,7 @@
         <a class="pd-drawer-link" href="/testimony" data-pd-nav="/testimony"><i class="pd-i pd-i-sparkles" aria-hidden="true"></i><span data-pd-t="nav.testimony">Testimonies</span></a>
         <a class="pd-drawer-link" href="/events" data-pd-nav="/events"><i class="pd-i pd-i-calendar-days" aria-hidden="true"></i><span data-pd-t="nav.events">Events</span></a>
         <a class="pd-drawer-link" href="/gallery" data-pd-nav="/gallery"><i class="pd-i pd-i-images" aria-hidden="true"></i><span data-pd-t="nav.gallery">Gallery</span></a>
+        <a class="pd-drawer-link" href="/locations" data-pd-nav="/locations"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i><span>Locations</span></a>
         <a class="pd-drawer-link" href="/news" data-pd-nav="/news"><i class="pd-i pd-i-newspaper" aria-hidden="true"></i><span data-pd-t="nav.news">Christian News</span></a>
       </div>
       <div class="pd-drawer-group" data-pd-nav-group="media">
@@ -561,7 +612,7 @@
       </div>
       <div class="pd-drawer-group" data-pd-nav-group="personal">
         <p class="pd-drawer-group-title" id="pdNavGroup-personal">Personal</p>
-        <a class="pd-drawer-link" href="/account" data-pd-nav="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i><span data-pd-t="nav.account">My Account</span></a>
+        <a class="pd-drawer-link" href="/account" data-pd-nav="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i><span data-pd-t="nav.account">My Profile</span></a>
         <a class="pd-drawer-link" href="/widgets" data-pd-nav="/widgets"><i class="pd-i pd-i-smartphone" aria-hidden="true"></i><span>Verse Widget</span></a>
         <a class="pd-drawer-link" href="/membership" data-pd-nav="/membership"><i class="pd-i pd-i-id-card" aria-hidden="true"></i><span>Membership</span></a>
         <a class="pd-drawer-link" href="/give" data-pd-nav="/give"><i class="pd-i pd-i-heart" aria-hidden="true"></i><span data-pd-t="nav.give">Give</span></a>
@@ -571,6 +622,7 @@
       <a class="pd-drawer-sub-link" href="/about" data-pd-nav="/about"><i class="pd-i pd-i-church" aria-hidden="true"></i><span data-pd-t="nav.about">About</span></a>
       <a class="pd-drawer-sub-link" href="/contact" data-pd-nav="/contact"><i class="pd-i pd-i-mail" aria-hidden="true"></i><span data-pd-t="nav.contact">Contact</span></a>
       <a class="pd-drawer-sub-link" href="/team" data-pd-nav="/team"><i class="pd-i pd-i-users" aria-hidden="true"></i><span data-pd-t="nav.team">Team</span></a>
+      <a class="pd-drawer-sub-link" href="/verify" data-pd-nav="/verify"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i><span>Verify a card</span></a>
       <a class="pd-drawer-sub-link" href="/privacy" data-pd-nav="/privacy"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i><span>Privacy</span></a>
     </div><p class="pd-drawer-verse"><i class="pd-i pd-i-book" aria-hidden="true"></i> “He does everything blamelessly.” — Mark 7:37</p><small>© Prayer Dome Ministry · Zambia · Eswatini · South Africa · Malawi · Ireland</small></div>
 </aside>
@@ -654,6 +706,12 @@
 <main>
     <!-- Featured Scripture — Mark 7:37 (permanent theme) -->
     <section style="margin: 26px 16px 0;" data-pd-scripture aria-label="Featured scripture"></section>
+
+    <!-- Daily Challenge — weekday and date are read in Africa/Lusaka, never
+         from the visitor's device zone. Filled by assets/pd-daily-challenge.js. -->
+    <div class="dc-wrap">
+        <div id="dailyChallenge" aria-live="polite"></div>
+    </div>
 
     <!-- Weekly Prayer Challenge -->
     <section class="pd-challenge" id="weeklyChallenge" aria-label="Weekly prayer challenge">
@@ -794,22 +852,30 @@
     <div class="section-label pd-reveal"><i class="pd-i pd-i-newspaper"></i> Christian News</div>
     <div id="pdHomeNews" style="padding: 0 20px 30px;"></div>
 
-    <!-- Branch Tracker -->
+    <!-- Branch Tracker — the three official congregations, plus the existing
+         Cork, Ireland entry which must stay exactly as it is. -->
     <div class="section-label pd-reveal"><i class="pd-i pd-i-map-pinned"></i> Church Locations</div>
     <div class="branch-grid">
-        <div class="branch-card" id="card-chama">
+        <div class="branch-card" id="card-freedom-zambia">
             <div class="branch-info">
-                <h4><i class="pd-i pd-i-church"></i> Chama, Zambia</h4>
-                <p style="font-size: 0.7rem; color: var(--text-sub);">Central Hub</p>
+                <h4><i class="pd-i pd-i-church"></i> Freedom Zambia</h4>
+                <p style="font-size: 0.7rem; color: var(--text-sub);">Chama, Zambia · Central Hub</p>
             </div>
-            <span class="branch-dist" id="dist-chama"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
+            <span class="branch-dist" id="dist-freedom-zambia"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
         </div>
-        <div class="branch-card" id="card-eswatini">
+        <div class="branch-card" id="card-prayer-dome-mahlabane">
             <div class="branch-info">
-                <h4><i class="pd-i pd-i-church"></i> Manzini, Eswatini</h4>
-                <p style="font-size: 0.7rem; color: var(--text-sub);">Headquarters</p>
+                <h4><i class="pd-i pd-i-church"></i> Prayer Dome Mahlabane</h4>
+                <p style="font-size: 0.7rem; color: var(--text-sub);">Mahlabane, Eswatini · North</p>
             </div>
-            <span class="branch-dist" id="dist-eswatini"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
+            <span class="branch-dist" id="dist-prayer-dome-mahlabane"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
+        </div>
+        <div class="branch-card" id="card-prayer-dome-hluthi">
+            <div class="branch-info">
+                <h4><i class="pd-i pd-i-church"></i> Prayer Dome Hluthi</h4>
+                <p style="font-size: 0.7rem; color: var(--text-sub);">Hluthi, Eswatini · South</p>
+            </div>
+            <span class="branch-dist" id="dist-prayer-dome-hluthi"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
         </div>
         <div class="branch-card" id="card-ireland">
             <div class="branch-info">
@@ -818,6 +884,11 @@
             </div>
             <span class="branch-dist" id="dist-ireland"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
         </div>
+    </div>
+    <div style="padding: 12px 20px 0;">
+        <a class="btn btn-outline" href="/locations" style="width: auto; display: inline-flex; align-items: center; gap: 8px;">
+            <i class="pd-i pd-i-locate-fixed" aria-hidden="true"></i> Find a Prayer Dome near you
+        </a>
     </div>
 
     <!-- Reviews Section -->
@@ -932,6 +1003,22 @@
     if (window.PDApp) {
         PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, auth });
     }
+
+    // Scheduled Daily Challenges (admin → Daily Challenges). Public reads are
+    // limited by Firestore rules to published rows; the built-in seven-day
+    // plan renders immediately and is replaced when the schedule arrives.
+    (async function loadDailyChallengeSchedule() {
+        try {
+            const snap = await getDocs(query(collection(db, 'dailyChallenges'), where('published', '==', true), limit(60)));
+            const rows = [];
+            snap.forEach((entry) => rows.push(Object.assign({ id: entry.id }, entry.data())));
+            const apply = () => { if (window.PDDaily) window.PDDaily.setSchedule(rows); };
+            if (window.PDDaily) apply();
+            else window.addEventListener('load', apply, { once: true });
+        } catch (error) {
+            console.warn('Scheduled daily challenges are unavailable; the built-in plan is shown.', error && error.message);
+        }
+    })();
 
     let currentUser = null;
     let notifications = [];
@@ -1146,35 +1233,43 @@
 
     // ==================== LOCATION TRACKING ====================
     
+    // The three official congregations. Coordinates come from their own
+    // Google Maps listings (resolved and checked against the place names) and
+    // are shared with /locations through assets/pd-locations-data.js.
+    // Cork, Ireland keeps its existing entry, coordinates and card unchanged.
     const branches = {
-        chama: { name: "Chama, Zambia", lat: -11.214, lon: 33.155, el: 'dist-chama', card: 'card-chama' },
-        eswatini: { name: "Manzini, Eswatini", lat: -26.305, lon: 31.136, el: 'dist-eswatini', card: 'card-eswatini' },
+        'freedom-zambia': { name: "Freedom Zambia", lat: -11.193343, lon: 33.1525404, el: 'dist-freedom-zambia', card: 'card-freedom-zambia' },
+        'prayer-dome-mahlabane': { name: "Prayer Dome Mahlabane", lat: -26.4889087, lon: 31.5130595, el: 'dist-prayer-dome-mahlabane', card: 'card-prayer-dome-mahlabane' },
+        'prayer-dome-hluthi': { name: "Prayer Dome Hluthi", lat: -27.2191875, lon: 31.6147656, el: 'dist-prayer-dome-hluthi', card: 'card-prayer-dome-hluthi' },
         ireland: { name: "Cork, Ireland", lat: 51.898, lon: -8.475, el: 'dist-ireland', card: 'card-ireland' }
     };
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371;
+        if (window.PDLocationsData) return PDLocationsData.haversineMetres(lat1, lon1, lat2, lon2);
+        const R = 6371008.8;
         const dLat = (lat2 - lat1) * Math.PI / 180;
         const dLon = (lon2 - lon1) * Math.PI / 180;
         const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    // The premium layer (assets/pd-app.js) owns geolocation, reverse-geocoding
-    // and the "You are worshipping from" card. Here we only compute the
-    // distances to the three branches from that shared location result —
-    // one geolocation request, one reverse lookup, everything in sync.
+    // One shared geolocation result powers the "worshipping from" card and
+    // these distances. Metres under 1 km, kilometres above — never a rounded
+    // "0 KM" for a branch the visitor is standing in.
     function updateBranchDistances(lat, lng) {
         let minDistance = Infinity;
-        let closestBranch = "chama";
+        let closestBranch = 'freedom-zambia';
         for (const [key, branch] of Object.entries(branches)) {
-            const dist = calculateDistance(lat, lng, branch.lat, branch.lon);
+            const metres = calculateDistance(lat, lng, branch.lat, branch.lon);
             const distEl = document.getElementById(branch.el);
             if (distEl) {
-                if (dist < 1) distEl.innerHTML = `<i class="pd-i pd-i-circle-check"></i> You are here!`;
-                else distEl.innerHTML = `<i class="pd-i pd-i-route"></i> ${dist} KM`;
+                const label = window.PDLocationsData
+                    ? PDLocationsData.formatDistanceAway(metres)
+                    : Math.round(metres / 1000) + ' km away';
+                const icon = metres < 150 ? 'pd-i-circle-check' : 'pd-i-route';
+                distEl.innerHTML = `<i class="pd-i ${icon}" aria-hidden="true"></i> ${label}`;
             }
-            if (dist < minDistance) { minDistance = dist; closestBranch = key; }
+            if (metres < minDistance) { minDistance = metres; closestBranch = key; }
         }
         document.querySelectorAll('.branch-card').forEach(c => c.classList.remove('closest'));
         const closestCard = document.getElementById(branches[closestBranch].card);
