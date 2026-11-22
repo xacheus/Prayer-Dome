@@ -2667,12 +2667,15 @@ html, body {
   min-width: 0;
   max-width: 100%;
 }
+/* Words wrap between words. A single token wider than its line (a URL, a
+   long email) may break, but normal words must never be split into letters.
+   `overflow-wrap: anywhere` was the root cause of table headings stacking
+   vertically inside narrow columns. */
 h1, h2, h3, h4, h5, h6, p, span, a, li, td, th, div, button, label, strong, em {
   overflow-wrap: break-word;
   word-wrap: break-word;
-  word-break: break-word;
-  hyphens: auto;
-  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: manual;
 }
 img, video, canvas, svg, iframe {
   max-width: 100%;
@@ -2685,9 +2688,9 @@ img, video, canvas, svg, iframe {
 .branch-card, .content-card, .glass-card, .portal-item, .game-stat-card,
 .pd-news-card, .review-card, .kpi-card, .panel-card, .pd-card {
   min-width: 0;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  hyphens: auto;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: manual;
 }
 /* Long titles (e.g. "Understanding Salvation") automatically wrap */
 .pd-acad-card h3, .pd-acad-lesson-link strong, .pd-acad-reader h2,
@@ -2724,16 +2727,39 @@ img, video, canvas, svg, iframe {
 }
 
 /* Tables must scroll within their container, never the page */
-.table-responsive, .pd-scroll-x {
+/* Wide data tables scroll inside their own wrapper. The wrapper is applied
+   by PDApp.tables (assets/pd-app.js) to every table that is not already
+   inside .table-responsive/.report-table, so no table is ever squeezed into
+   the page width. The old `table { min-width: 600px }` applied to every table
+   including small receipt tables; the per-table minimum now comes from
+   --pd-table-min, measured from the real column count. */
+.table-responsive, .pd-scroll-x, .pd-table-scroll {
   overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
   max-width: 100%;
   display: block;
 }
-table { min-width: 600px; }
-@media (max-width: 720px) {
-  table { min-width: 520px; }
+table {
+  border-collapse: collapse;
+  max-width: none;
 }
+.table-responsive > table,
+.report-table > table,
+.pd-table-scroll > table {
+  width: 100%;
+  min-width: var(--pd-table-min, 720px);
+  table-layout: auto;
+}
+th, td {
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: manual;
+  vertical-align: middle;
+}
+th { white-space: nowrap; }
+td { white-space: normal; }
 
 /* Ensure no element can create horizontal scroll via fixed width or margin.
    `overflow-x: clip` rather than `hidden`: `hidden` on one axis forces the
@@ -2925,7 +2951,7 @@ html { max-width: 100%; overflow-x: clip; }
 body { max-width: 100%; overflow-x: clip; }
 img, video, iframe, canvas, svg { max-width: 100%; }
 button, input, select, textarea { max-width: 100%; }
-:where(h1,h2,h3,h4,p,a,button,label,li,td,th,blockquote,figcaption) { overflow-wrap: anywhere; }
+:where(h1,h2,h3,h4,p,a,button,label,li,td,th,blockquote,figcaption) { overflow-wrap: break-word; }
 :where(.container,.content,.page-container,.main-content,.pd-page,.pd-section) { min-width: 0; }
 :where(.card,.pd-card,.content-card,.modal-card,.pd-acad-card) { min-width: 0; }
 @media (max-width: 640px) {
@@ -2933,7 +2959,6 @@ button, input, select, textarea { max-width: 100%; }
   :where(h2,.section-title) { font-size: clamp(1.3rem, 6vw, 1.9rem); line-height: 1.25; }
   :where(.container,.content,.page-container,.main-content) { width: min(100% - 28px, 100%); }
   :where(.grid,.card-grid,.stats-grid) { grid-template-columns: minmax(0, 1fr) !important; }
-  :where(table) { display: block; max-width: 100%; overflow-x: auto; }
   :where(.modal-card) { width: min(100% - 24px, 640px); max-height: calc(100dvh - 24px); overflow-y: auto; }
 }
 @media (prefers-reduced-motion: reduce) {

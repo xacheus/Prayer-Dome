@@ -537,7 +537,8 @@
             font-weight: 800;
             color: var(--text-main, #0f172a);
             margin: 0;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
         .team-title {
             color: #8a6a00;
@@ -547,7 +548,7 @@
             text-transform: uppercase;
             letter-spacing: .06em;
             line-height: 1.45;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
         }
         body.dark-mode .team-title { color: var(--accent-gold); }
         .team-location {
@@ -557,7 +558,7 @@
             font-size: .74rem;
             font-weight: 600;
             color: var(--text-sub, #64748b);
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
         }
         .team-location i { color: var(--accent-gold); flex-shrink: 0; }
         .team-bio {
@@ -565,7 +566,8 @@
             line-height: 1.6;
             color: var(--text-sub, #64748b);
             margin: 2px 0 4px;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
+            word-break: normal;
         }
         .team-badges {
             display: flex;
@@ -583,7 +585,7 @@
             font-weight: 700;
             line-height: 1.4;
             max-width: 100%;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
         }
         .team-badge i { margin-right: 3px; }
         .team-social {
@@ -709,7 +711,7 @@
             font-weight: 700;
             color: var(--accent-green);
             text-decoration: none;
-            overflow-wrap: anywhere;
+            overflow-wrap: break-word;
         }
         .team-email:hover { text-decoration: underline; }
         .team-email i { flex: 0 0 auto; }

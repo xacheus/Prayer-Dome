@@ -883,7 +883,7 @@ function clearConfiguration() {
     console.log('SKIP  setup-card render test: jsdom not installed (npm install --no-save jsdom)');
   }
   t('reader typography is fluid and prevents horizontal overflow',
-    /font-size:\s*clamp\(/.test(html) && /overflow-wrap:\s*anywhere/.test(html) &&
+    /font-size:\s*clamp\(/.test(html) && /overflow-wrap:\s*break-word/.test(html) &&
     /overflow-x:\s*hidden/.test(html));
   t('text-size controls persist the reader preference and keep A-/A/A+ labels',
     html.includes("pd_bible_textsize") && html.includes('>A-</button>') &&

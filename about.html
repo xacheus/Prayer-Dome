@@ -184,7 +184,7 @@
         /* Nothing may be wider than its parent: the root cause of the old
            left/right scrolling was fixed-width grid tracks inside cards. */
         img, svg, video, canvas, iframe { max-width: 100%; height: auto; display: block; }
-        h1, h2, h3, h4, p, span, strong, em, a, li { overflow-wrap: anywhere; word-break: break-word; }
+        h1, h2, h3, h4, p, span, strong, em, a, li { overflow-wrap: break-word; word-break: normal; }
         .content-card > *, .service-item > *, .main-container > * { min-width: 0; }
         [class*="grid"] > * { min-width: 0; }
 
