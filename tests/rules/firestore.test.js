@@ -43,11 +43,41 @@ const assert = require('node:assert/strict');
     }
     // Public content: anyone can read, only admins can change it.
     for (const collection of ['news', 'teamMembers']) {
-      await assertSucceeds(setDoc(doc(admin, `${collection}/entry`), { published: true, name: 'Entry' }));
+      const payload = collection === 'teamMembers'
+        ? { published: true, name: 'Entry', status: 'active', priority: 1 }
+        : { published: true, name: 'Entry' };
+      await assertSucceeds(setDoc(doc(admin, `${collection}/entry`), payload));
       await assertSucceeds(getDoc(doc(guest, `${collection}/entry`)));
-      await assertFails(setDoc(doc(member, `${collection}/forged`), { published: true }));
+      await assertFails(setDoc(doc(member, `${collection}/forged`), payload));
       await assertFails(updateDoc(doc(member, `${collection}/entry`), { name: 'Changed' }));
     }
+    // Team member privacy and validation.
+    await assertSucceeds(setDoc(doc(admin, 'teamMembers/public'), {
+      name: 'Public Member', status: 'active', published: true, priority: 1, schemaVersion: 2,
+      publicEmail: 'office@example.com', emailPublic: true
+    }));
+    await assertSucceeds(getDoc(doc(guest, 'teamMembers/public')));
+    await assertSucceeds(setDoc(doc(admin, 'teamMembers/hidden'), {
+      name: 'Hidden Member', status: 'deceased', published: false, priority: 2, schemaVersion: 2
+    }));
+    await assertFails(getDoc(doc(guest, 'teamMembers/hidden')));
+    await assertFails(getDoc(doc(member, 'teamMembers/hidden')));
+    await assertSucceeds(getDoc(doc(admin, 'teamMembers/hidden')));
+    // Required, type-checked fields.
+    await assertFails(setDoc(doc(admin, 'teamMembers/invalid'), {
+      name: 'Missing status', published: true, priority: 3
+    }));
+    await assertFails(setDoc(doc(admin, 'teamMembers/invalid'), {
+      name: 'Bad status', status: 'retired', published: true, priority: 3
+    }));
+    // Private contacts are administrator-only in both directions.
+    await assertSucceeds(setDoc(doc(admin, 'teamMemberContacts/public'), {
+      memberId: 'public', email: 'private@example.com', phone: '+260 000 000'
+    }));
+    await assertSucceeds(getDoc(doc(admin, 'teamMemberContacts/public')));
+    await assertFails(getDoc(doc(guest, 'teamMemberContacts/public')));
+    await assertFails(getDoc(doc(member, 'teamMemberContacts/public')));
+    await assertFails(setDoc(doc(member, 'teamMemberContacts/public'), { email: 'forged@example.com' }));
     // The in-app bell reads a token-free public feed; guests may read it.
     await assertSucceeds(setDoc(doc(admin, 'publicNotifications/notice'), { title: 'Hello', message: 'World', inApp: true }));
     await assertSucceeds(getDoc(doc(guest, 'publicNotifications/notice')));

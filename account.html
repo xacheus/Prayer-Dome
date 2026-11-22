@@ -238,7 +238,13 @@
             background: rgba(37,99,235,0.1);
         }
 
-        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; animation: fadeInUp 0.5s ease; }
+        .container {
+            width: 100%;
+            max-width: 880px;
+            margin: clamp(16px, 4vw, 40px) auto;
+            padding: 0 clamp(12px, 4vw, 20px);
+            animation: fadeInUp 0.5s ease;
+        }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -246,11 +252,13 @@
 
         .auth-card { 
             background: var(--bg-card); 
-            border-radius: 32px; 
-            padding: 40px; 
+            border-radius: clamp(20px, 5vw, 32px); 
+            padding: clamp(16px, 5vw, 40px); 
             border: 1px solid var(--border); 
             box-shadow: var(--shadow);
             transition: transform 0.3s, box-shadow 0.3s;
+            width: 100%;
+            min-width: 0;
         }
         .auth-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 
@@ -318,7 +326,7 @@
         .phone-number { flex: 1; }
 
         .btn { 
-            padding: 15px 28px; 
+            padding: 15px clamp(16px, 4vw, 28px); 
             border-radius: 50px; 
             border: none; 
             font-weight: 800; 
@@ -329,7 +337,22 @@
             gap: 10px; 
             justify-content: center; 
             width: 100%;
+            min-width: 0;
+            min-height: 48px;
             font-size: 1rem;
+            line-height: 1.3;
+            text-align: center;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: normal;
+        }
+        /* Icons keep their own width. Without this an icon is the first thing a
+           flex row squeezes, leaving the label a few pixels and forcing a
+           word to break letter by letter. */
+        .btn > i,
+        .btn > .pd-i {
+            flex: 0 0 auto;
+            line-height: 1;
         }
         .btn-primary { background: linear-gradient(135deg, var(--accent-green), var(--accent-green-light)); color: white; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,99,235,0.4); }
@@ -633,25 +656,44 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         .delete-account-btn {
-            margin-top: 20px;
-            background: rgba(239,68,68,0.1);
-            border: 1px solid var(--accent-red);
+            margin-top: 18px;
+            width: 100%;
+            min-height: 50px;
+            padding: 13px 18px;
+            background: rgba(239,68,68,0.07);
+            border: 1.5px solid rgba(239,68,68,0.45);
+            border-radius: 16px;
             color: var(--accent-red);
+            font-size: .92rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
         }
-        .delete-account-btn:hover {
+        .delete-account-btn:hover,
+        .delete-account-btn:focus-visible {
             background: var(--accent-red);
+            border-color: var(--accent-red);
             color: white;
         }
+        .delete-account-btn i { flex: 0 0 auto; }
 
-        /* Admin Access Card */
+        /* Admin Access Card — a full-width card with a responsive action grid.
+           The old rule made both buttons flex:1 with min-width:140px inside a
+           240px column, so the label was squeezed into a few pixels. */
         .admin-access-card {
-            background: linear-gradient(135deg, rgba(239,68,68,0.10), rgba(212,175,55,0.12));
-            border: 1px solid rgba(239,68,68,0.35);
+            background: linear-gradient(135deg, rgba(239,68,68,0.08), rgba(212,175,55,0.12));
+            border: 1px solid rgba(239,68,68,0.32);
             border-radius: 20px;
-            padding: 18px 20px;
-            margin: 18px 0 6px;
+            padding: clamp(14px, 4vw, 20px);
+            margin: 18px 0 4px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.08);
             animation: cardFadeIn 0.45s ease backwards;
+            width: 100%;
+            min-width: 0;
         }
         .admin-access-head {
             display: flex;
@@ -659,20 +701,268 @@
             gap: 10px;
             font-weight: 900;
             font-family: 'Poppins', serif;
-            font-size: 1.05rem;
+            font-size: clamp(1rem, 3.6vw, 1.1rem);
+            line-height: 1.3;
             color: var(--accent-red);
         }
-        .admin-access-head i { font-size: 1.3rem; }
+        .admin-access-head i { font-size: 1.3rem; flex: 0 0 auto; }
         .admin-access-sub {
-            font-size: 0.78rem;
+            font-size: 0.82rem;
             color: var(--text-sub);
-            margin: 8px 0 14px;
-            line-height: 1.5;
+            margin: 6px 0 14px;
+            line-height: 1.55;
+            overflow-wrap: break-word;
         }
-        .admin-access-btn { flex: 1; min-width: 140px; justify-content: center; text-align: center; }
+        .admin-access-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+            gap: 10px;
+        }
+        .admin-access-btn {
+            width: 100%;
+            min-width: 0;
+            min-height: 52px;
+            padding: 12px 14px;
+            justify-content: center;
+            text-align: center;
+            font-size: clamp(.82rem, 2.8vw, .95rem);
+            line-height: 1.25;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
+            text-decoration: none;
+        }
+        .admin-access-btn i { flex: 0 0 auto; font-size: 1.05rem; }
+        .admin-access-foot {
+            margin: 12px 0 0;
+            font-size: .74rem;
+            line-height: 1.5;
+            color: var(--text-sub);
+        }
         @keyframes cardFadeIn {
             from { opacity: 0; transform: translateY(12px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---------------- Notification settings ----------------
+           Cards, not inline flex rows: every row gets the full card width, a
+           comfortable padding, and a 1- then 2-column health grid. Buttons keep
+           their whole label on one line and drop below the copy on very narrow
+           phones instead of stealing its width. */
+        .notif-panel {
+            background: var(--bg-primary);
+            border-radius: 20px;
+            padding: clamp(14px, 4vw, 20px);
+            margin: 16px 0;
+            border: 1px solid rgba(10,77,155,.2);
+            width: 100%;
+            min-width: 0;
+        }
+        .notif-head { margin-bottom: 14px; }
+        .notif-head h3 {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin: 0 0 4px;
+            font-family: 'Poppins', serif;
+            font-size: clamp(1rem, 3.8vw, 1.12rem);
+            line-height: 1.3;
+            color: var(--accent-green);
+        }
+        .notif-head h3 i { flex: 0 0 auto; }
+        .notif-head p {
+            font-size: .8rem;
+            line-height: 1.55;
+            color: var(--text-sub);
+            margin: 0;
+            overflow-wrap: break-word;
+        }
+        .notif-card {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color, var(--border));
+            border-radius: 16px;
+            padding: clamp(12px, 3.6vw, 16px);
+            margin-bottom: 12px;
+            width: 100%;
+            min-width: 0;
+        }
+        .notif-card:last-child { margin-bottom: 0; }
+        .notif-card-head {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 10px 12px;
+        }
+        .notif-card-copy {
+            flex: 1 1 200px;
+            /* Never squeeze the copy into a sliver beside a button: below a
+               readable width the action row wraps underneath instead. */
+            min-width: min(180px, 100%);
+            display: grid;
+            gap: 4px;
+        }
+        .notif-card-copy strong {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .9rem;
+            line-height: 1.35;
+            color: var(--text-main);
+            overflow-wrap: break-word;
+        }
+        .notif-card-copy strong i { flex: 0 0 auto; color: var(--accent-green); }
+        .notif-card-copy small {
+            font-size: .78rem;
+            line-height: 1.55;
+            color: var(--text-sub);
+            overflow-wrap: break-word;
+        }
+        .notif-card-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            min-width: 0;
+            max-width: 100%;
+        }
+        .notif-btn {
+            width: auto;
+            min-width: 0;
+            min-height: 40px;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: .78rem;
+            line-height: 1.3;
+            flex: 0 1 auto;
+            white-space: normal;
+            word-break: normal;
+        }
+        .notif-health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+            gap: 8px;
+        }
+        .notif-health-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            min-width: 0;
+            border: 1px solid var(--border-color, var(--border));
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 10px 12px;
+            line-height: 1.45;
+        }
+        .notif-health-item > i { flex: 0 0 auto; font-size: .95rem; margin-top: 1px; }
+        .notif-health-item span { min-width: 0; font-size: .78rem; color: var(--text-sub); overflow-wrap: break-word; }
+        .notif-health-item strong {
+            display: block;
+            font-size: .78rem;
+            color: var(--text-main);
+            margin-bottom: 1px;
+            overflow-wrap: break-word;
+        }
+        .notif-pref-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+            gap: 8px;
+        }
+        .notif-pref-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            border: 1px solid var(--border-color, var(--border));
+            border-radius: 12px;
+            padding: 10px 12px;
+            cursor: pointer;
+            min-width: 0;
+            background: var(--bg-primary);
+        }
+        .notif-pref-item span {
+            font-size: .8rem;
+            font-weight: 600;
+            line-height: 1.4;
+            min-width: 0;
+            overflow-wrap: break-word;
+        }
+        .notif-pref-item input {
+            flex: 0 0 auto;
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            accent-color: var(--accent-green, #0A4D9B);
+        }
+        .notif-prefs summary {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            cursor: pointer;
+            font-size: .9rem;
+            font-weight: 700;
+            line-height: 1.35;
+            color: var(--text-main);
+        }
+        .notif-prefs summary i { flex: 0 0 auto; color: var(--accent-green); }
+        .notif-note {
+            font-size: .78rem;
+            line-height: 1.55;
+            color: var(--text-sub);
+            margin: 2px 0 4px;
+            overflow-wrap: break-word;
+        }
+        .notif-reminder-controls { align-items: center; }
+        .notif-time {
+            width: auto;
+            min-width: 118px;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color, var(--border));
+            background: var(--bg-primary);
+            color: inherit;
+            font: inherit;
+            font-size: .85rem;
+        }
+        .notif-check {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            font-size: .8rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .notif-check input {
+            width: 20px;
+            height: 20px;
+            margin: 0;
+            accent-color: var(--accent-green, #0A4D9B);
+        }
+        /* The daily-verse studio renders its own card. Inside the notification
+           panel it should not add a second border/padding shell. */
+        .notif-panel [data-pd-verse-settings] .pd-verse-card {
+            border: 0;
+            padding: 0;
+            box-shadow: none;
+            background: transparent;
+        }
+        body.dark-mode .notif-head h3,
+        body.dark-mode .notif-card-copy strong i,
+        body.dark-mode .notif-prefs summary i,
+        body.dark-mode .notif-panel [data-pd-verse-settings] .pd-verse-card h3 {
+            color: #93c5fd;
+        }
+        body.dark-mode .admin-access-head { color: #fca5a5; }
+        @media (max-width: 430px) {
+            .notif-card-actions { width: 100%; }
+            .notif-card-actions .notif-btn { flex: 1 1 100%; width: 100%; }
+            .notif-card-actions .notif-time { flex: 1 1 100%; width: 100%; }
+            .notif-card-actions .notif-check { flex: 1 1 auto; }
+            .notif-health-grid, .notif-pref-grid { grid-template-columns: minmax(0, 1fr); }
         }
 
         @media (max-width: 600px) {
@@ -681,8 +971,8 @@
             .profile-stat-grid { grid-template-columns: repeat(2, 1fr); }
             .phone-wrapper { flex-direction: column; }
             .country-code { width: 100%; }
-            .auth-card { padding: 25px; }
-            .modern-modal-content { padding: 30px; }
+            .auth-card { padding: clamp(15px, 4.6vw, 24px); }
+            .modern-modal-content { padding: clamp(20px, 5vw, 30px); }
             .brand-text h1 { font-size: 1rem; }
             .brand-text p { display: none; }
         }
@@ -847,7 +1137,7 @@
                         <span style="font-size: .72rem; color: var(--text-sub);">Earn them by passing Academy quizzes with 80% or higher.</span>
                     </div>
                     <p style="font-size: .78rem; color: var(--text-sub); margin: 2px 0 14px;">Download a signed PDF or print your certificates anytime — the ministry team can verify every one.</p>
-                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 12px 14px;">
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-color, var(--border)); border-radius: 14px; padding: 12px 14px;">
                         <i class="pd-i pd-i-id-card" style="color: var(--accent-gold);"></i>
                         <div style="flex:1; min-width: 180px;">
                             <div style="font-size: .8rem; font-weight: 700; color: var(--text-main);">Certificates are issued to <span id="certProfileName" style="color: var(--accent-gold);">your profile name</span></div>
@@ -861,72 +1151,93 @@
                 </div>
 
                 <!-- NOTIFICATION & DAILY VERSE SETTINGS -->
-                <div class="settings-block" style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0; border: 1px solid rgba(10,77,155,.2);">
-                    <h3 style="margin: 0 0 4px; font-family: 'Poppins', serif; color: var(--accent-green);"><i class="pd-i pd-i-sliders-horizontal"></i> Notification Settings</h3>
-                    <p style="font-size: .78rem; color: var(--text-sub); margin: 0 0 16px;">Choose what Prayer Dome sends to your device. You are always in control.</p>
+                <div class="settings-block notif-panel">
+                    <div class="notif-head">
+                        <h3><i class="pd-i pd-i-sliders-horizontal"></i> Notification Settings</h3>
+                        <p>Choose what Prayer Dome sends to your device. You are always in control.</p>
+                    </div>
 
-                    <div id="notifPermissionRow" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <div style="min-width:0;">
-                            <strong style="font-size:.88rem;">Device notifications</strong><br>
-                            <small id="notifPermissionState" style="font-size:.72rem; color: var(--text-sub);">Checking…</small>
+                    <div id="notifPermissionRow" class="notif-card notif-permission">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-bell"></i> Allow notifications</strong>
+                                <small id="notifPermissionState">Checking…</small>
+                            </div>
+                            <div class="notif-card-actions">
+                                <button class="btn btn-outline notif-btn" id="notifPermissionBtn" type="button" onclick="requestAppNotifications()"><i class="pd-i pd-i-bell"></i> Allow Notifications</button>
+                            </div>
                         </div>
-                        <button class="btn btn-outline" style="width:auto;" id="notifPermissionBtn" onclick="requestAppNotifications()"><i class="pd-i pd-i-bell"></i> Allow Notifications</button>
                     </div>
 
                     <!-- Live health of this device's push channel. If a member
                          says "I am not getting notifications", the answer is
                          here instead of in a support ticket. -->
-                    <div id="notifHealthCard" style="background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                            <strong style="font-size:.88rem; flex:1; min-width:150px;"><i class="pd-i pd-i-activity"></i> This device</strong>
-                            <button class="btn btn-outline" type="button" style="width:auto; padding:7px 12px; font-size:.74rem;" onclick="sendTestNotification()"><i class="pd-i pd-i-send"></i> Send test</button>
-                            <button class="btn btn-outline" type="button" style="width:auto; padding:7px 12px; font-size:.74rem;" onclick="refreshNotifHealth()"><i class="pd-i pd-i-refresh-cw"></i> Re-check</button>
+                    <div id="notifHealthCard" class="notif-card">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-activity"></i> This device</strong>
+                                <small>Permission, app mode, push channel, service worker and the last registration on this phone.</small>
+                            </div>
+                            <div class="notif-card-actions">
+                                <button class="btn btn-outline notif-btn" type="button" onclick="sendTestNotification()"><i class="pd-i pd-i-send"></i> Send test</button>
+                                <button class="btn btn-outline notif-btn" type="button" onclick="refreshNotifHealth()"><i class="pd-i pd-i-refresh-cw"></i> Re-check</button>
+                            </div>
                         </div>
-                        <div id="notifHealthList" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr)); gap:8px; margin-top:10px; font-size:.74rem; color:var(--text-sub);"></div>
+                        <div id="notifHealthList" class="notif-health-grid"></div>
                     </div>
 
-                    <details style="background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <summary style="cursor:pointer; font-size:.84rem; font-weight:700;"><i class="pd-i pd-i-sliders-horizontal"></i> What should reach my phone?</summary>
-                        <p style="font-size:.72rem; color:var(--text-sub); margin:8px 0 10px;">These switches control what reaches your phone’s notification shade and lock screen — even when the app is closed. Everything still appears in the bell inside the app.</p>
-                        <div id="notifPrefList" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr)); gap:8px;"></div>
+                    <details class="notif-card notif-prefs">
+                        <summary><i class="pd-i pd-i-sliders-horizontal"></i> Notification preferences</summary>
+                        <p class="notif-note">These switches control what reaches your phone’s notification shade and lock screen — even when the app is closed. Everything still appears in the bell inside the app.</p>
+                        <div id="notifPrefList" class="notif-pref-grid"></div>
                     </details>
 
                     <!-- Daily prayer reminder: the only reminder that reaches a
                          closed phone, because the Cloud Function schedules it. -->
-                    <div id="prayerReminderRow" style="background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <div style="min-width:160px; flex:1;">
-                                <strong style="font-size:.88rem;"><i class="pd-i pd-i-clock"></i> Daily prayer reminder</strong><br>
-                                <small id="prayerReminderState" style="font-size:.72rem; color: var(--text-sub);">Choose a time to be reminded to pray.</small>
+                    <div id="prayerReminderRow" class="notif-card">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-clock"></i> Daily prayer reminder</strong>
+                                <small id="prayerReminderState">Choose a time to be reminded to pray.</small>
                             </div>
-                            <input type="time" id="prayerReminderTime" aria-label="Prayer reminder time" style="width:auto; min-width:120px; padding:9px 10px; border-radius:10px; border:1px solid var(--border-color); background:var(--bg-primary); color:inherit; font:inherit;">
-                            <label style="display:flex; align-items:center; gap:7px; font-size:.76rem; font-weight:600; cursor:pointer;">
-                                <input type="checkbox" id="prayerReminderOn" style="width:18px; height:18px; accent-color:var(--accent-green,#0A4D9B);"> On
-                            </label>
-                            <button class="btn btn-outline" type="button" style="width:auto; padding:8px 12px; font-size:.76rem;" onclick="savePrayerReminder()"><i class="pd-i pd-i-check"></i> Save</button>
+                            <div class="notif-card-actions notif-reminder-controls">
+                                <input type="time" id="prayerReminderTime" class="notif-time" aria-label="Prayer reminder time">
+                                <label class="notif-check">
+                                    <input type="checkbox" id="prayerReminderOn"> On
+                                </label>
+                                <button class="btn btn-outline notif-btn" type="button" onclick="savePrayerReminder()"><i class="pd-i pd-i-check"></i> Save</button>
+                            </div>
                         </div>
                     </div>
 
                     <!-- App display: a true full-screen mode for anyone who
                          opened Prayer Dome in a browser tab and wants no URL or
                          system bars. Installed apps already open this way. -->
-                    <div id="appDisplayRow" style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <div style="min-width:0;">
-                            <strong style="font-size:.88rem;"><i class="pd-i pd-i-maximize"></i> App display</strong><br>
-                            <small id="appDisplayState" style="font-size:.72rem; color: var(--text-sub);">Checking…</small>
+                    <div id="appDisplayRow" class="notif-card">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-maximize"></i> App display</strong>
+                                <small id="appDisplayState">Checking…</small>
+                            </div>
+                            <div class="notif-card-actions">
+                                <button class="btn btn-outline notif-btn" id="appDisplayBtn" type="button" onclick="toggleAppFullscreen()"><i class="pd-i pd-i-maximize"></i> Full screen</button>
+                            </div>
                         </div>
-                        <button class="btn btn-outline" style="width:auto;" id="appDisplayBtn" onclick="toggleAppFullscreen()"><i class="pd-i pd-i-maximize"></i> Full screen</button>
                     </div>
 
                     <!-- Install-to-home-screen row: shown only when the
                          browser offers an install prompt (or on iOS, where the
                          prompt has to be done manually from the Share menu). -->
-                    <div id="installAppRow" style="display:none; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:12px 14px; margin-bottom:14px;">
-                        <div style="min-width:0;">
-                            <strong style="font-size:.88rem;"><i class="pd-i pd-i-download"></i> Prayer Dome app</strong><br>
-                            <small id="installAppState" style="font-size:.72rem; color: var(--text-sub);">Add Prayer Dome to your home screen for one-tap access and offline reading.</small>
+                    <div id="installAppRow" style="display:none;" class="notif-card">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-download"></i> Prayer Dome app</strong>
+                                <small id="installAppState">Add Prayer Dome to your home screen for one-tap access and offline reading.</small>
+                            </div>
+                            <div class="notif-card-actions">
+                                <button class="btn btn-outline notif-btn" id="installAppBtn" type="button" onclick="installPrayerDomeApp()"><i class="pd-i pd-i-download"></i> Install app</button>
+                            </div>
                         </div>
-                        <button class="btn btn-outline" style="width:auto;" id="installAppBtn" onclick="installPrayerDomeApp()"><i class="pd-i pd-i-download"></i> Install app</button>
                     </div>
 
                     <!-- Daily Bible verse scheduler renders here -->
@@ -940,16 +1251,17 @@
                 <!-- Admin Dashboard Access -->
                 <div id="adminDashboardCard" class="admin-access-card" style="display: none;">
                     <div class="admin-access-head">
-                        <i class="pd-i pd-i-shield"></i>
+                        <i class="pd-i pd-i-shield-check"></i>
                         <span>Leadership Access</span>
                     </div>
                     <p class="admin-access-sub">You are signed in with an administrator role. Manage the Prayer Dome platform below.</p>
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div class="admin-access-actions">
                         <a href="admin.html" class="btn btn-primary admin-access-btn"><i class="pd-i pd-i-layout-dashboard"></i> Admin Dashboard</a>
                         <a href="finance.html" class="btn btn-outline admin-access-btn"><i class="pd-i pd-i-chart-line"></i> Finance Portal</a>
                     </div>
+                    <p class="admin-access-foot"><i class="pd-i pd-i-user-star" aria-hidden="true"></i> Team members are managed in Admin Dashboard → Team Management.</p>
                 </div>
-                <button onclick="showDeleteAccountModal()" class="btn btn-outline delete-account-btn" style="width: 100%; margin-top: 15px;">
+                <button onclick="showDeleteAccountModal()" class="btn btn-outline delete-account-btn" type="button">
                     <i class="pd-i pd-i-trash"></i> Delete Account
                 </button>
             </div>
@@ -2169,15 +2481,37 @@
         function healthRow(icon, label, value, ok) {
             const colour = ok === true ? '#15803d' : ok === false ? '#b91c1c' : 'var(--text-sub)';
             const badge = ok === true ? 'pd-i-circle-check' : ok === false ? 'pd-i-triangle-alert' : 'pd-i-info';
-            return `<div style="display:flex; align-items:flex-start; gap:7px; min-width:0;">
-                <i class="pd-i ${badge}" style="color:${colour}; font-size:.9rem; margin-top:1px;"></i>
-                <span style="min-width:0;"><strong style="display:block; color:var(--text-main); font-size:.74rem;">${label}</strong>${value}</span>
+            return `<div class="notif-health-item">
+                <i class="pd-i ${badge}" style="color:${colour};" aria-hidden="true"></i>
+                <span><strong>${label}</strong>${value}</span>
             </div>`;
+        }
+
+        function renderNotifHealthFallback(list) {
+            // The account page must still explain this device if the shared
+            // app layer failed to load (offline, blocked script, old cache).
+            const perm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+            const installed = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+                (window.navigator && navigator.standalone === true);
+            const label = perm === 'granted' ? 'Allowed'
+                : perm === 'denied' ? 'Blocked — change it in device settings'
+                    : perm === 'unsupported' ? 'Not supported by this browser'
+                        : 'Not allowed yet';
+            list.innerHTML =
+                healthRow('bell', 'Permission status', label, perm === 'granted') +
+                healthRow('smartphone', 'App mode', installed ? 'Installed app' : 'Browser tab', installed) +
+                healthRow('radio', 'Push channel', 'Sign in again to register this device', null) +
+                healthRow('wifi', 'Service worker', ('serviceWorker' in navigator) ? 'Registered by the app shell' : 'Not supported', null) +
+                healthRow('clock', 'Last registered', '—', null);
         }
 
         window.refreshNotifHealth = function() {
             const list = document.getElementById('notifHealthList');
-            if (!list || !window.PDApp || !PDApp.notifications) return;
+            if (!list) return;
+            if (!window.PDApp || !PDApp.notifications) {
+                renderNotifHealthFallback(list);
+                return;
+            }
             // The health panel answers the shared layer's diagnostics event,
             // and reading the diagnostics can announce a new state again. The
             // guard makes that chain impossible to loop.
@@ -2201,7 +2535,7 @@
                 ? (d.pendingToken ? 'Waiting for sign-in' : 'Registered for push')
                 : 'Not registered yet';
             list.innerHTML =
-                healthRow('bell', 'Permission', permissionText, d.permission === 'granted') +
+                healthRow('bell', 'Permission status', permissionText, d.permission === 'granted') +
                 healthRow('smartphone', 'App mode', installed ? 'Installed app' : 'Browser tab', installed) +
                 healthRow('radio', 'Push channel', pushText, d.token && !d.pendingToken) +
                 healthRow('wifi', 'Service worker', d.serviceWorker === 'unknown' ? 'Checking…' : d.serviceWorker, d.serviceWorker === 'active' ? true : null) +
@@ -2248,9 +2582,9 @@
             const prefs = PDApp.notifications.preferences();
             const types = PDApp.notifications.types();
             host.innerHTML = Object.keys(types).map(key => `
-                <label style="display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid var(--border-color); border-radius:10px; padding:8px 10px; cursor:pointer;">
-                    <span style="font-size:.76rem; font-weight:600;">${types[key]}</span>
-                    <input type="checkbox" data-notif-pref="${key}" ${prefs[key] !== false ? 'checked' : ''} style="width:18px; height:18px; accent-color:var(--accent-green,#0A4D9B);">
+                <label class="notif-pref-item">
+                    <span>${types[key]}</span>
+                    <input type="checkbox" data-notif-pref="${key}" ${prefs[key] !== false ? 'checked' : ''}>
                 </label>`).join('');
             host.querySelectorAll('[data-notif-pref]').forEach(input => {
                 input.addEventListener('change', () => {

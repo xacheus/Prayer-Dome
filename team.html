@@ -387,8 +387,10 @@
             object-fit: cover;
         }
 
-        .founder-featured h1 {
+        .founder-featured h1,
+        .founder-featured h2.founder-name {
             font-size: 2.5rem;
+            line-height: 1.2;
             margin-bottom: 10px;
             position: relative;
             z-index: 1;
@@ -640,6 +642,230 @@
         .team-late-badge { background: rgba(7,36,77,.9) !important; color: #f6df8a !important; }
         .team-late-badge i { color: #f6df8a !important; }
 
+        /* ---------- Member profile details ---------- */
+        .team-facts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 12px;
+            margin: 0;
+        }
+        .team-fact {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+            max-width: 100%;
+            font-size: .73rem;
+            font-weight: 600;
+            line-height: 1.45;
+            color: var(--text-sub, #64748b);
+            overflow-wrap: break-word;
+        }
+        .team-fact i { flex: 0 0 auto; color: var(--accent-gold); }
+        .team-responsibilities {
+            font-size: .76rem;
+            line-height: 1.55;
+            color: var(--text-sub, #64748b);
+            margin: 0;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: rgba(10, 77, 155, .05);
+            border: 1px solid rgba(10, 77, 155, .12);
+            overflow-wrap: break-word;
+        }
+        .team-responsibilities strong {
+            display: block;
+            font-size: .63rem;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--accent-green);
+            margin-bottom: 2px;
+        }
+        .team-card-foot {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: auto;
+            padding-top: 4px;
+        }
+        .team-joined {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: .68rem;
+            font-weight: 700;
+            color: var(--text-sub, #64748b);
+            line-height: 1.4;
+        }
+        .team-joined i { flex: 0 0 auto; color: var(--accent-gold); }
+        .team-email {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            max-width: 100%;
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            text-decoration: none;
+            overflow-wrap: anywhere;
+        }
+        .team-email:hover { text-decoration: underline; }
+        .team-email i { flex: 0 0 auto; }
+        .team-status-badge {
+            background: rgba(100, 116, 139, .12);
+            color: #475569;
+        }
+        body.dark-mode .team-status-badge { color: #cbd5e1; }
+
+        .team-page-heading {
+            text-align: center;
+            margin: 6px auto 22px;
+            max-width: 760px;
+            padding: 0 4px;
+        }
+        .team-page-heading h1 {
+            font-family: 'Poppins', serif;
+            font-size: clamp(1.5rem, 6vw, 2.1rem);
+            line-height: 1.2;
+            margin: 0 0 8px;
+            color: var(--text-main, #0f172a);
+        }
+        .team-page-heading p {
+            margin: 0;
+            font-size: clamp(.82rem, 3.4vw, .95rem);
+            line-height: 1.6;
+            color: var(--text-sub, #64748b);
+            overflow-wrap: break-word;
+        }
+
+        /* ---------- In Loving Memory ---------- */
+        .team-memorial-section {
+            margin: 10px 0 50px;
+            padding: clamp(16px, 4vw, 26px);
+            border-radius: 24px;
+            border: 1px solid rgba(201, 162, 39, .4);
+            background:
+                radial-gradient(ellipse 65% 55% at 50% 0%, rgba(212, 175, 55, .16), transparent 70%),
+                linear-gradient(180deg, #fffdf6, #fbf7ec);
+        }
+        body.dark-mode .team-memorial-section {
+            background:
+                radial-gradient(ellipse 65% 55% at 50% 0%, rgba(212, 175, 55, .14), transparent 70%),
+                linear-gradient(180deg, #0f1c30, #0b1626);
+            border-color: rgba(212, 175, 55, .35);
+        }
+        .team-memorial-head { text-align: center; margin-bottom: 18px; }
+        .team-memorial-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: .62rem;
+            font-weight: 900;
+            letter-spacing: .16em;
+            text-transform: uppercase;
+            color: #8f7410;
+        }
+        body.dark-mode .team-memorial-eyebrow { color: #f6df8a; }
+        .team-memorial-head h2 {
+            font-family: 'Poppins', serif;
+            font-size: clamp(1.25rem, 5vw, 1.7rem);
+            line-height: 1.25;
+            margin: 4px 0 6px;
+            color: #3f3200;
+        }
+        body.dark-mode .team-memorial-head h2 { color: #f6df8a; }
+        .team-memorial-head p {
+            margin: 0 auto;
+            max-width: 620px;
+            font-size: .82rem;
+            line-height: 1.6;
+            color: var(--text-sub, #64748b);
+        }
+        .team-memorial-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+            gap: 18px;
+        }
+        .team-card-memorial .team-image > img { filter: saturate(.6); }
+        .team-card-memorial .team-name { color: #4a3900; }
+        body.dark-mode .team-card-memorial .team-name { color: #f6df8a; }
+
+        /* A portrait is always the same shape on every card, so a row of
+           profiles has a consistent baseline instead of ragged heights. */
+        .team-card .team-image {
+            height: auto;
+            aspect-ratio: 4 / 3;
+        }
+        .team-card .team-image > img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .team-card .team-image { display: block; }
+        .team-card .team-info { padding: clamp(14px, 4vw, 20px); gap: 8px; }
+        .team-bio { font-size: .82rem; }
+
+        @media (max-width: 380px) {
+            .team-card-foot { flex-direction: column; align-items: flex-start; }
+        }
+
+        /* Inline admin editor (admins only) — one column on a phone. */
+        .tm-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 165px), 1fr));
+            gap: 12px;
+        }
+        .tm-field {
+            display: grid;
+            gap: 5px;
+            font-size: .78rem;
+            font-weight: 700;
+            line-height: 1.4;
+            min-width: 0;
+        }
+        .tm-field input,
+        .tm-field select,
+        .tm-field textarea {
+            width: 100%;
+            margin-top: 2px;
+            padding: 11px 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color, #d7dee9);
+            background: var(--bg-card, #fff);
+            color: inherit;
+            font: inherit;
+            font-size: .85rem;
+            line-height: 1.4;
+        }
+        .tm-field textarea { resize: vertical; min-height: 68px; }
+        .tm-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            font-size: .78rem;
+            font-weight: 600;
+            line-height: 1.5;
+            cursor: pointer;
+        }
+        .tm-check input { flex: 0 0 auto; width: 20px; height: 20px; margin-top: 1px; accent-color: var(--accent-green); }
+        .tm-section {
+            display: grid;
+            gap: 10px;
+            border: 1px solid var(--border-color, #e5eaf2);
+            border-radius: 14px;
+            padding: 12px;
+            min-width: 0;
+        }
+        .tm-section > h4 {
+            margin: 0;
+            font-size: .66rem;
+            letter-spacing: .09em;
+            text-transform: uppercase;
+            color: var(--accent-green);
+        }
+
         .team-footer {
             background: var(--bg-secondary);
             margin-top: 60px;
@@ -702,7 +928,8 @@
             .team-image { height: 240px; }
             .team-name { font-size: 1.05rem; }
             .founder-featured { padding: 30px; }
-            .founder-featured h1 { font-size: 1.8rem; }
+            .founder-featured h1,
+            .founder-featured h2.founder-name { font-size: 1.8rem; }
             .category-tabs { gap: 8px; }
             .category-btn { padding: 8px 16px; font-size: 0.8rem; }
             .team-header { padding: 12px 20px; }
@@ -754,6 +981,11 @@
             </div>
         </div>
 
+        <div class="team-page-heading">
+            <h1>Team Members</h1>
+            <p>The pastors, leaders and servants who carry the vision of Prayer Dome — in Zambia, Eswatini, Ireland and online.</p>
+        </div>
+
         <!-- Founder Featured Card -->
         <div class="founder-featured" id="founderCard">
             <div class="founder-image">
@@ -761,7 +993,7 @@
                      loading="lazy" decoding="async"
                      onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='16px';this.style.background='#fff';">
             </div>
-            <h1 id="founderName">Seedwell Khayalethu Masuku</h1>
+            <h2 id="founderName" class="founder-name">Seedwell Khayalethu Masuku</h2>
             <h3 id="founderTitle"><i class="pd-i pd-i-crown"></i> Founder &amp; Senior Pastor</h3>
             <p id="founderQuote">"A House of Prayer for All Nations – Matthew 21:13. Our calling is to see lives transformed through the power of prayer and the Word of God."</p>
         </div>
@@ -778,6 +1010,19 @@
         <!-- Team Grid -->
         <div id="teamGrid" class="team-grid"></div>
 
+        <!-- In Loving Memory: profiles of team members who have gone home to
+             the Lord. Their records are preserved by the ministry and are only
+             rendered here when an administrator has published the profile and
+             chosen to show it in the Memorial section. -->
+        <section id="teamMemorialSection" class="team-memorial-section" hidden aria-labelledby="teamMemorialHeading">
+            <div class="team-memorial-head">
+                <span class="team-memorial-eyebrow"><i class="pd-i pd-i-feather" aria-hidden="true"></i> Preserved with gratitude</span>
+                <h2 id="teamMemorialHeading">In Loving Memory</h2>
+                <p>We honour the members of the Prayer Dome family who have gone home to the Lord. Their service, faith and love remain part of our story.</p>
+            </div>
+            <div id="teamMemorialGrid" class="team-memorial-grid"></div>
+        </section>
+
         <!-- ADMIN: Team Management (visible to administrators only) -->
         <section id="teamAdminPanel" style="display:none; margin-top:28px; background:var(--bg-primary,#fff); border:1px solid rgba(10,77,155,.25); border-radius:20px; padding:22px;">
             <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
@@ -785,7 +1030,7 @@
                 <span id="teamAdminBadge" style="font-size:.68rem; font-weight:800; letter-spacing:.6px; background:rgba(10,77,155,.12); color:#0A4D9B; border-radius:50px; padding:4px 12px;">ADMIN</span>
                 <button class="category-btn" style="margin-left:auto;" onclick="openTeamEditor()"><i class="pd-i pd-i-plus"></i> Add Team Member</button>
             </div>
-            <p style="font-size:.78rem; color:var(--text-sub,#64748b); margin:8px 0 14px;">Changes appear on the public team page immediately. Removing a member archives their profile — nothing is deleted without a second confirmation.</p>
+            <p style="font-size:.78rem; color:var(--text-sub,#64748b); margin:8px 0 14px; line-height:1.6;">Quick edits for administrators. Photos, department, responsibilities, priority, publishing and memorial details are managed from the <strong>Admin Dashboard → Team Management</strong> screen. Removing a member archives their profile — nothing is deleted without a second confirmation.</p>
             <div id="teamAdminList" style="display:grid; gap:10px;"></div>
         </section>
 
@@ -797,51 +1042,117 @@
                     <h3 id="teamEditorTitle" style="margin:0; font-size:1rem; color:#0A4D9B; flex:1;">Add Team Member</h3>
                     <button onclick="closeTeamEditor()" style="border:0;background:var(--bg-card,#f1f4f9);width:32px;height:32px;border-radius:50%;cursor:pointer;color:inherit;" aria-label="Close"><i class="pd-i pd-i-x"></i></button>
                 </div>
-                <div style="padding:18px 20px; display:grid; gap:12px;">
-                    <div style="display:flex; gap:14px; align-items:center;">
-                        <img id="tmPhotoPreview" src="/assets/logo.png" alt="" style="width:74px;height:74px;border-radius:16px;object-fit:cover;background:#eef2f8;">
-                        <div>
-                            <button type="button" class="category-btn" onclick="pickTeamPhoto()"><i class="pd-i pd-i-camera"></i> Choose Photo</button>
-                            <div id="tmPhotoState" style="font-size:.72rem;color:var(--text-sub,#64748b);margin-top:6px;">Photos open your device picker and upload automatically.</div>
+                <div style="padding:18px 20px; display:grid; gap:14px;">
+                    <div style="display:flex; gap:14px; align-items:flex-start; flex-wrap:wrap;">
+                        <img id="tmPhotoPreview" src="/assets/avatar-default.svg" alt="" style="width:84px;height:84px;border-radius:18px;object-fit:cover;background:#eef2f8;">
+                        <div style="flex:1; min-width:150px; display:grid; gap:6px;">
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button type="button" class="category-btn" onclick="pickTeamPhoto()" style="padding:9px 14px;"><i class="pd-i pd-i-camera"></i> Choose photo</button>
+                                <button type="button" class="category-btn" onclick="clearTeamPhoto()" style="padding:9px 14px;"><i class="pd-i pd-i-trash"></i> Remove</button>
+                            </div>
+                            <div id="tmPhotoState" style="font-size:.72rem;color:var(--text-sub,#64748b);line-height:1.5;">Photos open your device picker and upload automatically.</div>
                         </div>
                     </div>
-                    <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Full name<input id="tmName" maxlength="80" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Position / Title<input id="tmTitle" maxlength="100" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Role label<input id="tmRole" maxlength="60" placeholder="e.g. Senior Pastor" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                    </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Category
-                            <select id="tmCategory" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;">
-                                <option value="eswatini">Eswatini</option>
-                                <option value="zambia">Zambia</option>
-                                <option value="worship">Worship</option>
-                                <option value="ministries">Ministries</option>
-                                <option value="founder">Founder</option>
-                            </select>
+
+                    <div class="tm-section">
+                        <h4>Identity</h4>
+                        <label class="tm-field">Full name *
+                            <input id="tmName" maxlength="80" placeholder="e.g. Pastor Philmon Gumbi">
                         </label>
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Country / Region<input id="tmCountry" maxlength="60" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+                        <div class="tm-grid">
+                            <label class="tm-field">Position / title *
+                                <input id="tmTitle" maxlength="100" placeholder="e.g. Prayer Dome Pastor — Eswatini">
+                            </label>
+                            <label class="tm-field">Role label
+                                <input id="tmRole" maxlength="60" placeholder="e.g. Senior Pastor">
+                            </label>
+                            <label class="tm-field">Department
+                                <input id="tmDepartment" maxlength="80" placeholder="e.g. Pastoral Ministry">
+                            </label>
+                            <label class="tm-field">Category
+                                <select id="tmCategory">
+                                    <option value="eswatini">Eswatini</option>
+                                    <option value="zambia">Zambia</option>
+                                    <option value="worship">Worship</option>
+                                    <option value="ministries">Ministries</option>
+                                    <option value="founder">Founder</option>
+                                </select>
+                            </label>
+                            <label class="tm-field">Country / region
+                                <input id="tmCountry" maxlength="60">
+                            </label>
+                            <label class="tm-field">Date joined
+                                <input id="tmDateJoined" type="date">
+                            </label>
+                        </div>
                     </div>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Email<input id="tmEmail" type="email" maxlength="120" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Phone<input id="tmPhone" type="tel" maxlength="30" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+
+                    <div class="tm-section">
+                        <h4>Contact</h4>
+                        <div class="tm-grid">
+                            <label class="tm-field">Email address <span style="font-weight:400;color:var(--text-sub,#64748b)">(private, optional)</span>
+                                <input id="tmEmail" type="email" maxlength="120" placeholder="Leave empty if unknown">
+                            </label>
+                            <label class="tm-field">Phone <span style="font-weight:400;color:var(--text-sub,#64748b)">(private, optional)</span>
+                                <input id="tmPhone" type="tel" maxlength="30">
+                            </label>
+                        </div>
+                        <label class="tm-check"><input id="tmEmailPublic" type="checkbox"> Show the email address on this member’s public profile.</label>
                     </div>
-                    <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Description<input id="tmDescription" maxlength="300" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                    <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Favourite scripture <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmScripture" maxlength="60" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                    <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Profile status
-                        <select id="tmStatus" onchange="toggleTeamLateFields()" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;">
-                            <option value="serving">Serving — active member</option>
-                            <option value="archived">Archived — hidden from the page</option>
-                        </select>
-                    </label>
-                    <div id="tmLateFields" style="display:none; border:1px solid rgba(212,175,55,.4); background:rgba(212,175,55,.08); border-radius:12px; padding:12px; gap:10px;">
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Memorial label
-                            <select id="tmLateLabel" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"><option value="Late">Late</option><option value="Passed On">Passed On</option><option value="RIP">RIP</option><option value="Home with the Lord">Home with the Lord</option></select>
+
+                    <div class="tm-section">
+                        <h4>About</h4>
+                        <label class="tm-field">Short biography
+                            <textarea id="tmDescription" maxlength="600" rows="3" placeholder="A sentence or two about their ministry…"></textarea>
                         </label>
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Date of passing <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmPassedAt" type="date" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
-                        <label style="display:grid;gap:5px;font-size:.78rem;font-weight:700;">Memorial note <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span><input id="tmMemorialNote" maxlength="160" style="margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--border-color,#d7dee9);background:var(--bg-card,#fff);color:inherit;font:inherit;"></label>
+                        <label class="tm-field">Responsibilities
+                            <textarea id="tmResponsibilities" maxlength="600" rows="2" placeholder="e.g. Leads intercession, mentors cell leaders"></textarea>
+                        </label>
+                        <label class="tm-field">Favourite scripture
+                            <input id="tmScripture" maxlength="60" placeholder="e.g. Matthew 21:13">
+                        </label>
                     </div>
-                    <div id="teamEditorError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:12px;padding:10px 12px;font-size:.8rem;"></div>
+
+                    <div class="tm-section">
+                        <h4>Status, visibility &amp; order</h4>
+                        <div class="tm-grid">
+                            <label class="tm-field">Service status
+                                <select id="tmStatus" onchange="toggleTeamLateFields()">
+                                    <option value="active">Active — serving now</option>
+                                    <option value="inactive">Inactive — not serving at the moment</option>
+                                    <option value="deceased">Deceased — in loving memory</option>
+                                    <option value="former">Former member</option>
+                                </select>
+                            </label>
+                            <label class="tm-field">Display priority
+                                <input id="tmPriority" type="number" min="1" max="9999" step="1" inputmode="numeric" placeholder="Lower number appears first">
+                            </label>
+                        </div>
+                        <label class="tm-check"><input id="tmPublished" type="checkbox"> Publish this profile on the public Team Members page.</label>
+                        <label class="tm-check"><input id="tmShowInMemorial" type="checkbox"> Show this profile in the In Loving Memory section.</label>
+                    </div>
+
+                    <div id="tmLateFields" class="tm-section" style="display:none; border-color:rgba(212,175,55,.4); background:rgba(212,175,55,.08);">
+                        <h4 style="color:#8f7410;">Memorial details</h4>
+                        <div class="tm-grid">
+                            <label class="tm-field">Memorial label
+                                <select id="tmLateLabel">
+                                    <option value="Late">Late</option>
+                                    <option value="Passed On">Passed On</option>
+                                    <option value="RIP">RIP</option>
+                                    <option value="Home with the Lord">Home with the Lord</option>
+                                </select>
+                            </label>
+                            <label class="tm-field">Date of passing <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span>
+                                <input id="tmPassedAt" type="date">
+                            </label>
+                        </div>
+                        <label class="tm-field">Memorial message <span style="font-weight:400;color:var(--text-sub,#64748b)">(optional)</span>
+                            <textarea id="tmMemorialNote" maxlength="400" rows="2" placeholder="e.g. “A faithful shepherd, 1948–2025.”"></textarea>
+                        </label>
+                    </div>
+
+                    <div id="teamEditorError" style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.5;"></div>
                 </div>
                 <div style="display:flex; gap:10px; padding:0 20px 20px;">
                     <button class="category-btn" style="flex:1; justify-content:center;" onclick="closeTeamEditor()">Cancel</button>
@@ -885,26 +1196,40 @@
 
     <div class="toast-container" id="toastContainer"></div>
 
+    <script src="/assets/pd-team-store.js"></script>
     <script src="/assets/pd-team-data.js"></script>
     <script>
         // Built-in roster: assets/pd-team-data.js is the one source of truth.
         // It seeds Firestore on the first admin edit and is the offline
         // fallback presentation of the team.
-        const DEFAULT_TEAM = (window.PD_TEAM_DEFAULT || []).map(m => Object.assign({}, m));
+        const DEFAULT_TEAM = (window.PD_TEAM_DEFAULT || []).map(function (member) {
+            // The built-in roster is normalised through the same model as a
+            // Firestore record, so the offline page and the live page cannot
+            // drift apart.
+            return PDTeam.normalize(member, {}, { source: 'builtin' });
+        });
 
         let currentFilter = "all";
 
-        // Live roster: Firestore documents when available, otherwise the
-        // built-in roster. Profiles carry contact details and ordering.
-        const TEAM_STATE = { members: null, admins: {} };
+        // Live roster: published Firestore documents when available, otherwise
+        // the built-in roster. Private contact details never enter this state:
+        // the public query only reads the public-safe document.
+        const TEAM_STATE = { members: null, isAdmin: false };
+
+        function allMembers() {
+            return (TEAM_STATE.members && TEAM_STATE.members.length) ? TEAM_STATE.members : DEFAULT_TEAM;
+        }
 
         function activeMembers() {
-            if (TEAM_STATE.members && TEAM_STATE.members.length) {
-                return TEAM_STATE.members
-                    .filter(m => !m.archived && !m.deceased)
-                    .sort((a, b) => (a.order || 999) - (b.order || 999) || String(a.name).localeCompare(String(b.name)));
-            }
-            return DEFAULT_TEAM;
+            const members = allMembers();
+            // Legacy `archived` documents stay hidden; status is the source of
+            // truth for everything written by the current console.
+            const living = members.filter(m => !m.archived && !m.deceased);
+            // A deceased member is shown in the Memorial section by default.
+            // If an administrator turns that off and keeps the profile
+            // published, the profile sits in the main team list instead.
+            const deceasedInMain = members.filter(m => m.deceased && m.published !== false && m.showInMemorial === false);
+            return PDTeam.sort(living.filter(m => m.published !== false).concat(deceasedInMain));
         }
 
         function escTeam(value) {
@@ -913,83 +1238,126 @@
             }[ch]));
         }
 
+        function memberCard(member, options) {
+            options = options || {};
+            const memorial = member.status === 'deceased';
+            const safeName = String(member.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
+            const facts = [];
+            if (member.department) {
+                facts.push(`<span class="team-fact"><i class="pd-i pd-i-briefcase" aria-hidden="true"></i>${escTeam(member.department)}</span>`);
+            }
+            if (member.country) {
+                facts.push(`<span class="team-fact"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i>${escTeam(member.country)}</span>`);
+            }
+            const badges = [
+                `<span class="team-badge"><i class="pd-i ${member.category === 'founder' ? 'pd-i-crown' : member.category === 'worship' ? 'pd-i-music' : member.category === 'ministries' ? 'pd-i-church' : 'pd-i-flag'}"></i> ${escTeam(PDTeam.CATEGORY_LABELS[member.category] || member.category || 'Team')}</span>`
+            ];
+            if (member.role && member.title) {
+                badges.push(`<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${escTeam(member.role)}</span>`);
+            }
+            if (member.status !== 'active') {
+                badges.push(`<span class="team-badge team-status-badge"><i class="pd-i ${PDTeam.statusMeta(member.status).icon}"></i> ${escTeam(PDTeam.statusLabel(member.status))}</span>`);
+            }
+            const email = member.emailPublic && member.publicEmail
+                ? `<a class="team-email" href="mailto:${escTeam(member.publicEmail)}" aria-label="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail" aria-hidden="true"></i><span>${escTeam(member.publicEmail)}</span></a>`
+                : '';
+            const memorialBlock = memorial
+                ? `<div class="team-memorial">
+                        <strong style="display:block; font-size:.62rem; letter-spacing:.1em; text-transform:uppercase; color:#8f7410; margin-bottom:3px;">In loving memory</strong>
+                        ${member.passedAt ? `<span><i class="pd-i pd-i-calendar-heart" aria-hidden="true"></i> ${escTeam(member.lateLabel || 'Passed on')} ${escTeam(PDTeam.formatDate(member.passedAt))}</span>` : ''}
+                        ${member.memorialMessage ? `<p style="margin:4px 0 0;">${escTeam(member.memorialMessage)}</p>` : ''}
+                   </div>`
+                : '';
+            return `
+                <article class="team-card${memorial ? ' is-late team-card-memorial' : ''}" style="animation-delay: ${(options.index || 0) * 0.05}s">
+                    ${memorial ? '<span class="team-late-flag"><i class="pd-i pd-i-feather" aria-hidden="true"></i> In Loving Memory</span>' : ''}
+                    <div class="team-image">
+                        <img src="${escTeam(member.image || '/assets/avatar-default.svg')}" alt="${escTeam(member.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/avatar-default.svg';">
+                    </div>
+                    <div class="team-info">
+                        <h3 class="team-name">${escTeam(member.name || 'Team member')}</h3>
+                        <p class="team-title">${escTeam(member.displayTitle || member.title || member.role || 'Prayer Dome Team')}</p>
+                        ${facts.length ? `<div class="team-facts">${facts.join('')}</div>` : ''}
+                        ${member.description ? `<p class="team-bio">${escTeam(member.description)}</p>` : ''}
+                        ${member.responsibilities ? `<div class="team-responsibilities"><strong>Responsibilities</strong>${escTeam(member.responsibilities)}</div>` : ''}
+                        ${member.scripture ? `<span class="team-fact"><i class="pd-i pd-i-book-open" aria-hidden="true"></i>${escTeam(member.scripture)}</span>` : ''}
+                        <div class="team-badges">${badges.join('')}</div>
+                        ${memorialBlock}
+                        ${email}
+                        <div class="team-card-foot">
+                            <div class="team-social">
+                                <a href="#" onclick="shareTeamMember('${safeName}');return false;" aria-label="Share ${escTeam(member.name)}"><i class="pd-i pd-i-share-2"></i></a>
+                                <a href="#" onclick="prayForMember('${safeName}');return false;" aria-label="Pray for ${escTeam(member.name)}"><i class="pd-i pd-i-hands-praying"></i></a>
+                                ${memorial
+                                    ? `<a href="#" onclick="rememberMember('${safeName}');return false;" aria-label="Honour the memory of ${escTeam(member.name)}"><i class="pd-i pd-i-feather"></i></a>`
+                                    : (member.emailPublic && member.publicEmail
+                                        ? `<a href="mailto:${escTeam(member.publicEmail)}" title="Email ${escTeam(member.name)}" aria-label="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>`
+                                        : `<a href="#" onclick="contactMember('${safeName}');return false;" aria-label="Contact ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>`)}
+                            </div>
+                            ${member.dateJoined ? `<span class="team-joined"><i class="pd-i pd-i-calendar-check" aria-hidden="true"></i> Joined ${escTeam(PDTeam.formatDate(member.dateJoined))}</span>` : ''}
+                        </div>
+                    </div>
+                </article>`;
+        }
+
         window.renderTeam = renderTeam;
         function renderTeam() {
             const container = document.getElementById('teamGrid');
-            let filtered = activeMembers();
+            const living = activeMembers();
+            let filtered = living;
             if (currentFilter !== 'all') {
                 filtered = filtered.filter(member => member.category === currentFilter);
             }
 
             // Counts on the category tabs.
-            const all = activeMembers();
-            const counts = { all: all.length };
-            all.forEach(m => { counts[m.category] = (counts[m.category] || 0) + 1; });
+            const counts = { all: living.length };
+            living.forEach(m => { counts[m.category] = (counts[m.category] || 0) + 1; });
             document.querySelectorAll('#categoryTabs .category-btn').forEach(btn => {
                 const m = /filterTeam\('([a-z]+)'\)/.exec(btn.getAttribute('onclick') || '');
                 if (!m) return;
                 const cat = m[1];
-                const label = btn.dataset.baseLabel || (btn.dataset.baseLabel = btn.textContent.replace(/\s*\(\d+\)\s*$/, '').trim());
-                btn.textContent = label + (counts[cat] !== undefined ? ` (${counts[cat]})` : ' (0)');
+                // Keep the icon markup — assigning textContent used to strip it
+                // on the first render, leaving bare, misaligned labels.
+                const base = btn.dataset.baseHtml || (btn.dataset.baseHtml = btn.innerHTML.replace(/\s*\(\d+\)\s*$/, ''));
+                btn.innerHTML = base + (counts[cat] !== undefined ? ` (${counts[cat]})` : ' (0)');
             });
 
-            renderFounder(all);
+            renderFounder(living);
+            renderMemorial();
             renderTeamAdmin();
 
             if (!filtered.length) {
                 container.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-sub,#64748b);"><i class="pd-i pd-i-users" style="font-size:1.6rem;opacity:.4;display:block;margin-bottom:10px;"></i>No team members in this category yet.</div>';
                 return;
             }
-            container.innerHTML = filtered.map((member, index) => {
-                const safeName = String(member.name || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/\r?\n/g, ' ');
-                const bio = String(member.description || '').trim();
-                const location = String(member.country || '').trim();
-                return `
-                <article class="team-card" style="animation-delay: ${index * 0.05}s">
-                    <div class="team-image">
-                        <img src="${escTeam(member.image || '/assets/logo.png')}" alt="${escTeam(member.name)}" loading="lazy" decoding="async" onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='28px';this.style.background='#f8fafc';">
-                    </div>
-                    <div class="team-info">
-                        <h3 class="team-name">${escTeam(member.name || 'Team member')}</h3>
-                        <p class="team-title">${escTeam(member.title || member.role || 'Prayer Dome Team')}</p>
-                        ${location ? `<div class="team-location"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i><span>${escTeam(location)}</span></div>` : ''}
-                        ${bio ? `<p class="team-bio">${escTeam(bio)}</p>` : ''}
-                        <div class="team-badges">
-                            <span class="team-badge"><i class="pd-i ${member.category === 'founder' ? 'pd-i-crown' : member.category === 'worship' ? 'pd-i-music' : member.category === 'ministries' ? 'pd-i-church' : 'pd-i-flag'}"></i> ${escTeam(getCategoryName(member.category))}</span>
-                            ${member.role && member.title ? `<span class="team-badge"><i class="pd-i pd-i-tag"></i> ${escTeam(member.role)}</span>` : ''}
-                        </div>
-                        <div class="team-social">
-                            <a href="#" onclick="shareTeamMember('${safeName}');return false;" aria-label="Share ${escTeam(member.name)}"><i class="pd-i pd-i-share-2"></i></a>
-                            <a href="#" onclick="prayForMember('${safeName}');return false;" aria-label="Pray for ${escTeam(member.name)}"><i class="pd-i pd-i-hands-praying"></i></a>
-                            ${member.email ? `<a href="mailto:${escTeam(member.email)}" title="Email ${escTeam(member.name)}" aria-label="Email ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>` : `<a href="#" onclick="contactMember('${safeName}');return false;" aria-label="Contact ${escTeam(member.name)}"><i class="pd-i pd-i-mail"></i></a>`}
-                        </div>
-                    </div>
-                </article>`;
-            }).join('');
+            container.innerHTML = filtered.map((member, index) => memberCard(member, { index: index })).join('');
+        }
+
+        function renderMemorial() {
+            const section = document.getElementById('teamMemorialSection');
+            const grid = document.getElementById('teamMemorialGrid');
+            if (!section || !grid) return;
+            const members = PDTeam.memorialMembers(allMembers());
+            section.hidden = members.length === 0;
+            grid.innerHTML = members.map((member, index) => memberCard(member, { index: index, memorial: true })).join('');
         }
 
         function getCategoryName(category) {
-            const names = {
-                founder: 'Founder',
-                eswatini: 'Eswatini',
-                zambia: 'Zambia',
-                worship: 'Worship',
-                ministries: 'Ministries'
-            };
-            return names[category] || category;
+            return PDTeam.CATEGORY_LABELS[category] || category;
         }
 
         window.filterTeam = function(category) {
             currentFilter = category;
-            document.querySelectorAll('.category-btn').forEach(btn => btn.classList.remove('active'));
-            // Match the button by its onclick handler (the on-screen label can change).
-            document.querySelectorAll('.category-btn').forEach(btn => {
+            // Only the public filter tabs are toggled — the admin editor also
+            // uses .category-btn for its buttons.
+            document.querySelectorAll('#categoryTabs .category-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('#categoryTabs .category-btn').forEach(btn => {
                 if (btn.getAttribute('onclick') === "filterTeam('" + category + "')") {
                     btn.classList.add('active');
                 }
             });
             renderTeam();
-            confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+            try { confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } }); } catch (e) {}
         };
 
         window.shareTeamMember = function(name) {
@@ -1040,8 +1408,13 @@
         };
 
         function renderFounder(all) {
-            const founder = all.find(m => m.category === 'founder');
-            if (!founder) return;
+            const founder = all.find(m => m.category === 'founder' && m.status !== 'deceased');
+            const card = document.getElementById('founderCard');
+            if (!founder) {
+                if (card) card.style.display = 'none';
+                return;
+            }
+            if (card) card.style.display = '';
             const img = document.getElementById('founderImage');
             const name = document.getElementById('founderName');
             const title = document.getElementById('founderTitle');
@@ -1057,26 +1430,40 @@
             const panel = document.getElementById('teamAdminPanel');
             if (!panel || !TEAM_STATE.isAdmin) return;
             panel.style.display = 'block';
-            const members = TEAM_STATE.members || [];
+            const members = PDTeam.sort(TEAM_STATE.members || []);
             const list = document.getElementById('teamAdminList');
+            if (!list) return;
             if (!members.length) {
-                list.innerHTML = '<div style="font-size:.8rem;color:var(--text-sub,#64748b);">The live roster is empty — the built-in roster below is shown to members. Add your first member to take control.</div>';
+                list.innerHTML = '<div style="font-size:.8rem;color:var(--text-sub,#64748b);">The live roster is empty — the built-in roster is shown to visitors. Add your first member to take control.</div>';
                 return;
             }
-            const sorted = members.slice().sort((a, b) => (a.archived ? 1 : 0) - (b.archived ? 1 : 0) || (a.order || 999) - (b.order || 999));
-            list.innerHTML = sorted.map(m => `
-                <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border-color,#e5eaf2);border-radius:14px;padding:10px 14px;${m.archived ? 'opacity:.55;' : ''}">
-                    <img src="${escTeam(m.image || '/assets/logo.png')}" alt="" style="width:44px;height:44px;border-radius:12px;object-fit:cover;background:#eef2f8;" onerror="this.src='/assets/logo.png'">
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:800;font-size:.85rem;">${escTeam(m.name)} ${m.archived ? '<span style="font-size:.62rem;background:#fef3c7;color:#92400e;border-radius:50px;padding:2px 8px;font-weight:800;">ARCHIVED</span>' : ''} ${m.deceased ? '<span style="font-size:.62rem;background:#07244d;color:#f6df8a;border-radius:50px;padding:2px 8px;font-weight:800;">' + escTeam(String(m.lateLabel || 'LATE').toUpperCase()) + '</span>' : ''}</div>
-                        <div style="font-size:.72rem;color:var(--text-sub,#64748b);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escTeam(m.title || '')}${m.email ? ' · ' + escTeam(m.email) : ''}${m.phone ? ' · ' + escTeam(m.phone) : ''}</div>
+            list.innerHTML = members.map(m => {
+                const status = PDTeam.statusMeta(m.status);
+                const badgeTone = m.status === 'deceased'
+                    ? 'background:#07244d;color:#f6df8a;'
+                    : m.status === 'former' || m.status === 'inactive'
+                        ? 'background:#fef3c7;color:#92400e;'
+                        : 'background:rgba(21,128,61,.12);color:#15803d;';
+                return `
+                <div style="display:flex;align-items:center;gap:12px;border:1px solid var(--border-color,#e5eaf2);border-radius:14px;padding:10px 12px;${m.status === 'former' || m.status === 'inactive' ? 'opacity:.78;' : ''} flex-wrap:wrap;">
+                    <img src="${escTeam(m.image || '/assets/avatar-default.svg')}" alt="" style="width:46px;height:46px;border-radius:12px;object-fit:cover;background:#eef2f8;flex-shrink:0;" onerror="this.src='/assets/avatar-default.svg'">
+                    <div style="flex:1 1 150px;min-width:0;">
+                        <div style="font-weight:800;font-size:.85rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.35;">
+                            <span>${escTeam(m.name)}</span>
+                            <span style="font-size:.6rem;${badgeTone}border-radius:50px;padding:2px 8px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;">${escTeam(m.status === 'deceased' ? (m.lateLabel || 'In memory') : status.label)}</span>
+                            ${m.published ? '' : '<span style="font-size:.6rem;background:#e2e8f0;color:#475569;border-radius:50px;padding:2px 8px;font-weight:800;text-transform:uppercase;">Unpublished</span>'}
+                        </div>
+                        <div style="font-size:.72rem;color:var(--text-sub,#64748b);line-height:1.45;overflow-wrap:break-word;">${escTeam(m.displayTitle)}${m.department ? ' · ' + escTeam(m.department) : ''}</div>
+                        <div style="font-size:.66rem;color:var(--text-sub,#64748b);margin-top:2px;">Priority #${escTeam(m.priority)}${m.dateJoined ? ' · joined ' + escTeam(PDTeam.formatDate(m.dateJoined)) : ''}</div>
                     </div>
-                    ${m.archived
-                        ? `<button class="category-btn" onclick="restoreTeamMember('${escTeam(m.id)}')" title="Restore"><i class="pd-i pd-i-rotate-ccw"></i></button>`
-                        : `<button class="category-btn" onclick="openTeamEditor('${escTeam(m.id)}')" title="Edit"><i class="pd-i pd-i-pen"></i></button>
-                           <button class="category-btn" onclick="archiveTeamMember('${escTeam(m.id)}')" title="Archive" style="color:#b45309;"><i class="pd-i pd-i-archive"></i></button>`}
-                </div>
-            `).join('');
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="category-btn" onclick="openTeamEditor('${escTeam(m.id)}')" title="Edit" aria-label="Edit ${escTeam(m.name)}" style="padding:8px 10px;"><i class="pd-i pd-i-pen"></i></button>
+                        ${m.status === 'former'
+                            ? `<button class="category-btn" onclick="restoreTeamMember('${escTeam(m.id)}')" title="Restore" aria-label="Restore ${escTeam(m.name)}" style="padding:8px 10px;"><i class="pd-i pd-i-rotate-ccw"></i> Restore</button>`
+                            : `<button class="category-btn" onclick="archiveTeamMember('${escTeam(m.id)}')" title="Archive" aria-label="Archive ${escTeam(m.name)}" style="padding:8px 10px;color:#b45309;"><i class="pd-i pd-i-archive"></i></button>`}
+                    </div>
+                </div>`;
+            }).join('');
         }
 
         window.TEAM_PAGE = TEAM_STATE;
@@ -1086,7 +1473,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteField, writeBatch, collection, getDocs, query, where, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
@@ -1104,18 +1491,40 @@
         let isAdmin = false;
         let editorId = null;      // null = adding a new member
         let photoUrl = '';        // chosen/uploaded photo for the editor
-        let pendingFile = null;   // file chosen, upload starts on save
 
-        /* ---------- load the roster ---------- */
+        /* ---------- load the roster ----------
+         * Visitors read only published profiles from the public-safe
+         * collection. Administrators additionally read the private contact
+         * documents, which never leave an admin session.
+         */
         async function loadTeam() {
             try {
-                // No orderBy: a document saved by an older console has no
-                // `order` field, and Firestore would silently leave it out of
-                // the roster. Sort in memory instead.
-                const snap = await getDocs(collection(db, 'teamMembers'));
+                if (isAdmin) {
+                    const [snap, contactSnap] = await Promise.all([
+                        getDocs(collection(db, 'teamMembers')),
+                        getDocs(collection(db, 'teamMemberContacts')).catch(() => null)
+                    ]);
+                    const raw = [];
+                    snap.forEach(d => raw.push(Object.assign({ id: d.id }, d.data())));
+                    const contacts = {};
+                    if (contactSnap) contactSnap.forEach(d => { contacts[d.id] = d.data(); });
+                    state.members = raw.map(m => PDTeam.normalize(m, contacts[m.id] || {}, { id: m.id }));
+                    window.renderTeam && window.renderTeam();
+                    return;
+                }
+
+                // Public read: only published profiles are readable under the
+                // current rules. If the rules have not been deployed yet, fall
+                // back to the legacy unfiltered read and keep the same public
+                // rendering (private details are never displayed).
+                let snap;
+                try {
+                    snap = await getDocs(query(collection(db, 'teamMembers'), where('published', '==', true)));
+                } catch (denied) {
+                    snap = await getDocs(collection(db, 'teamMembers'));
+                }
                 const members = [];
-                snap.forEach(d => members.push(Object.assign({ id: d.id }, d.data())));
-                members.sort((a, b) => (a.order || 999) - (b.order || 999));
+                snap.forEach(d => members.push(PDTeam.normalize(Object.assign({ id: d.id }, d.data()), {}, { id: d.id })));
                 state.members = members;
                 window.renderTeam && window.renderTeam();
             } catch (e) {
@@ -1139,32 +1548,41 @@
         function setAdmin(v) {
             isAdmin = v;
             state.isAdmin = v;
-            window.renderTeam && window.renderTeam();
+            loadTeam();
         }
 
         /* ---------- editor ---------- */
+        function field(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+        function checked(id) { const el = document.getElementById(id); return !!(el && el.checked); }
+        function setField(id, value) { const el = document.getElementById(id); if (el) el.value = value == null ? '' : value; }
+        function setChecked(id, value) { const el = document.getElementById(id); if (el) el.checked = !!value; }
+
         function openEditor(member) {
             editorId = member ? member.id : null;
             photoUrl = member ? (member.image || '') : '';
-            pendingFile = null;
             document.getElementById('teamEditorTitle').textContent = member ? 'Edit Team Member' : 'Add Team Member';
-            document.getElementById('tmName').value = member?.name || '';
-            document.getElementById('tmTitle').value = member?.title || '';
-            document.getElementById('tmRole').value = member?.role || '';
-            document.getElementById('tmCategory').value = member?.category || 'eswatini';
-            document.getElementById('tmCountry').value = member?.country || '';
-            document.getElementById('tmEmail').value = member?.email || '';
-            document.getElementById('tmPhone').value = member?.phone || '';
-            document.getElementById('tmDescription').value = member?.description || '';
-            document.getElementById('tmScripture').value = member?.scripture || '';
-            document.getElementById('tmStatus').value = member
-                ? (member.archived || member.deceased ? 'archived' : 'serving')
-                : 'serving';
-            document.getElementById('tmLateLabel').value = member?.lateLabel || 'Late';
-            document.getElementById('tmPassedAt').value = member?.passedAt || '';
-            document.getElementById('tmMemorialNote').value = member?.memorialNote || '';
+            setField('tmName', member?.name);
+            setField('tmTitle', member?.title);
+            setField('tmRole', member?.role);
+            setField('tmDepartment', member?.department);
+            setField('tmCategory', member?.category || 'eswatini');
+            setField('tmCountry', member?.country);
+            setField('tmDateJoined', member?.dateJoined);
+            setField('tmEmail', member?.privateEmail);
+            setField('tmPhone', member?.privatePhone);
+            setChecked('tmEmailPublic', member?.emailPublic);
+            setField('tmDescription', member?.description);
+            setField('tmResponsibilities', member?.responsibilities);
+            setField('tmScripture', member?.scripture);
+            setField('tmStatus', member?.status || 'active');
+            setField('tmPriority', member?.priority);
+            setChecked('tmPublished', member ? member.published !== false : true);
+            setChecked('tmShowInMemorial', member ? member.showInMemorial !== false : true);
+            setField('tmLateLabel', member?.lateLabel || 'Late');
+            setField('tmPassedAt', member?.passedAt);
+            setField('tmMemorialNote', member?.memorialMessage);
             toggleTeamLateFields();
-            document.getElementById('tmPhotoPreview').src = photoUrl || '/assets/logo.png';
+            document.getElementById('tmPhotoPreview').src = photoUrl || '/assets/avatar-default.svg';
             document.getElementById('tmPhotoState').textContent = 'Photos open your device picker and upload automatically.';
             document.getElementById('teamEditorError').style.display = 'none';
             document.getElementById('teamEditorOverlay').style.display = 'flex';
@@ -1173,7 +1591,7 @@
             var status = document.getElementById('tmStatus');
             var fields = document.getElementById('tmLateFields');
             if (!status || !fields) return;
-            fields.style.display = status.value === 'late' ? 'grid' : 'none';
+            fields.style.display = status.value === 'deceased' ? 'grid' : 'none';
         };
 
         window.openTeamEditor = function (id) {
@@ -1182,10 +1600,11 @@
         };
         window.closeTeamEditor = function () {
             document.getElementById('teamEditorOverlay').style.display = 'none';
-            editorId = null; pendingFile = null;
+            editorId = null;
         };
 
         window.pickTeamPhoto = async function () {
+            if (!window.PDUpload) return teamEditorError('Photo upload is unavailable right now.');
             const res = await window.PDUpload.pick({
                 title: 'Team member photo',
                 accept: 'image/*',
@@ -1195,59 +1614,92 @@
                 onError: (m) => teamEditorError(m)
             });
             if (!res.ok) return;
-            const f = res.files[0];
-            photoUrl = f.url;
-            pendingFile = null;
+            photoUrl = res.files[0].url;
             document.getElementById('tmPhotoPreview').src = photoUrl;
-            document.getElementById('tmPhotoState').innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Photo attached';
+            document.getElementById('tmPhotoState').innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Photo attached — it will be saved with the member.';
+        };
+
+        window.clearTeamPhoto = function () {
+            photoUrl = '';
+            document.getElementById('tmPhotoPreview').src = '/assets/avatar-default.svg';
+            document.getElementById('tmPhotoState').textContent = 'Photo removed. Save the member to apply the change.';
         };
 
         function teamEditorError(msg) {
             const box = document.getElementById('teamEditorError');
             box.textContent = msg;
             box.style.display = 'block';
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
 
         window.saveTeamMember = async function () {
             if (!isAdmin) return;
-            const name = document.getElementById('tmName').value.trim();
-            if (!name) return teamEditorError('Please enter the member\'s full name.');
+            const existingMembers = state.members || [];
+            const current = existingMembers.find(m => m.id === editorId);
+            const email = field('tmEmail');
+            const emailPublic = checked('tmEmailPublic');
+            if (emailPublic && !email) return teamEditorError('Add an email address before showing it on the public profile.');
+            const maxPriority = existingMembers.reduce((max, m) => Math.max(max, Number(m.priority) || 0), 0);
+            const record = {
+                id: editorId || '',
+                name: field('tmName'),
+                title: field('tmTitle'),
+                role: field('tmRole'),
+                department: field('tmDepartment'),
+                category: field('tmCategory'),
+                country: field('tmCountry'),
+                dateJoined: field('tmDateJoined'),
+                privateEmail: email,
+                privatePhone: field('tmPhone'),
+                emailPublic: emailPublic,
+                publicEmail: emailPublic ? email : '',
+                description: field('tmDescription'),
+                responsibilities: field('tmResponsibilities'),
+                scripture: field('tmScripture'),
+                status: field('tmStatus') || 'active',
+                priority: Number(field('tmPriority')) || (current ? current.priority : maxPriority + 1),
+                published: checked('tmPublished'),
+                showInMemorial: checked('tmShowInMemorial'),
+                lateLabel: field('tmLateLabel') || 'Late',
+                passedAt: field('tmPassedAt'),
+                memorialMessage: field('tmMemorialNote'),
+                image: photoUrl || ''
+            };
+            const check = PDTeam.validate(record);
+            if (!check.ok) return teamEditorError(check.errors[0]);
+            const duplicate = existingMembers.find(m => m.id !== editorId && String(m.name).toLowerCase() === record.name.toLowerCase());
+            if (duplicate) return teamEditorError('A team member named “' + record.name + '” already exists. Edit that record instead of adding a duplicate.');
+
             const btn = document.getElementById('teamEditorSave');
             btn.disabled = true;
             btn.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> Saving…';
             try {
-                const status = document.getElementById('tmStatus').value;
-                const data = {
-                    name,
-                    title: document.getElementById('tmTitle').value.trim(),
-                    role: document.getElementById('tmRole').value.trim(),
-                    category: document.getElementById('tmCategory').value,
-                    country: document.getElementById('tmCountry').value.trim(),
-                    email: document.getElementById('tmEmail').value.trim(),
-                    phone: document.getElementById('tmPhone').value.trim(),
-                    description: document.getElementById('tmDescription').value.trim(),
-                    scripture: document.getElementById('tmScripture').value.trim(),
-                    image: photoUrl || '',
-                    // Passed-away records are never shown on the public page.
-                    deceased: status === 'late',
-                    lateLabel: status === 'late' ? (document.getElementById('tmLateLabel').value || 'Late') : '',
-                    passedAt: status === 'late' ? (document.getElementById('tmPassedAt').value || '') : '',
-                    memorialNote: status === 'late' ? (document.getElementById('tmMemorialNote').value.trim() || '') : '',
-                    archived: status === 'archived',
-                    updatedAt: serverTimestamp()
-                };
-                if (editorId) {
-                    await updateDoc(doc(db, 'teamMembers', editorId), data);
+                const publicDoc = PDTeam.toPublicDoc(record);
+                // A document written by the old console may still carry the
+                // private email/phone at the top level. Remove them in the same
+                // write that publishes the safe projection.
+                publicDoc.email = deleteField();
+                publicDoc.phone = deleteField();
+                publicDoc.updatedAt = serverTimestamp();
+                const contactDoc = PDTeam.toContactDoc(record);
+                const batch = writeBatch(db);
+                let memberId = editorId;
+                if (memberId) {
+                    batch.set(doc(db, 'teamMembers', memberId), publicDoc, { merge: true });
                 } else {
-                    const existing = state.members || [];
-                    data.order = existing.length ? Math.max(...existing.map(m => m.order || 0)) + 1 : 1;
-                    data.createdAt = serverTimestamp();
-                    await setDoc(doc(collection(db, 'teamMembers')), data);
+                    memberId = doc(collection(db, 'teamMembers')).id;
+                    publicDoc.createdAt = serverTimestamp();
+                    batch.set(doc(db, 'teamMembers', memberId), publicDoc);
                 }
+                batch.set(doc(db, 'teamMemberContacts', memberId), Object.assign(contactDoc, {
+                    memberId: memberId,
+                    updatedAt: serverTimestamp()
+                }));
+                await batch.commit();
                 const wasEdit = !!editorId;
                 window.closeTeamEditor();
                 await loadTeam();
-                window.showToast && window.showToast(wasEdit ? 'Team member updated' : 'Team member added', 'success');
+                window.showToast && window.showToast(wasEdit ? 'Team member updated' : 'Team member added — live on the team page', 'success');
             } catch (e) {
                 console.error(e);
                 teamEditorError(e.code === 'permission-denied'
@@ -1263,9 +1715,13 @@
         window.archiveTeamMember = async function (id) {
             const m = state.members && state.members.find(x => x.id === id);
             if (!m) return;
-            if (!confirm('Archive ' + m.name + '?\n\nThey will no longer appear on the public team page. You can restore them anytime — nothing is permanently deleted.')) return;
+            if (!confirm('Archive ' + m.name + '?\n\nTheir profile is hidden from the public team page but nothing is deleted. You can restore them anytime.')) return;
             try {
-                await updateDoc(doc(db, 'teamMembers', id), { archived: true, archivedAt: serverTimestamp(), archivedBy: auth.currentUser?.uid || null });
+                await updateDoc(doc(db, 'teamMembers', id), {
+                    status: 'former',
+                    published: false,
+                    updatedAt: serverTimestamp()
+                });
                 await loadTeam();
                 window.showToast && window.showToast(m.name + ' archived — restore anytime from this panel.', 'info');
             } catch (e) {
@@ -1275,7 +1731,11 @@
 
         window.restoreTeamMember = async function (id) {
             try {
-                await updateDoc(doc(db, 'teamMembers', id), { archived: false, restoredAt: serverTimestamp() });
+                await updateDoc(doc(db, 'teamMembers', id), {
+                    status: 'active',
+                    published: true,
+                    updatedAt: serverTimestamp()
+                });
                 await loadTeam();
                 window.showToast && window.showToast('Team member restored', 'success');
             } catch (e) {
