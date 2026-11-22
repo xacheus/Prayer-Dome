@@ -8,6 +8,7 @@ const brevo = require('./brevo');
 const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
 const billingModule = require('./billing');
+const notificationModule = require('./notifications');
 const { defineSecret } = require('firebase-functions/params');
 const { signUpload } = require('./cloudinary');
 const cloudinaryApiSecret = defineSecret('CLOUDINARY_API_SECRET');
@@ -740,3 +741,19 @@ exports.facebookCampaignScheduler = facebookCampaign.facebookCampaignScheduler;
 // the privileged money path in one auditable place.
 exports.billing = billingModule.billing;
 exports.expireSupportSubscriptions = billingModule.expireJob;
+
+// Transactional email + per-member in-app notifications. Every trigger reacts
+// to a status that has already been written, and records a deterministic
+// outbox row before calling Brevo so a retry can never duplicate a message.
+exports.emailAdmin = notificationModule.emailAdmin;
+exports.membershipNotifications = notificationModule.membershipNotifications;
+exports.paymentNotifications = notificationModule.paymentNotifications;
+exports.subscriptionNotifications = notificationModule.subscriptionNotifications;
+exports.churchIdNotifications = notificationModule.churchIdNotifications;
+exports.prayerNotifications = notificationModule.prayerNotifications;
+exports.testimonyNotifications = notificationModule.testimonyNotifications;
+exports.certificateNotifications = notificationModule.certificateNotifications;
+exports.examNotifications = notificationModule.examNotifications;
+exports.claimNotifications = notificationModule.claimNotifications;
+exports.expiringSubscriptionJob = notificationModule.expiringSubscriptionJob;
+exports.retryEmailJob = notificationModule.retryEmailJob;

@@ -1256,6 +1256,7 @@
         if (fb && fb.auth && fb.auth.currentUser) {
           notifications.loadPreferences();
           notifications.loadReminder();
+          notifications.loadPersonal();
         }
       }, 3500);
       // Messages from the worker: a dismissed system notification counts as
@@ -1281,6 +1282,7 @@
         // saved notification settings become readable.
         notifications.loadPreferences();
         notifications.loadReminder();
+        notifications.loadPersonal();
         notifications.flushPendingToken();
       });
       setTimeout(function () { notifications.flushPendingToken(); }, 4000);
@@ -1315,6 +1317,86 @@
           }
         } catch (e) { /* the in-app centre still works from local state */ }
       }
+      // Personal account notifications (membership, payments, church ID,
+      // certificates, testimonies). These are written server-side with the
+      // member's uid, so the query is owner-only and rules return nothing for
+      // anyone else. They share the bell with broadcasts and are de-duplicated
+      // by their deterministic event id, which is also the email outbox key.
+      notifications.loadPersonal();
+    },
+
+    /**
+     * Read this member's own notification rows. Runs on sign-in, on a role
+     * change and after a personal snapshot arrives; safe to call repeatedly
+     * because merge() de-duplicates by id and read state survives reloads.
+     */
+    loadPersonal: function () {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      if (!current || !fb || !fb.db || !fb.collection) return Promise.resolve(false);
+      if (!fb.query || !fb.where || !fb.orderBy || !fb.limit) return Promise.resolve(false);
+      var col = fb.collection(fb.db, 'userNotifications');
+      var q;
+      try {
+        q = fb.query(col, fb.where('userId', '==', current.uid), fb.orderBy('createdAt', 'desc'), fb.limit(25));
+      } catch (e) { return Promise.resolve(false); }
+      var apply = function (snap) {
+        var personal = [];
+        snap.forEach(function (d) {
+          var x = d.data() || {};
+          personal.push({
+            id: d.id,
+            type: x.type || x.category || 'general',
+            title: x.title || 'Account update',
+            message: x.message || '',
+            link: x.link || null,
+            reference: x.reference || null,
+            time: x.createdAt ? (x.createdAt.toDate ? x.createdAt.toDate().toISOString() : new Date(x.createdAt).toISOString()) : new Date().toISOString(),
+            read: x.read === true,
+            personal: true
+          });
+        });
+        personal.sort(function (a, b) { return new Date(b.time) - new Date(a.time); });
+        if (personal.length) notifications.merge(personal.slice(0, 25));
+      };
+      // If the composite index has not finished building, fall back to an
+      // unordered owner query and sort on the page. The bell still works; the
+      // index only makes the 25 newest deterministic on very busy accounts.
+      var fallback = function () {
+        if (!fb || !fb.getDocs || !fb.where || !fb.limit) return;
+        try {
+          fb.getDocs(fb.query(col, fb.where('userId', '==', current.uid), fb.limit(50)))
+            .then(apply).catch(function () {});
+        } catch (e) { /* the local bell keeps working */ }
+      };
+      try {
+        if (fb.onSnapshot) {
+          if (notifications._personalUnsub && notifications._personalUnsub !== true) {
+            try { notifications._personalUnsub(); } catch (e) {}
+          }
+          notifications._personalUnsub = fb.onSnapshot(q, apply, fallback);
+        } else if (fb.getDocs) {
+          fb.getDocs(q).then(apply).catch(fallback);
+        }
+      } catch (e) { fallback(); }
+      return Promise.resolve(true);
+    },
+
+    /** Persist "read" on a personal notification so another device agrees. */
+    markRemoteRead: function (id, all) {
+      var current = fb && fb.auth && fb.auth.currentUser;
+      if (!current || !fb || !fb.db || !fb.doc) return;
+      var targets = notifications.items.filter(function (n) {
+        return n && n.personal && (all || n.id === id) && !n.remoteRead;
+      }).slice(0, 25);
+      if (!targets.length) return;
+      var stamp = fb.serverTimestamp ? fb.serverTimestamp() : new Date().toISOString();
+      targets.forEach(function (n) {
+        n.remoteRead = true;
+        try {
+          if (fb.updateDoc) fb.updateDoc(fb.doc(fb.db, 'userNotifications', n.id), { read: true, readAt: stamp }).catch(function () {});
+          else if (fb.setDoc) fb.setDoc(fb.doc(fb.db, 'userNotifications', n.id), { read: true, readAt: stamp }, { merge: true }).catch(function () {});
+        } catch (e) {}
+      });
     },
 
     /* Merge remote items without duplicating what is already local and without
@@ -1343,7 +1425,9 @@
       // Surface genuinely fresh remote items on the device (last 10 minutes).
       var cutoff = Date.now() - 10 * 60 * 1000;
       notifications.items.forEach(function (n) {
-        if (!n.read && new Date(n.time).getTime() > cutoff) notifications.notifyDevice(n);
+        // Account updates still reach the member by email and in the bell; they
+        // do not re-buzz the device on every snapshot refresh.
+        if (!n.read && !n.personal && new Date(n.time).getTime() > cutoff) notifications.notifyDevice(n);
       });
     },
 
@@ -1773,6 +1857,7 @@
           if (reg.active) reg.active.postMessage({ type: 'pd-clear-notification', tag: id });
         }).catch(function () {});
       }
+      notifications.markRemoteRead(id, false);
       notifications.render();
       notifications.syncBadge();
     },
@@ -1790,6 +1875,7 @@
           (list || []).forEach(function (note) { note.close(); });
         }).catch(function () {});
       }
+      notifications.markRemoteRead(null, true);
       notifications.render();
       notifications.syncBadge();
     },

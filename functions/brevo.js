@@ -193,6 +193,57 @@ async function sendVerificationEmail(options) {
 }
 
 /*
+ * Generic transactional delivery. The notification service owns the copy and
+ * the event id; this function only talks to Brevo. The sender can be supplied
+ * from the administrator's saved settings, but it must be an address verified
+ * in the Brevo account or Brevo will reject the request (and the outbox records
+ * the failure for a retry after the sender is corrected).
+ */
+async function sendTransactionalEmail(options) {
+  const cfg = config(options && options.env);
+  const email = cleanEmail(options && options.email);
+  const to = cleanEmail(options && options.to) || email;
+  if (!to) {
+    const error = new Error('A valid recipient address is required.');
+    error.code = 'invalid_email';
+    throw error;
+  }
+  const subject = String((options && options.subject) || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 180);
+  if (!subject) {
+    const error = new Error('An email subject is required.');
+    error.code = 'invalid_subject';
+    throw error;
+  }
+  const html = String((options && options.html) || '');
+  const plain = String((options && options.text) || '');
+  if (!html && !plain) {
+    const error = new Error('Email content is required.');
+    error.code = 'invalid_content';
+    throw error;
+  }
+  if (!cfg.apiKey) {
+    const error = new Error('Brevo is not configured.');
+    error.code = 'not_configured';
+    throw error;
+  }
+  const senderEmail = cleanEmail(options && options.senderEmail) || cfg.senderEmail;
+  const senderName = cleanName(options && options.senderName) || cfg.senderName;
+  const replyTo = cleanEmail(options && options.replyTo);
+  const payload = {
+    sender: { name: senderName, email: senderEmail },
+    to: [{ email: to, name: cleanName(options && options.toName) || undefined }],
+    subject,
+    htmlContent: html || undefined,
+    textContent: plain || undefined,
+    tags: Array.isArray(options && options.tags)
+      ? options.tags.map(function (tag) { return cleanName(tag).toLowerCase(); }).filter(Boolean).slice(0, 10)
+      : ['prayer-dome']
+  };
+  if (replyTo) payload.replyTo = { email: replyTo, name: senderName };
+  return callBrevo('/smtp/email', payload, cfg);
+}
+
+/*
  * Add a consenting subscriber. Double opt-in is preferred whenever the list and
  * DOI template are configured, because it produces an auditable confirmation
  * instead of silently mailing somebody who mistyped an address.
@@ -344,6 +395,7 @@ async function newsletterHandler(req, res) {
 module.exports = {
   isConfigured,
   cleanEmail,
+  sendTransactionalEmail,
   subscribe,
   sendVerificationEmail,
   newsletterHandler,

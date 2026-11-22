@@ -796,6 +796,14 @@
             </div>
         </div>
 
+        <!-- The administrator's actual decision is shown here, not hidden in an
+             email. The same reason is in the notification the member received. -->
+        <div id="membershipDecisionNotice" role="status" hidden style="background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.45); border-radius: 16px; padding: 16px 18px; margin-bottom: 20px;">
+            <strong style="display:block; color:#ef4444; margin-bottom:6px;"><i class="pd-i pd-i-circle-x"></i> Membership application not approved</strong>
+            <p id="membershipDecisionReason" style="margin:0 0 8px; font-size:.9rem; color:var(--text-main);"></p>
+            <p id="membershipDecisionNext" style="margin:0; font-size:.8rem; color:var(--text-sub);"></p>
+        </div>
+
         <div style="background: var(--bg-primary); border: 1px dashed var(--border-color); border-radius: 18px; padding: 18px; margin-bottom: 25px;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                 <div>
@@ -1819,11 +1827,30 @@
         const idHeader = document.getElementById('editMemberIdHeader');
         if (idHeader) idHeader.innerText = data.membershipId ? `ID: ${data.membershipId}` : 'ID: Pending';
 
-        const statusText = data.status === 'approved' ? '<i class="pd-i pd-i-circle-check"></i> ACTIVE MEMBER' : '<i class="pd-i pd-i-clock"></i> PENDING APPROVAL';
-        const statusClass = data.status === 'approved' ? 'status-badge status-approved' : 'status-badge status-pending';
-        
+        const rejected = data.status === 'rejected';
+        const statusText = data.status === 'approved'
+            ? '<i class="pd-i pd-i-circle-check"></i> ACTIVE MEMBER'
+            : rejected
+                ? '<i class="pd-i pd-i-circle-x"></i> APPLICATION REJECTED'
+                : data.status === 'suspended'
+                    ? '<i class="pd-i pd-i-circle-x"></i> MEMBERSHIP SUSPENDED'
+                    : '<i class="pd-i pd-i-clock"></i> PENDING APPROVAL';
+        const statusClass = data.status === 'approved' ? 'status-badge status-approved' : (data.status === 'pending' ? 'status-badge status-pending' : 'status-badge status-rejected');
+
         const sh = document.getElementById('editStatusBadgeHeader');
         if (sh) { sh.innerHTML = statusText; sh.className = statusClass; }
+
+        const notice = document.getElementById('membershipDecisionNotice');
+        if (notice) {
+            const reason = data.rejectionReason || data.rejectReason || '';
+            notice.hidden = !rejected;
+            const reasonEl = document.getElementById('membershipDecisionReason');
+            const nextEl = document.getElementById('membershipDecisionNext');
+            if (reasonEl) reasonEl.textContent = reason ? 'Reason: ' + reason : 'Please contact the church office for the reason for this decision.';
+            if (nextEl) nextEl.textContent = data.rejectionInstructions
+                ? 'Next step: ' + data.rejectionInstructions
+                : 'You may contact the church office if you believe this decision should be reviewed.';
+        }
 
         const bh = document.getElementById('editBranchHeader');
         if (bh) bh.innerHTML = `<i class="pd-i pd-i-church"></i> ${escapeHtmlPortal(data.branch || 'Global')}`;
@@ -2405,12 +2432,15 @@
                 statusBadge.className = 'status-badge status-pending';
             }
         } else {
+            const rejected = data.status === 'rejected';
             const idNumber = document.getElementById('idNumber');
-            if (idNumber) idNumber.innerText = 'No Membership';
+            if (idNumber) idNumber.innerText = rejected ? 'Application rejected' : 'No Membership';
             const statusBadge = document.getElementById('statusBadge');
             if (statusBadge) {
-                statusBadge.innerHTML = '<i class="pd-i pd-i-clock"></i> NO MEMBERSHIP';
-                statusBadge.className = 'status-badge status-pending';
+                statusBadge.innerHTML = rejected
+                    ? '<i class="pd-i pd-i-circle-x"></i> APPLICATION REJECTED'
+                    : '<i class="pd-i pd-i-clock"></i> NO MEMBERSHIP';
+                statusBadge.className = rejected ? 'status-badge status-rejected' : 'status-badge status-pending';
             }
         }
         
