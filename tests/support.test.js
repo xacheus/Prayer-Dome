@@ -129,7 +129,10 @@ test('the callable generates a real Firebase link and never trusts a caller link
   assert.ok(!/data\.link/.test(source), 'the verification link must come from Firebase Admin, not the caller');
   const firebase = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
   assert.ok(firebase.hosting.rewrites.some((rule) => rule.source === '/api/newsletter' && rule.function === 'brevoSubscribe'));
-  assert.ok(fs.existsSync('api/newsletter.js'));
+  const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
+  assert.ok(vercel.rewrites.some((rule) => rule.source === '/api/newsletter' && rule.destination.startsWith('/api/system?op=newsletter')));
+  assert.ok(fs.existsSync('api/system.js'));
+  assert.ok(!fs.existsSync('api/newsletter.js'), 'the newsletter must not add a 13th Hobby serverless function');
 });
 
 test('the double opt-in return message is shown once and the query string is cleaned', () => {

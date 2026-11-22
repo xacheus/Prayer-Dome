@@ -48,8 +48,14 @@ when Play reports "signed with the wrong key".
 1. Import this repository using the existing `vercel.json` (Other framework,
    Node 22, build `node scripts/build-vercel.mjs`, output `dist`). Do not publish
    the repository root as a static directory.
-2. The upload filter includes both shared API handlers and the lockfile. Keep
-   `functions/translate.js` and `functions/share.js` in serverless uploads.
+2. The upload filter includes the shared API handlers and the lockfile. Keep
+   `functions/translate.js`, `functions/share.js` and `functions/brevo.js` in
+   serverless uploads.
+   The Hobby plan allows at most **12 Serverless Functions per deployment**, so
+   `/api/health` and `/api/newsletter` are both rewritten to `api/system.js`
+   rather than shipped as separate files. `tests/vercel.test.js` fails if a
+   thirteenth function is added; consolidate an endpoint instead of upgrading
+   the plan.
 3. Automatic deployments are intentionally enabled only for `main`; this work
    stays on the session branch. Use a manual preview deployment or review/merge
    before a production deployment. The local preview is not a Vercel deployment.

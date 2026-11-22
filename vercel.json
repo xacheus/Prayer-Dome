@@ -22,6 +22,14 @@
   },
   "rewrites": [
     {
+      "source": "/api/health",
+      "destination": "/api/system?op=health"
+    },
+    {
+      "source": "/api/newsletter",
+      "destination": "/api/system?op=newsletter"
+    },
+    {
       "source": "/resource-view",
       "destination": "/resource-view.html"
     },

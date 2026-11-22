@@ -246,7 +246,7 @@ exports.sendBrevoVerificationEmail = functions.runWith({ secrets: [brevoApiKey] 
 });
 
 // Newsletter / updates signup used by the support page. The same handler runs
-// as api/newsletter.js on Vercel; this export gives Firebase Hosting parity.
+// through api/system.js on Vercel; this export gives Firebase Hosting parity.
 exports.brevoSubscribe = functions.runWith({ secrets: [brevoApiKey] }).https.onRequest((req, res) => {
   brevo.newsletterHandler(req, res);
 });
