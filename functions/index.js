@@ -220,11 +220,11 @@ exports.sendBrevoVerificationEmail = functions.runWith({ secrets: [brevoApiKey] 
   if (context.auth.token.email_verified) {
     return { sent: false, reason: 'already-verified' };
   }
-  if (!allowBrevoVerification(context.auth.uid)) {
-    throw new functions.https.HttpsError('resource-exhausted', 'Please wait a minute before requesting another email.');
-  }
   if (!brevo.isConfigured(process.env)) {
     return { sent: false, reason: 'not-configured' };
+  }
+  if (!allowBrevoVerification(context.auth.uid)) {
+    throw new functions.https.HttpsError('resource-exhausted', 'Please wait a minute before requesting another email.');
   }
   const email = context.auth.token.email;
   const name = String((data && data.name) || context.auth.token.name || '').slice(0, 80);
