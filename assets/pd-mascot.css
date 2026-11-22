@@ -1186,7 +1186,7 @@ body.light-mode .pd-mascot {
   font-size: .82rem;
 }
 
-.pdm-chip-label { flex: 1; min-width: 0; }
+.pdm-chip-label { flex: 1; min-width: 0; white-space: normal; overflow-wrap: break-word; word-break: normal; hyphens: manual; line-height: 1.32; }
 
 .pdm-chip.pdm-chip-big.is-correct {
   border-color: #22c55e;

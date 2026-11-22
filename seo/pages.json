@@ -292,7 +292,7 @@
     "verify.html": {
       "path": "/verify",
       "title": "Verify a Prayer Dome Membership Card",
-      "description": "Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.",
+      "description": "Confirm that a Prayer Dome membership card is genuine by entering its membership number or card verification code. This public checker shows the holder name, branch and current card status; it never exposes contact details.",
       "keywords": "prayer dome membership verification, verify membership card, church id card check",
       "schema": "webpage",
       "noindex": true

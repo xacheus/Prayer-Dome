@@ -1130,6 +1130,10 @@
   }
   function initResourcesPage() {
     if (!$('[data-page="resources"]')) return;
+    // resources.html owns this grid: it merges live Firestore uploads with the
+    // built-in documents and renders loading/error states. A second renderer
+    // here used to overwrite that merged result with an empty array.
+    if (window.PD_RESOURCES_OWNED_BY_PAGE) return;
     updateOverview();
     var grid = $('#resourceGrid'); if (!grid) return;
     grid.innerHTML = DATA.resources.map(function (r) {
@@ -1150,7 +1154,7 @@
       }
       // re-render resources grid headings if present
       var rg = document.getElementById('resourceGrid');
-      if (rg) {
+      if (rg && !window.PD_RESOURCES_OWNED_BY_PAGE) {
         // re-trigger resource render via initResourcesPage logic: simple reload
         if (window.PD_ACADEMY && rg) {
           // rebuild resource grid with same function but we can just call initResourcesPage indirectly by re-creating

@@ -2351,6 +2351,7 @@
                     <span><i class="pd-i pd-i-id-card"></i> Membership Cards</span>
                     <div class="admin-actions-row">
                         <button class="btn btn-outline" type="button" onclick="loadMembershipCardAdmin()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <button class="btn btn-outline" type="button" onclick="repairMissingCards()" title="Issue missing verification records or QR links for approved IDs"><i class="pd-i pd-i-shield-check"></i> Repair missing cards</button>
                     </div>
                 </div>
                 <div class="admin-two-col">
@@ -2360,7 +2361,7 @@
                             <div class="admin-field-grid">
                                 <div class="form-group"><label>Church name on card</label><input type="text" id="mcardChurch" class="form-control" value="PRAYER DOME" readonly></div>
                                 <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="SEEDWELL K. KHAYALETHU MASUKU" readonly></div>
-                                <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" value="Founder and President" readonly></div>
+                                <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" value="Founder and President — Prayer Dome" readonly></div>
                                 <div class="form-group"><label>Contact phone</label><input type="text" id="mcardPhone" class="form-control" maxlength="40" value="+268 7658 1804"></div>
                                 <div class="form-group"><label>Contact email</label><input type="email" id="mcardEmail" class="form-control" maxlength="160" value="info@prayerdome.net"></div>
                                 <div class="form-group"><label>Card validity (months)</label><input type="number" id="mcardValidityMonths" class="form-control" min="1" max="60" value="12"></div>
@@ -4043,14 +4044,42 @@ window.toggleDarkMode = function() {
             if(!confirm("Approve this membership application?")) return;
             showLoading();
             try {
-                const year = new Date().getFullYear();
-                const prefix=`PD${year}`;
-                let max=0;
-                allMembersCache.forEach(m=>{ if(m.membershipId && m.membershipId.startsWith(prefix)){ const num=parseInt(m.membershipId.substring(prefix.length),10); if(!isNaN(num)&&num>max) max=num; } });
-                const newId=`${prefix}${String(max+1).padStart(4,'0')}`;
+                const existing = (allMembersCache || []).find(m => m.id === uid) || {};
+                // Never renumber an existing member. If an ID already exists on
+                // the record it is the canonical ID and must be reused.
+                let newId = String(existing.membershipId || '').trim().toUpperCase();
+                if (!newId) {
+                    const year = new Date().getFullYear();
+                    const prefix = `PD${year}`;
+                    let max = 0;
+                    (allMembersCache || []).forEach(m => {
+                        const id = String(m.membershipId || '').toUpperCase();
+                        if (id.startsWith(prefix)) {
+                            const num = parseInt(id.substring(prefix.length), 10);
+                            if (!isNaN(num) && num > max) max = num;
+                        }
+                    });
+                    let seq = max + 1;
+                    // The local cache can be stale. Check the server before
+                    // assigning, so two approvals can never share a number.
+                    for (let attempt = 0; attempt < 40; attempt++) {
+                        const candidate = `${prefix}${String(seq).padStart(4, '0')}`;
+                        const clash = await getDocs(query(collection(db, 'memberships'), where('membershipId', '==', candidate), limit(1)));
+                        if (clash.empty) { newId = candidate; break; }
+                        seq++;
+                    }
+                    if (!newId) throw new Error('Could not allocate a unique membership number. Please try again.');
+                }
                 await updateDoc(doc(db,"memberships",uid),{ status:'approved', membershipId:newId, approvedAt:serverTimestamp(), approvedBy:adminUser?.email || adminUser?.uid });
                 const wRef=doc(db,"wallets",uid);
                 if(!(await getDoc(wRef)).exists()) await setDoc(wRef,{userId:uid,balance:0,currency:'USD',createdAt:serverTimestamp()});
+                // Create the issued-card projection and its secure QR token.
+                // Without this step an approved ID exists but /verify has
+                // nothing to match, which was the PD20260002 failure.
+                if (typeof window.issueCardVerification === 'function') {
+                    try { await window.issueCardVerification(uid, false); }
+                    catch (issueError) { console.error('Card issuance failed:', issueError); toast('Membership approved, but the card record could not be issued yet. Use Membership Cards → Issue.', 'info'); }
+                }
                 await logAdminActivity('member_approved', { memberId: uid, membershipId: newId });
                 toast(`Membership Approved! ID: ${newId}`);
                 await loadDashboardPerformance();
@@ -4144,9 +4173,20 @@ window.toggleDarkMode = function() {
             const data={ membershipId:document.getElementById('fullMemberId').value.trim(), fullName:document.getElementById('fullMemberName').value, phone:document.getElementById('fullMemberPhone').value, idNumber:document.getElementById('fullMemberIdNumber').value, dateOfBirth:document.getElementById('fullMemberDob').value, gender:document.getElementById('fullMemberGender').value, maritalStatus:document.getElementById('fullMemberMarital').value, branch:document.getElementById('fullMemberBranch').value, role:document.getElementById('fullMemberRole').value, badge:document.getElementById('fullMemberBadge').value, status:document.getElementById('fullMemberStatus').value, bio:document.getElementById('fullMemberBio').value, spiritualGifts:gifts, giftNames:gifts.join(', '), ministries:ministries, adminNotes:document.getElementById('fullMemberAdminNotes').value, updatedAt:serverTimestamp(), updatedBy:adminUser?.email || adminUser?.uid };
             showLoading();
             try{
+                const previous = (allMembersCache || []).find(m => m.id === uid) || {};
+                data.membershipId = String(data.membershipId || '').trim().toUpperCase();
+                if (!data.membershipId) delete data.membershipId;
+                if (data.membershipId) {
+                    const clash = await getDocs(query(collection(db, 'memberships'), where('membershipId', '==', data.membershipId), limit(2)));
+                    const other = clash.docs.find(d => d.id !== uid);
+                    if (other) throw new Error('That membership number is already used by another member. Choose a different number.');
+                }
+                const idChanged = Boolean(data.membershipId) && String(previous.membershipId || '').toUpperCase() !== data.membershipId;
                 await updateDoc(doc(db,"memberships",uid),data);
-                await logAdminActivity('member_updated', { memberId: uid, updates: Object.keys(data) });
+                await logAdminActivity('member_updated', { memberId: uid, updates: Object.keys(data), ...(idChanged ? { previousMembershipId: previous.membershipId, membershipId: data.membershipId } : {}) });
+                if (idChanged) await logAdminActivity('membership_id_changed', { memberId: uid, from: previous.membershipId, to: data.membershipId });
                 if (window.syncMemberCardStatus) await window.syncMemberCardStatus(uid, data.status, data.membershipId);
+                if (idChanged && window.issueCardVerification) await window.issueCardVerification(uid, false);
                 toast("Member details updated!");
                 closeModal('modalFullMemberDetails');
                 await loadDashboardPerformance();

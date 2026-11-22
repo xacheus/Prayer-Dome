@@ -102,8 +102,42 @@
 
     /* Domey is the voice host: her words and the conversation sit below, so
        the page is easy to scroll and nothing covers the content. */
-    #domeyTopicChips .pd-acad-chip { transition: transform .15s ease, border-color .15s ease; }
+    /* Topic tabs: a wrapping grid, never a column of single letters. Each tab
+       is a full tap target and the active topic is visibly marked. */
+    #domeyTopicChips {
+      display: grid !important;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr));
+      gap: 9px;
+      margin-top: 16px;
+      align-items: stretch;
+    }
+    #domeyTopicChips .pd-acad-chip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 46px;
+      padding: 10px 12px;
+      border-radius: 13px;
+      line-height: 1.3;
+      text-align: center;
+      white-space: normal;
+      word-break: normal;
+      overflow-wrap: break-word;
+      hyphens: manual;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
     #domeyTopicChips .pd-acad-chip:hover { transform: translateY(-2px); border-color: var(--pd-gold); }
+    #domeyTopicChips .pd-acad-chip.is-selected {
+      background: var(--pd-blue, #0A4D9B) !important;
+      border-color: var(--pd-blue, #0A4D9B) !important;
+      color: #fff !important;
+      box-shadow: 0 6px 16px rgba(10,77,155,.22);
+    }
+    #domeyTopicChips .pd-acad-chip:focus-visible { outline: 3px solid var(--pd-gold); outline-offset: 2px; }
+    @media (max-width: 380px) {
+      #domeyTopicChips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+      #domeyTopicChips .pd-acad-chip { min-height: 44px; font-size: .78rem; padding: 8px 9px; }
+    }
     #domeyBadges .badge-item { cursor: default; }
 
     /* ---- The game, polished: one warm stage, clearly playable controls ---- */
@@ -363,7 +397,7 @@
       </label>
       <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="startDomeyShow()"><i class="pd-i pd-i-play"></i> Start with this topic</button>
     </div>
-    <div id="domeyTopicChips" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:16px;"></div>
+    <div id="domeyTopicChips" role="group" aria-label="Choose a Bible topic"></div>
   </section>
 
   <!-- BADGES -->
@@ -768,11 +802,17 @@
     if (chips) {
       chips.innerHTML = topics.map(function (topic) {
         return '<button type="button" class="pd-acad-chip" data-topic="' +
-          topic.name.replace(/"/g, '&quot;') + '" style="cursor:pointer; border:1px solid var(--pd-acad-border);">' +
-          topic.name + ' • ' + topic.count + '</button>';
+          topic.name.replace(/"/g, '&quot;') + '" aria-pressed="false" style="cursor:pointer; border:1px solid var(--pd-acad-border);">' +
+          topic.name + ' (' + topic.count + ')</button>';
       }).join('');
       chips.querySelectorAll('[data-topic]').forEach(function (button) {
         button.addEventListener('click', function () {
+          chips.querySelectorAll('[data-topic]').forEach(function (other) {
+            other.classList.remove('is-selected');
+            other.setAttribute('aria-pressed', 'false');
+          });
+          button.classList.add('is-selected');
+          button.setAttribute('aria-pressed', 'true');
           if (select) select.value = button.getAttribute('data-topic');
           startDomeyShow();
         });

@@ -129,7 +129,6 @@
     <script src="/assets/pd-icons.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -385,7 +384,7 @@
             width: min(100%, 520px);
             aspect-ratio: 85.6 / 54;
             border-radius: 14px;
-            padding: clamp(10px, 2.5cqi, 18px);
+            padding: clamp(9px, 2.35cqi, 16px);
             color: #fff;
             background:
                 radial-gradient(120% 120% at 100% 0%, rgba(246, 223, 138, .18), transparent 45%),
@@ -394,8 +393,9 @@
             box-shadow: 0 18px 40px rgba(7, 36, 77, .28);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: clamp(3px, 1cqi, 6px);
             container-type: inline-size;
+            text-align: left;
         }
         .cr80-card::before {
             content: '';
@@ -419,37 +419,37 @@
             pointer-events: none;
         }
 
-        .cr80-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-        .cr80-brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
+        .cr80-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
+        .cr80-brand { display: flex; align-items: center; gap: clamp(6px, 1.8cqi, 9px); min-width: 0; }
         .cr80-logo {
-            width: clamp(26px, 8cqi, 38px);
-            height: clamp(26px, 8cqi, 38px);
+            width: clamp(24px, 7.4cqi, 34px);
+            height: clamp(24px, 7.4cqi, 34px);
             flex: 0 0 auto;
             background: #fff;
-            border-radius: 7px;
+            border-radius: 6px;
             padding: 2px;
             box-shadow: 0 3px 9px rgba(0, 0, 0, .22);
         }
         .cr80-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
-        .cr80-org { font-size: clamp(.62rem, 3.1cqi, .9rem); font-weight: 900; letter-spacing: .1em; line-height: 1.1; }
-        .cr80-sub { font-size: clamp(.4rem, 1.7cqi, .54rem); letter-spacing: .09em; text-transform: uppercase; opacity: .82; line-height: 1.35; margin-top: 1px; }
+        .cr80-org { font-size: clamp(.6rem, 3cqi, .88rem); font-weight: 900; letter-spacing: .1em; line-height: 1.1; white-space: nowrap; }
+        .cr80-sub { font-size: clamp(.38rem, 1.6cqi, .52rem); letter-spacing: .08em; text-transform: uppercase; opacity: .84; line-height: 1.3; margin-top: 1px; }
         .cr80-kind {
             flex: 0 0 auto;
-            font-size: clamp(.4rem, 1.7cqi, .54rem);
+            font-size: clamp(.37rem, 1.55cqi, .5rem);
             font-weight: 900;
-            letter-spacing: .11em;
+            letter-spacing: .09em;
             text-transform: uppercase;
             color: #f6df8a;
             border: 1px solid rgba(246, 223, 138, .55);
             border-radius: 999px;
-            padding: 3px 8px;
+            padding: 3px 7px;
             white-space: nowrap;
         }
 
         .cr80-main {
             display: grid;
-            grid-template-columns: clamp(52px, 17cqi, 82px) minmax(0, 1fr);
-            gap: clamp(7px, 2.4cqi, 14px);
+            grid-template-columns: clamp(54px, 17cqi, 82px) minmax(0, 1fr);
+            gap: clamp(7px, 2.2cqi, 13px);
             align-items: stretch;
             flex: 1;
             min-height: 0;
@@ -457,72 +457,83 @@
         .cr80-photo {
             width: 100%;
             height: 100%;
-            max-height: 100%;
-            border-radius: 8px;
+            min-height: 0;
+            border-radius: 7px;
             border: 2px solid #d4af37;
             overflow: hidden;
             background: rgba(255, 255, 255, .12);
         }
-        .cr80-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .cr80-info { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .cr80-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            display: block;
+        }
+        .cr80-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
         .cr80-label {
             display: block;
-            font-size: clamp(.38rem, 1.55cqi, .5rem);
+            font-size: clamp(.36rem, 1.45cqi, .48rem);
             font-weight: 800;
-            letter-spacing: .13em;
+            letter-spacing: .12em;
             text-transform: uppercase;
-            opacity: .68;
+            opacity: .72;
             line-height: 1.2;
         }
         .cr80-name {
-            font-size: clamp(.82rem, 4.1cqi, 1.3rem);
+            font-size: clamp(.8rem, 3.9cqi, 1.24rem);
             font-weight: 800;
-            line-height: 1.15;
+            line-height: 1.12;
             text-transform: uppercase;
-            letter-spacing: .02em;
-            margin: 1px 0 2px;
+            letter-spacing: .01em;
+            margin: 1px 0 1px;
             overflow-wrap: break-word;
             word-break: normal;
+            hyphens: manual;
         }
         .cr80-id {
             font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-            font-size: clamp(.58rem, 2.5cqi, .8rem);
+            font-size: clamp(.56rem, 2.4cqi, .78rem);
             font-weight: 800;
-            letter-spacing: .07em;
+            letter-spacing: .06em;
             color: #f6df8a;
-            line-height: 1.3;
-            overflow-wrap: break-word;
+            line-height: 1.25;
+            overflow-wrap: normal;
+            word-break: normal;
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .cr80-id-label {
+            font-family: 'Inter', sans-serif;
+            font-size: clamp(.3rem, 1.2cqi, .4rem);
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, .62);
+            font-weight: 800;
         }
         .cr80-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4px 10px;
-            margin-top: 4px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 3px 8px;
+            margin-top: 3px;
             background: rgba(255, 255, 255, .08);
             border: 1px solid rgba(255, 255, 255, .14);
-            border-radius: 8px;
-            padding: clamp(4px, 1.6cqi, 8px);
+            border-radius: 7px;
+            padding: clamp(4px, 1.5cqi, 7px);
         }
         .cr80-grid > div { min-width: 0; }
-        .cr80-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px 8px; }
-        .cr80-grid-6 span:last-child { font-size: clamp(.46rem, 1.8cqi, .62rem); }
+        .cr80-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .cr80-grid span:last-child {
             display: block;
-            font-size: clamp(.52rem, 2.2cqi, .72rem);
+            font-size: clamp(.48rem, 2cqi, .66rem);
             font-weight: 700;
-            line-height: 1.35;
+            line-height: 1.3;
             overflow-wrap: break-word;
             word-break: normal;
+            hyphens: manual;
         }
-
-        .cr80-barcode {
-            margin-top: clamp(3px, 1.2cqi, 6px);
-            padding: 2px 4px;
-            background: #fff;
-            border-radius: 4px;
-            line-height: 0;
-        }
-        .cr80-barcode svg { display: block; width: 100%; height: clamp(14px, 5.4cqi, 24px); }
 
         .cr80-foot {
             display: flex;
@@ -531,19 +542,20 @@
             gap: 8px;
             flex-wrap: wrap;
             border-top: 1px solid rgba(246, 223, 138, .3);
-            padding-top: 4px;
-            font-size: clamp(.38rem, 1.6cqi, .52rem);
-            letter-spacing: .06em;
+            padding-top: 3px;
+            font-size: clamp(.36rem, 1.5cqi, .5rem);
+            letter-spacing: .05em;
             text-transform: uppercase;
-            opacity: .92;
+            opacity: .94;
+            line-height: 1.25;
         }
         .cr80-foot .status-badge {
             margin: 0;
             flex: 0 0 auto;
-            font-size: clamp(.4rem, 1.6cqi, .52rem);
-            padding: 3px 8px;
+            font-size: clamp(.38rem, 1.5cqi, .5rem);
+            padding: 2px 7px;
         }
-        .cr80-verify { opacity: .8; }
+        .cr80-verify { opacity: .84; white-space: nowrap; }
         .digital-id-card .status-approved, .cr80-card .status-approved { background: rgba(34,197,94,.22); color: #d1fae5; border-color: rgba(187,247,208,.7); }
         .cr80-card .status-pending { background: rgba(245,158,11,.2); color: #fde68a; border-color: rgba(253,230,138,.65); }
         .cr80-card .status-rejected { background: rgba(239,68,68,.22); color: #fecaca; border-color: rgba(254,202,202,.6); }
@@ -554,13 +566,14 @@
         .cr80-back::after { color: rgba(10, 77, 155, .06); }
         .cr80-back .cr80-org { color: #07244d; }
         .cr80-back .cr80-sub { color: #5b6b82; opacity: 1; }
-        .cr80-back .cr80-kind { color: #8a6d1a; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .12); }
+        .cr80-back .cr80-kind { color: #8a6d1a; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .12); letter-spacing: .06em; }
         .cr80-back-body {
             display: grid;
-            grid-template-columns: clamp(44px, 15cqi, 66px) minmax(0, 1fr) minmax(80px, 30cqi);
-            gap: clamp(7px, 2.4cqi, 14px);
+            grid-template-columns: clamp(48px, 15cqi, 68px) minmax(0, 1fr) minmax(96px, 31cqi);
+            gap: clamp(7px, 2.1cqi, 13px);
             flex: 1;
             min-height: 0;
+            align-items: stretch;
         }
         .cr80-qr {
             background: #fff;
@@ -573,19 +586,30 @@
             justify-content: center;
             gap: 2px;
             text-align: center;
+            min-width: 0;
         }
         .cr80-qr svg, .cr80-qr img { width: 100%; height: auto; max-height: 100%; display: block; }
-        .cr80-qr small { font-size: clamp(.32rem, 1.3cqi, .44rem); color: #5b6b82; letter-spacing: .05em; text-transform: uppercase; }
-        .cr80-qr-fallback { font-size: .4rem; color: #5b6b82; word-break: break-all; }
-        .cr80-back-info { display: grid; gap: 3px; align-content: start; min-width: 0; }
+        .cr80-qr small { font-size: clamp(.3rem, 1.2cqi, .42rem); color: #5b6b82; letter-spacing: .04em; text-transform: uppercase; line-height: 1.15; }
+        .cr80-qr-fallback { font-size: .38rem; color: #5b6b82; word-break: normal; overflow-wrap: break-word; line-height: 1.25; }
+        .cr80-back-info { display: grid; gap: 2px; align-content: center; min-width: 0; }
         .cr80-back-info .cr80-label { color: #5b6b82; opacity: 1; }
-        .cr80-back-info strong { font-size: clamp(.52rem, 2.2cqi, .72rem); line-height: 1.35; font-weight: 700; overflow-wrap: break-word; }
-        .cr80-sign { display: flex; flex-direction: column; justify-content: flex-end; text-align: center; min-width: 0; }
-        .cr80-sign img { max-height: clamp(22px, 8cqi, 38px); max-width: 100%; object-fit: contain; margin: 0 auto 2px; }
-        .cr80-sign-line { border-top: 1px solid #10233f; margin: 2px 2px 3px; }
-        .cr80-sign small { font-size: clamp(.32rem, 1.3cqi, .44rem); letter-spacing: .05em; text-transform: uppercase; color: #5b6b82; line-height: 1.3; }
-        .cr80-sign .cr80-sign-name { font-size: clamp(.44rem, 1.8cqi, .58rem); font-weight: 800; color: #10233f; line-height: 1.25; }
-        .cr80-foot-back { border-top-color: rgba(10, 77, 155, .22); color: #5b6b82; }
+        .cr80-back-info strong { font-size: clamp(.48rem, 2cqi, .67rem); line-height: 1.25; font-weight: 700; overflow-wrap: break-word; word-break: normal; }
+        .cr80-sign { display: flex; flex-direction: column; justify-content: flex-end; text-align: center; min-width: 0; overflow: hidden; }
+        .cr80-sign img { max-height: clamp(20px, 7.5cqi, 34px); max-width: 100%; object-fit: contain; margin: 0 auto 1px; }
+        .cr80-sign-line { border-top: 1px solid #10233f; margin: 2px 2px 3px; flex: 0 0 auto; }
+        .cr80-sign small { font-size: clamp(.3rem, 1.2cqi, .42rem); letter-spacing: .04em; text-transform: uppercase; color: #5b6b82; line-height: 1.25; }
+        .cr80-sign .cr80-sign-name {
+            display: block;
+            font-size: clamp(.42rem, 1.7cqi, .56rem);
+            font-weight: 800;
+            color: #10233f;
+            line-height: 1.2;
+            overflow-wrap: break-word;
+            word-break: normal;
+            hyphens: manual;
+            white-space: normal;
+        }
+        .cr80-foot-back { border-top-color: rgba(10, 77, 155, .22); color: #5b6b82; font-size: clamp(.33rem, 1.35cqi, .44rem); text-transform: none; letter-spacing: 0; }
         .cr80-note { text-align: center; font-size: .68rem; color: var(--text-sub); margin-top: 10px; letter-spacing: .04em; }
 
         /* Benefits */
@@ -693,39 +717,59 @@
 
         /* Card-only printing: paper shows the official card, not the app chrome. */
         @media print {
-            /* Print the card at its real size: CR80 is 85.6 mm x 54 mm.
-               Front and back print one below the other, never stretched. */
-            @page { size: A4 portrait; margin: 12mm; }
-            html, body { background: #fff !important; }
+            /* One physical CR80 face per page. The PDF export uses the same
+               85.6 mm x 54 mm page size, so print and download match. */
+            @page { size: 85.6mm 54mm; margin: 0; }
+            html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; }
             body * { visibility: hidden !important; }
             #captureArea, #captureArea * { visibility: visible !important; }
             #captureArea {
                 position: absolute !important;
-                left: 0; top: 0; width: 100%;
+                left: 0; top: 0; width: 85.6mm;
                 margin: 0; padding: 0;
             }
-            .id-card-stack { display: block !important; }
+            .id-card-stack { display: block !important; margin: 0 !important; }
             .cr80-card {
                 width: 85.6mm !important;
                 height: 54mm !important;
-                max-width: 100% !important;
+                max-width: none !important;
                 aspect-ratio: auto !important;
-                margin: 0 0 8mm !important;
+                margin: 0 !important;
                 box-shadow: none !important;
-                border-radius: 3.18mm !important;
+                border-radius: 0 !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
+                break-after: page;
+                page-break-after: always;
                 -webkit-print-color-adjust: exact; print-color-adjust: exact;
             }
+            .cr80-card:last-child { break-after: auto; page-break-after: auto; }
+            .cr80-card::before { border-radius: 0; }
             .card-actions, .badge-spotlight, .loading-overlay, .toast-notification, .cr80-note { display: none !important; }
         }
 
+        @media screen and (max-width: 380px) {
+            /* Keep a 320 px phone card inside its true CR80 ratio without
+               clipping the six fields or the signature block. Print uses the
+               physical 85.6 mm size and must not inherit these reductions. */
+            .cr80-grid, .cr80-grid-6 { gap: 1px 4px; padding: 3px; }
+            .cr80-label { font-size: clamp(.32rem, 1.5vw, .42rem); }
+            .cr80-grid span:last-child { font-size: clamp(.4rem, 2vw, .5rem); line-height: 1.18; }
+            .cr80-name { font-size: clamp(.7rem, 4.2vw, .9rem); }
+            .cr80-id { font-size: clamp(.5rem, 2.7vw, .62rem); }
+            .cr80-foot { font-size: clamp(.31rem, 1.5vw, .4rem); }
+            .cr80-back-info strong { font-size: clamp(.42rem, 2vw, .54rem); line-height: 1.18; }
+            .cr80-sign .cr80-sign-name { font-size: clamp(.4rem, 1.9vw, .5rem); }
+            .cr80-sign small { font-size: clamp(.28rem, 1.3vw, .36rem); }
+        }
         @media (max-width: 600px) {
             .cr80-card { width: 100%; border-radius: 12px; }
-            .cr80-main { grid-template-columns: 64px minmax(0, 1fr); }
-            .cr80-back-body { grid-template-columns: 48px minmax(0, 1fr) minmax(76px, 30%); }
-            .cr80-grid { gap: 3px 8px; }
-            .cr80-grid-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .cr80-main { grid-template-columns: clamp(54px, 18cqi, 68px) minmax(0, 1fr); }
+            .cr80-back-body { grid-template-columns: clamp(48px, 16cqi, 58px) minmax(0, 1fr) minmax(88px, 33%); }
+            .cr80-grid, .cr80-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px 5px; }
+            .cr80-grid span:last-child { font-size: clamp(.44rem, 2.5vw, .58rem); }
+            .cr80-name { font-size: clamp(.76rem, 4.5vw, 1rem); }
+            .cr80-foot { gap: 4px; }
         }
     </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
@@ -1205,7 +1249,7 @@
                                 <div class="cr80-sub">House of Prayer for All Nations</div>
                             </div>
                         </div>
-                        <div class="cr80-kind">Member Card</div>
+                        <div class="cr80-kind">Membership Card</div>
                     </div>
 
                     <div class="cr80-main">
@@ -1215,11 +1259,11 @@
                         <div class="cr80-info">
                             <span class="cr80-label">Member name</span>
                             <div class="cr80-name" id="idName">Member Name</div>
-                            <div class="cr80-id" id="idNumber">No Membership</div>
+                            <div class="cr80-id"><span class="cr80-id-label">Membership no.</span> <span id="idNumber">No Membership</span></div>
                             <div class="cr80-grid cr80-grid-6">
                                 <div><span class="cr80-label">Category</span><span id="idCategory">Member</span></div>
                                 <div><span class="cr80-label">Department</span><span id="idRole">MEMBERSHIP</span></div>
-                                <div><span class="cr80-label">Branch</span><span id="idBranch">PRAYER DOME</span></div>
+                                <div><span class="cr80-label">Location</span><span id="idBranch">PRAYER DOME</span></div>
                                 <div><span class="cr80-label">Member since</span><span id="idDate">—</span></div>
                                 <div><span class="cr80-label">Issued</span><span id="idIssued">—</span></div>
                                 <div><span class="cr80-label">Expires</span><span id="idExpiry">—</span></div>
@@ -1243,7 +1287,7 @@
                                 <div class="cr80-sub" id="idBackChurch">PRAYER DOME · House of Prayer for All Nations</div>
                             </div>
                         </div>
-                        <div class="cr80-kind">Official ID</div>
+                        <div class="cr80-kind">Official Membership ID</div>
                     </div>
 
                     <div class="cr80-back-body">
@@ -1255,7 +1299,8 @@
                             <div><span class="cr80-label">Membership</span><strong id="idBackMembership">—</strong></div>
                             <div><span class="cr80-label">Website</span><strong>prayerdome.net</strong></div>
                             <div><span class="cr80-label">Contact</span><strong id="idBackContact">+268 7658 1804 · info@prayerdome.net</strong></div>
-                            <div><span class="cr80-label">Issued by</span><strong id="idChurch">PRAYER DOME</strong></div>
+                            <div><span class="cr80-label">Issuing authority</span><strong id="idChurch">PRAYER DOME</strong></div>
+                            <div><span class="cr80-label">ID reference</span><strong id="idBackId">—</strong></div>
                         </div>
                         <div class="cr80-sign">
                             <img id="idSignature" src="" alt="" hidden>
@@ -1266,13 +1311,9 @@
                         </div>
                     </div>
 
-                    <div class="cr80-barcode" aria-label="Membership barcode">
-                        <svg id="barcodeImg" role="img" aria-label="Membership number barcode"></svg>
-                    </div>
-
                     <div class="cr80-foot cr80-foot-back">
-                        <span>Property of PRAYER DOME. Verify at prayerdome.net/verify.</span>
-                        <span id="idBackId">—</span>
+                        <span>Official membership identification. Property of PRAYER DOME.</span>
+                        <span>prayerdome.net/verify</span>
                     </div>
                 </div>
             </div>
@@ -1328,6 +1369,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, getDoc, setDoc, collection, query, where, getDocs, serverTimestamp, updateDoc, addDoc, onSnapshot, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
     const firebaseConfig = { 
         apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", 
@@ -1341,6 +1383,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    const ensureMyCardCall = httpsCallable(getFunctions(app, 'us-central1'), 'ensureMyCard');
 
     /* The card template (church contact block + authorised signatory) is
        managed in Admin → Membership Cards. Cache it per device so the card
@@ -1375,7 +1418,7 @@
             localStorage.setItem('pd_membership_card_template', JSON.stringify({
                 churchName: 'PRAYER DOME',
                 signatoryName: data.signatoryName || 'SEEDWELL K. KHAYALETHU MASUKU',
-                signatoryRole: data.signatoryRole || 'Founder and President',
+                signatoryRole: data.signatoryRole || 'Founder and President — Prayer Dome',
                 phone: data.phone || '',
                 email: data.email || '',
                 signature: data.signature || ''
@@ -1394,6 +1437,7 @@
     let canvas, ctx, drawing = false;
     let uploadedPhotoUrl = null;
     let currentVerification = null;
+    let cardVerificationFailed = false;
     let retrievedMembershipData = null;
     let isExistingMember = false;
     let isRegisteringForSelf = true;
@@ -2271,7 +2315,7 @@
         const defaults = {
             churchName: 'PRAYER DOME',
             signatoryName: 'SEEDWELL K. KHAYALETHU MASUKU',
-            signatoryRole: 'Founder and President',
+            signatoryRole: 'Founder and President — Prayer Dome',
             phone: '+268 7658 1804',
             email: 'info@prayerdome.net',
             signature: ''
@@ -2310,17 +2354,24 @@
        number; when an administrator has issued an unguessable reference the
        QR uses that instead. The verify page checks the live verification
        record, the member record, approval, expiry and suspension. */
-    function verificationUrl(reference, useRef) {
-        return 'https://prayerdome.net/verify?' + (useRef ? 'ref=' : 'id=') + encodeURIComponent(reference || '');
+    function verificationUrl(reference) {
+        return 'https://prayerdome.net/verify?ref=' + encodeURIComponent(reference || '');
     }
 
+    /* The QR carries an unguessable token — never the membership number and
+       never a Firestore document id. Only an approved card gets one; while it
+       is being issued the card says so instead of printing an insecure code. */
     function renderCardQr(memberId, approved, verification) {
         const host = document.getElementById('idQr');
         if (!host) return;
         host.innerHTML = '';
-        const reference = (verification && verification.verificationRef) || memberId || '';
+        const reference = String((verification && verification.verificationRef) || '').trim();
+        if (!approved) {
+            host.innerHTML = '<span class="cr80-qr-fallback">QR appears after approval</span>';
+            return;
+        }
         if (!reference) {
-            host.innerHTML = '<span class="cr80-qr-fallback">QR issued with the card</span>';
+            host.innerHTML = '<span class="cr80-qr-fallback">Secure QR could not be registered. Open this page while online.</span>';
             return;
         }
         if (typeof qrcode !== 'function') {
@@ -2329,8 +2380,7 @@
         }
         try {
             const qr = qrcode(0, 'M');
-            const useRef = !!(verification && verification.verificationRef);
-            qr.addData(verificationUrl(reference, useRef) + (approved ? '' : '&status=pending'));
+            qr.addData(verificationUrl(reference));
             qr.make();
             host.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
             const svg = host.querySelector('svg');
@@ -2338,7 +2388,7 @@
                 svg.removeAttribute('width');
                 svg.removeAttribute('height');
                 svg.setAttribute('role', 'img');
-                svg.setAttribute('aria-label', 'QR code to verify membership ' + memberId);
+                svg.setAttribute('aria-label', 'Scan to verify this Prayer Dome membership card');
             }
         } catch (error) {
             host.innerHTML = '<span class="cr80-qr-fallback">prayerdome.net/verify</span>';
@@ -2356,21 +2406,28 @@
     }
 
     function statusForCard(record, memberStatus) {
-        if (record && (record.status === 'revoked' || record.status === 'rejected')) return { label: 'REVOKED', className: 'status-badge status-rejected' };
-        if (record && record.status === 'suspended') return { label: 'SUSPENDED', className: 'status-badge status-rejected' };
+        const cardStatus = String((record && record.status) || '').toLowerCase();
+        const member = String(memberStatus || '').toLowerCase();
+        if (cardStatus === 'revoked' || cardStatus === 'rejected' || member === 'rejected') return { label: 'REVOKED', className: 'status-badge status-rejected' };
+        if (cardStatus === 'suspended' || member === 'suspended') return { label: 'SUSPENDED', className: 'status-badge status-rejected' };
         const expiry = record && (record.expiresAt || record.validUntil);
         if (expiry) {
             const date = typeof expiry.toDate === 'function' ? expiry.toDate() : new Date(expiry.seconds ? expiry.seconds * 1000 : expiry);
             if (date && date.getTime() < Date.now()) return { label: 'EXPIRED', className: 'status-badge status-rejected' };
         }
-        if (memberStatus === 'approved' && (!record || record.status === 'approved')) return { label: 'ACTIVE MEMBER', className: 'status-badge status-approved' };
-        return { label: memberStatus === 'pending' ? 'PENDING APPROVAL' : 'NO MEMBERSHIP', className: 'status-badge status-pending' };
+        if (cardStatus === 'pending' || member === 'pending') return { label: 'PENDING APPROVAL', className: 'status-badge status-pending' };
+        if (member === 'approved' && (!record || cardStatus === 'active' || cardStatus === 'approved')) return { label: 'VERIFIED & ACTIVE', className: 'status-badge status-approved' };
+        if (member === 'approved') return { label: 'NOT YET ISSUED', className: 'status-badge status-pending' };
+        return { label: member === 'pending' ? 'PENDING APPROVAL' : 'NO MEMBERSHIP', className: 'status-badge status-pending' };
     }
 
     function applyVerificationToCard(memberId, approved) {
         const badge = document.getElementById('statusBadge');
         const member = currentMemberData || {};
-        const state = statusForCard(currentVerification, member.status);
+        let state = statusForCard(currentVerification, member.status);
+        if (approved && !currentVerification && cardVerificationFailed) {
+            state = { label: 'VERIFICATION UNAVAILABLE', className: 'status-badge status-pending' };
+        }
         if (badge && memberId) {
             badge.innerHTML = '<i class="pd-i ' + (state.className.indexOf('approved') >= 0 ? 'pd-i-circle-check' : 'pd-i-circle-x') + '"></i> ' + state.label;
             badge.className = state.className;
@@ -2382,18 +2439,26 @@
         renderCardQr(memberId, approved, currentVerification);
     }
 
+    /* Ask the server for the issued card (and its random QR token). The old
+       direct read is deliberately gone: card documents contain private
+       fields and are no longer world-readable. */
     async function loadCardVerification(memberId, approved) {
-        if (!memberId) {
+        if (!memberId || !approved) {
             currentVerification = null;
-            applyVerificationToCard('', approved);
+            applyVerificationToCard(memberId || '', approved);
             return;
         }
+        cardVerificationFailed = false;
         try {
-            const snap = await getDoc(doc(db, 'membershipVerification', String(memberId).toUpperCase()));
-            currentVerification = snap.exists() ? snap.data() : null;
+            const response = await ensureMyCardCall();
+            const data = (response && response.data) || {};
+            currentVerification = Object.assign({}, data.record || {}, {
+                verificationRef: data.verificationRef || (data.record && data.record.verificationRef) || ''
+            });
         } catch (error) {
-            console.warn('Card verification record unavailable:', error && error.message);
+            console.warn('Card verification could not be registered:', error && error.message);
             currentVerification = null;
+            cardVerificationFailed = true;
         }
         applyVerificationToCard(memberId, approved);
     }
@@ -2415,14 +2480,6 @@
                 statusBadge.innerHTML = '<i class="pd-i pd-i-circle-check"></i> ACTIVE MEMBER';
                 statusBadge.className = 'status-badge status-approved';
             }
-            try {
-                if (typeof JsBarcode === 'function') {
-                    JsBarcode("#barcodeImg", data.membershipId, { format: "CODE128", lineColor: "#07244d", background: "#ffffff", width: 1.2, height: 36, margin: 0, displayValue: false });
-                } else {
-                    const barcode = document.getElementById('barcodeImg');
-                    if (barcode) barcode.innerHTML = '<text x="4" y="24" font-family="monospace" font-size="18" font-weight="700" fill="#07244d">' + String(data.membershipId).replace(/[<>&]/g, '') + '</text>';
-                }
-            } catch(e) { console.warn("Barcode unavailable:", e); }
         } else if (data.membershipId && data.status === 'pending') {
             const idNumber = document.getElementById('idNumber');
             if (idNumber) idNumber.innerText = data.membershipId;
@@ -2562,11 +2619,28 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    function captureCardFace(node) {
+    async function captureCardFace(node) {
+        // Wait for the portrait, logo, QR and fonts before snapshotting. A
+        // half-loaded image used to produce a blank or squashed export.
+        try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (error) {}
+        const images = Array.from(node.querySelectorAll('img'));
+        await Promise.all(images.map((img) => {
+            if (img.complete && img.naturalWidth) return Promise.resolve();
+            return new Promise((resolve) => {
+                const done = () => resolve();
+                img.addEventListener('load', done, { once: true });
+                img.addEventListener('error', done, { once: true });
+                setTimeout(done, 4000);
+            });
+        }));
+        await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
         return html2canvas(node, {
             useCORS: true,
+            allowTaint: false,
+            imageTimeout: 8000,
             scale: 4,
             backgroundColor: '#ffffff',
+            logging: false,
             onclone: (doc) => {
                 const target = doc.getElementById(node.id) || doc.body;
                 if (window.PDIcons) PDIcons.inline(target);

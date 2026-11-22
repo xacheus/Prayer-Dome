@@ -6,7 +6,7 @@
     <!-- PD-SEO:START -->
     <!-- Managed by seo/apply-seo.py from seo/pages.json. Do not hand-edit this block. -->
     <title>Verify a Prayer Dome Membership Card</title>
-    <meta name="description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
+    <meta name="description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number or card verification code. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
     <meta name="keywords" content="prayer dome membership verification, verify membership card, church id card check">
     <meta name="robots" content="noindex, nofollow">
     <meta name="googlebot" content="noindex, nofollow">
@@ -23,7 +23,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Prayer Dome">
     <meta property="og:title" content="Verify a Prayer Dome Membership Card">
-    <meta property="og:description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
+    <meta property="og:description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number or card verification code. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
     <meta property="og:url" content="https://prayerdome.net/verify">
     <meta property="og:image" content="https://prayerdome.net/assets/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -35,7 +35,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@prayerdome">
     <meta name="twitter:title" content="Verify a Prayer Dome Membership Card">
-    <meta name="twitter:description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
+    <meta name="twitter:description" content="Confirm that a Prayer Dome membership card is genuine by entering its membership number or card verification code. This public checker shows the holder name, branch and current card status; it never exposes contact details.">
     <meta name="twitter:image" content="https://prayerdome.net/assets/og-image.png">
 
     <!-- Performance hints -->
@@ -93,7 +93,7 @@
   "@type": "WebPage",
   "url": "https://prayerdome.net/verify",
   "name": "Verify a Prayer Dome Membership Card",
-  "description": "Confirm that a Prayer Dome membership card is genuine by entering its membership number. This public checker shows the holder name, branch and current card status; it never exposes contact details.",
+  "description": "Confirm that a Prayer Dome membership card is genuine by entering its membership number or card verification code. This public checker shows the holder name, branch and current card status; it never exposes contact details.",
   "isPartOf": {
     "@id": "https://prayerdome.net/#website"
   },
@@ -202,14 +202,14 @@
         <section class="verify-card" aria-labelledby="verifyTitle">
             <span class="verify-eyebrow"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> Official card verification</span>
             <h1 id="verifyTitle">Check a membership card</h1>
-            <p class="lede">Scan the QR code on a Prayer Dome membership card, or type the membership number below. Only the details printed on the card are shown — never an email address, phone number or national ID.</p>
+            <p class="lede">Scan the QR code on a Prayer Dome membership card, or type the membership number or the card’s verification code below. Only the details printed on the card are shown — never an email address, phone number or national ID.</p>
             <div id="verifyState" class="state" role="status" aria-live="polite">
                 <i class="pd-i pd-i-loader-circle pd-i-spin" aria-hidden="true"></i>
                 <div><h2>Checking the record…</h2><p>Please wait a moment.</p></div>
             </div>
             <form class="verify-form" id="verifyForm">
                 <label for="verifyId" class="pd-visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Membership number</label>
-                <input id="verifyId" name="id" type="text" inputmode="text" autocomplete="off" placeholder="Membership number, e.g. PD-2024-00123" maxlength="40">
+                <input id="verifyId" name="id" type="text" inputmode="text" autocomplete="off" placeholder="Membership number or card code" maxlength="40">
                 <button type="submit"><i class="pd-i pd-i-search" aria-hidden="true"></i> Verify</button>
             </form>
             <div class="verify-actions">
@@ -226,7 +226,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
@@ -240,11 +240,12 @@
         const stateEl = document.getElementById('verifyState');
         const form = document.getElementById('verifyForm');
         const input = document.getElementById('verifyId');
-        let db = null;
+        let verifyCallable = null;
         try {
-            db = getFirestore(getApps().length ? getApp() : initializeApp(firebaseConfig));
+            const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+            verifyCallable = httpsCallable(getFunctions(app, 'us-central1'), 'verifyMembership');
         } catch (error) {
-            console.warn('Verification database unavailable:', error && error.message);
+            console.warn('Verification service unavailable:', error && error.message);
         }
 
         function escapeHtml(value) {
@@ -270,107 +271,105 @@
             return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
         }
 
-        function detailsGrid(record) {
-            const status = record.membershipStatus || record.memberStatus || '';
+        const STATUS_COPY = {
+            active: {
+                kind: 'ok', icon: 'pd-i-circle-check', title: 'Verified & Active',
+                text: 'This card was issued by PRAYER DOME and the membership is approved and active.'
+            },
+            pending: {
+                kind: 'warn', icon: 'pd-i-clock', title: 'Pending Approval',
+                text: 'The record exists, but the membership or the card has not yet been approved by the ministry.'
+            },
+            not_issued: {
+                kind: 'warn', icon: 'pd-i-id-card', title: 'Not Yet Issued',
+                text: 'The membership is on file but no card has been issued yet. Contact the church office.'
+            },
+            expired: {
+                kind: 'bad', icon: 'pd-i-clock', title: 'Expired',
+                text: 'This card has reached its expiry date and is no longer valid. Ask the member to request a reissued card.'
+            },
+            suspended: {
+                kind: 'bad', icon: 'pd-i-shield-x', title: 'Suspended',
+                text: 'The membership is suspended, so this card must not be accepted. Contact the church office.'
+            },
+            revoked: {
+                kind: 'bad', icon: 'pd-i-circle-x', title: 'Revoked',
+                text: 'The ministry has withdrawn this membership card. Contact the church office for confirmation.'
+            },
+            invalid: {
+                kind: 'warn', icon: 'pd-i-circle-question-mark', title: 'Invalid ID',
+                text: 'No issued card matches that number. Check it for a typing mistake; if the card is genuine, contact the church office.'
+            },
+            unavailable: {
+                kind: 'bad', icon: 'pd-i-cloud-off', title: 'Verification Unavailable',
+                text: 'The ministry records could not be reached. Check your connection and try again.'
+            }
+        };
+
+        function statusLabel(value) {
+            const state = String(value || '').toLowerCase();
+            if (state === 'active') return 'Verified and active';
+            if (state === 'pending') return 'Pending approval';
+            if (state === 'not_issued') return 'Not yet issued';
+            return state ? state.charAt(0).toUpperCase() + state.slice(1) : 'Unknown';
+        }
+
+        function detailsGrid(record, state) {
             const rows = [
                 ['Organisation', record.organization || 'PRAYER DOME'],
                 ['Member', record.displayName || ''],
                 ['Membership number', record.membershipId || ''],
                 ['Category', record.category || 'Member'],
-                ['Department', record.department || record.ministry || (record.role === 'admin' ? 'TEAM MANAGEMENT' : '')],
-                ['Branch', /freedom/i.test(String(record.branch || '')) ? 'PRAYER DOME' : (record.branch || '')],
-                ['Card status', record.status === 'approved' ? 'Active' : (record.status || '')],
-                ['Member status', status],
-                ['Issued', formatDate(record.issuedAt || record.updatedAt)],
-                ['Valid until', formatDate(record.expiresAt || record.validUntil)]
+                ['Department', record.department || ''],
+                ['Location', record.branch || 'PRAYER DOME'],
+                ['Card status', statusLabel(state || record.status)],
+                ['Issued', formatDate(record.issuedAt)],
+                ['Valid until', formatDate(record.expiresAt)]
             ].filter((row) => row[1]);
             if (!rows.length) return '';
             const photo = record.photoUrl && record.photoAllowed !== false
-                ? '<img class="verify-photo" src="' + escapeHtml(record.photoUrl) + '" alt="Cardholder photograph" loading="lazy">'
+                ? '<img class="verify-photo" src="' + escapeHtml(record.photoUrl) + '" alt="Cardholder photograph" loading="lazy" onerror="this.remove()">'
                 : '';
             return '<div class="verify-summary">' + photo + '<dl class="verify-grid">' + rows.map((row) =>
                 '<div><dt>' + escapeHtml(row[0]) + '</dt><dd>' + escapeHtml(row[1]) + '</dd></div>'
             ).join('') + '</dl></div>';
         }
 
-        function dateValue(value) {
-            if (!value) return null;
-            let date = null;
-            if (typeof value.toDate === 'function') date = value.toDate();
-            else if (value.seconds) date = new Date(value.seconds * 1000);
-            else date = new Date(value);
-            return date && !Number.isNaN(date.getTime()) ? date : null;
-        }
-
-        async function findRecord(input, isReference) {
-            if (isReference) {
-                const ref = await getDoc(doc(db, 'membershipVerificationRefs', input));
-                if (ref.exists()) {
-                    const pointer = ref.data() || {};
-                    if (pointer.membershipId) {
-                        const main = await getDoc(doc(db, 'membershipVerification', String(pointer.membershipId).toUpperCase()));
-                        if (main.exists()) return main.data();
-                    }
-                    return pointer;
-                }
-            }
-            const main = await getDoc(doc(db, 'membershipVerification', input));
-            if (main.exists()) return main.data();
-            const byRef = await getDoc(doc(db, 'membershipVerificationRefs', input));
-            return byRef.exists() ? byRef.data() : null;
+        function renderState(state, record) {
+            const copy = STATUS_COPY[state] || STATUS_COPY.unavailable;
+            show(copy.kind, copy.icon, copy.title, copy.text, record ? detailsGrid(record, state) : '');
         }
 
         async function lookup(raw, isReference) {
             const inputValue = String(raw || '').trim();
-            const id = inputValue.toUpperCase();
-            if (!isReference) input.value = id;
-            if (!id) {
-                show('warn', 'pd-i-circle-alert', 'Enter a membership number', 'The number is printed on the front of the card, directly under the member’s name.');
+            // Printed numbers are case-insensitive; secure card codes are not,
+            // so never upper-case a pasted code.
+            if (!isReference) input.value = /^PD[0-9]/i.test(inputValue) ? inputValue.toUpperCase() : inputValue;
+            if (!inputValue) {
+                show('warn', 'pd-i-circle-alert', 'Enter a membership number or card code',
+                    'The number is printed on the front of the card, directly under the member’s name.');
                 return;
             }
-            if (!db) {
-                show('bad', 'pd-i-cloud-off', 'Verification unavailable', 'The ministry records could not be reached. Check your connection and try again.');
+            if (!verifyCallable) {
+                renderState('unavailable');
                 return;
             }
             show('idle', 'pd-i-loader-circle pd-i-spin', 'Checking the record…', 'Please wait a moment.');
             try {
-                const record = await findRecord(id, isReference);
-                if (!record) {
-                    show('warn', 'pd-i-circle-question-mark', 'No issued card matches that reference',
-                        'Check the number for a typing mistake. If the card is genuine, contact the church office so the record can be completed.');
+                const payload = isReference ? { ref: inputValue } : { id: inputValue };
+                const response = await verifyCallable(payload);
+                const result = (response && response.data) || {};
+                const state = String(result.state || 'invalid').toLowerCase();
+                if (state === 'active' || state === 'pending' || state === 'not_issued' ||
+                    state === 'expired' || state === 'suspended' || state === 'revoked') {
+                    renderState(state, result.record || null);
                     return;
                 }
-                const memberStatus = String(record.membershipStatus || record.memberStatus || '').toLowerCase();
-                const expiry = dateValue(record.expiresAt || record.validUntil);
-                const expired = expiry && expiry.getTime() < Date.now();
-
-                if (record.status === 'revoked' || record.status === 'rejected' || memberStatus === 'rejected') {
-                    show('bad', 'pd-i-circle-x', 'This card is no longer valid',
-                        'The ministry has withdrawn this membership card. Please contact the church office.', detailsGrid(record));
-                    return;
-                }
-                if (record.status === 'suspended' || memberStatus === 'suspended') {
-                    show('bad', 'pd-i-shield-x', 'This card is suspended',
-                        'The membership is suspended, so the card must not be accepted. Please contact the church office.', detailsGrid(record));
-                    return;
-                }
-                if (expired || record.status === 'expired') {
-                    show('bad', 'pd-i-clock', 'This card has expired',
-                        'The card reached its expiry date and is no longer valid. Ask the member to request a reissued card.', detailsGrid(record));
-                    return;
-                }
-                if (record.status !== 'approved' || (memberStatus && memberStatus !== 'approved')) {
-                    show('warn', 'pd-i-clock', 'This card is still pending approval',
-                        'The record exists but the membership or card has not been approved by the ministry.', detailsGrid(record));
-                    return;
-                }
-                show('ok', 'pd-i-circle-check', 'Verified Prayer Dome member',
-                    'This card was issued by PRAYER DOME' +
-                    (expiry ? ' and is valid until ' + formatDate(expiry) : ' and is currently active') + '.', detailsGrid(record));
+                renderState('invalid', null);
             } catch (error) {
+                // A network, quota or deployment failure is not an invalid card.
                 console.error('Verification lookup failed:', error);
-                show('bad', 'pd-i-cloud-off', 'Verification could not be completed',
-                    'The ministry records could not be read. Check your connection and try again.');
+                renderState('unavailable');
             }
         }
 
@@ -384,7 +383,7 @@
         const fromRef = params.get('ref');
         if (fromRef) lookup(fromRef, true);
         else if (fromId) lookup(fromId, false);
-        else show('idle', 'pd-i-scan-line', 'Scan or type a membership number',
+        else show('idle', 'pd-i-scan-line', 'Scan or type a membership number or card code',
             'Use the QR code on the card, or enter the number in the field below.');
     </script>
     <script src="/assets/pd-nav.js" defer></script>

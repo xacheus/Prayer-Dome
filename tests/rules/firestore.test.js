@@ -126,18 +126,20 @@ const assert = require('node:assert/strict');
     await assertSucceeds(getDoc(doc(member, 'wallets/member')));
     await assertFails(getDoc(doc(other, 'wallets/member')));
 
-    // Public card verification is a single-document get, never a list.
+    // Card verification documents contain private fields and are resolved by
+    // the verifyMembership callable (Admin SDK). No public reads, not even one.
     const card = {
       membershipId: 'PD-2026-0001', userId: 'member', displayName: 'Member',
       status: 'approved', verificationRef: 'PDV-0123456789abcdef0123'
     };
     await assertSucceeds(setDoc(doc(admin, 'membershipVerification/PD-2026-0001'), card));
-    await assertSucceeds(getDoc(doc(guest, 'membershipVerification/PD-2026-0001')));
-    await assertSucceeds(getDoc(doc(member, 'membershipVerification/PD-2026-0001')));
+    await assertFails(getDoc(doc(guest, 'membershipVerification/PD-2026-0001')));
+    await assertFails(getDoc(doc(member, 'membershipVerification/PD-2026-0001')));
+    await assertSucceeds(getDoc(doc(admin, 'membershipVerification/PD-2026-0001')));
     await assertFails(getDocs(collection(guest, 'membershipVerification')));
     await assertFails(setDoc(doc(member, 'membershipVerification/forged'), card));
     await assertSucceeds(setDoc(doc(admin, 'membershipVerificationRefs/PDV-ref'), card));
-    await assertSucceeds(getDoc(doc(guest, 'membershipVerificationRefs/PDV-ref')));
+    await assertFails(getDoc(doc(guest, 'membershipVerificationRefs/PDV-ref')));
     await assertFails(getDocs(collection(guest, 'membershipVerificationRefs')));
     await assertFails(setDoc(doc(member, 'membershipVerificationHistory/entry'), { action: 'issued' }));
 

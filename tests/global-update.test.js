@@ -64,7 +64,8 @@ t('printed certificate opens a clean standalone page',
 /* ------------------------------------------------------- membership card */
 const membership = read('membership.html');
 t('membership card contains the required official fields',
-  ['idPhoto', 'idName', 'idNumber', 'idChurch', 'barcodeImg'].every((id) => membership.includes(`id="${id}"`)));
+  ['idPhoto', 'idName', 'idNumber', 'idChurch', 'idQr', 'idSignature', 'idSignName', 'idExpiry']
+    .every((id) => membership.includes(`id="${id}"`)));
 t('membership card has PDF, image and print actions',
   membership.includes("downloadID('pdf')") && membership.includes("downloadID('png')") && membership.includes('printID()'));
 t('membership print stylesheet isolates the card',

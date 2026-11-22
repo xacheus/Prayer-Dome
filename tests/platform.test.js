@@ -123,14 +123,14 @@ t('the challenge falls back to the Lusaka weekday plan when offline',
 
 /* -------------------------------------------------------- membership ID card */
 t('the membership page renders a CR80 card', membership.includes('cr80'));
-t('the card QR encodes the public verification URL',
-  membership.includes("https://prayerdome.net/verify?") && membership.includes("'ref='") && membership.includes("'id='"));
+t('the card QR encodes a secure token verification URL, never a raw id',
+  membership.includes("https://prayerdome.net/verify?") && membership.includes("ref=") && !membership.includes("'id='"));
 t('the card QR is only drawn when a membership number exists',
   membership.includes('membershipId'));
 t('the card template is synced from Firestore',
   membership.includes('membershipCardSettings') && membership.includes('loadCardTemplateFromCloud'));
-t('the public verifier reads one exact verification document',
-  verify.includes('membershipVerification') && /getDoc\(/.test(verify));
+t('the public verifier asks the server to resolve one exact card',
+  verify.includes('httpsCallable') && verify.includes('verifyMembership') && !/getDoc\(/.test(verify));
 t('the public verifier is noindex',
   seo.pages['verify.html'] && seo.pages['verify.html'].noindex === true);
 t('the public verifier never prints contact details',
@@ -197,8 +197,9 @@ t('the service worker cache name moved forward',
   /prayer-dome-v4[3-9]/.test(sw));
 
 /* -------------------------------------------------------------- security */
-t('card verification allows a single get but not a public list',
-  /match \/membershipVerification\/\{id\} \{[\s\S]*?allow get: if true;[\s\S]*?allow list: if isAdmin\(\);/.test(rules));
+t('card verification records are administrator-only; public checks use the callable',
+  /match \/membershipVerification\/\{id\} \{[\s\S]*?allow get, list: if isAdmin\(\);/.test(rules) &&
+  /match \/membershipVerificationRefs\/\{reference\} \{[\s\S]*?allow get, list: if isAdmin\(\);/.test(rules));
 t('church locations may only be written by an administrator',
   /match \/churchLocations\/\{id\} \{[\s\S]*?allow create, update: if isAdmin\(\)/.test(rules));
 t('the card template signature is readable only by a signed-in member',
