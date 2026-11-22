@@ -108,7 +108,22 @@ const relativeOut = relative(ROOT, OUT_FILE);
 if (CHECK) {
   let current = null;
   try { current = readFileSync(OUT_FILE, 'utf8'); } catch { /* missing */ }
-  if (current !== serialised) {
+  /* The "generated" stamp is the day the file was written. Comparing it
+     byte-for-byte made the check fail every midnight, even when nothing
+     about the verses had changed — the lint and the test suite then failed
+     for a reason that had nothing to do with the code. The stamp is
+     therefore ignored when deciding whether the library is stale; the
+     verses, slots, rotation rule and checkpoints still have to match. */
+  let comparable = current;
+  if (comparable !== null) {
+    try {
+      const parsed = JSON.parse(comparable);
+      delete parsed.generated;
+      comparable = JSON.stringify(parsed, null, 1) + '\n';
+    } catch { comparable = current; }
+  }
+  const expected = JSON.stringify(Object.assign({}, payload, { generated: undefined }), null, 1) + '\n';
+  if (comparable !== expected) {
     console.error(`${relativeOut} is stale — run: node scripts/build-widget-verses.mjs`);
     process.exit(1);
   }

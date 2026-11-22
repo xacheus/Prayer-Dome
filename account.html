@@ -1066,10 +1066,347 @@
         </div>
     </div>
     
-    <script type="module">
+    <!-- ==================================================================
+         The account page interface layer.
+         This is a CLASSIC script on purpose. Everything in it works with
+         no network at all and without the Firebase SDK, so the page can
+         never turn into a dead shell: the tabs still switch, the password
+         fields still reveal, the dialogs still open and close, and the
+         forms still validate. The module below adds sign-in, the profile
+         and the database on top of it.
+         ================================================================== -->
+    <script>
+        /* ------------------------------------------------------ pure helpers */
+        window.escapeHtml = (str) => { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; };
+
+        window.isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+
+        window.authMessage = (error, fallback) => {
+            const messages = {
+                'auth/email-already-in-use': 'This email already has an account. Please sign in instead.',
+                'auth/invalid-email': 'Enter a valid email address.',
+                'auth/weak-password': 'Choose a password with at least 6 characters.',
+                'auth/invalid-credential': 'The email or password is incorrect.',
+                'auth/user-not-found': 'No account was found with this email.',
+                'auth/wrong-password': 'The email or password is incorrect.',
+                'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
+                'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
+                'auth/popup-blocked': 'Your browser blocked the Google sign-in window. Please allow pop-ups and try again.',
+                'auth/operation-not-allowed': 'This sign-in method is not currently available.',
+                'auth/network-request-failed': 'No connection to the sign-in service. Please check your network and try again.'
+            };
+            return messages[error?.code] || fallback || error?.message || 'Something went wrong. Please try again.';
+        };
+
+        /* The celebration animation comes from a CDN. If that CDN is blocked
+           the call throws, and a thrown error inside the same try/catch that
+           reports the real result turns a successful sign-in into a failure
+           message. The safe wrapper keeps the flow honest. */
+        window.pdConfetti = (options) => {
+            try {
+                if (typeof window.confetti === 'function') window.confetti(options);
+            } catch (e) { /* a celebration must never break a real action */ }
+        };
+
+        /* ------------------------------------------------------------ toasts */
+        window.showToast = (msg, type) => {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const t = document.createElement('div');
+            t.className = `toast ${type === 'error' ? 'error' : ''}`;
+            t.setAttribute('role', 'status');
+            t.innerHTML = `<i class="pd-i ${type === 'error' ? 'pd-i-circle-alert' : 'pd-i-circle-check'}"></i> ${msg}`;
+            container.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        };
+
+        /* --------------------------------------------------------- loading
+           The busy screen is a full-page overlay, so it must never be able
+           to stay up: a stalled request would otherwise leave the member
+           staring at a frozen screen. It closes itself after 20 seconds and
+           a tap closes it straight away. */
+        window.showLoading = () => {
+            if (document.getElementById('customLoader')) return;
+            const loader = document.createElement('div');
+            loader.id = 'customLoader';
+            loader.className = 'spinner-overlay';
+            loader.setAttribute('role', 'status');
+            loader.setAttribute('aria-label', 'Working, please wait');
+            loader.innerHTML = '<div class="spinner"></div><p style="color: white; font-weight: 600;">Processing…</p>';
+            loader.addEventListener('click', () => window.hideLoading());
+            document.body.appendChild(loader);
+            window.__pdLoadingTimer = setTimeout(() => window.hideLoading(), 20000);
+        };
+
+        window.hideLoading = () => {
+            if (window.__pdLoadingTimer) { clearTimeout(window.__pdLoadingTimer); window.__pdLoadingTimer = null; }
+            const loader = document.getElementById('customLoader');
+            if (loader) loader.remove();
+        };
+
+        /* ------------------------------------------------------- form helpers */
+        window.togglePassword = (inputId, button) => {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.innerHTML = '<i class="pd-i pd-i-eye-off"></i>';
+                button.setAttribute('aria-label', 'Hide password');
+            } else {
+                input.type = 'password';
+                button.innerHTML = '<i class="pd-i pd-i-eye"></i>';
+                button.setAttribute('aria-label', 'Show password');
+            }
+        };
+
+        window.checkAge = (val) => {
+            if (!val) return;
+            const age = Math.floor((Date.now() - new Date(val).getTime()) / (1000 * 60 * 60 * 24 * 365));
+            const btn = document.getElementById('regBtn');
+            const warn = document.getElementById('ageWarn');
+            if (age < 13) {
+                if (btn) btn.disabled = true;
+                if (warn) warn.style.display = 'block';
+            } else {
+                if (btn) btn.disabled = false;
+                if (warn) warn.style.display = 'none';
+            }
+        };
+
+        /* ----------------------------------------------------------- dialogs */
+        window.closeModal = (id) => {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        };
+
+        window.openResetModal = () => {
+            const modal = document.getElementById('resetModal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.showDeleteAccountModal = () => {
+            const field = document.getElementById('deleteConfirmText');
+            if (field) field.value = '';
+            const modal = document.getElementById('deleteAccountModal');
+            if (modal) modal.style.display = 'flex';
+        };
+
+        window.resetPassword = async () => { window.openResetModal(); };
+
+        // A tap on the backdrop closes the dialog — otherwise a dialog that
+        // opened over the page could only be closed by its own button.
+        document.querySelectorAll('.modern-modal').forEach(modal => {
+            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+        });
+
+        // Escape closes an open dialog as well, so a member is never trapped
+        // behind one.
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape' && e.key !== 'Esc') return;
+            document.querySelectorAll('.modern-modal').forEach(modal => {
+                if (modal.style.display !== 'none') modal.style.display = 'none';
+            });
+        });
+
+        /* --------------------------------------------------------- the tabs */
+        window.switchTab = (type) => {
+            const login = document.getElementById('loginForm');
+            const register = document.getElementById('registerForm');
+            if (login) login.style.display = type === 'login' ? 'block' : 'none';
+            if (register) register.style.display = type === 'register' ? 'block' : 'none';
+            document.querySelectorAll('#authTabs .tab').forEach((t, i) => {
+                t.classList.toggle('active', (type === 'login' && i === 0) || (type === 'register' && i === 1));
+                t.setAttribute('aria-selected', t.classList.contains('active') ? 'true' : 'false');
+            });
+        };
+
+        window.toggleEdit = (show) => {
+            const view = document.getElementById('profileView');
+            const edit = document.getElementById('profileEdit');
+            if (view) view.style.display = show ? 'none' : 'block';
+            if (edit) edit.style.display = show ? 'block' : 'none';
+            if (show && window.currentPhotoUrl) {
+                const preview = document.getElementById('editPhotoPreview');
+                if (preview) preview.src = window.currentPhotoUrl;
+            }
+        };
+
+        /* ==================================================================
+             Sign-in availability.
+             The Firebase SDK is loaded from a CDN by the module below. If
+             that CDN cannot be reached — a slow phone, data saver, a
+             restricted network — the module never runs. The page must not
+             die with it: the member keeps a working page, is told plainly
+             what is unavailable, and every button explains itself instead
+             of failing silently.
+             ================================================================== */
+        window.PD_ACCOUNT_AUTH = { ready: false, unavailable: false, waiters: [] };
+
+        window.pdWhenAuthReady = (timeout) => {
+            const state = window.PD_ACCOUNT_AUTH;
+            if (state.ready) return Promise.resolve(true);
+            /* The service has already been found unreachable. Waiting again
+               would leave the member staring at a button for no reason, so
+               the answer is given straight away. */
+            if (state.unavailable) return Promise.resolve(false);
+            return new Promise((resolve) => {
+                let done = false;
+                const finish = (ok) => { if (done) return; done = true; resolve(!!ok); };
+                state.waiters.push(finish);
+                setTimeout(() => finish(state.ready), timeout || 12000);
+            });
+        };
+
+        window.pdMarkAuthReady = () => {
+            const state = window.PD_ACCOUNT_AUTH;
+            if (state.ready) return;
+            state.ready = true;
+            /* The service did arrive after all, so the "unavailable" flag
+               must not block a later tap. */
+            state.unavailable = false;
+            state.waiters.splice(0).forEach((fn) => fn(true));
+            const notice = document.getElementById('pdAuthNotice');
+            if (notice) notice.remove();
+        };
+
+        window.pdMarkAuthUnavailable = (reason) => {
+            const state = window.PD_ACCOUNT_AUTH;
+            if (state.ready) return;
+            /* Remember that the service is unreachable, so a later tap
+               answers immediately instead of waiting out the full timeout. */
+            state.unavailable = true;
+            state.waiters.splice(0).forEach((fn) => fn(false));
+            let notice = document.getElementById('pdAuthNotice');
+            if (!notice) {
+                notice = document.createElement('div');
+                notice.id = 'pdAuthNotice';
+                notice.setAttribute('role', 'status');
+                notice.style.cssText = 'display:flex;gap:10px;align-items:flex-start;margin:0 0 18px;padding:13px 15px;border-radius:16px;border:1px solid rgba(212,175,55,.45);background:rgba(212,175,55,.12);color:var(--text-main);font-size:.82rem;line-height:1.55;';
+                const tabs = document.getElementById('authTabs');
+                if (tabs && tabs.parentNode) tabs.parentNode.insertBefore(notice, tabs);
+            }
+            notice.innerHTML = '<i class="pd-i pd-i-triangle-alert" style="flex-shrink:0;margin-top:2px;color:var(--accent-gold);"></i>' +
+                '<span><strong>Signing in is temporarily unavailable.</strong> ' +
+                (reason || 'The sign-in service could not be reached from this device.') +
+                ' The rest of this page still works — please check your connection and try again in a moment.</span>';
+        };
+
+        /* The sign-in buttons wait for the module when it is still loading
+           and explain themselves when it never arrives. The wrapper always
+           cancels the form's own submission first, so a form never falls
+           back to a plain page reload while the service is unreachable. */
+        const needsAuth = (realName, message) => async function (...args) {
+            const event = args[0];
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
+            let real = window[realName];
+            if (!real) {
+                const ok = await window.pdWhenAuthReady(12000);
+                real = window[realName];
+                if (!real || !ok) {
+                    window.pdMarkAuthUnavailable();
+                    window.showToast(message, 'error');
+                    return;
+                }
+            }
+            return real.apply(null, args);
+        };
+
+        window.handleLogin = needsAuth('__pdHandleLogin', 'Sign-in is temporarily unavailable. Please check your connection and try again.');
+        window.handleRegister = needsAuth('__pdHandleRegister', 'Registration is temporarily unavailable. Please check your connection and try again.');
+        window.handleGoogle = needsAuth('__pdHandleGoogle', 'Google sign-in is temporarily unavailable. Please check your connection and try again.');
+        window.sendPasswordReset = needsAuth('__pdSendPasswordReset', 'Password reset is temporarily unavailable. Please check your connection and try again.');
+        window.deleteAccount = needsAuth('__pdDeleteAccount', 'Account deletion is temporarily unavailable. Please check your connection and try again.');
+        window.verifyEmail = needsAuth('__pdVerifyEmail', 'Email verification is temporarily unavailable. Please check your connection and try again.');
+        window.sendEmailVerificationCode = needsAuth('__pdSendEmailVerificationCode', 'Email verification is temporarily unavailable. Please check your connection and try again.');
+        window.handleLogout = needsAuth('__pdHandleLogout', 'Sign-out is temporarily unavailable. Please check your connection and try again.');
+        window.changeProfilePhoto = needsAuth('__pdChangeProfilePhoto', 'Photo upload is temporarily unavailable. Please check your connection and try again.');
+
+        /* The photo picker itself is plain browser work — it must work even
+           when the sign-in service cannot be reached. */
+        window.uploadPhoto = (context) => {
+            const fileInput = document.getElementById('accountDirectFileInput');
+            if (!fileInput) {
+                showToast('Photo upload is not available on this device.', 'error');
+                return;
+            }
+            fileInput.dataset.context = context || 'profile';
+            fileInput.click();
+        };
+
+        /* If the module has not reported back by now, say so instead of
+           leaving the member tapping a button that will never answer. */
+        setTimeout(() => {
+            if (!window.PD_ACCOUNT_AUTH.ready) window.pdMarkAuthUnavailable();
+        }, 6000);
+
+        /* The certificate list starts with a "Loading your certificates…"
+           line. The real list is written by the module, which needs the
+           sign-in service — so when that service never arrives the member
+           would stare at a permanent loading line. This fallback reads the
+           certificates saved on the device and shows them, so the section is
+           never left hanging. The module overwrites it when it can. */
+        window.pdRenderLocalCertificates = () => {
+            const list = document.getElementById('myCertificatesList');
+            if (!list) return;
+            let certs = [];
+            try {
+                const progress = JSON.parse(localStorage.getItem('pd_academy_progress')) || {};
+                certs = Array.isArray(progress.certificates) ? progress.certificates : [];
+            } catch (e) { certs = []; }
+            if (!certs.length) {
+                list.innerHTML = '<div class="certificates-empty" style="text-align:center; padding: 18px; color: var(--text-sub);"><i class="pd-i pd-i-award"></i> No certificates yet. Pass an Academy quiz with 80% or higher to earn your first one — visit the <a href="/quiz.html" style="color: var(--accent-gold);">Quiz Centre</a>.</div>';
+                return;
+            }
+            const profile = window.PD_PROFILE || {};
+            list.innerHTML = certs.map((c) => {
+                const name = c.name || profile.fullName || 'Prayer Dome Member';
+                const raw = c.date && typeof c.date.toDate === 'function' ? c.date.toDate() : c.date;
+                const parsed = raw ? new Date(raw) : null;
+                const date = parsed && !Number.isNaN(parsed.getTime())
+                    ? parsed.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+                const course = c.course || c.title || 'Prayer Dome Academy';
+                return `<article class="cert-card">
+                    <div class="cert-card-head">
+                        <div class="cert-card-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+                        <div style="min-width:0;">
+                            <div class="cert-card-eyebrow">Prayer Dome Academy</div>
+                            <div class="cert-card-org">Certificate of Completion</div>
+                        </div>
+                        <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
+                    </div>
+                    <div class="cert-card-body">
+                        <h4 class="cert-card-recipient">${window.escapeHtml(name)}</h4>
+                        <p class="cert-card-line">has successfully completed <span class="cert-card-course">${window.escapeHtml(course)}</span>.</p>
+                        <div class="cert-card-meta">
+                            <span>Score <b>${Math.round(c.score || 0)}%</b></span>
+                            <span>Issued <b>${date}</b></span>
+                            <span>ID <b style="font-family:monospace;">${window.escapeHtml(c.id || '')}</b></span>
+                        </div>
+                    </div>
+                    <div class="cert-card-foot">
+                        <div class="cert-signature">
+                            <div class="cert-signature-name">Prayer Dome</div>
+                            <div class="cert-signature-rule"></div>
+                            <div class="cert-signature-label">Founder &amp; Senior Pastor</div>
+                        </div>
+                    </div>
+                </article>`;
+            }).join('');
+        };
+        setTimeout(() => {
+            const list = document.getElementById('myCertificatesList');
+            if (list && list.textContent.includes('Loading your certificates')) window.pdRenderLocalCertificates();
+        }, 4000);
+    </script>
+
+    <script type="module" onerror="if (window.pdMarkAuthUnavailable) window.pdMarkAuthUnavailable('The sign-in service could not be reached from this device.');">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile, GoogleAuthProvider, signInWithPopup, sendEmailVerification, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, collection, query, where, orderBy, limit, getDocs, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        /* The imports above resolved, so the sign-in service is reachable and
+           the page can leave its "signing in is unavailable" state. */
+        if (window.pdMarkAuthReady) window.pdMarkAuthReady();
 
         const firebaseConfig = {
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
@@ -1087,29 +1424,9 @@
 
         let currentUserData = null;
         let currentPhotoUrl = "";
-
-        // Firebase accepts any syntactically valid email address. Do not keep a
-        // provider allow-list here: it prevented members using church, work and
-        // country-specific email domains from registering or signing in.
-        function isValidEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
-        }
-
-        function authMessage(error, fallback) {
-            const messages = {
-                'auth/email-already-in-use': 'This email already has an account. Please sign in instead.',
-                'auth/invalid-email': 'Enter a valid email address.',
-                'auth/weak-password': 'Choose a password with at least 6 characters.',
-                'auth/invalid-credential': 'The email or password is incorrect.',
-                'auth/user-not-found': 'No account was found with this email.',
-                'auth/wrong-password': 'The email or password is incorrect.',
-                'auth/too-many-requests': 'Too many attempts. Please wait a moment and try again.',
-                'auth/popup-closed-by-user': 'Google sign-in was cancelled.',
-                'auth/popup-blocked': 'Your browser blocked the Google sign-in window. Please allow pop-ups and try again.',
-                'auth/operation-not-allowed': 'This sign-in method is not currently available.'
-            };
-            return messages[error?.code] || fallback || error?.message || 'Something went wrong. Please try again.';
-        }
+        // The interface layer above reads the photo from the window so that
+        // the profile editor works even before this module has loaded.
+        window.currentPhotoUrl = currentPhotoUrl;
 
         const defaultProfile = (user) => ({
             fullName: user.displayName || user.email?.split('@')[0] || 'Prayer Dome Member',
@@ -1130,52 +1447,13 @@
             }
         }
 
-        // Helper Functions
-        window.escapeHtml = (str) => { const d = document.createElement('div'); d.textContent = str == null ? '' : String(str); return d.innerHTML; };
-
-        window.showToast = (msg, type) => {
-            const container = document.getElementById('toastContainer');
-            const t = document.createElement('div');
-            t.className = `toast ${type === 'error' ? 'error' : ''}`;
-            t.innerHTML = `<i class="pd-i ${type === 'error' ? 'pd-i-circle-alert' : 'pd-i-circle-check'}"></i> ${msg}`;
-            container.appendChild(t);
-            setTimeout(() => t.remove(), 4000);
-        };
-
-        window.showLoading = () => {
-            if (document.getElementById('customLoader')) return;
-            const loader = document.createElement('div');
-            loader.id = 'customLoader';
-            loader.className = 'spinner-overlay';
-            loader.innerHTML = `<div class="spinner"></div><p style="color: white; font-weight: 600;">Processing...</p>`;
-            document.body.appendChild(loader);
-        };
-
-        window.hideLoading = () => {
-            const loader = document.getElementById('customLoader');
-            if (loader) loader.remove();
-        };
-
-        window.togglePassword = (inputId, button) => {
-            const input = document.getElementById(inputId);
-            if (input.type === "password") {
-                input.type = "text";
-                button.innerHTML = '<i class="pd-i pd-i-eye-off"></i>';
-            } else {
-                input.type = "password";
-                button.innerHTML = '<i class="pd-i pd-i-eye"></i>';
-            }
-        };
-
-        window.closeModal = (id) => {
-            document.getElementById(id).style.display = 'none';
-        };
-
-        window.openResetModal = () => {
-            document.getElementById('resetModal').style.display = 'flex';
-        };
-
-        window.sendPasswordReset = async () => {
+        /* ------------------------------------------------ sign-in and account
+           The interface layer above already owns the plain helpers
+           (toast, loading screen, dialogs, tabs, password reveal). These
+           functions need the database, so they are published under a private
+           name and the public buttons call them through the wrapper that
+           knows how to behave when the sign-in service is unreachable. */
+        window.__pdSendPasswordReset = async () => {
             const email = document.getElementById('resetEmail').value.trim();
             if (!email) {
                 showToast("Please enter your email address", "error");
@@ -1192,7 +1470,7 @@
                 closeModal('resetModal');
                 document.getElementById('resetEmail').value = '';
                 showToast("Password reset email sent! Check your inbox.", "success");
-                confetti({ particleCount: 100, spread: 70 });
+                pdConfetti({ particleCount: 100, spread: 70 });
             } catch (e) {
                 if (e.code === 'auth/user-not-found') {
                     showToast("No account found with this email address", "error");
@@ -1204,12 +1482,7 @@
             }
         };
 
-        window.showDeleteAccountModal = () => {
-            document.getElementById('deleteConfirmText').value = '';
-            document.getElementById('deleteAccountModal').style.display = 'flex';
-        };
-
-        window.deleteAccount = async () => {
+        window.__pdDeleteAccount = async () => {
             const confirmText = document.getElementById('deleteConfirmText').value;
             if (confirmText !== 'DELETE') {
                 showToast('Please type DELETE to confirm account deletion', 'error');
@@ -1245,7 +1518,7 @@
             }
         };
 
-        window.verifyEmail = async () => {
+        window.__pdVerifyEmail = async () => {
             if (!auth.currentUser) return showToast("Please login first", "error");
             
             await auth.currentUser.reload();
@@ -1265,7 +1538,7 @@
             }
         };
 
-        window.sendEmailVerificationCode = async () => {
+        window.__pdSendEmailVerificationCode = async () => {
             try {
                 await sendEmailVerification(auth.currentUser);
                 showToast("Verification email resent! Check spam folder.", "success");
@@ -1303,7 +1576,7 @@
                             emailVerifiedAt: serverTimestamp()
                         });
                         showToast("Email verified successfully!", "success");
-                        confetti({ particleCount: 150, spread: 100 });
+                        pdConfetti({ particleCount: 150, spread: 100 });
                         updateVerificationStatus();
                         window.history.replaceState({}, document.title, window.location.pathname);
                     } else {
@@ -1318,17 +1591,13 @@
             }
         }
 
-        window.resetPassword = async () => {
-            openResetModal();
-        };
-
-        window.handleGoogle = async () => {
+        window.__pdHandleGoogle = async () => {
             showLoading();
             try {
                 const res = await signInWithPopup(auth, googleProvider);
                 await ensureUserProfile(res.user);
                 showToast('Signed in with Google!', 'success');
-                confetti({ particleCount: 100, spread: 70 });
+                pdConfetti({ particleCount: 100, spread: 70 });
             } catch (error) {
                 console.error('Google sign-in error:', error);
                 showToast(authMessage(error, 'Google sign-in could not be completed.'), 'error');
@@ -1337,7 +1606,7 @@
             }
         };
         
-        window.handleRegister = async (e) => {
+        window.__pdHandleRegister = async (e) => {
             e.preventDefault();
             const name = document.getElementById('rName').value.trim();
             const email = document.getElementById('rEmail').value.trim().toLowerCase();
@@ -1381,7 +1650,7 @@
                 // registration into a failed one when the mail service is delayed.
                 sendEmailVerification(cred.user).catch((error) => console.warn('Verification email error:', error));
                 showToast('Registration successful! Please verify your email from your inbox.', 'success');
-                confetti({ particleCount: 150, spread: 70 });
+                pdConfetti({ particleCount: 150, spread: 70 });
             } catch (error) {
                 console.error('Registration error:', error);
                 showToast(authMessage(error, 'We could not create your account. Please try again.'), 'error');
@@ -1390,7 +1659,7 @@
             }
         };
         
-        window.handleLogin = async (e) => {
+        window.__pdHandleLogin = async (e) => {
             e.preventDefault();
             const email = document.getElementById('lEmail').value.trim().toLowerCase();
             const password = document.getElementById('lPass').value;
@@ -1404,7 +1673,7 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
                 showToast("Welcome back!", "success");
-                confetti({ particleCount: 80, spread: 60 });
+                pdConfetti({ particleCount: 80, spread: 60 });
             } catch (error) {
                 console.error('Sign-in error:', error);
                 showToast(authMessage(error, 'Unable to sign in. Please try again.'), 'error');
@@ -1445,7 +1714,7 @@
                 showToast("Profile updated successfully!", "success");
                 toggleEdit(false);
                 await loadProfileData(auth.currentUser);
-                confetti({ particleCount: 80, spread: 60 });
+                pdConfetti({ particleCount: 80, spread: 60 });
             } catch (e) { 
                 console.error("Save error:", e);
                 showToast(e.message, "error"); 
@@ -1488,6 +1757,7 @@
 
             currentUserData = data;
             currentPhotoUrl = photoUrl;
+            window.currentPhotoUrl = photoUrl;
 
             // Leadership access card (Admin / Finance links).
             const adminCard = document.getElementById('adminDashboardCard');
@@ -1740,14 +2010,6 @@
             }
         }
 
-        window.uploadPhoto = (context) => {
-            const fileInput = document.getElementById('accountDirectFileInput');
-            if (fileInput) {
-                fileInput.dataset.context = context || 'profile';
-                fileInput.click();
-            }
-        };
-
         window.handleAccountDirectUpload = async (event) => {
             const file = event.target.files[0];
             const context = event.target.dataset.context || 'profile';
@@ -1774,8 +2036,9 @@
                     document.getElementById('pPhoto').src = url;
                     document.getElementById('editPhotoPreview').src = url;
                     currentPhotoUrl = url;
+                    window.currentPhotoUrl = url;
                     showToast("Profile photo updated!", "success");
-                    confetti({ particleCount: 80, spread: 60 });
+                    pdConfetti({ particleCount: 80, spread: 60 });
                 }
             } catch (error) {
                 console.error("Direct upload error:", error);
@@ -1786,7 +2049,7 @@
             }
         };
         
-        window.changeProfilePhoto = () => {
+        window.__pdChangeProfilePhoto = () => {
             if (!auth.currentUser) {
                 showToast("Please login first", "error");
                 return;
@@ -1853,21 +2116,10 @@
             }
         });
 
-        window.switchTab = (type) => {
-            document.getElementById('loginForm').style.display = type === 'login' ? 'block' : 'none';
-            document.getElementById('registerForm').style.display = type === 'register' ? 'block' : 'none';
-            document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (type === 'login' && i === 0) || (type === 'register' && i === 1)));
-        };
-        
-        window.toggleEdit = (show) => {
-            document.getElementById('profileView').style.display = show ? 'none' : 'block';
-            document.getElementById('profileEdit').style.display = show ? 'block' : 'none';
-            if (show && currentPhotoUrl) {
-                document.getElementById('editPhotoPreview').src = currentPhotoUrl;
-            }
-        };
-        
-        window.handleLogout = () => signOut(auth);
+        /* The tabs, the profile editor and the dialogs are owned by the
+           interface layer above, so they keep working even when this module
+           could not load. Only the sign-out needs the session. */
+        window.__pdHandleLogout = () => signOut(auth);
 
         /* ---------------- notification permission control ---------------- */
         function refreshNotifPermissionUI() {
@@ -1926,6 +2178,15 @@
         window.refreshNotifHealth = function() {
             const list = document.getElementById('notifHealthList');
             if (!list || !window.PDApp || !PDApp.notifications) return;
+            // The health panel answers the shared layer's diagnostics event,
+            // and reading the diagnostics can announce a new state again. The
+            // guard makes that chain impossible to loop.
+            if (window.__pdNotifHealthBusy) return;
+            window.__pdNotifHealthBusy = true;
+            try { renderNotifHealth(list); } finally { window.__pdNotifHealthBusy = false; }
+        };
+
+        function renderNotifHealth(list) {
             const d = PDApp.notifications.diagnostics();
             const installed = d.installed;
             const iOSTab = /iPad|iPhone|iPod/.test(navigator.userAgent || '') && !installed;
@@ -1967,7 +2228,7 @@
             } else {
                 fix.style.display = 'none';
             }
-        };
+        }
 
         window.sendTestNotification = async function() {
             if (!window.PDApp || !PDApp.notifications) return;
@@ -2124,23 +2385,7 @@ window.toggleDarkMode = function() {
     document.documentElement.classList.toggle('dark-mode', dark);
     try { var b = document.querySelector('[data-pd-theme-toggle] .pd-i') || document.querySelector('.theme-toggle-btn .pd-i'); if (b) b.className = dark ? 'pd-i pd-i-sun' : 'pd-i pd-i-moon'; } catch (e) {}
 };
-        
-        window.checkAge = (val) => {
-            const age = Math.floor((Date.now() - new Date(val).getTime()) / (1000 * 60 * 60 * 24 * 365));
-            const btn = document.getElementById('regBtn');
-            if (age < 13) {
-                btn.disabled = true;
-                document.getElementById('ageWarn').style.display = 'block';
-            } else {
-                btn.disabled = false;
-                document.getElementById('ageWarn').style.display = 'none';
-            }
-        };
-        
-        document.querySelectorAll('.modern-modal').forEach(modal => {
-            modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
-        });
-        
+
         handleEmailVerificationLink();
     </script>
 </body>

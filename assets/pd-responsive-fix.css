@@ -22,8 +22,16 @@ body {
   overflow-x: clip; /* guard only; the rules below stop the overflow */
 }
 
+/* The document itself must always scroll vertically.
+   `!important` is deliberate: a single stray `overflow: hidden` that reaches
+   the root element — a component class, a page style, a browser extension —
+   otherwise stops EVERY page from scrolling and makes any field below the
+   fold impossible to reach or tap on a phone (Android cannot scroll an input
+   into view, so the tap does nothing and the keyboard never opens).
+   The navigation drawer still locks scrolling, but it does that on <body>
+   (`body.pd-nav-open`), which this rule does not touch. */
 html {
-  overflow-y: auto; /* the document itself must always scroll vertically */
+  overflow-y: auto !important;
 }
 
 @supports not (overflow: clip) {
@@ -68,11 +76,15 @@ svg {
   max-width: 100%;
 }
 
-/* Oversized decorative glows are clipped to the viewport. */
-.pd-aurora,
-[class*="aurora"],
-[class*="glow-orb"],
-[class*="bg-orb"] {
+/* Oversized decorative glows are clipped to the viewport.
+   The selector list is wrapped in :where() on purpose. A bare
+   `[class*="aurora"]` also matches the <html> element, because pd-motion.js
+   marks the root element `pd-has-aurora`. With normal specificity that
+   handed the whole document `overflow: hidden`, so no page could scroll and
+   fields below the fold could not be tapped on a phone. :where() keeps this
+   decoration rule at zero specificity so it can never outrank the document
+   rules above. */
+:where(.pd-aurora, [class*="aurora"], [class*="glow-orb"], [class*="bg-orb"]) {
   max-width: 100vw;
   overflow: hidden;
 }

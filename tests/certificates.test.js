@@ -32,9 +32,24 @@ const ROOT = path.join(__dirname, '..');
 
 function moduleScript(file) {
   const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
-  const m = html.match(/<script type="module">([\s\S]*?)<\/script>/);
+  // The tag may carry extra attributes (e.g. an onerror handler), so match
+  // the type attribute rather than the whole opening tag.
+  const m = html.match(/<script[^>]*type="module"[^>]*>([\s\S]*?)<\/script>/);
   if (!m) throw new Error('no module script in ' + file);
   return m[1];
+}
+
+/* Every inline script on the page, module and classic together.
+   The account page keeps its plain helpers (escapeHtml, showToast) in a
+   classic script that runs before the Firebase module, so a page helper may
+   live in either one. */
+function allScripts(file) {
+  const html = fs.readFileSync(path.join(ROOT, file), 'utf8');
+  const blocks = [];
+  const re = /<script(?![^>]*\bsrc=)(?![^>]*type="application\/ld\+json")[^>]*>([\s\S]*?)<\/script>/g;
+  let m;
+  while ((m = re.exec(html)) !== null) blocks.push(m[1]);
+  return blocks.join('\n');
 }
 
 // Balanced-brace slice starting at `marker` (inclusive of the closing brace line).
@@ -56,9 +71,11 @@ function sliceBalanced(code, marker) {
 // ---------------------------------------------------------------- account
 (function accountTest() {
   const code = moduleScript('account.html');
+  const page = allScripts('account.html');
+  const escapeMatch = page.match(/window\.escapeHtml = [^\n]*/);
   const helpers =
-    code.match(/window\.escapeHtml = [^\n]*/)[0] + '\n' +
-    sliceBalanced(code, 'window.showToast = (msg, type) => {') + '\n';
+    (escapeMatch ? escapeMatch[0] : code.match(/window\.escapeHtml = [^\n]*/)[0]) + '\n' +
+    sliceBalanced(page, 'window.showToast = (msg, type) => {') + '\n';
   const start = code.indexOf('// ==================== MY CERTIFICATES ====================');
   const end = code.indexOf('function updateVerificationStatus');
   const certCode = code.slice(start, end) +

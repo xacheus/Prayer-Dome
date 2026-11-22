@@ -495,6 +495,39 @@
     </div>
 </div>
 
+<!-- The permission sheet covers the whole page, so it must always be
+     possible to dismiss it. The real handlers live in the module that loads
+     the Firebase SDK; these plain fallbacks run first and are replaced when
+     that module arrives, so a blocked CDN can never trap a visitor here. -->
+<script>
+    (function () {
+        var close = function () {
+            var modal = document.getElementById('permissionModal');
+            if (modal) modal.style.display = 'none';
+        };
+        /* The page's own toast lives in the module below. The shared app
+           layer also offers one, and it is always present, so a message can
+           still be shown even when the module never arrives. */
+        var say = function (message) {
+            try {
+                if (typeof window.showToast === 'function') { window.showToast(message, 'info'); return; }
+                if (window.PDApp && typeof window.PDApp.toast === 'function') { window.PDApp.toast(message, 'info'); }
+            } catch (e) { /* a message must never break the close */ }
+        };
+        window.requestPermissions = window.requestPermissions || function () {
+            close();
+            say('Camera access is not available right now.');
+        };
+        window.skipPermissions = window.skipPermissions || function () {
+            close();
+            say('Viewer mode only.');
+        };
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' || e.key === 'Esc') close();
+        });
+    })();
+</script>
+
 <!-- LIVE STATUS BAR -->
 <div class="live-status-bar">
     <div class="status-indicator">

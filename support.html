@@ -320,6 +320,34 @@
         <h3 id="loaderText" style="font-weight: 800; letter-spacing: 1px;">Authenticating...</h3>
     </div>
 
+    <!-- The "Authenticating…" screen covers the whole page, so it must never
+         be able to stay there. The sign-in code lives in a module that loads
+         the Firebase SDK from a CDN; on a slow or restricted connection that
+         module may never arrive, and the page would then be frozen behind
+         this overlay with nothing clickable. This guard (a plain script, so
+         it always runs) releases the page and explains what happened. -->
+    <script>
+        (function () {
+            var loader = document.getElementById('globalLoader');
+            if (!loader) return;
+            var release = function () {
+                if (!loader || loader.style.display === 'none') return;
+                loader.style.display = 'none';
+                var message = document.getElementById('loaderText');
+                if (message) message.textContent = 'Still connecting…';
+                /* The page's own toast lives in the module below; the shared
+                   app layer also offers one and is always present. */
+                var text = 'You are offline or the connection is slow. The page is open again — please try signing in once more.';
+                try {
+                    if (typeof window.toast === 'function') { window.toast(text, 'error'); return; }
+                    if (window.PDApp && typeof window.PDApp.toast === 'function') window.PDApp.toast(text, 'error');
+                } catch (e) { /* the page is released either way */ }
+            };
+            setTimeout(release, 7000);
+            window.addEventListener('offline', release);
+        })();
+    </script>
+
     <div class="toast-container" id="toastBox"></div>
 
     <!-- SECURITY: NUMPAD PIN WALL -->
