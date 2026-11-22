@@ -1,0 +1,123 @@
+'use strict';
+
+/* Static acceptance checks for the membership verification, card, giving and
+   resource-library fixes. These complement the real-browser checks in the
+   report; they catch regressions where a private read, a raw-id QR or a
+   second card renderer is reintroduced. */
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.join(__dirname, '..');
+const read = (file) => fs.readFileSync(path.join(ROOT, file), 'utf8');
+const verify = read('verify.html');
+const membership = read('membership.html');
+const give = read('give.html');
+const resources = read('resources.html');
+const academy = read('assets/pd-academy.js');
+const game = read('game.html');
+const rules = read('firestore.rules');
+const server = read('functions/verification.js');
+const admin = read('admin.html');
+const extras = read('assets/pd-admin-extras.js');
+
+// ---- verification endpoint -------------------------------------------------
+assert.match(verify, /httpsCallable/, '/verify must call the server');
+assert.match(verify, /verifyMembership/, '/verify must call verifyMembership');
+assert.match(verify, /never upper-case a pasted code/, 'a pasted QR code must keep its exact case');
+assert.doesNotMatch(verify, /getDoc\b|getDocs\b|membershipVerification/,
+  '/verify must not read private Firestore documents directly');
+for (const state of ['Verified & Active', 'Pending Approval', 'Not Yet Issued', 'Expired',
+  'Suspended', 'Revoked', 'Invalid ID', 'Verification Unavailable']) {
+  assert.ok(verify.includes(state), 'missing verification state: ' + state);
+}
+assert.match(verify, /trim\(\)/, 'manual input must be trimmed');
+assert.match(verify, /toUpperCase\(\)/, 'manual input must be normalised to one case');
+
+assert.match(server, /normaliseId/, 'server must normalise the ID');
+assert.match(server, /text\(value, 40\)\.toUpperCase\(\)/, 'server case rule must be explicit');
+assert.match(server, /resolveState/, 'server must resolve status separately from existence');
+assert.match(server, /membershipVerificationRefs/, 'server must resolve QR tokens');
+assert.match(server, /randomBytes\(18\)\.toString\('base64url'\)/, 'QR token must be unpredictable');
+assert.match(server, /ensureMyCard/, 'server must issue a card projection for approved members');
+assert.match(server, /membershipVerificationHistory/, 'server must append issuance history');
+assert.doesNotMatch(server, /userId:\s*context\.auth\.uid[^]*return\s*\{[^}]*userId/,
+  'public result must not echo the user id');
+
+// ---- card identity and QR --------------------------------------------------
+assert.match(membership, /aspect-ratio:\s*85\.6\s*\/\s*54/, 'card must use CR80 proportions');
+assert.match(membership, /object-fit:\s*cover/, 'portrait must cover its frame');
+assert.match(membership, /object-position:\s*center top/, 'portrait must keep the face at the top');
+assert.match(membership, /SEEDWELL K\. KHAYALETHU MASUKU/, 'founder name must be exact');
+assert.match(membership, /Founder and President/, 'founder role must be present');
+assert.doesNotMatch(membership, /barcodeImg|JsBarcode/, 'barcode must not compete with the QR');
+assert.match(membership, /verify\?ref=/, 'QR must point at a token URL');
+assert.doesNotMatch(membership, /verify\?id=/, 'QR must never expose a raw membership id');
+assert.match(membership, /verify\?ref=[^]*encodeURIComponent/, 'QR token must be encoded');
+assert.match(membership, /addPage\(\[width, height\]/, 'PDF must add exactly a second CR80 page');
+assert.match(membership, /const width = 85\.6;/, 'PDF page width must be CR80');
+assert.match(membership, /const height = 54;/, 'PDF page height must be CR80');
+assert.match(membership, /downloadID\('front'\)/, 'front download action missing');
+assert.match(membership, /downloadID\('back'\)/, 'back download action missing');
+assert.match(membership, /@page \{ size: 85\.6mm 54mm; margin: 0; \}/, 'print page must be CR80');
+assert.match(membership, /ensureMyCardCall/, 'card page must ask the server for its token');
+assert.match(membership, /Secure QR could not be registered/, 'card must explain a missing token');
+
+// ---- approval creates the issued projection --------------------------------
+assert.match(admin, /window\.issueCardVerification\(uid, false\)/,
+  'approval must issue the card verification record');
+assert.match(admin, /Repair missing cards/i, 'the card panel must offer a repair action for approved members');
+assert.match(extras, /window\.repairMissingCards = repairMissingCards/, 'the repair action must be exposed to the inline handler');
+assert.match(extras, /membershipVerificationRefs/, 'repair must restore QR pointer documents, not only the card projection');
+assert.match(admin, /membership_id_changed/, 'sensitive ID changes must be audited');
+assert.match(admin, /already used by another member/, 'duplicate IDs must be rejected');
+assert.match(extras, /memberSnap = await store\.getDoc\(store\.doc\(bridge\.db, 'memberships', uid\)\)/,
+  'issuing must work outside the card-panel cache');
+assert.match(server, /Legacy approved member/, 'legacy repair must be described');
+
+// ---- give page -------------------------------------------------------------
+assert.doesNotMatch(give, /Pastor Zacheus|Simbaya/, 'no individual may be a giving recipient');
+assert.doesNotMatch(give, /PRAYER DOME CHURCH/, 'recipient must be PRAYER DOME, the organisation');
+const purposeValues = ['General Offering', 'Tithes', 'Missions', 'Church Development', 'Special Donations'];
+for (const value of purposeValues) assert.ok(give.includes('>' + value + '<'), 'missing giving purpose: ' + value);
+assert.match(give, /organization:\s*"PRAYER DOME"/, 'offering must name the organisation');
+assert.match(give, /recipient:\s*"PRAYER DOME"/, 'offering must name the recipient');
+assert.match(give, /donorUid:\s*currentUser\.uid/, 'payer id must be stored privately');
+assert.match(give, /reference:\s*reference/, 'a payment reference must be stored');
+assert.match(give, /PDG-/, 'payment reference must be a real, quotable format');
+assert.match(give, /PRAYER DOME — giving recorded/, 'confirmation must identify PRAYER DOME');
+assert.doesNotMatch(give, /moment\(/, 'give page must not call the unloaded moment library');
+
+// ---- resources -------------------------------------------------------------
+assert.match(resources, /PD_RESOURCES_OWNED_BY_PAGE = true/, 'page must own the resource grid');
+assert.match(academy, /PD_RESOURCES_OWNED_BY_PAGE\) return/, 'academy must not overwrite the grid');
+assert.match(resources, /resourceStatus/, 'resources need a visible loading/error state');
+assert.match(resources, /No resources are available yet/, 'empty state must explain itself');
+assert.match(resources, /LIVE\.error/, 'live errors must be shown');
+assert.match(resources, /function safeUrl/, 'resource URLs must be constrained');
+assert.match(resources, /fl_attachment/, 'downloads must force a file where supported');
+assert.match(resources, /size:\s*fmtBytes\(EDIT\.fileBytes\)/, 'uploaded file size must be stored');
+assert.match(resources, /aria-busy/, 'grid must expose its loading state');
+assert.match(resources, /where\('published', '!=', false\)/, 'resource list must satisfy the read rule with an explicit query');
+assert.match(resources, /setFirestore\(bindings\)/, 'resources must install Firestore bindings instead of waiting forever');
+assert.match(resources, /where, *$/m, 'Firestore bindings must include where for the published query');
+
+// ---- game tabs -------------------------------------------------------------
+assert.match(game, /#domeyTopicChips \{[^}]*display: grid/s, 'topic tabs must use a wrapping grid');
+assert.match(game, /minmax\(min\(100%, 136px\), 1fr\)/, 'topic tabs must wrap into rows');
+assert.match(game, /white-space: normal/, 'topic tabs must not split words into letters');
+assert.match(game, /\.is-selected/, 'active topic must be visible');
+assert.match(game, /aria-pressed/, 'topic tabs must expose their state');
+
+// ---- security --------------------------------------------------------------
+assert.match(rules, /match \/membershipVerification\/\{id\} \{\s*[\s\S]*?allow get, list: if isAdmin\(\);/,
+  'card records must not be publicly readable');
+assert.match(rules, /match \/membershipVerificationRefs\/\{reference\} \{\s*[\s\S]*?allow get, list: if isAdmin\(\);/,
+  'QR pointers must not be publicly readable');
+assert.match(rules, /match \/offerings\/\{id\} \{[^}]*allow read: if isAdmin\(\) \|\|/s,
+  'offering rows must be private or owner-readable');
+assert.match(rules, /request\.resource\.data\.donorUid == request\.auth\.uid/,
+  'offering creation must bind the payer uid');
+
+console.log('ID verification, card, giving, resources and game acceptance checks passed.');

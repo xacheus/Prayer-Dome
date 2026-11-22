@@ -142,8 +142,33 @@
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
 <script src="/assets/pd-upload.js" defer></script><script src="/assets/pd-academy.js" defer></script>
+  <style>
+    /* Resource cards must stay readable at every width. Long titles wrap
+       between words, actions move below the text, and nothing is clipped. */
+    .resource-status {
+      margin: 0 auto 16px; max-width: 760px; padding: 12px 16px; border-radius: 14px;
+      background: var(--pd-acad-card, #fff); border: 1px solid var(--pd-acad-border, #dbe3ee);
+      color: var(--pd-acad-muted, #5b6b82); font-size: .82rem; line-height: 1.55;
+    }
+    .resource-status[data-kind="error"] { background: #fef2f2; border-color: #fecaca; color: #991b1b; }
+    .resource-status[data-kind="empty"] { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    #resourceGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); align-items: stretch; }
+    #resourceGrid .pd-acad-resource { flex-wrap: wrap; align-items: flex-start; min-width: 0; overflow: visible; }
+    #resourceGrid .pd-acad-resource > div { min-width: 0; }
+    #resourceGrid .pd-acad-resource h3 { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+    #resourceGrid .pd-acad-resource p { overflow-wrap: break-word; word-break: normal; }
+    #resourceGrid .pd-acad-resource .pd-acad-meta { row-gap: 6px; }
+    #resourceGrid .pd-acad-resource .pd-acad-btn { min-height: 44px; white-space: normal; text-align: center; }
+    @media (max-width: 520px) {
+      #resourceGrid { grid-template-columns: 1fr; }
+      #resourceGrid .pd-acad-resource { padding: 18px; gap: 12px; }
+      #resourceGrid .pd-acad-resource > div:last-child { width: 100%; }
+      #resourceGrid .pd-acad-resource .pd-acad-btn { flex: 1 1 140px; justify-content: center; }
+    }
+  </style>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
+
 </head>
 <body class="pd-acad-page">
 <div class="pd-aurora" aria-hidden="true"><span></span></div>
@@ -214,7 +239,8 @@
     <div class="pd-acad-hero-actions"><a class="pd-acad-btn pd-acad-btn-primary" href="#resourceGrid"><i class="pd-i pd-i-download"></i> Browse Downloads</a><a class="pd-acad-btn pd-acad-btn-secondary" href="/lessons"><i class="pd-i pd-i-graduation-cap"></i> Continue Learning</a></div>
   </section>
   <section class="pd-acad-grid pd-acad-grid-3 pd-acad-stats"><div class="pd-acad-stat"><strong data-acad-resource-count>0</strong><span>Downloadable documents</span></div><div class="pd-acad-stat"><strong>PDF</strong><span>Print-ready format</span></div><div class="pd-acad-stat"><strong>2026</strong><span>Current edition</span></div></section>
-  <section class="pd-acad-grid" id="resourceGrid"></section>
+  <p class="resource-status" id="resourceStatus" role="status" aria-live="polite">Loading resources…</p>
+  <section class="pd-acad-grid" id="resourceGrid" aria-busy="true"></section>
   <!-- ADMIN: Resource Management (administrators only) -->
   <section id="resourceAdminPanel" class="pd-acad-card" style="display:none; margin-top:24px; border:1px solid rgba(10,77,155,.25);">
     <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
@@ -282,10 +308,11 @@ window.toggleDarkMode = function() {
 };
 /* Resource library data layer: merges the built-in documents with the
    live Firestore collection and gives administrators management tools. */
+window.PD_RESOURCES_OWNED_BY_PAGE = true;
 (function () {
   'use strict';
-  var LIVE = { items: [], isAdmin: false };
-  var EDIT = { id: null, fileUrl: '', fileMeta: '', thumbUrl: '' };
+  var LIVE = { items: [], isAdmin: false, error: '', loading: true };
+  var EDIT = { id: null, fileUrl: '', fileMeta: '', fileBytes: 0, fileType: '', thumbUrl: '' };
 
   function fmtBytes(n) {
     n = Number(n) || 0;
@@ -303,19 +330,39 @@ window.toggleDarkMode = function() {
     return 'pd-i-file-text';
   }
 
+  function safeUrl(value) {
+    var url = String(value || '').trim();
+    if (/^https:\/\//i.test(url) || /^\/[^/]/.test(url)) return url;
+    return '';
+  }
+
+  /* Cloudinary serves an attachment when fl_attachment is in the path. Adding
+     it makes the download button actually save a file on Android browsers. */
+  function downloadHref(value) {
+    var url = safeUrl(value);
+    if (/res\.cloudinary\.com\/.+\/upload\//i.test(url) && url.indexOf('fl_attachment') < 0) {
+      return url.replace('/upload/', '/upload/fl_attachment/');
+    }
+    return url;
+  }
+
   function cardHtml(r, index) {
-    var isDoc = String(r.url || '').startsWith('/');
+    var url = safeUrl(r.url);
+    var download = downloadHref(r.downloadUrl || r.url);
+    if (!url) return '';
+    var isDoc = url.charAt(0) === '/';
     var dlLabel = isDoc ? 'Download' : 'Save offline';
+    var format = String(r.format || 'FILE').toUpperCase();
     return '<article class="pd-acad-card pd-lift pd-acad-resource" style="animation:pdFadeUp .4s ease both;animation-delay:' + (index * 0.04) + 's">'
       + '<div class="pd-acad-icon gold"><i class="pd-i ' + iconFor(r) + '"></i></div>'
-      + '<div style="flex:1"><h3>' + esc(r.title) + '</h3><p>' + esc(r.description || '') + '</p>'
+      + '<div style="flex:1;min-width:0"><h3>' + esc(r.title || 'Untitled resource') + '</h3><p>' + esc(r.description || 'No description provided.') + '</p>'
       + '<div class="pd-acad-meta"><span class="pd-acad-chip">' + esc(r.category || 'Resource') + '</span>'
-      + '<span class="pd-acad-chip gold">' + esc(r.format || 'FILE') + '</span>'
+      + '<span class="pd-acad-chip gold">' + esc(format) + '</span>'
       + (r.version ? '<span class="pd-acad-chip">' + esc(r.version) + '</span>' : '')
       + (r.size ? '<span class="pd-acad-chip">' + esc(r.size) + '</span>' : '') + '</div></div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      + '<a class="pd-acad-btn pd-acad-btn-secondary" href="' + esc(r.url) + '" target="_blank" rel="noopener"><i class="pd-i pd-i-eye"></i> Open</a>'
-      + '<a class="pd-acad-btn pd-acad-btn-primary" href="' + esc(r.downloadUrl || r.url) + '" download onclick="markSaved(this)"><i class="pd-i pd-i-download"></i> ' + dlLabel + '</a>'
+      + '<a class="pd-acad-btn pd-acad-btn-secondary" href="' + esc(url) + '" target="_blank" rel="noopener"><i class="pd-i pd-i-eye"></i> Open</a>'
+      + '<a class="pd-acad-btn pd-acad-btn-primary" href="' + esc(download) + '" download rel="noopener" onclick="markSaved(this)"><i class="pd-i pd-i-download"></i> ' + dlLabel + '</a>'
       + '</div></article>';
   }
 
@@ -332,15 +379,48 @@ window.toggleDarkMode = function() {
   function renderAll() {
     var grid = document.getElementById('resourceGrid');
     if (!grid) return;
-    var builtin = (window.PD_ACADEMY && window.PD_ACADEMY.DATA && window.PD_ACADEMY.DATA.resources) || [];
-    var live = LIVE.items.filter(function (r) { return !r.archived; });
-    var countEl = document.querySelector('[data-acad-resource-count]');
-    var all = live.concat(builtin);
-    if (countEl) countEl.textContent = all.length;
-    grid.innerHTML = all.map(cardHtml).join('');
-    renderAdmin();
+    var status = document.getElementById('resourceStatus');
+    try {
+      var builtin = (window.PD_ACADEMY && window.PD_ACADEMY.DATA && window.PD_ACADEMY.DATA.resources) || [];
+      var live = LIVE.items.filter(function (r) { return !r.archived; });
+      // A live record supersedes the built-in document with the same title,
+      // so an administrator's edited copy never appears twice.
+      var seen = {};
+      var all = live.concat(builtin).filter(function (r) {
+        if (!r || !safeUrl(r.url)) return false;
+        var title = String(r.title || '').trim().toLowerCase();
+        var url = String(r.downloadUrl || r.url || '').trim();
+        var key = title || url;
+        if (!key || seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+      var countEl = document.querySelector('[data-acad-resource-count]');
+      if (countEl) countEl.textContent = all.length;
+      grid.innerHTML = all.map(cardHtml).join('');
+      grid.setAttribute('aria-busy', 'false');
+      if (status) {
+        if (all.length) {
+          status.dataset.kind = 'ready';
+          status.textContent = all.length + (all.length === 1 ? ' resource is ready' : ' resources are ready') +
+            (LIVE.loading ? ' — checking for newly published files…' : LIVE.error ? ' — showing built-in files because live files could not be checked.' : '');
+        } else {
+          status.dataset.kind = 'empty';
+          status.innerHTML = '<strong>No resources are available yet.</strong> The library could not find a published file. Please check again later or contact <a href="mailto:info@prayerdome.net">info@prayerdome.net</a>.';
+        }
+      }
+      renderAdmin();
+    } catch (error) {
+      console.error('Resource render failed:', error);
+      grid.setAttribute('aria-busy', 'false');
+      if (!grid.innerHTML) {
+        grid.innerHTML = '<div class="pd-acad-card" style="grid-column:1/-1"><h3>Resources could not be displayed</h3><p>Please refresh the page. If the problem continues, contact info@prayerdome.net.</p></div>';
+      }
+      if (status) { status.dataset.kind = 'error'; status.textContent = 'Some resources could not be displayed. Please refresh the page.'; }
+    }
   }
   window.renderResourcesAll = renderAll;
+  window.loadResourcesLive = function () { LIVE.loading = true; renderAll(); return loadLive(); };
 
   /* ---------------- ADMIN ---------------- */
   function renderAdmin() {
@@ -384,7 +464,7 @@ window.toggleDarkMode = function() {
   };
   window.closeResourceEditor = function () {
     document.getElementById('resourceEditorOverlay').style.display = 'none';
-    EDIT.id = null; EDIT.fileUrl = ''; EDIT.thumbUrl = '';
+    EDIT.id = null; EDIT.fileUrl = ''; EDIT.fileMeta = ''; EDIT.fileBytes = 0; EDIT.fileType = ''; EDIT.thumbUrl = '';
   };
   function resError(msg) {
     var box = document.getElementById('resourceEditorError');
@@ -404,7 +484,9 @@ window.toggleDarkMode = function() {
     var f = res.files[0];
     EDIT.fileUrl = f.url;
     EDIT.fileMeta = (f.format || 'file').toUpperCase();
-    document.getElementById('resFileState').textContent = 'Attached · ' + EDIT.fileMeta + ' · ' + fmtBytes(f.bytes);
+    EDIT.fileBytes = Number(f.bytes) || 0;
+    EDIT.fileType = f.type || '';
+    document.getElementById('resFileState').textContent = 'Attached · ' + EDIT.fileMeta + (f.bytes ? ' · ' + fmtBytes(f.bytes) : '');
   };
 
   window.pickResourceThumb = async function () {
@@ -436,6 +518,8 @@ window.toggleDarkMode = function() {
         url: EDIT.fileUrl,
         downloadUrl: EDIT.fileUrl,
         format: EDIT.fileMeta || 'FILE',
+        fileType: EDIT.fileType || '',
+        size: fmtBytes(EDIT.fileBytes),
         thumbnail: EDIT.thumbUrl || '',
         published: true,
         archived: false,
@@ -505,7 +589,16 @@ window.toggleDarkMode = function() {
       doc: function (name, id) { return fb.doc(fb.db, name, id); },
       addDoc: function (name, data) { return fb.addDoc(fb.collection(fb.db, name), data); },
       updateDoc: function (ref, data) { return fb.updateDoc(ref, data); },
-      getDocs: function (name) { return fb.getDocs(fb.collection(fb.db, name)); },
+      query: fb.query,
+      where: fb.where,
+      // Firestore rules are not filters: a `published != false` rule needs an
+      // explicit query constraint or the whole list request is denied. That
+      // denial was one of the causes of the blank library.
+      getDocs: function (ref) {
+        var target = typeof ref === 'string' ? fb.collection(fb.db, ref) : ref;
+        if (!target) throw new Error('No Firestore collection is available.');
+        return fb.getDocs(target);
+      },
       tokens: async function () {
         var snap = await fb.getDocs(fb.collection(fb.db, 'userTokens'));
         var out = [];
@@ -516,15 +609,28 @@ window.toggleDarkMode = function() {
     return true;
   }
 
-  async function loadLive() {
-    if (!db && !wireFirestore()) { setTimeout(loadLive, 1200); return; }
+  async function loadLive(attempt) {
+    attempt = attempt || 0;
+    if (!db && !wireFirestore()) {
+      if (attempt < 20) setTimeout(function () { loadLive(attempt + 1); }, 800);
+      else { LIVE.loading = false; LIVE.error = 'Live resources are unavailable.'; renderAll(); }
+      return;
+    }
     try {
-      var snap = await db.getDocs('resources');
+      var snap = await db.getDocs(db.query(db.collection('resources'), db.where('published', '!=', false)));
       var items = [];
       snap.forEach(function (d) { items.push(Object.assign({ id: d.id }, d.data())); });
       LIVE.items = items;
+      LIVE.error = '';
+    } catch (e) {
+      console.warn('live resources unavailable', e);
+      LIVE.error = e && e.code === 'permission-denied'
+        ? 'Live resources are private to signed-in members.'
+        : 'Live resources could not be checked.';
+    } finally {
+      LIVE.loading = false;
       renderAll();
-    } catch (e) { console.warn('live resources unavailable', e); }
+    }
   }
 
   function checkAdmin() {
@@ -553,13 +659,68 @@ window.toggleDarkMode = function() {
   }
 
   function boot() {
+    var status = document.getElementById('resourceStatus');
+    if (status) status.textContent = 'Loading the resource library…';
+    // Built-in documents render first; the live query then merges over them.
     renderAll();
     loadLive();
     checkAdmin();
+    // Deferred academy data is guaranteed by DOMContentLoaded. One extra pass
+    // covers a slow CDN without ever leaving an unexplained empty grid.
+    window.addEventListener('load', function () { renderAll(); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();
+</script>
+
+<script type="module">
+  /* The resource library used to wait forever for Firestore bindings that no
+     page script ever installed. Initialise Firebase here and expose the same
+     bindings the rest of the app uses, including `where` for the published
+     query required by the security rules. */
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import {
+    getFirestore, doc, getDoc, setDoc, addDoc, collection, query, where,
+    orderBy, limit, getDocs, serverTimestamp, Timestamp, updateDoc
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
+    authDomain: "prayer-dome.firebaseapp.com",
+    projectId: "prayer-dome",
+    storageBucket: "prayer-dome.firebasestorage.app",
+    messagingSenderId: "198295153196",
+    appId: "1:198295153196:web:1222b31948d7974ba3bf89"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+  const auth = getAuth(app);
+  const bindings = {
+    db, auth, doc, getDoc, setDoc, addDoc, updateDoc, collection, query, where,
+    orderBy, limit, getDocs, serverTimestamp, Timestamp
+  };
+  function publish() {
+    if (window.PDApp && typeof window.PDApp.setFirestore === 'function') {
+      window.PDApp.setFirestore(bindings);
+      // The library may have rendered its built-in documents before this
+      // module ran. Nudge it to merge the live rows now that Firestore exists.
+      if (typeof window.loadResourcesLive === 'function') window.loadResourcesLive();
+      else if (typeof window.renderResourcesAll === 'function') window.renderResourcesAll();
+      window.dispatchEvent(new Event('pd:firestore-ready'));
+      return true;
+    }
+    return false;
+  }
+  if (!publish()) {
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (publish() || tries > 60) clearInterval(timer);
+    }, 250);
+    window.addEventListener('load', publish, { once: true });
+  }
 </script>
 </body>
 </html>

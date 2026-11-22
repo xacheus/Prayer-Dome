@@ -224,10 +224,11 @@ service cloud.firestore {
 
     // Offerings / Deposits / Withdrawals
     match /offerings/{id} {
-      allow read: if isSignedIn();
-      allow create: if isSignedIn();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      // Giving records are financial data. A member may read only their own
+      // rows; the finance team reads and reconciles everything.
+      allow read: if isAdmin() || (isSignedIn() && resource.data.donorUid == request.auth.uid);
+      allow create: if isSignedIn() && request.resource.data.donorUid == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
     match /deposits/{id} {
       allow read: if isSignedIn() || isAdmin();
@@ -647,11 +648,10 @@ service cloud.firestore {
     // national ID and the member's signature are never copied here, so a
     // public scan cannot leak private contact information.
     match /membershipVerification/{id} {
-      // A card checks one exact number through /verify (a get). Listing the
-      // whole verification register would expose every member's number and
-      // name, so enumeration stays administrator-only.
-      allow get: if true;
-      allow list: if isAdmin();
+      // Public checks go through the verifyMembership callable, never a direct
+      // document read. The projection includes internal user ids, issuing
+      // administrator and status flags, so only administrators may read it.
+      allow get, list: if isAdmin();
       allow create, update: if isAdmin() &&
         request.resource.data.membershipId is string &&
         request.resource.data.membershipId.size() > 0 &&
@@ -667,12 +667,10 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // A card can also carry an unguessable reference instead of the printed
-    // membership number. This projection is deliberately public-by-reference:
-    // one exact token at a time, never a list.
+    // QR tokens are resolved server-side only. This collection must never be
+    // world-readable: the pointer carries the same private snapshot fields.
     match /membershipVerificationRefs/{reference} {
-      allow get: if true;
-      allow list: if isAdmin();
+      allow get, list: if isAdmin();
       allow create, update, delete: if isAdmin();
     }
 

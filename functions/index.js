@@ -9,6 +9,7 @@ const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
 const billingModule = require('./billing');
 const notificationModule = require('./notifications');
+const verificationModule = require('./verification');
 const { defineSecret } = require('firebase-functions/params');
 const { signUpload } = require('./cloudinary');
 const cloudinaryApiSecret = defineSecret('CLOUDINARY_API_SECRET');
@@ -745,6 +746,8 @@ exports.expireSupportSubscriptions = billingModule.expireJob;
 // Transactional email + per-member in-app notifications. Every trigger reacts
 // to a status that has already been written, and records a deterministic
 // outbox row before calling Brevo so a retry can never duplicate a message.
+exports.verifyMembership = verificationModule.verifyMembership;
+exports.ensureMyCard = verificationModule.ensureMyCard;
 exports.emailAdmin = notificationModule.emailAdmin;
 exports.membershipNotifications = notificationModule.membershipNotifications;
 exports.paymentNotifications = notificationModule.paymentNotifications;

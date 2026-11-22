@@ -316,6 +316,34 @@
             background: linear-gradient(135deg, #ffcc00, #ff9900); 
             color: black; 
         }
+        .method-header.giving {
+            background: linear-gradient(135deg, var(--accent-blue, #0A4D9B), #07244d);
+            color: #fff;
+        }
+        .give-purpose { grid-column: 1 / -1; }
+        .give-purpose .method-body { display: grid; gap: 12px; }
+        .give-purpose p { margin: 0; line-height: 1.6; color: var(--text-secondary); }
+        .give-label { font-size: .7rem; font-weight: 900; letter-spacing: .9px; text-transform: uppercase; color: var(--text-sub); }
+        .give-select {
+            width: 100%; padding: 13px 16px; border-radius: 14px; border: 2px solid var(--border);
+            background: var(--bg-light); color: var(--text-main); font: inherit; font-weight: 700;
+        }
+        .give-select:focus { outline: none; border-color: var(--accent-blue, #0A4D9B); box-shadow: 0 0 0 3px rgba(10,77,155,.12); }
+        .give-ref-box {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            background: rgba(212,175,55,.1); border: 1px dashed var(--accent-gold);
+            border-radius: 14px; padding: 12px 14px;
+        }
+        .give-ref-box span { font-size: .66rem; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; color: var(--text-sub); }
+        .give-ref-box strong { font-family: monospace; font-size: .95rem; letter-spacing: .04em; overflow-wrap: break-word; }
+        .give-note { font-size: .76rem; color: var(--text-secondary); line-height: 1.55; }
+        .giving-confirmation {
+            margin: 0 0 30px; padding: 22px 24px; border-radius: 24px;
+            background: #ecfdf3; border: 1px solid #86efac; color: #14532d;
+        }
+        .giving-confirmation h3 { margin: 0 0 6px; font-size: 1.05rem; }
+        .giving-confirmation p { margin: 4px 0; line-height: 1.55; font-size: .86rem; }
+        .giving-confirmation strong { overflow-wrap: anywhere; }
 
         .method-header h2 { 
             font-size: 1.3rem; 
@@ -628,11 +656,39 @@
     <div class="main-container">
         <!-- Hero Section -->
         <div class="give-hero">
-            <h2><i class="pd-i pd-i-heart"></i> Support the Ministry</h2>
-            <p>Your generosity helps spread the Gospel and transform lives across Eswatini, Zambia, Ireland, and beyond.</p>
+            <h2><i class="pd-i pd-i-heart"></i> Give to PRAYER DOME</h2>
+            <p>Every gift is received by PRAYER DOME and supports the ministry’s work across Eswatini, Zambia, Ireland, and beyond.</p>
         </div>
 
+        <div class="giving-confirmation" id="givingConfirmation" hidden aria-live="polite"></div>
+
         <div class="methods-grid">
+            <!-- GIVING PURPOSE + REFERENCE -->
+            <div class="method-card give-purpose">
+                <div class="method-header giving">
+                    <h2><i class="pd-i pd-i-church"></i> PRAYER DOME — Giving Details</h2>
+                    <p>The recipient is always PRAYER DOME, the church organisation.</p>
+                </div>
+                <div class="method-body">
+                    <p><strong>Recipient: PRAYER DOME.</strong> Gifts are not collected for any individual, staff member or personal fund. They support the church’s ministry, missions and development.</p>
+                    <label class="give-label" for="giveCategory">Purpose of this gift</label>
+                    <select class="give-select" id="giveCategory">
+                        <option value="General Offering">General Offering</option>
+                        <option value="Tithes">Tithes</option>
+                        <option value="Missions">Missions</option>
+                        <option value="Church Development">Church Development</option>
+                        <option value="Special Donations">Special Donations</option>
+                    </select>
+                    <div class="give-ref-box">
+                        <span>Payment reference</span>
+                        <strong id="paymentReference">—</strong>
+                        <button class="btn-copy" type="button" onclick="regenerateReference()">NEW REFERENCE</button>
+                        <button class="btn-copy" type="button" onclick="copyReference()">COPY</button>
+                    </div>
+                    <p class="give-note">Quote this reference in the payment note and on your receipt. It keeps your gift matched to PRAYER DOME for accounting. Your name, contact details, amount and transaction proof are stored privately for finance records only.</p>
+                </div>
+            </div>
+
             <!-- WHATSAPP PAYMENT CARD -->
             <div class="method-card">
                 <div class="method-header whatsapp">
@@ -642,9 +698,13 @@
                 <div class="method-body">
                     <div class="info-box">
                         <div class="info-row">
+                            <span class="info-label">Recipient</span>
+                            <span class="info-value">PRAYER DOME</span>
+                        </div>
+                        <div class="info-row">
                             <span class="info-label">WhatsApp Number</span>
                             <span class="info-value">+268 7658 1804</span>
-                            <button class="btn-copy" onclick="copy('+26876581804')">COPY</button>
+                            <button class="btn-copy" type="button" onclick="copy('+26876581804')">COPY</button>
                         </div>
                     </div>
                     
@@ -682,17 +742,22 @@
                         </div>
                         <div class="info-row">
                             <span class="info-label">Account Name</span>
-                            <span class="info-value">PRAYER DOME CHURCH</span>
+                            <span class="info-value">PRAYER DOME</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Recipient</span>
+                            <span class="info-value">PRAYER DOME</span>
                         </div>
                         <div class="info-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
                             <span class="info-label" style="color: var(--accent-gold);"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i> Zambia Branch</span>
-                            <span class="info-value" style="font-size: 0.75rem; color: var(--accent-gold);">Pastor Zacheus Simbaya — info@prayerdome.net</span>
+                            <span class="info-value" style="font-size: 0.75rem; color: var(--accent-gold);">PRAYER DOME Zambia · info@prayerdome.net</span>
                         </div>
                         <div class="info-row" style="font-size: 0.8rem; color: var(--text-secondary);">
                             <span class="info-label">Daily Night Service</span>
                             <span class="info-value" style="font-size: 0.8rem;">Every night — 8:00 PM CAT</span>
                         </div>
                     </div>
+                    <p class="give-note" style="margin:0 0 14px;"><strong>How to give:</strong> send the amount by MTN MoMo to the number above, use the payment reference in the note, then attach the confirmation screenshot. PRAYER DOME reconciles every reference.</p>
                     <div class="upload-zone" onclick="openCloudinary()">
                         <i class="pd-i pd-i-camera" style="font-size: 28px; color: var(--accent-gold);"></i>
                         <h4 id="upLabel">Attach Payment Receipt</h4>
@@ -786,8 +851,6 @@
         let exchangeRates = {};
         let lastFetchTime = null;
 
-        // API Key for ExchangeRate-API (free tier - 1500 requests/month)
-        const EXCHANGE_API_KEY = "YOUR_API_KEY"; // Replace with your API key from exchangerate-api.com
         const BASE_CURRENCY = "USD";
 
         // Fetch real-time exchange rates
@@ -811,7 +874,7 @@
                 exchangeRates = data.rates;
                 lastFetchTime = new Date();
                 
-                lastUpdatedSpan.innerHTML = `<i class="pd-i pd-i-clock"></i> Updated: ${moment(lastFetchTime).format('HH:mm:ss')}`;
+                lastUpdatedSpan.innerHTML = `<i class="pd-i pd-i-clock"></i> Updated: ${lastFetchTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
                 rateDisplay.innerHTML = `<i class="pd-i pd-i-circle-check"></i> 1 USD = ${exchangeRates['ZMW']?.toFixed(2)} ZMW | 1 USD = ${exchangeRates['SZL']?.toFixed(2)} SZL`;
                 
                 // Save to localStorage for offline fallback
@@ -835,7 +898,7 @@
                             exchangeRates[currency.toUpperCase()] = rate;
                         }
                         lastFetchTime = new Date();
-                        lastUpdatedSpan.innerHTML = `<i class="pd-i pd-i-clock"></i> Updated: ${moment(lastFetchTime).format('HH:mm:ss')}`;
+                        lastUpdatedSpan.innerHTML = `<i class="pd-i pd-i-clock"></i> Updated: ${lastFetchTime.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
                         rateDisplay.innerHTML = `<i class="pd-i pd-i-circle-check"></i> Rates loaded (CDN)`;
                         convert();
                         return;
@@ -906,6 +969,55 @@
 
         onAuthStateChanged(auth, user => { currentUser = user; });
 
+        /* A payment reference belongs to PRAYER DOME, not to a person. It is
+           written to the private offering record so finance can reconcile the
+           transaction and the donor can quote it on a receipt. */
+        let paymentReference = '';
+        function makeReference() {
+            const now = new Date();
+            const date = String(now.getFullYear()) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+            let suffix = '';
+            try {
+                const bytes = new Uint8Array(4);
+                crypto.getRandomValues(bytes);
+                suffix = Array.from(bytes).map(b => b.toString(36).padStart(2, '0')).join('').slice(0, 6).toUpperCase();
+            } catch (error) {
+                suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+            }
+            return 'PDG-' + date + '-' + suffix;
+        }
+        function setReference() {
+            paymentReference = makeReference();
+            const el = document.getElementById('paymentReference');
+            if (el) el.textContent = paymentReference;
+        }
+        window.regenerateReference = function () {
+            setReference();
+            toast('New payment reference created');
+        };
+        window.copyReference = function () {
+            copy(paymentReference);
+        };
+        function givingPurpose() {
+            const select = document.getElementById('giveCategory');
+            return select ? select.value : 'General Offering';
+        }
+        function escapeGiving(value) {
+            return String(value == null ? '' : value).replace(/[&<>"]/g, function (ch) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+            });
+        }
+        function showGivingReceipt(record) {
+            const box = document.getElementById('givingConfirmation');
+            if (!box) return;
+            box.hidden = false;
+            box.innerHTML = '<h3><i class="pd-i pd-i-circle-check" aria-hidden="true"></i> PRAYER DOME — giving recorded</h3>' +
+                '<p><strong>' + escapeGiving(record.amount) + '</strong> · ' + escapeGiving(record.purpose) + '</p>' +
+                '<p>Reference: <strong>' + escapeGiving(record.reference) + '</strong></p>' +
+                '<p>Status: pending finance confirmation. Keep this reference and your payment proof. This is a giving record for PRAYER DOME, not a tax certificate.</p>';
+            box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
         window.setA = (type, v) => {
             if (type === 'wa') document.getElementById('waAmt').value = v;
             if (type === 'momo') document.getElementById('momoAmt').value = v;
@@ -935,24 +1047,21 @@
                 return;
             }
             
-            if (uploadedReceiptUrl) {
-                const phone = "+26876581804";
-                const message = `Hello Prayer Dome, I have made an offering of E${amount}. Here is my payment proof: ${uploadedReceiptUrl}. Please confirm receipt. God bless!`;
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-                toast("Opening WhatsApp with payment proof...", "success");
-                confetti({ particleCount: 50, spread: 60 });
-            } else {
-                const phone = "+26876581804";
-                const message = `Hello Prayer Dome, I have made an offering of E${amount}. I will attach my payment proof. God bless!`;
-                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-                toast("Opening WhatsApp to send payment proof...", "success");
-            }
+            const phone = "26876581804";
+            const purpose = givingPurpose();
+            const message = `Hello PRAYER DOME, I have made a ${purpose.toLowerCase()} gift of E${amount}. Reference: ${paymentReference}. ` +
+                (uploadedReceiptUrl ? `Payment proof: ${uploadedReceiptUrl}. ` : 'I will attach my payment proof. ') +
+                'Please confirm receipt for PRAYER DOME. God bless!';
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+            toast(uploadedReceiptUrl ? "Opening WhatsApp with payment proof..." : "Opening WhatsApp to send payment proof...", "success");
+            if (uploadedReceiptUrl) confetti({ particleCount: 50, spread: 60 });
         };
 
         window.submitMoMoOffering = async () => {
             const amount = document.getElementById('momoAmt').value;
             const proof = document.getElementById('receiptUrl').value;
-            
+            const purpose = givingPurpose();
+
             if (!amount || amount <= 0) {
                 toast("Enter valid amount", "error");
                 return;
@@ -961,11 +1070,25 @@
                 toast("Please attach payment receipt", "error");
                 return;
             }
+            if (!currentUser) {
+                toast("Please sign in so PRAYER DOME can keep your giving record and receipt.", "error");
+                return;
+            }
 
+            const reference = paymentReference || makeReference();
+            const button = document.querySelector('.btn-donate.btn-green');
+            if (button) button.disabled = true;
             try {
                 await addDoc(collection(db, "offerings"), {
-                    donor: currentUser ? currentUser.displayName : "Anonymous",
-                    donorEmail: currentUser?.email || "anonymous",
+                    organization: "PRAYER DOME",
+                    recipient: "PRAYER DOME",
+                    purpose: purpose,
+                    category: purpose,
+                    reference: reference,
+                    currency: "SZL",
+                    donor: currentUser.displayName || currentUser.email || "Prayer Dome member",
+                    donorEmail: currentUser.email || "",
+                    donorUid: currentUser.uid,
                     amount: parseFloat(amount),
                     method: "MTN MoMo",
                     receipt: proof,
@@ -973,17 +1096,23 @@
                     status: 'pending'
                 });
                 confetti({ particleCount: 100, spread: 70 });
-                toast("Offering recorded! Thank you for your generosity.", "success");
-                
+                toast("Giving recorded for PRAYER DOME. Thank you.", "success");
+                showGivingReceipt({ amount: 'E' + parseFloat(amount).toFixed(2), purpose: purpose, reference: reference });
+
                 document.getElementById('momoAmt').value = "";
                 document.getElementById('receiptUrl').value = "";
                 document.getElementById('upLabel').innerHTML = "Attach Receipt";
                 document.getElementById('upLabel').style.color = "";
                 uploadedReceiptUrl = null;
                 document.getElementById('upload-zone-preview')?.remove();
-            } catch (e) { 
+                setReference();
+            } catch (e) {
                 console.error(e);
-                toast("Error sending offering. Please try again.", "error"); 
+                toast(e && e.code === 'permission-denied'
+                    ? "Sign in with your Prayer Dome account before recording a gift."
+                    : "Error sending offering. Please try again.", "error");
+            } finally {
+                if (button) button.disabled = false;
             }
         };
 
@@ -1003,9 +1132,13 @@
             toast("Receipt attached successfully!", "success");
         };
 
-        window.copy = (text) => { 
-            navigator.clipboard.writeText(text); 
-            toast("Copied to clipboard!"); 
+        window.copy = (text) => {
+            const value = String(text || '');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(value).then(function () { toast("Copied to clipboard!"); }).catch(function () { toast(value, "info"); });
+            } else {
+                toast(value, "info");
+            }
         };
         
         window.toast = (msg, type = 'success') => {
@@ -1027,6 +1160,7 @@ window.toggleDarkMode = function() {
         // ----------------------------------------------------------------
         // Initialize exchange rates on page load
         // ----------------------------------------------------------------
+        setReference();
         fetchExchangeRates();
         setInterval(fetchExchangeRates, 3600000); // Refresh every hour
         updateMessagePreview();

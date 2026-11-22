@@ -127,11 +127,12 @@ test('the admin console exposes every billing workspace', () => {
   assert.match(admin, /modalPaymentReview/);
 });
 
-test('the public verification page never lists the register', () => {
+test('the public verification page uses the server, never the register', () => {
   const verify = read('verify.html');
-  assert.match(verify, /membershipVerificationRefs/);
-  assert.match(verify, /getDoc|\.get\b/);
-  assert.doesNotMatch(verify, /getDocs|collection\(db, "membershipVerification"\)/);
+  assert.match(verify, /httpsCallable/);
+  assert.match(verify, /verifyMembership/);
+  assert.doesNotMatch(verify, /membershipVerificationRefs|membershipVerification/);
+  assert.doesNotMatch(verify, /getDocs|getDoc\b/);
   assert.match(verify, /PRAYER DOME/);
 });
 

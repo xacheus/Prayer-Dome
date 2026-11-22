@@ -335,7 +335,7 @@ async function deleteDailyChallenge(id) {
 const CARD_IDENTITY = {
   churchName: 'PRAYER DOME',
   signatoryName: 'SEEDWELL K. KHAYALETHU MASUKU',
-  signatoryRole: 'Founder and President',
+  signatoryRole: 'Founder and President — Prayer Dome',
   organization: 'PRAYER DOME'
 };
 let cardValidityMonths = 12;
@@ -552,15 +552,22 @@ async function writeVerificationRef(reference, payload) {
   }), { merge: true });
 }
 
-async function issueCardVerification(uid, reissue) {
+async function issueCardVerification(uid, reissue, silent) {
   if (!bridge) return;
-  const row = (window.__pdCardRows || []).filter((item) => item.uid === uid)[0];
-  if (!row) return;
-  const number = String(row.membershipId || '').trim().toUpperCase();
-  if (!number) return toast('This member has no membership number yet. Approve the membership first.', 'error');
-  if (reissue && !window.confirm('Reissue the card for ' + number + '? The old QR reference will stop working and a new expiry date will be set.')) return;
+  const store = bridge.firestore;
+  let row = null;
+  // Always read the canonical member record. The panel cache can still say
+  // `pending` immediately after approval, which would issue a pending card.
   try {
-    const store = bridge.firestore;
+    const memberSnap = await store.getDoc(store.doc(bridge.db, 'memberships', uid));
+    if (memberSnap.exists()) row = Object.assign({ uid: uid }, memberSnap.data());
+  } catch (error) { /* fall back to the panel cache */ }
+  if (!row) row = (window.__pdCardRows || []).filter((item) => item.uid === uid)[0];
+  if (!row) { if (!silent) toast('This member record could not be loaded, so the card was not issued.', 'error'); return false; }
+  const number = String(row.membershipId || '').trim().toUpperCase();
+  if (!number) { if (!silent) toast('This member has no membership number yet. Approve the membership first.', 'error'); return false; }
+  if (reissue && !window.confirm('Reissue the card for ' + number + '? The old QR reference will stop working and a new expiry date will be set.')) return false;
+  try {
     const mainRef = store.doc(bridge.db, 'membershipVerification', number);
     const existingSnap = await store.getDoc(mainRef);
     const existing = existingSnap.exists() ? existingSnap.data() : null;
@@ -594,15 +601,93 @@ async function issueCardVerification(uid, reissue) {
     await writeVerificationRef(reference, payload);
     await writeVerificationHistory(number, uid, reissue ? 'reissued' : (existing ? 'updated' : 'issued'), status,
       'Valid for ' + validity + ' months');
-    toast(status === 'approved'
-      ? 'Card issued and verifiable until ' + cardDate(expiresAt) + '.'
-      : 'Pending card record issued. Approve the membership to make it verify as active.', 'success');
-    await loadMembershipCardAdmin();
+    if (!silent) {
+      toast(status === 'approved'
+        ? 'Card issued and verifiable until ' + cardDate(expiresAt) + '.'
+        : 'Pending card record issued. Approve the membership to make it verify as active.', 'success');
+      await loadMembershipCardAdmin();
+    }
+    return true;
   } catch (error) {
     console.error('Verification issue failed:', error);
+    if (!silent) {
+      toast(error && error.code === 'permission-denied'
+        ? 'Your account does not have permission to issue card verification.'
+        : 'The verification record could not be written.', 'error');
+    }
+    return false;
+  }
+}
+
+/* Repair approved members whose card projection is missing (the exact cause
+   of an ID that exists but does not verify). Nothing is renumbered: the
+   existing membershipId is used and recorded in the audit trail. */
+async function repairMissingCards() {
+  if (!bridge) return;
+  if (!window.confirm('Issue missing verification records for approved members? Existing numbers and financial records are not changed.')) return;
+  const store = bridge.firestore;
+  try {
+    const [members, cards, refs] = await Promise.all([
+      store.getDocs(store.query(store.collection(bridge.db, 'memberships'), store.where('status', '==', 'approved'), store.limit(1000))),
+      store.getDocs(store.query(store.collection(bridge.db, 'membershipVerification'), store.limit(1000))),
+      store.getDocs(store.query(store.collection(bridge.db, 'membershipVerificationRefs'), store.limit(1000)))
+    ]);
+    const issued = new Map();
+    cards.forEach((entry) => {
+      const data = entry.data() || {};
+      issued.set(String(data.membershipId || entry.id || '').toUpperCase(), data);
+    });
+    const pointers = new Map();
+    refs.forEach((entry) => {
+      const data = entry.data() || {};
+      pointers.set(entry.id, String(data.membershipId || '').toUpperCase());
+    });
+    let repaired = 0;
+    let links = 0;
+    let skipped = 0;
+    for (const entry of members.docs) {
+      const member = entry.data() || {};
+      const id = String(member.membershipId || '').trim().toUpperCase();
+      if (!id) { skipped++; continue; }
+      const card = issued.get(id);
+      if (!card) {
+        // eslint-disable-next-line no-await-in-loop
+        const done = await issueCardVerification(entry.id, false, true);
+        if (done) { repaired++; issued.set(id, { membershipId: id }); }
+        continue;
+      }
+      const token = String(card.verificationRef || '');
+      if (!token) {
+        // The projection exists but has no QR token; issuing again adds one
+        // without changing the membership number.
+        // eslint-disable-next-line no-await-in-loop
+        const done = await issueCardVerification(entry.id, false, true);
+        if (done) repaired++;
+        continue;
+      }
+      // A printed QR points at the pointer document. Older projections have a
+      // token but no pointer, so their QR would fail without this repair.
+      if (pointers.get(token) !== id) {
+        // eslint-disable-next-line no-await-in-loop
+        await writeVerificationRef(token, card);
+        pointers.set(token, id);
+        links++;
+      } else {
+        skipped++;
+      }
+    }
+    await loadMembershipCardAdmin();
+    const total = repaired + links;
+    toast(total
+      ? 'Repaired ' + repaired + ' missing card record' + (repaired === 1 ? '' : 's') +
+        (links ? ' and ' + links + ' missing QR link' + (links === 1 ? '' : 's') : '') +
+        '. ' + skipped + ' were already complete.'
+      : 'No missing card records or QR links were found for approved members.', 'success');
+  } catch (error) {
+    console.error('Card repair failed:', error);
     toast(error && error.code === 'permission-denied'
-      ? 'Your account does not have permission to issue card verification.'
-      : 'The verification record could not be written.', 'error');
+      ? 'Your account does not have permission to repair card records.'
+      : 'Missing cards could not be repaired right now.', 'error');
   }
 }
 
@@ -976,6 +1061,7 @@ window.loadMembershipCardAdmin = loadMembershipCardAdmin;
 window.handleCardSignatureFile = handleCardSignatureFile;
 window.saveCardTemplate = saveCardTemplate;
 window.issueCardVerification = issueCardVerification;
+window.repairMissingCards = repairMissingCards;
 window.revokeCardVerification = revokeCardVerification;
 window.openCardRevoke = openCardRevoke;
 window.confirmRevokeCardVerification = confirmRevokeCardVerification;
