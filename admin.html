@@ -184,14 +184,14 @@
         /* --- SIDEBAR --- */
         .sidebar { width: 280px; background: var(--sidebar-bg); color: var(--text-light); display: flex; flex-direction: column; transition: 0.3s; z-index: 100; border-right: 1px solid rgba(255,255,255,0.1);}
         .sidebar-header { padding: 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-logo { 
-            width: 45px; 
-            height: 45px; 
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold)); 
-            border-radius: 12px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
+        .sidebar-logo {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             overflow: hidden;
             box-shadow: 0 4px 15px rgba(10,77,155,0.3);
         }
@@ -205,7 +205,7 @@
         }
         .sidebar-title { font-size: 1.2rem; font-weight: 900; letter-spacing: 0.5px; }
         .sidebar-subtitle { font-size: 0.65rem; color: var(--accent-gold); text-transform: uppercase; letter-spacing: 1px; }
-    
+
         .nav-menu { flex: 1; overflow-y: auto; padding: 20px 10px; }
         .nav-item { display: flex; align-items: center; gap: 15px; padding: 12px 18px; color: #cbd5e1; text-decoration: none; border-radius: 12px; margin-bottom: 5px; transition: 0.2s; cursor: pointer; font-weight: 500; }
         .nav-item i { font-size: 1.2rem; width: 24px; text-align: center; }
@@ -238,10 +238,10 @@
         .live-help { font-size:.8rem; color: rgba(255,255,255,.75); margin-top:12px; line-height:1.55; }
 
         .sidebar-footer { padding: 20px; border-top: 1px solid rgba(255,255,255,0.1); }
-    
+
         /* --- MAIN CONTENT --- */
         .main-content { flex: 1; min-width: 0; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-    
+
         .topbar { background: var(--bg-panel); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); z-index: 10; }
         .mobile-toggle { display: none; background: none; border: none; font-size: 1.5rem; color: var(--text-main); cursor: pointer; }
         .topbar-actions { display: flex; align-items: center; gap: 15px; margin-left: auto; }
@@ -258,7 +258,7 @@
 
         /* --- DASHBOARD WIDGETS --- */
         .page-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 25px; color: var(--text-main); display: flex; justify-content: space-between; align-items: center; }
-    
+
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .kpi-card { background: var(--bg-panel); padding: 25px; border-radius: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-sm); display: flex; align-items: center; gap: 20px; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); cursor: pointer; }
         .kpi-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-color: var(--accent-gold); }
@@ -302,7 +302,7 @@
         .panel-card:hover { box-shadow: var(--shadow-md); }
         .panel-header { padding: 20px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-main); flex-wrap: wrap; gap: 15px;}
         .panel-header h3 { font-size: 1.2rem; font-weight: 800; color: var(--accent-green); }
-    
+
         .table-responsive { overflow-x: auto; overflow-y: visible; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
         table { width: 100%; border-collapse: collapse; min-width: var(--pd-table-min, 800px); max-width: none; table-layout: auto; }
         th { padding: 15px 25px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); border-bottom: 1px solid var(--border); background: var(--bg-panel); font-weight: 800; white-space: nowrap; word-break: normal; }
@@ -615,7 +615,7 @@
         .gallery-title { font-weight: 700; margin-bottom: 5px; }
         .gallery-meta { font-size: 0.7rem; color: var(--text-sub); display: flex; justify-content: space-between; margin-top: 8px; }
         .gallery-actions { display: flex; gap: 8px; margin-top: 12px; }
-    
+
         /* --- TOAST --- */
         .toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;}
         .toast { background: var(--bg-panel); border: 1px solid var(--border); padding: 15px 20px; border-radius: 12px; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 12px; font-weight: 600; font-size: 0.95rem; animation: slideLeft 0.3s ease forwards; border-left: 4px solid var(--accent-green);}
@@ -658,7 +658,7 @@
             .topbar { padding: 12px 20px; }
             .content-area { padding: 20px; }
         }
-    
+
         .status-pending { background: rgba(245,158,11,0.15); color: #f59e0b; }
         .status-approved { background: rgba(59,130,246,0.15); color: var(--accent-green); }
         .status-suspended { background: rgba(239,68,68,0.15); color: var(--accent-red); }
@@ -992,6 +992,7 @@
 <script src="/assets/pd-team-store.js" defer></script>
 <script src="/assets/pd-document-studio.js" defer></script>
 <script src="/assets/pd-team-data.js" defer></script>
+<script src="/assets/pd-billing.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -1026,6 +1027,7 @@
             <div class="nav-group">
                 <div class="nav-group-label">Overview</div>
                 <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard', this)"><i class="pd-i pd-i-chart-pie"></i> Dashboard</div>
+                <div class="nav-item" data-view="activity" onclick="switchView('activity', pdNavFor('activity'))"><i class="pd-i pd-i-activity"></i> Recent Activity</div>
             </div>
             <div class="nav-group">
                 <div class="nav-group-label">Congregation</div>
@@ -1063,6 +1065,11 @@
             <div class="nav-group">
                 <div class="nav-group-label">Finance</div>
                 <div class="nav-item" data-view="finance" onclick="switchView('finance', this)"><i class="pd-i pd-i-coins"></i> Financials</div>
+                <div class="nav-item" data-view="payment-verification" onclick="switchView('payment-verification', pdNavFor('payment-verification'))"><i class="pd-i pd-i-shield-check"></i> Payment Verification</div>
+                <div class="nav-item" data-view="subscriptions" onclick="switchView('subscriptions', pdNavFor('subscriptions'))"><i class="pd-i pd-i-refresh-cw"></i> Subscriptions</div>
+                <div class="nav-item" data-view="wallet-transactions" onclick="switchView('wallet-transactions', pdNavFor('wallet-transactions'))"><i class="pd-i pd-i-arrow-left-right"></i> Wallet Transactions</div>
+                <div class="nav-item" data-view="wallet-balances" onclick="switchView('wallet-balances', pdNavFor('wallet-balances'))"><i class="pd-i pd-i-banknote"></i> Wallet Balances</div>
+                <div class="nav-item" data-view="support-plans" onclick="switchView('support-plans', pdNavFor('support-plans'))"><i class="pd-i pd-i-layers"></i> Support Plans</div>
                 <div class="nav-item" data-view="financial_reports" onclick="switchView('financial_reports', this)"><i class="pd-i pd-i-file-text"></i> Financial Reports</div>
             </div>
             <div class="nav-group">
@@ -1124,6 +1131,14 @@
                         </div>
                     </div>
                 </div>
+                <div class="page-title" style="margin-bottom:10px;">
+                    <span><i class="pd-i pd-i-gauge"></i> Live overview</span>
+                    <span style="font-size:.7rem;font-weight:700;color:var(--text-sub);">Counted from the database on every refresh</span>
+                </div>
+                <div class="kpi-grid" id="adminOverviewCards" aria-live="polite" style="margin-bottom:22px;">
+                    <div class="kpi-card"><div class="kpi-icon blue"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></div><div class="kpi-details"><h3>—</h3><p>Loading members</p></div></div>
+                    <div class="kpi-card"><div class="kpi-icon gold"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></div><div class="kpi-details"><h3>—</h3><p>Loading payments</p></div></div>
+                </div>
                 <div class="page-title">
                     <span><i class="pd-i pd-i-chart-line"></i> Platform Performance</span>
                     <button class="btn btn-primary btn-sm" onclick="loadDashboardPerformance()"><i class="pd-i pd-i-refresh-cw"></i> Refresh charts</button>
@@ -1158,9 +1173,40 @@
                         <p class="workflow-key"><i class="pd-i pd-i-info"></i> Bars compare completed or approved items with the full workflow.</p>
                     </section>
                 </div>
+                <div class="panel-card" style="margin-bottom:20px;">
+                    <div class="panel-header">
+                        <h3><i class="pd-i pd-i-receipt-text"></i> Billing snapshot</h3>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-outline btn-sm" onclick="switchView('payment-verification', pdNavFor('payment-verification'))"><i class="pd-i pd-i-shield-check"></i> Verify payments</button>
+                            <button class="btn btn-outline btn-sm" onclick="switchView('subscriptions', pdNavFor('subscriptions'))"><i class="pd-i pd-i-refresh-cw"></i> Subscriptions</button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Latest payments</th><th>Member</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
+                            <tbody id="dashRecentPayments"><tr><td colspan="5">Loading payments…</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="table-responsive" style="margin-top:14px;">
+                        <table>
+                            <thead><tr><th>Recent subscriptions</th><th>Member</th><th>Plan</th><th>Status</th><th>Renews / ends</th></tr></thead>
+                            <tbody id="dashRecentSubscriptions"><tr><td colspan="5">Loading subscriptions…</td></tr></tbody>
+                        </table>
+                    </div>
+                    <div class="table-responsive" style="margin-top:14px;">
+                        <table>
+                            <thead><tr><th>Latest wallet transactions</th><th>Member</th><th>Type</th><th>Amount</th><th>When</th></tr></thead>
+                            <tbody id="dashRecentWalletTransactions"><tr><td colspan="5">Loading wallet transactions…</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
                 <div class="panel-card">
                     <div class="panel-header"><h3><i class="pd-i pd-i-user-plus"></i> Recent Membership Applications</h3><button class="btn btn-outline btn-sm" onclick="switchView('members', pdNavFor('members'))">View All</button></div>
                     <div class="table-responsive"><table><thead> <tr><th>Applicant</th><th>Branch</th><th>Date</th><th>Status</th><th>Action</th> </tr></thead><tbody id="dashPendingMembers"> <tr><td colspan="5" style="text-align: center;"><div class="spinner" style="width:30px;height:30px;"></div></td></tr> </tbody> </table> </div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-activity"></i> Recent Activity</h3><button class="btn btn-outline btn-sm" onclick="switchView('activity', pdNavFor('activity'))">Full log</button></div>
+                    <div class="table-responsive"><table><thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Record</th><th>Status</th></tr></thead><tbody id="dashRecentActivityList"><tr><td colspan="5">Loading activity…</td></tr></tbody></table></div>
                 </div>
             </div>
 
@@ -1637,7 +1683,7 @@
                     <div class="table-responsive"><table id="financialReportsTable"><thead> <tr><th>Date</th><th>Branch</th><th>Submitted By</th><th>Total Income</th><th>Total Expense</th><th>Surplus</th><th>Approved By</th><th>Status</th><th>Actions</th> </tr></thead><tbody id="financialReportsList"> <tr><td colspan="9"><div class="spinner" style="width:30px;height:30px;"></div> </td> </tr> </tbody> </table> </div>
                 </div>
             </div>
-        
+
             <!-- EVENTS VIEW -->
             <div id="view-events" class="section-view">
                 <div class="page-title"><span><i class="pd-i pd-i-calendar-days"></i> Events Management</span><button class="btn btn-primary" onclick="openModal('modalEvent')"><i class="pd-i pd-i-plus"></i> Create Event</button></div>
@@ -1929,29 +1975,54 @@
                 <div class="page-title"><span><i class="pd-i pd-i-award"></i> Certificates Tracker</span><button class="btn btn-primary" onclick="loadCertificates()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
                 <div class="panel-card" style="margin-bottom: 20px; max-width: 860px;">
                     <div class="panel-header">
-                        <h3><i class="pd-i pd-i-signature"></i> Founder Signature</h3>
-                        <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">saved permanently — every future certificate uses this automatically</span>
+                        <h3><i class="pd-i pd-i-signature"></i> Certificate signatures</h3>
+                        <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">the founder identity is fixed; only authorised signature images can be replaced</span>
                     </div>
-                    <div style="padding: 20px; display:grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-group">
-                            <label>Founder Name</label>
-                            <input type="text" id="founderNameInput" class="form-control" placeholder="e.g. Pastor Blessings Banda">
-                        </div>
-                        <div class="form-group">
-                            <label>Position / Title</label>
-                            <input type="text" id="founderTitleInput" class="form-control" placeholder="e.g. Founder &amp; Senior Pastor">
-                        </div>
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label>Signature Image</label>
-                            <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;">No signature saved yet — upload or draw one below.</div>
-                            <canvas id="founderSignatureCanvas" aria-label="Draw founder signature" style="display:block;width:100%;height:120px;touch-action:none;background:#fff;border:1px solid var(--border);border-radius:10px;margin:10px 0"></canvas>
-                            <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                                <button class="btn btn-outline btn-sm" type="button" onclick="uploadFounderSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload Signature</button>
-                                <button class="btn btn-outline btn-sm" type="button" onclick="useDrawnFounderSignature()">Use Drawing</button>
-                                <button class="btn btn-outline btn-sm" type="button" onclick="clearFounderSignatureCanvas()">Clear Drawing</button>
-                                <input type="file" id="founderSigFileInput" accept="image/*" style="display:none;" onchange="handleFounderSigUpload(event)">
-                                <button class="btn btn-primary btn-sm" type="button" onclick="saveFounderSignature()"><i class="pd-i pd-i-save"></i> Save Signature</button>
+                    <div style="padding: 20px; display:grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px;">
+                        <div>
+                            <h4 style="margin:0 0 10px;font-size:.9rem;color:var(--pd-navy);">Founder and President</h4>
+                            <div class="form-group">
+                                <label>Founder name (fixed)</label>
+                                <input type="text" id="founderNameInput" class="form-control" value="SEEDWELL K. KHAYALETHU MASUKU" readonly>
                             </div>
+                            <div class="form-group">
+                                <label>Position (fixed)</label>
+                                <input type="text" id="founderTitleInput" class="form-control" value="Founder and President" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Founder signature image</label>
+                                <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;">No signature saved yet — upload or draw one below.</div>
+                                <canvas id="founderSignatureCanvas" aria-label="Draw founder signature" style="display:block;width:100%;height:120px;touch-action:none;background:#fff;border:1px solid var(--border);border-radius:10px;margin:10px 0"></canvas>
+                                <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="uploadFounderSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload founder signature</button>
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="useDrawnFounderSignature()">Use drawing</button>
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="clearFounderSignatureCanvas()">Clear drawing</button>
+                                    <input type="file" id="founderSigFileInput" accept="image/*" style="display:none;" onchange="handleFounderSigUpload(event)">
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 style="margin:0 0 10px;font-size:.9rem;color:var(--pd-navy);">Authorised administrator</h4>
+                            <div class="form-group">
+                                <label>Administrator name</label>
+                                <input type="text" id="administratorNameInput" class="form-control" maxlength="120" placeholder="Name of the administrator signing certificates">
+                            </div>
+                            <div class="form-group">
+                                <label>Administrator designation</label>
+                                <input type="text" id="administratorTitleInput" class="form-control" maxlength="120" placeholder="e.g. Academy Registrar">
+                            </div>
+                            <div class="form-group">
+                                <label>Administrator signature image</label>
+                                <div id="administratorSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items: center; justify-content: center; margin-bottom: 10px;">No administrator signature saved yet.</div>
+                                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="uploadAdministratorSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload administrator signature</button>
+                                    <input type="file" id="administratorSigFileInput" accept="image/*" style="display:none;" onchange="handleAdministratorSigUpload(event)">
+                                </div>
+                            </div>
+                            <p style="font-size:.7rem;color:var(--text-sub);line-height:1.55;margin:0;">Never upload or draw a signature on someone else's behalf. The administrator block prints a signature line and designation until an authorised signature image is saved.</p>
+                        </div>
+                        <div style="grid-column:1/-1;display:flex;justify-content:flex-end;">
+                            <button class="btn btn-primary btn-sm" type="button" onclick="saveFounderSignature()"><i class="pd-i pd-i-save"></i> Save signatures</button>
                         </div>
                     </div>
                 </div>
@@ -2227,11 +2298,12 @@
                         <div class="panel-header"><h3><i class="pd-i pd-i-stamp"></i> Card template &amp; signatory</h3></div>
                         <div style="padding:18px;">
                             <div class="admin-field-grid">
-                                <div class="form-group"><label>Church name on card</label><input type="text" id="mcardChurch" class="form-control" maxlength="80" value="Prayer Dome Ministry"></div>
-                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" maxlength="120" value="Pastor Seedwell K. Masuku"></div>
-                                <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" maxlength="120" value="Founder &amp; Senior Pastor"></div>
+                                <div class="form-group"><label>Church name on card</label><input type="text" id="mcardChurch" class="form-control" value="PRAYER DOME" readonly></div>
+                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="SEEDWELL K. KHAYALETHU MASUKU" readonly></div>
+                                <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" value="Founder and President" readonly></div>
                                 <div class="form-group"><label>Contact phone</label><input type="text" id="mcardPhone" class="form-control" maxlength="40" value="+268 7658 1804"></div>
                                 <div class="form-group"><label>Contact email</label><input type="email" id="mcardEmail" class="form-control" maxlength="160" value="info@prayerdome.net"></div>
+                                <div class="form-group"><label>Card validity (months)</label><input type="number" id="mcardValidityMonths" class="form-control" min="1" max="60" value="12"></div>
                             </div>
                             <label style="font-size:.78rem;font-weight:700;">Authorised signature image</label>
                             <div style="margin:8px 0;">
@@ -2254,6 +2326,158 @@
                             <table><thead><tr><th>Member</th><th>Membership no.</th><th>Branch</th><th>Card</th><th>Verification</th><th>Actions</th></tr></thead>
                             <tbody id="mcardList"><tr><td colspan="6">Loading memberships…</td></tr></tbody></table>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAYMENT VERIFICATION VIEW -->
+            <div id="view-payment-verification" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-shield-check"></i> Payment Verification</span>
+                    <div class="admin-actions-row">
+                        <button class="btn btn-outline" type="button" onclick="loadPayments()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="paymentSearch" class="form-control" style="max-width:260px;" placeholder="Search reference, member or plan" oninput="filterPayments()">
+                        <select id="paymentStatusFilter" class="form-control" style="max-width:210px;" onchange="filterPayments()">
+                            <option value="awaiting">Awaiting verification</option>
+                            <option value="open">All open</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="all">All statuses</option>
+                        </select>
+                        <span id="paymentSummary" class="audit-pill">Loading…</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-receipt-text"></i> Payment requests</h3><span style="font-size:.7rem;color:var(--text-sub);">Open the receipt and check it against the ministry account before approving.</span></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Created</th><th>Reference</th><th>Member</th><th>Plan / deposit</th><th>Amount</th><th>Method</th><th>Status</th><th>Receipt</th><th>Actions</th></tr></thead>
+                        <tbody id="paymentList"><tr><td colspan="9">Loading payment requests…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUBSCRIPTIONS VIEW -->
+            <div id="view-subscriptions" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-refresh-cw"></i> Subscriptions</span>
+                    <div class="admin-actions-row">
+                        <button class="btn btn-outline" type="button" onclick="loadSubscriptions()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <button class="btn btn-outline" type="button" onclick="expireSubscriptionsNow()"><i class="pd-i pd-i-clock"></i> Expire overdue</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="subscriptionSearch" class="form-control" style="max-width:280px;" placeholder="Search member, plan or payment" oninput="filterSubscriptions()">
+                        <select id="subscriptionStatusFilter" class="form-control" style="max-width:190px;" onchange="filterSubscriptions()">
+                            <option value="all">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="pending_verification">Awaiting verification</option>
+                            <option value="pending_payment">Pending payment</option>
+                            <option value="expired">Expired</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <span id="subscriptionSummary" class="audit-pill">Loading…</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-list"></i> Member subscriptions</h3></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Member</th><th>Plan</th><th>Monthly</th><th>Status</th><th>Term start</th><th>Renews / expires</th><th>Programme maturity</th><th>Payment</th><th>Actions</th></tr></thead>
+                        <tbody id="subscriptionList"><tr><td colspan="9">Loading subscriptions…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WALLET TRANSACTIONS VIEW -->
+            <div id="view-wallet-transactions" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-arrow-left-right"></i> Wallet Transactions</span>
+                    <div class="admin-actions-row"><button class="btn btn-outline" type="button" onclick="loadWalletTransactions()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="walletTxSearch" class="form-control" style="max-width:280px;" placeholder="Search member, reference or type" oninput="filterWalletTransactions()">
+                        <select id="walletTxStatusFilter" class="form-control" style="max-width:190px;" onchange="filterWalletTransactions()">
+                            <option value="all">All statuses</option>
+                            <option value="pending_verification">Awaiting verification</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+                        <span id="walletTxSummary" class="audit-pill">Loading…</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Balance after</th><th>Actions</th></tr></thead>
+                        <tbody id="walletTxList"><tr><td colspan="8">Loading wallet transactions…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WALLET BALANCES VIEW -->
+            <div id="view-wallet-balances" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-banknote"></i> Wallet Balances</span>
+                    <div class="admin-actions-row"><button class="btn btn-outline" type="button" onclick="loadWalletBalances()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="walletSearch" class="form-control" style="max-width:280px;" placeholder="Search member or user id" oninput="filterWallets()">
+                        <span id="walletSummary" class="audit-pill">Loading…</span>
+                        <span style="font-size:.72rem;color:var(--text-sub);">Balances change only through verified deposits and approved withdrawals.</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Member</th><th>User ID</th><th>Balance</th><th>Currency</th><th>Last updated</th><th>Actions</th></tr></thead>
+                        <tbody id="walletList"><tr><td colspan="6">Loading wallets…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUPPORT PLANS VIEW -->
+            <div id="view-support-plans" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-layers"></i> Support Plans</span>
+                    <div class="admin-actions-row">
+                        <button class="btn btn-outline" type="button" onclick="loadSupportPlansAdmin()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <button class="btn btn-outline" type="button" onclick="installStandardPlans()"><i class="pd-i pd-i-download"></i> Install standard plans</button>
+                        <button class="btn btn-primary" type="button" onclick="openPlanEditor()"><i class="pd-i pd-i-plus"></i> New plan</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;font-size:.8rem;line-height:1.6;color:var(--text-sub);">
+                        These are the plans members see. Prices are monthly USD. Saving a plan here updates the public catalogue without a deploy, and the billing callable always charges the stored price.
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Order</th><th>Plan</th><th>Programme</th><th>Tier</th><th>Monthly price</th><th>Billing</th><th>Active</th><th>Actions</th></tr></thead>
+                        <tbody id="supportPlanList"><tr><td colspan="8">Loading plans…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RECENT ACTIVITY VIEW -->
+            <div id="view-activity" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-activity"></i> Recent Activity</span>
+                    <div class="admin-actions-row"><button class="btn btn-outline" type="button" onclick="loadRecentActivity()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="activitySearch" class="form-control" style="max-width:280px;" placeholder="Search action, administrator or note" oninput="filterActivity()">
+                        <span id="activitySummary" class="audit-pill">Loading…</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Role</th><th>Record</th><th>Status</th><th>Note</th></tr></thead>
+                        <tbody id="activityList"><tr><td colspan="7">Loading activity…</td></tr></tbody></table>
                     </div>
                 </div>
             </div>
@@ -2835,6 +3059,8 @@
         window.PDAdmin = {
             db,
             auth,
+            cloudFunctions,
+            httpsCallable,
             firestore: {
                 collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc,
                 deleteDoc, deleteField, query, where, orderBy, limit,
@@ -2961,20 +3187,21 @@
         let allMembersCache = [];
         let allGalleryCache = [];
         let dashboardPerformanceCache = {
-            members: [], prayers: [], certificates: [], claims: [], gallery: []
+            members: [], prayers: [], certificates: [], claims: [], gallery: [],
+            payments: [], subscriptions: [], walletTransactions: [], wallets: []
         };
 
         const VAPID_KEY = "BFo6TSo4Urth0PXWZETz6cuPgRlemsFx7LDn8yDlFqCrIELU16X12O4ObOOlnbP2h7PvKqbC0N6a-_vrSsksrnM";
 
-        window.toast = (msg, type = 'success') => { 
-            const box = document.getElementById('toastBox'); 
-            const t = document.createElement('div'); 
-            t.className = `toast ${type === 'error' ? 'error' : ''}`; 
-            t.innerHTML = `<i class="pd-i ${type === 'success' ? 'pd-i-circle-check' : 'pd-i-circle-alert'}"></i> ${msg}`; 
-            box.appendChild(t); 
-            setTimeout(() => t.remove(), 3000); 
+        window.toast = (msg, type = 'success') => {
+            const box = document.getElementById('toastBox');
+            const t = document.createElement('div');
+            t.className = `toast ${type === 'error' ? 'error' : ''}`;
+            t.innerHTML = `<i class="pd-i ${type === 'success' ? 'pd-i-circle-check' : 'pd-i-circle-alert'}"></i> ${msg}`;
+            box.appendChild(t);
+            setTimeout(() => t.remove(), 3000);
         };
-    
+
         window.showAdminToast = (title, message, type = 'info') => {
             const toast = document.createElement('div');
             toast.className = `admin-toast ${type === 'error' ? 'error' : type === 'warning' ? 'warning' : ''}`;
@@ -2982,7 +3209,7 @@
             document.body.appendChild(toast);
             setTimeout(() => toast.remove(), 8000);
         };
-    
+
         // toggleSidebar is defined with the navigation helpers above (class
         // based, keeps the scrim and aria-expanded in step).
 window.toggleDarkMode = function() {
@@ -3016,7 +3243,7 @@ window.toggleDarkMode = function() {
             try { await addDoc(collection(db, "adminLogs"), { action, details, adminId: adminUser.uid, adminEmail: adminUser.email, timestamp: serverTimestamp() }); }
             catch (e) { console.error("Error logging activity:", e); }
         }
-    
+
         // Contact Messages
         window.loadContactMessages = async function() {
             const tbody = document.getElementById('contactMessagesList');
@@ -3044,6 +3271,7 @@ window.toggleDarkMode = function() {
         // it automatically. Updates only affect certificates issued AFTER the
         // change — already-issued certificates keep the signature they had.
         let founderSigDataUrl = '';
+        let administratorSigDataUrl = '';
         (function initFounderSignaturePad(){
             const canvas = document.getElementById('founderSignatureCanvas');
             if (!canvas) return;
@@ -3058,22 +3286,59 @@ window.toggleDarkMode = function() {
         window.clearFounderSignatureCanvas = function(){const c=document.getElementById('founderSignatureCanvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);};
         window.useDrawnFounderSignature = function(){const c=document.getElementById('founderSignatureCanvas');if(!c)return;const ctx=c.getContext('2d');if(!ctx.getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0))return toast('Draw a signature before using it.','error');founderSigDataUrl=c.toDataURL('image/png');const d=document.getElementById('founderSigDisplay');if(d)d.innerHTML=`<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature preview" style="max-height:90px;max-width:100%">`;toast('Drawing ready — save to apply it to future certificates.');};
 
-        window.loadFounderSignatureUI = function () {
-            const f = window.PDApp && PDApp.founder ? PDApp.founder.get() : {};
-            document.getElementById('founderNameInput').value = f.founderName || '';
-            document.getElementById('founderTitleInput').value = f.founderTitle || '';
+        window.loadFounderSignatureUI = async function () {
+            let f = window.PDApp && PDApp.founder ? PDApp.founder.get() : {};
+            try {
+                if (window.PDApp && PDApp.founder && PDApp.founder.fetch) {
+                    const stored = await PDApp.founder.fetch();
+                    if (stored) { PDApp.founder.setLocal(stored); f = PDApp.founder.get(); }
+                }
+            } catch (e) { console.warn('Founder settings refresh:', e); }
+            document.getElementById('founderNameInput').value = 'SEEDWELL K. KHAYALETHU MASUKU';
+            document.getElementById('founderTitleInput').value = 'Founder and President';
+            document.getElementById('administratorNameInput').value = f.administratorName || '';
+            document.getElementById('administratorTitleInput').value = f.administratorTitle || '';
             founderSigDataUrl = f.signatureUrl || '';
+            administratorSigDataUrl = f.administratorSignatureUrl || '';
             const disp = document.getElementById('founderSigDisplay');
             if (disp) {
                 disp.innerHTML = founderSigDataUrl
                     ? `<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature" style="max-height:90px; max-width:100%;">`
-                    : 'No signature saved yet — upload one below.';
+                    : 'No signature saved yet — upload or draw one below.';
+            }
+            const adminDisp = document.getElementById('administratorSigDisplay');
+            if (adminDisp) {
+                adminDisp.innerHTML = administratorSigDataUrl
+                    ? `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature" style="max-height:90px; max-width:100%;">`
+                    : 'No administrator signature saved — the certificate prints a signature line and designation.';
             }
         };
 
         window.uploadFounderSignature = function () {
             const input = document.getElementById('founderSigFileInput');
             if (input) input.click();
+        };
+
+        window.uploadAdministratorSignature = function () {
+            const input = document.getElementById('administratorSigFileInput');
+            if (input) input.click();
+        };
+
+        window.handleAdministratorSigUpload = function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!/^image\//.test(file.type)) return toast('Choose a PNG or JPG image.', 'error');
+            if (file.size > 400 * 1024) return toast('Signature images must stay under 400 KB.', 'error');
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                administratorSigDataUrl = e.target.result;
+                const disp = document.getElementById('administratorSigDisplay');
+                if (disp) disp.innerHTML = `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature" style="max-height:90px; max-width:100%;">`;
+                toast('Administrator signature ready — press “Save signatures” to keep it.');
+            };
+            reader.onerror = function () { toast('Could not read that file. Try a PNG or JPG image.', 'error'); };
+            reader.readAsDataURL(file);
+            event.target.value = '';
         };
 
         window.handleFounderSigUpload = function (event) {
@@ -3092,35 +3357,43 @@ window.toggleDarkMode = function() {
         };
 
         window.saveFounderSignature = async function () {
-            const name = document.getElementById('founderNameInput').value.trim();
-            const title = document.getElementById('founderTitleInput').value.trim();
-            if (!name && !founderSigDataUrl) { toast('Add a founder name or signature image first', 'error'); return; }
+            const administratorName = document.getElementById('administratorNameInput').value.trim();
+            const administratorTitle = document.getElementById('administratorTitleInput').value.trim();
+            if (!administratorName && administratorSigDataUrl) {
+                toast('Add the administrator’s name before saving their signature.', 'error');
+                return;
+            }
             showLoading();
             try {
                 const data = {
-                    founderName: name,
-                    founderTitle: title || 'Founder',
-                    signatureUrl: founderSigDataUrl
+                    founderName: 'SEEDWELL K. KHAYALETHU MASUKU',
+                    founderTitle: 'Founder and President',
+                    organization: 'PRAYER DOME',
+                    signatureUrl: founderSigDataUrl,
+                    administratorName,
+                    administratorTitle: administratorTitle || 'Authorised Administrator',
+                    administratorSignatureUrl: administratorSigDataUrl
                 };
                 if (window.PDApp && PDApp.founder) {
                     PDApp.founder.save(data);
                 } else {
                     // Fallback: persist directly to Firestore + local cache.
-                    await setDoc(doc(db, 'settings', 'founder'), {
-                        founderName: data.founderName,
-                        founderTitle: data.founderTitle,
-                        signatureUrl: data.signatureUrl,
+                    await setDoc(doc(db, 'settings', 'founder'), Object.assign({}, data, {
                         updatedAt: new Date().toISOString(),
                         updatedBy: adminUser?.email || ''
-                    }, { merge: true });
+                    }), { merge: true });
                     localStorage.setItem('pd_founder', JSON.stringify(data));
                     const meta = document.querySelector('meta[name="pd-founder-signature"]') || (() => {
                         const m = document.createElement('meta'); m.name = 'pd-founder-signature'; document.head.appendChild(m); return m;
                     })();
                     meta.content = data.signatureUrl;
+                    const adminMeta = document.querySelector('meta[name="pd-administrator-signature"]') || (() => {
+                        const m = document.createElement('meta'); m.name = 'pd-administrator-signature'; document.head.appendChild(m); return m;
+                    })();
+                    adminMeta.content = data.administratorSignatureUrl;
                 }
-                toast('Founder signature saved — all future certificates will use it');
-                await logAdminActivity('founder_signature_saved', { name: data.founderName, title: data.founderTitle });
+                toast('Certificate signatures saved. New certificates use them immediately.');
+                await logAdminActivity('founder_signature_saved', { name: data.founderName, administrator: administratorName });
                 loadFounderSignatureUI();
             } catch (e) {
                 toast('Could not save signature: ' + e.message, 'error');
@@ -3236,12 +3509,12 @@ window.toggleDarkMode = function() {
                     s.id = d.id;
                     submissions.push(s);
                 });
-            
+
                 if (!submissions.length) {
                     tbody.innerHTML = '<tr><td colspan="6">No pending final exams.</td></tr>';
                     return;
                 }
-            
+
                 tbody.innerHTML = submissions.map(s => {
                     const d = s.createdAt ? new Date(s.createdAt) : null;
                     const dateStr = d && !isNaN(d) ? moment(d).format('MMM D, YYYY') : 'N/A';
@@ -3270,7 +3543,7 @@ window.toggleDarkMode = function() {
             if (!body) return;
             body.innerHTML = '<div class="spinner" style="width:30px;height:30px;margin:20px auto;"></div>';
             openModal('modalGradeExam');
-        
+
             try {
                 const docSnap = await getDoc(doc(db, "finalExamSubmissions", id));
                 if (!docSnap.exists()) {
@@ -3279,7 +3552,7 @@ window.toggleDarkMode = function() {
                 }
                 activeExamSubmission = docSnap.data();
                 activeExamSubmission.id = id;
-            
+
                 body.innerHTML = `
                     <div style="background:var(--bg-elev); padding:16px; border-radius:14px; margin-bottom:20px; border:1px solid var(--border);">
                         <h4>Student: <strong>${escapeHTML(activeExamSubmission.studentName)}</strong></h4>
@@ -3287,7 +3560,7 @@ window.toggleDarkMode = function() {
                         <p style="margin:4px 0;">Auto-graded score: <strong style="color:var(--pd-gold);">${activeExamSubmission.autoPercent}%</strong> (${activeExamSubmission.autoScore} / 50 Marks)</p>
                     </div>
                     <h3>Written Theory & Short Answer Responses:</h3>
-                
+
                     <div class="exam-question-card" style="background:var(--bg-elev); padding:16px; border-radius:12px; margin-bottom:12px; border:1px solid var(--border);">
                         <div class="exam-question-title" style="font-weight:700; margin-bottom:8px;"><strong>Question 6 (Short Answer):</strong> In your own words, briefly explain why humanity needs salvation from sin.</div>
                         <div style="background:var(--bg-main); padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid var(--border); font-style:italic;">
@@ -3298,7 +3571,7 @@ window.toggleDarkMode = function() {
                             <input type="number" id="gradeMarksEq6" class="form-control" min="0" max="10" value="${activeExamSubmission.submissions.eq6Marks || 0}" required>
                         </div>
                     </div>
-                
+
                     <div class="exam-question-card" style="background:var(--bg-elev); padding:16px; border-radius:12px; margin-bottom:12px; border:1px solid var(--border);">
                         <div class="exam-question-title" style="font-weight:700; margin-bottom:8px;"><strong>Question 7 (Theory):</strong> Describe the key spiritual practices a believer should cultivate after receiving salvation, and explain how they foster growth.</div>
                         <div style="background:var(--bg-main); padding:12px; border-radius:10px; margin-bottom:12px; border:1px solid var(--border); font-style:italic;">
@@ -3309,7 +3582,7 @@ window.toggleDarkMode = function() {
                             <input type="number" id="gradeMarksEq7" class="form-control" min="0" max="20" value="${activeExamSubmission.submissions.eq7Marks || 0}" required>
                         </div>
                     </div>
-                
+
                     <div class="form-group">
                         <label>Final Status:</label>
                         <select id="gradeFinalStatus" class="form-control">
@@ -3328,12 +3601,12 @@ window.toggleDarkMode = function() {
             const eq6Marks = parseInt(document.getElementById('gradeMarksEq6').value, 10) || 0;
             const eq7Marks = parseInt(document.getElementById('gradeMarksEq7').value, 10) || 0;
             const status = document.getElementById('gradeFinalStatus').value;
-        
+
             showLoading();
             try {
                 const totalScore = activeExamSubmission.autoScore + eq6Marks + eq7Marks;
                 const finalPercentage = Math.round((totalScore / 80) * 100);
-            
+
                 await updateDoc(doc(db, "finalExamSubmissions", activeExamSubmission.id), {
                     status: status,
                     "submissions.eq6Marks": eq6Marks,
@@ -3343,7 +3616,7 @@ window.toggleDarkMode = function() {
                     gradedAt: serverTimestamp(),
                     gradedBy: adminUser?.uid
                 });
-            
+
                 if (status === 'Passed') {
                     const certId = 'PD-' + activeExamSubmission.courseId.toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
                     await setDoc(doc(db, "certificates", certId), {
@@ -3358,7 +3631,7 @@ window.toggleDarkMode = function() {
                         downloads: 0
                     });
                 }
-            
+
                 toast('Final exam successfully graded and updated!');
                 closeModal('modalGradeExam');
                 loadExamSubmissions();
@@ -3614,7 +3887,11 @@ window.toggleDarkMode = function() {
                     getDocs(collection(db, "prayers")),
                     getDocs(collection(db, "certificates")),
                     getDocs(collection(db, "supportClaims")),
-                    getDocs(collection(db, "gallery"))
+                    getDocs(collection(db, "gallery")),
+                    getDocs(query(collection(db, "paymentRequests"), orderBy("createdAt", "desc"), limit(200))),
+                    getDocs(collection(db, "subscriptions")),
+                    getDocs(query(collection(db, "walletTransactions"), orderBy("createdAt", "desc"), limit(100))),
+                    getDocs(collection(db, "wallets"))
                 ]);
                 const docsFrom = result => result.status === 'fulfilled'
                     ? result.value.docs.map(item => Object.assign({ id: item.id }, item.data()))
@@ -3624,8 +3901,13 @@ window.toggleDarkMode = function() {
                     prayers: docsFrom(results[1]),
                     certificates: docsFrom(results[2]),
                     claims: docsFrom(results[3]),
-                    gallery: docsFrom(results[4])
+                    gallery: docsFrom(results[4]),
+                    payments: docsFrom(results[5]),
+                    subscriptions: docsFrom(results[6]),
+                    walletTransactions: docsFrom(results[7]),
+                    wallets: docsFrom(results[8])
                 };
+                window.dashboardPerformanceCache = dashboardPerformanceCache;
                 allMembersCache = dashboardPerformanceCache.members.slice();
                 allGalleryCache = dashboardPerformanceCache.gallery.slice();
 
@@ -3637,6 +3919,9 @@ window.toggleDarkMode = function() {
                 const pendingTable = document.getElementById('dashPendingMembers');
                 if (pendingTable) pendingTable.innerHTML = pendingHtml || '<tr><td colspan="5">No pending applications</td></tr>';
                 renderDashboardPerformance();
+                if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
+                if (typeof window.renderBillingSnapshot === 'function') window.renderBillingSnapshot();
+                if (typeof window.loadDashboardRecentActivity === 'function') window.loadDashboardRecentActivity().catch(() => {});
             } catch(e) {
                 console.error("Dashboard performance error:", e);
                 if (activity) activity.innerHTML = '<p>Performance chart is temporarily unavailable. Please refresh.</p>';
@@ -3664,24 +3949,24 @@ window.toggleDarkMode = function() {
             tbody.innerHTML = count>0?html:'<tr><td colspan="7">No members found</td></tr>';
         };
 
-        window.approveMember = async function(uid) { 
-            if(!confirm("Approve this membership application?")) return; 
-            showLoading(); 
-            try { 
-                const year = new Date().getFullYear(); 
-                const prefix=`PD${year}`; 
-                let max=0; 
-                allMembersCache.forEach(m=>{ if(m.membershipId && m.membershipId.startsWith(prefix)){ const num=parseInt(m.membershipId.substring(prefix.length),10); if(!isNaN(num)&&num>max) max=num; } }); 
-                const newId=`${prefix}${String(max+1).padStart(4,'0')}`; 
-                await updateDoc(doc(db,"memberships",uid),{ status:'approved', membershipId:newId, approvedAt:serverTimestamp(), approvedBy:adminUser?.email || adminUser?.uid }); 
-                const wRef=doc(db,"wallets",uid); 
-                if(!(await getDoc(wRef)).exists()) await setDoc(wRef,{userId:uid,balance:0,currency:'SZL',createdAt:serverTimestamp()}); 
+        window.approveMember = async function(uid) {
+            if(!confirm("Approve this membership application?")) return;
+            showLoading();
+            try {
+                const year = new Date().getFullYear();
+                const prefix=`PD${year}`;
+                let max=0;
+                allMembersCache.forEach(m=>{ if(m.membershipId && m.membershipId.startsWith(prefix)){ const num=parseInt(m.membershipId.substring(prefix.length),10); if(!isNaN(num)&&num>max) max=num; } });
+                const newId=`${prefix}${String(max+1).padStart(4,'0')}`;
+                await updateDoc(doc(db,"memberships",uid),{ status:'approved', membershipId:newId, approvedAt:serverTimestamp(), approvedBy:adminUser?.email || adminUser?.uid });
+                const wRef=doc(db,"wallets",uid);
+                if(!(await getDoc(wRef)).exists()) await setDoc(wRef,{userId:uid,balance:0,currency:'USD',createdAt:serverTimestamp()});
                 await logAdminActivity('member_approved', { memberId: uid, membershipId: newId });
-                toast(`Membership Approved! ID: ${newId}`); 
+                toast(`Membership Approved! ID: ${newId}`);
                 await loadDashboardPerformance();
                 loadMembers();
-            } catch(e){ toast(e.message,'error'); } 
-            finally { hideLoading(); } 
+            } catch(e){ toast(e.message,'error'); }
+            finally { hideLoading(); }
         };
 
         window.viewFullMemberDetails = async function(uid) {
@@ -3697,23 +3982,23 @@ window.toggleDarkMode = function() {
                     return toast('Could not load member: ' + e.message, 'error');
                 }
             }
-            showLoading(); 
-            try { 
-                const walletDoc=await getDoc(doc(db,"wallets",uid)); 
-                document.getElementById('fullMemberName').value=member.fullName||''; 
-                document.getElementById('fullMemberEmail').value=member.email||''; 
-                document.getElementById('fullMemberPhone').value=member.phone||''; 
-                document.getElementById('fullMemberId').value=member.membershipId||'Pending'; 
-                document.getElementById('fullMemberIdNumber').value=member.idNumber||''; 
-                document.getElementById('fullMemberDob').value=member.dateOfBirth||member.dob||''; 
-                document.getElementById('fullMemberGender').value=member.gender||'Male'; 
-                document.getElementById('fullMemberMarital').value=member.maritalStatus||member.marital||'Single'; 
-                document.getElementById('fullMemberBranch').value=member.branch||'Zambia - Chama'; 
-                document.getElementById('fullMemberRole').value=member.role||'member'; 
-                document.getElementById('fullMemberBadge').value=member.badge||''; 
-                document.getElementById('fullMemberStatus').value=member.status||'pending'; 
-                document.getElementById('fullMemberWallet').value=walletDoc.exists()?`E${walletDoc.data().balance.toFixed(2)}`:'E0.00'; 
-                document.getElementById('fullMemberJoined').value=member.createdAt?moment(member.createdAt.toDate()).format('MMMM D, YYYY'):'N/A'; 
+            showLoading();
+            try {
+                const walletDoc=await getDoc(doc(db,"wallets",uid));
+                document.getElementById('fullMemberName').value=member.fullName||'';
+                document.getElementById('fullMemberEmail').value=member.email||'';
+                document.getElementById('fullMemberPhone').value=member.phone||'';
+                document.getElementById('fullMemberId').value=member.membershipId||'Pending';
+                document.getElementById('fullMemberIdNumber').value=member.idNumber||'';
+                document.getElementById('fullMemberDob').value=member.dateOfBirth||member.dob||'';
+                document.getElementById('fullMemberGender').value=member.gender||'Male';
+                document.getElementById('fullMemberMarital').value=member.maritalStatus||member.marital||'Single';
+                document.getElementById('fullMemberBranch').value=member.branch||'Zambia - Chama';
+                document.getElementById('fullMemberRole').value=member.role||'member';
+                document.getElementById('fullMemberBadge').value=member.badge||'';
+                document.getElementById('fullMemberStatus').value=member.status||'pending';
+                document.getElementById('fullMemberWallet').value=walletDoc.exists()?`E${walletDoc.data().balance.toFixed(2)}`:'E0.00';
+                document.getElementById('fullMemberJoined').value=member.createdAt?moment(member.createdAt.toDate()).format('MMMM D, YYYY'):'N/A';
                 // Robust spiritualGifts / ministries display — handles legacy booleans, strings & arrays without crashing
                 const giftsDisplay = (function(v, gNames){
                     if (Array.isArray(v)) return v.join(', ');
@@ -3729,43 +4014,44 @@ window.toggleDarkMode = function() {
                     }
                     return '';
                 })(member.spiritualGifts, member.giftNames);
-                document.getElementById('fullMemberGifts').value=giftsDisplay; 
+                document.getElementById('fullMemberGifts').value=giftsDisplay;
                 const ministriesDisplay = Array.isArray(member.ministries) ? member.ministries.join(', ') : (typeof member.ministries === 'string' ? member.ministries : '');
-                document.getElementById('fullMemberMinistries').value=ministriesDisplay; 
-                document.getElementById('fullMemberBio').value=member.bio||''; 
-                document.getElementById('fullMemberAdminNotes').value=member.adminNotes||''; 
-                document.getElementById('fullMemberPhoto').src=member.photoUrl||'/assets/avatar-default.svg'; 
-                document.getElementById('editMemberId').value=uid; 
-                const sigDisplay=document.getElementById('signatureDisplay'); 
-                sigDisplay.innerHTML=member.signatureUrl?`<img src="${member.signatureUrl}" style="max-width:100%;max-height:80px;">`:'<p>No signature on file</p>'; 
-                const suspendBtn=document.getElementById('suspendFullBtn'); 
-                if(member.status==='suspended'){ suspendBtn.innerHTML='Activate'; suspendBtn.onclick=()=>activateMemberFull(uid); suspendBtn.classList.remove('btn-danger'); suspendBtn.classList.add('btn-primary'); } 
-                else if(member.status==='approved' || member.status==='pending'){ suspendBtn.innerHTML='Suspend'; suspendBtn.onclick=()=>suspendMemberFull(uid); suspendBtn.classList.remove('btn-primary'); suspendBtn.classList.add('btn-danger'); } 
-                else { suspendBtn.style.display='none'; } 
-                openModal('modalFullMemberDetails'); 
-            } catch(e){ toast(e.message,'error'); } 
-            finally { hideLoading(); } 
+                document.getElementById('fullMemberMinistries').value=ministriesDisplay;
+                document.getElementById('fullMemberBio').value=member.bio||'';
+                document.getElementById('fullMemberAdminNotes').value=member.adminNotes||'';
+                document.getElementById('fullMemberPhoto').src=member.photoUrl||'/assets/avatar-default.svg';
+                document.getElementById('editMemberId').value=uid;
+                const sigDisplay=document.getElementById('signatureDisplay');
+                sigDisplay.innerHTML=member.signatureUrl?`<img src="${member.signatureUrl}" style="max-width:100%;max-height:80px;">`:'<p>No signature on file</p>';
+                const suspendBtn=document.getElementById('suspendFullBtn');
+                if(member.status==='suspended'){ suspendBtn.innerHTML='Activate'; suspendBtn.onclick=()=>activateMemberFull(uid); suspendBtn.classList.remove('btn-danger'); suspendBtn.classList.add('btn-primary'); }
+                else if(member.status==='approved' || member.status==='pending'){ suspendBtn.innerHTML='Suspend'; suspendBtn.onclick=()=>suspendMemberFull(uid); suspendBtn.classList.remove('btn-primary'); suspendBtn.classList.add('btn-danger'); }
+                else { suspendBtn.style.display='none'; }
+                openModal('modalFullMemberDetails');
+            } catch(e){ toast(e.message,'error'); }
+            finally { hideLoading(); }
         };
 
-        window.saveFullMemberDetails = async function() { 
-            const uid=document.getElementById('editMemberId').value; 
-            if(!uid) return; 
-            const gifts=document.getElementById('fullMemberGifts').value.split(',').map(g=>g.trim()).filter(g=>g); 
-            const ministries=document.getElementById('fullMemberMinistries').value.split(',').map(m=>m.trim()).filter(m=>m); 
+        window.saveFullMemberDetails = async function() {
+            const uid=document.getElementById('editMemberId').value;
+            if(!uid) return;
+            const gifts=document.getElementById('fullMemberGifts').value.split(',').map(g=>g.trim()).filter(g=>g);
+            const ministries=document.getElementById('fullMemberMinistries').value.split(',').map(m=>m.trim()).filter(m=>m);
             // Keep both fields in sync for legacy membership page (boolean + giftNames) and new admin array shape
-            const data={ membershipId:document.getElementById('fullMemberId').value.trim(), fullName:document.getElementById('fullMemberName').value, phone:document.getElementById('fullMemberPhone').value, idNumber:document.getElementById('fullMemberIdNumber').value, dateOfBirth:document.getElementById('fullMemberDob').value, gender:document.getElementById('fullMemberGender').value, maritalStatus:document.getElementById('fullMemberMarital').value, branch:document.getElementById('fullMemberBranch').value, role:document.getElementById('fullMemberRole').value, badge:document.getElementById('fullMemberBadge').value, status:document.getElementById('fullMemberStatus').value, bio:document.getElementById('fullMemberBio').value, spiritualGifts:gifts, giftNames:gifts.join(', '), ministries:ministries, adminNotes:document.getElementById('fullMemberAdminNotes').value, updatedAt:serverTimestamp(), updatedBy:adminUser?.email || adminUser?.uid }; 
-            showLoading(); 
-            try{ 
-                await updateDoc(doc(db,"memberships",uid),data); 
+            const data={ membershipId:document.getElementById('fullMemberId').value.trim(), fullName:document.getElementById('fullMemberName').value, phone:document.getElementById('fullMemberPhone').value, idNumber:document.getElementById('fullMemberIdNumber').value, dateOfBirth:document.getElementById('fullMemberDob').value, gender:document.getElementById('fullMemberGender').value, maritalStatus:document.getElementById('fullMemberMarital').value, branch:document.getElementById('fullMemberBranch').value, role:document.getElementById('fullMemberRole').value, badge:document.getElementById('fullMemberBadge').value, status:document.getElementById('fullMemberStatus').value, bio:document.getElementById('fullMemberBio').value, spiritualGifts:gifts, giftNames:gifts.join(', '), ministries:ministries, adminNotes:document.getElementById('fullMemberAdminNotes').value, updatedAt:serverTimestamp(), updatedBy:adminUser?.email || adminUser?.uid };
+            showLoading();
+            try{
+                await updateDoc(doc(db,"memberships",uid),data);
                 await logAdminActivity('member_updated', { memberId: uid, updates: Object.keys(data) });
-                toast("Member details updated!"); 
-                closeModal('modalFullMemberDetails'); 
+                if (window.syncMemberCardStatus) await window.syncMemberCardStatus(uid, data.status, data.membershipId);
+                toast("Member details updated!");
+                closeModal('modalFullMemberDetails');
                 await loadDashboardPerformance();
                 loadMembers();
-            } catch(e){ toast(e.message,'error'); } 
-            finally { hideLoading(); } 
+            } catch(e){ toast(e.message,'error'); }
+            finally { hideLoading(); }
         };
-    
+
         // Reset only member-facing profile/session data; never delete the membership record.
         // This gives admins a safe recovery action without touching authentication credentials.
         window.resetMemberAccount = async function() {
@@ -3786,44 +4072,46 @@ window.toggleDarkMode = function() {
             finally { hideLoading(); }
         };
 
-        window.suspendMemberFull = async function(uid) { 
-            if(!confirm("Suspend this member?")) return; 
-            showLoading(); 
-            try{ 
-                await updateDoc(doc(db,"memberships",uid),{ status:'suspended', suspendedAt:serverTimestamp(), suspendedBy:adminUser?.email || adminUser?.uid }); 
+        window.suspendMemberFull = async function(uid) {
+            if(!confirm("Suspend this member?")) return;
+            showLoading();
+            try{
+                await updateDoc(doc(db,"memberships",uid),{ status:'suspended', suspendedAt:serverTimestamp(), suspendedBy:adminUser?.email || adminUser?.uid });
                 await logAdminActivity('member_suspended', { memberId: uid });
-                toast("Member suspended"); 
-                closeModal('modalFullMemberDetails'); 
+                if (window.syncMemberCardStatus) await window.syncMemberCardStatus(uid, 'suspended');
+                toast("Member suspended");
+                closeModal('modalFullMemberDetails');
                 await loadDashboardPerformance();
                 loadMembers();
-            } catch(e){ toast(e.message,'error'); } 
-            finally { hideLoading(); } 
+            } catch(e){ toast(e.message,'error'); }
+            finally { hideLoading(); }
         };
 
-        window.activateMemberFull = async function(uid) { 
-            if(!confirm("Activate this member?")) return; 
-            showLoading(); 
-            try{ 
-                await updateDoc(doc(db,"memberships",uid),{ status:'approved', activatedAt:serverTimestamp(), activatedBy:adminUser?.email || adminUser?.uid }); 
+        window.activateMemberFull = async function(uid) {
+            if(!confirm("Activate this member?")) return;
+            showLoading();
+            try{
+                await updateDoc(doc(db,"memberships",uid),{ status:'approved', activatedAt:serverTimestamp(), activatedBy:adminUser?.email || adminUser?.uid });
                 await logAdminActivity('member_activated', { memberId: uid });
-                toast("Member activated"); 
-                closeModal('modalFullMemberDetails'); 
+                if (window.syncMemberCardStatus) await window.syncMemberCardStatus(uid, 'approved');
+                toast("Member activated");
+                closeModal('modalFullMemberDetails');
                 await loadDashboardPerformance();
                 loadMembers();
-            } catch(e){ toast(e.message,'error'); } 
-            finally { hideLoading(); } 
+            } catch(e){ toast(e.message,'error'); }
+            finally { hideLoading(); }
         };
-    
-        window.uploadSignature = function() { 
-            const uid = document.getElementById('editMemberId').value; 
-            if (!uid) return; 
+
+        window.uploadSignature = function() {
+            const uid = document.getElementById('editMemberId').value;
+            if (!uid) return;
             const fileInput = document.getElementById('adminSigFileInput');
             if (fileInput) fileInput.click();
         };
-    
-        window.changeMemberPhoto = function() { 
-            const uid = document.getElementById('editMemberId').value; 
-            if (!uid) return; 
+
+        window.changeMemberPhoto = function() {
+            const uid = document.getElementById('editMemberId').value;
+            if (!uid) return;
             const fileInput = document.getElementById('adminPhotoFileInput');
             if (fileInput) fileInput.click();
         };
@@ -3931,7 +4219,7 @@ window.toggleDarkMode = function() {
 
         window.filterGallery = function() { const searchTerm=document.getElementById('gallerySearch')?.value.toLowerCase(); if(!searchTerm) return loadGallery(); const filtered=allGalleryCache.filter(img=>img.title?.toLowerCase().includes(searchTerm)||img.category?.toLowerCase().includes(searchTerm)); const grid=document.getElementById('galleryGrid'); if(filtered.length===0){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;">No matching images</div>'; return; } grid.innerHTML=filtered.map(img=>`<div class="gallery-item"><img src="${img.url}" class="gallery-image"><div class="gallery-info"><div class="gallery-title">${escapeHTML(img.title)}</div><div class="gallery-meta"><span><i class="pd-i pd-i-user"></i> ${escapeHTML(img.userName)}</span><span>${img.createdAt?moment(img.createdAt.toDate()).fromNow():'Recently'}</span></div><div class="gallery-meta"><span>${img.category}</span><span class="badge ${img.status==='approved'?'badge-success':'badge-warning'}">${img.status}</span></div><div class="gallery-actions">${img.status==='pending'?`<button class="btn btn-sm btn-success" onclick="approveGalleryImage('${img.id}')">Approve</button>`:''}<button class="btn btn-sm btn-outline" onclick="deleteGalleryImage('${img.id}')">Delete</button></div></div></div>`).join(''); };
 
-        window.loadFinances = async function() { 
+        window.loadFinances = async function() {
             const dBody=document.getElementById('listDeposits'), wBody=document.getElementById('listWithdrawals');
             if(dBody) dBody.innerHTML='<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
             if(wBody) wBody.innerHTML='<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
@@ -3945,11 +4233,11 @@ window.toggleDarkMode = function() {
 
         window.approveFinance = async function(type,docId,userId,amount){ if(!confirm("Approve?")) return; try{ if(type==='deposits'){ await updateDoc(doc(db,"deposits",docId),{status:'approved',approvedAt:serverTimestamp(),approvedBy:adminUser?.uid}); await updateDoc(doc(db,"wallets",userId),{balance:increment(amount)}); toast("Deposit approved!"); } else { const wRef=doc(db,"wallets",userId); const wSnap=await getDoc(wRef); if(wSnap.data().balance<amount) return toast("Insufficient funds","error"); await updateDoc(wRef,{balance:increment(-amount)}); await updateDoc(doc(db,"withdrawals",docId),{status:'approved',approvedAt:serverTimestamp(),approvedBy:adminUser?.uid}); toast("Withdrawal approved!"); } await loadFinances(); await loadDashboardPerformance(); } catch(e){ toast(e.message,'error'); } };
         window.rejectFinance = async function(type,docId){ const reason=prompt("Reason:"); if(!reason) return; await updateDoc(doc(db,type,docId),{status:'rejected',rejectReason:reason,rejectedAt:serverTimestamp(),rejectedBy:adminUser?.uid}); toast("Rejected"); await loadFinances(); await loadDashboardPerformance(); };
-    
+
         window.loadSupport = async function(){ const tbody=document.getElementById('listSupportClaims'); if(tbody) tbody.innerHTML='<td colspan="7"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"supportClaims"),orderBy("createdAt","desc"),limit(30))); let html=''; snap.forEach(d=>{ const data=d.data(); const badge=data.status==='approved'?'<span class="badge badge-success">Approved</span>':data.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'; let docs=''; if(data.documents){ for(const[key,url] of Object.entries(data.documents)) docs+=`<button class="btn btn-sm btn-outline" onclick="viewDoc('${url}','auto')">${key}</button>`; } html+=`<tr><td>${data.createdAt?moment(data.createdAt.toDate()).format('MMM D, YYYY'):'N/A'}</td><td>${escapeHTML(data.userName||data.userEmail)}</td><td>${data.planType}</td><td style="color:var(--accent-green);font-weight:bold;">E${data.requestedAmount}</td><td>${docs||'None'}</td><td>${badge}</td><td>${data.status==='pending'?`<button class="btn btn-sm btn-primary" onclick="approveClaim('${d.id}')">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectClaim('${d.id}')">Reject</button>`:'-'}</td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="7">No claims<\/td>'; } catch(e){ console.error(e); } };
         window.approveClaim = async function(id){ if(!confirm("Approve claim?")) return; await updateDoc(doc(db,"supportClaims",id),{status:'approved',approvedBy:adminUser?.uid,approvedAt:serverTimestamp()}); toast("Claim approved!"); await loadSupport(); await loadDashboardPerformance(); };
         window.rejectClaim = async function(id){ const reason=prompt("Reason:"); if(!reason) return; await updateDoc(doc(db,"supportClaims",id),{status:'rejected',rejectReason:reason,rejectedAt:serverTimestamp(),rejectedBy:adminUser?.uid}); toast("Claim rejected!"); await loadSupport(); await loadDashboardPerformance(); };
-    
+
         window.loadEvents = async function(){ const tbody=document.getElementById('listEvents'); if(tbody) tbody.innerHTML='<td colspan="5"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"events"),orderBy("date","desc"))); let html=''; snap.forEach(d=>{ const data=d.data(); html+=`<tr><td>${data.date?moment(data.date.toDate()).format('MMM D, YYYY HH:mm'):'N/A'}</td><td><strong>${escapeHTML(data.title)}</strong></td><td>${escapeHTML(data.location)}</td><td>${data.category}</td><td><button class="btn btn-sm btn-danger" onclick="deleteRecord('events','${d.id}')">Delete</button></td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="5">No events<\/td>'; } catch(e){ console.error(e); } };
         window.saveEvent = async function(){ const title=document.getElementById('evTitle').value, date=document.getElementById('evDate').value; if(!title||!date) return toast("Title and date required","error"); showLoading(); try{ await addDoc(collection(db,"events"),{title:title,date:new Date(date),location:document.getElementById('evLocation').value,category:document.getElementById('evCategory').value,description:document.getElementById('evDesc').value,attendeeCount:0,createdAt:serverTimestamp(),createdBy:adminUser?.uid}); closeModal('modalEvent'); toast("Event published!"); await loadEvents(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
 
@@ -3967,7 +4255,7 @@ window.toggleDarkMode = function() {
         window.setCareStatus = async function(id, status){ showLoading(); try{ await updateDoc(doc(db,"memberCareRequests",id),{ status:status, updatedAt:serverTimestamp(), statusBy:adminUser?.email }); await logAdminActivity('care_request_'+status,{ requestId:id }); toast(status==='resolved'?"Request marked resolved":status==='in-progress'?"Request in progress":"Request reopened"); await loadCareRequests(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
 
         window.noteCareRequest = async function(id){ const r=careRequestsCache[id]; const note=prompt("Response note to the member (visible in their portal):", r?.adminNotes||''); if(note===null) return; showLoading(); try{ await updateDoc(doc(db,"memberCareRequests",id),{ adminNotes:note.trim(), updatedAt:serverTimestamp() }); await logAdminActivity('care_request_note',{ requestId:id }); toast("Response saved — member can see it in their portal"); await loadCareRequests(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
-    
+
         window.loadContent = async function(){
             const col=document.getElementById('contentFilter').value, tbody=document.getElementById('listContent');
             if(tbody) tbody.innerHTML='<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
@@ -4827,7 +5115,7 @@ window.toggleDarkMode = function() {
             toast('Radio station updated — check /radio.html');
             loadAdminRadio();
         };
-    
+
         /* ===== Live-start notifications =====
          * Going live must actually tell members: gather the registered device
          * tokens and queue a branded push via the sendPushNotification Cloud
@@ -5053,9 +5341,9 @@ window.toggleDarkMode = function() {
             } catch(error) { toast("Error: " + error.message, "error"); }
             finally { hideLoading(); }
         };
-    
+
         window.loadFinancialReports = async function(){ const tbody=document.getElementById('financialReportsList'); if(!tbody) return; tbody.innerHTML='<td colspan="9"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try { const branchFilter=document.getElementById('reportBranchFilter')?.value||'all'; const statusFilter=document.getElementById('reportStatusFilter')?.value||'all'; const dateFilter=document.getElementById('reportDateFilter')?.value||''; const snapshot=await getDocs(query(collection(db,"financialReports"),orderBy("date","desc"))); let reports=[]; snapshot.forEach(doc=>{reports.push({id:doc.id,...doc.data()});}); let filtered=reports; if(branchFilter!=='all') filtered=filtered.filter(r=>r.branch===branchFilter); if(statusFilter!=='all') filtered=filtered.filter(r=>r.status===statusFilter); if(dateFilter) filtered=filtered.filter(r=>r.date===dateFilter); document.getElementById('totalReportsCount').innerText=filtered.length; document.getElementById('pendingReportsCount').innerText=filtered.filter(r=>r.status==='submitted').length; document.getElementById('approvedReportsCount').innerText=filtered.filter(r=>r.status==='approved').length; document.getElementById('totalIncomeAll').innerText=`E${filtered.reduce((sum,r)=>sum+(r.totalIncome||0),0).toFixed(2)}`; if(filtered.length===0){ tbody.innerHTML='<td colspan="9">No reports found<\/td>'; return; } let html=''; filtered.forEach(report=>{ const statusBadge=report.status==='approved'?'<span class="badge badge-success">Approved</span>':(report.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'); const surplusColor=(report.surplus||0)>=0?'var(--accent-green)':'var(--accent-red)'; html+=`<tr><td>${moment(report.date).format('MMM D, YYYY')}</td><td>${report.branch==='eswatini'?'Eswatini':report.branch==='zambia'?'Zambia':'Ireland'}</td><td>${escapeHTML(report.submittedBy)}</td><td style="color:var(--accent-green);font-weight:bold;">E${(report.totalIncome||0).toFixed(2)}</td><td style="color:var(--accent-red);">E${(report.totalExpense||0).toFixed(2)}</td><td style="color:${surplusColor};font-weight:bold;">E${(report.surplus||0).toFixed(2)}</td><td>${report.approvedBy?escapeHTML(report.approvedBy):'-'}</td><td>${statusBadge}</td><td>${report.documentUrl?`<button class="btn btn-sm btn-primary" onclick="viewDoc('${report.documentUrl}','auto')" aria-label="View document"><i class="pd-i pd-i-eye"></i></button>`:'-'}</td></tr>`; }); tbody.innerHTML=html; } catch(error){ console.error("Error loading reports:",error); tbody.innerHTML='<td colspan="9">Error loading reports<\/td>'; toast("Error loading financial reports", "error"); } };
-    
+
         window.viewDoc = function(url,type){ const img=document.getElementById('docImagePreview'), pdf=document.getElementById('docPdfBtn'); if(url.toLowerCase().includes('.pdf')){ if(img) img.style.display='none'; if(pdf){ pdf.style.display='inline-flex'; pdf.href=url; } } else { if(img){ img.style.display='block'; img.src=url; } if(pdf) pdf.style.display='none'; } openModal('modalViewDoc'); };
         window.exportFinancialReports = function() { toast("Export feature - CSV export ready", "info"); };
         window.uploadMedia = function(){ window.uploadGalleryImage(); };
@@ -5604,7 +5892,7 @@ window.toggleDarkMode = function() {
         // Kept for older shortcuts/links: open the console team view in place.
         window.openTeamManagement = function(){ window.switchView('team', window.pdNavFor('team')); };
         window.deleteRecord = async function(col,id){ if(!confirm("Delete permanently?")) return; showLoading(); try{ await deleteDoc(doc(db,col,id)); toast("Deleted"); if(col==='events') await loadEvents(); if(col==='gallery') await loadGallery(); if(col==='prayers'||col==='testimonies') await loadContent(); if(col==='contactMessages') await loadContactMessages(); if(col==='certificates') await loadCertificates(); if(col==='announcements') await loadAnnouncements(); if(col==='memberCareRequests') await loadCareRequests(); if(col==='liveRecordings') await loadLiveRecordings(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
-    
+
         function setupAdminRealtimeListeners() {
             const membershipsQuery = query(collection(db, "memberships"), where("status", "==", "pending"));
             onSnapshot(membershipsQuery, (snapshot) => { snapshot.docChanges().forEach((change) => { if(change.type === "added"){ const data=change.doc.data(); showAdminToast("New Membership Application", `${data.fullName} applied for membership.`, "info"); } }); });
@@ -5615,7 +5903,7 @@ window.toggleDarkMode = function() {
             const galleryQuery = query(collection(db, "gallery"), where("status", "==", "pending"));
             onSnapshot(galleryQuery, (snapshot) => { snapshot.docChanges().forEach((change) => { if(change.type === "added"){ const data=change.doc.data(); showAdminToast("New Gallery Upload", `${data.title} uploaded by ${data.userName || 'Anonymous'} awaiting approval`, "info"); } }); });
         }
-    
+
         /* ===== LIVE BROADCAST CONTROL (UPGRADED CONTROL ROOM) ===== */
         const CLOUD_NAME = 'prayerdome';
         let currentLiveData = { isLive: false };
@@ -7454,7 +7742,10 @@ window.toggleDarkMode = function() {
             'contacts': 'Contact Messages', 'certificates': 'Certificates',
             'locations': 'Church Locations', 'daily-challenges': 'Daily Challenges',
             'document-studio': 'Document Studio', 'membership-cards': 'Membership Cards',
-            'data-audit': 'Data Audit'
+            'data-audit': 'Data Audit', 'payment-verification': 'Payment Verification',
+            'subscriptions': 'Subscriptions', 'wallet-transactions': 'Wallet Transactions',
+            'wallet-balances': 'Wallet Balances', 'support-plans': 'Support Plans',
+            'activity': 'Recent Activity'
         };
         let activeAdminView = null;
 
@@ -7491,6 +7782,12 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'care') await loadCareRequests();
                 else if (viewId === 'gallery') await loadGallery();
                 else if (viewId === 'finance') await loadFinances();
+                else if (viewId === 'payment-verification' && window.loadPayments) await loadPayments();
+                else if (viewId === 'subscriptions' && window.loadSubscriptions) await loadSubscriptions();
+                else if (viewId === 'wallet-transactions' && window.loadWalletTransactions) await loadWalletTransactions();
+                else if (viewId === 'wallet-balances' && window.loadWalletBalances) await loadWalletBalances();
+                else if (viewId === 'support-plans' && window.loadSupportPlansAdmin) await loadSupportPlansAdmin();
+                else if (viewId === 'activity' && window.loadRecentActivity) await loadRecentActivity();
                 else if (viewId === 'support') await loadSupport();
                 else if (viewId === 'events') await loadEvents();
                 else if (viewId === 'content') await loadContent();
@@ -7807,6 +8104,51 @@ window.toggleDarkMode = function() {
             window.location.href = 'index.html';
         };
     </script>
+    <!-- PAYMENT REVIEW MODAL -->
+    <div id="modalPaymentReview" class="modal-overlay">
+        <div class="modal-card" style="max-width:760px;">
+            <div class="modal-header"><h2><i class="pd-i pd-i-shield-check"></i> Review payment</h2><button class="modal-close" onclick="closeModal('modalPaymentReview')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body" id="paymentReviewBody" style="max-height:68vh;overflow:auto;"></div>
+            <div class="modal-footer" id="paymentReviewActions"></div>
+        </div>
+    </div>
+
+    <!-- CARD VERIFICATION HISTORY MODAL -->
+    <div id="modalVerificationHistory" class="modal-overlay">
+        <div class="modal-card" style="max-width:720px;">
+            <div class="modal-header"><h2><i class="pd-i pd-i-rotate-ccw-clock"></i> Card verification history</h2><button class="modal-close" onclick="closeModal('modalVerificationHistory')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body" id="verificationHistoryBody" style="max-height:68vh;overflow:auto;"></div>
+            <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modalVerificationHistory')">Close</button></div>
+        </div>
+    </div>
+
+    <!-- SUPPORT PLAN EDITOR MODAL -->
+    <div id="modalPlanEditor" class="modal-overlay">
+        <div class="modal-card" style="max-width:680px;">
+            <div class="modal-header"><h2><i class="pd-i pd-i-layers"></i> Support plan</h2><button class="modal-close" onclick="closeModal('modalPlanEditor')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body" style="max-height:68vh;overflow:auto;">
+                <div class="admin-field-grid">
+                    <div class="form-group"><label>Plan ID</label><input id="planId" class="form-control" maxlength="60" placeholder="education-bronze"></div>
+                    <div class="form-group"><label>Programme</label><select id="planProgram" class="form-control"><option>Education</option><option>Business</option><option>Compassion</option></select></div>
+                    <div class="form-group"><label>Tier</label><input id="planTier" class="form-control" maxlength="40" placeholder="Bronze"></div>
+                    <div class="form-group"><label>Monthly price (USD)</label><input id="planPrice" class="form-control" type="number" min="0.01" step="0.01"></div>
+                    <div class="form-group"><label>Display order</label><input id="planOrder" class="form-control" type="number" min="0" step="10" value="100"></div>
+                    <div class="form-group"><label>Active</label><label style="display:flex;align-items:center;gap:8px;min-height:42px;"><input id="planActive" type="checkbox" checked style="width:18px;height:18px;"> Visible to members</label></div>
+                </div>
+                <div class="form-group"><label>Plan name</label><input id="planName" class="form-control" maxlength="120" placeholder="Education Support · Bronze"></div>
+                <div class="form-group"><label>Short summary</label><input id="planSummary" class="form-control" maxlength="200" placeholder="What this plan supports"></div>
+                <div class="form-group"><label>Benefits (one per line)</label><textarea id="planBenefits" class="form-control" rows="4"></textarea></div>
+                <div class="form-group"><label>Payment instructions</label><textarea id="planInstructions" class="form-control" rows="4"></textarea></div>
+                <p style="font-size:.72rem;color:var(--text-sub);line-height:1.55;">Prices are monthly USD. The support page reads the saved price and the billing server charges that same price; a browser cannot send its own amount for a subscription.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalPlanEditor')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveSupportPlan()"><i class="pd-i pd-i-save"></i> Save plan</button>
+            </div>
+        </div>
+    </div>
+
 <script type="module" src="/assets/pd-admin-extras.js"></script>
+<script type="module" src="/assets/pd-billing-admin.js"></script>
 </body>
 </html>

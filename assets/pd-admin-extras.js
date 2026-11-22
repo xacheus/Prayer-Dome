@@ -329,14 +329,58 @@ async function deleteDailyChallenge(id) {
 }
 
 /* ----------------------------------------------------------- membership cards */
+/* The founder's identity is fixed. An administrator may replace the signature
+   image only with one the founder has authorised; the name and designation are
+   never editable to a variant or abbreviation. */
+const CARD_IDENTITY = {
+  churchName: 'PRAYER DOME',
+  signatoryName: 'SEEDWELL K. KHAYALETHU MASUKU',
+  signatoryRole: 'Founder and President',
+  organization: 'PRAYER DOME'
+};
+let cardValidityMonths = 12;
+
+function cardAddMonths(value, months) {
+  const date = new Date(value.getTime());
+  const targetMonth = date.getMonth() + Number(months || 0);
+  const day = date.getDate();
+  date.setDate(1);
+  date.setMonth(targetMonth);
+  const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  date.setDate(Math.min(day, lastDay));
+  return date;
+}
+
+function newVerificationRef() {
+  const bytes = new Uint8Array(10);
+  try { window.crypto.getRandomValues(bytes); }
+  catch (error) { for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256); }
+  return 'PDV-' + Array.prototype.slice.call(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+}
+
+function verificationStatusForMember(status) {
+  if (status === 'approved') return 'approved';
+  if (status === 'suspended') return 'suspended';
+  if (status === 'rejected') return 'revoked';
+  return 'pending';
+}
+
+function cardDepartment(row) {
+  const value = row.department || row.ministry || row.role || 'Membership';
+  if (String(value).toLowerCase() === 'admin') return 'TEAM MANAGEMENT';
+  return String(value).toUpperCase();
+}
+
 function applyTemplateToForm(template) {
   const data = template || {};
-  const set = (id, value) => { const field = $(id); if (field) field.value = value || ''; };
-  set('mcardChurch', data.churchName || 'Prayer Dome Ministry');
-  set('mcardSignatory', data.signatoryName || 'Pastor Seedwell K. Masuku');
-  set('mcardRole', data.signatoryRole || 'Founder & Senior Pastor');
+  const set = (id, value) => { const field = $(id); if (field) field.value = value == null ? '' : value; };
+  set('mcardChurch', CARD_IDENTITY.churchName);
+  set('mcardSignatory', CARD_IDENTITY.signatoryName);
+  set('mcardRole', CARD_IDENTITY.signatoryRole);
   set('mcardPhone', data.phone || '+268 7658 1804');
   set('mcardEmail', data.email || 'info@prayerdome.net');
+  cardValidityMonths = Number(data.validityMonths) || 12;
+  set('mcardValidityMonths', cardValidityMonths);
   cardTemplateSignature = data.signature || '';
   const preview = $('mcardSignaturePreview');
   const empty = $('mcardSignatureEmpty');
@@ -360,7 +404,7 @@ async function loadCardTemplate() {
     const data = snapshot.exists() ? snapshot.data() : null;
     applyTemplateToForm(data);
     if (data) {
-      try { localStorage.setItem('pd_membership_card_template', JSON.stringify(data)); } catch (error) { /* private mode */ }
+      try { localStorage.setItem('pd_membership_card_template', JSON.stringify(Object.assign({}, data, CARD_IDENTITY))); } catch (error) { /* private mode */ }
     }
   } catch (error) {
     console.warn('Card template could not be loaded:', error && error.message);
@@ -380,29 +424,29 @@ function handleCardSignatureFile(event) {
     const empty = $('mcardSignatureEmpty');
     if (preview) { preview.src = cardTemplateSignature; preview.hidden = false; }
     if (empty) empty.hidden = true;
-    toast('Signature attached — press Save template to publish it.', 'info');
+    toast('Signature attached — save the template to publish it. Only upload a signature the founder authorised.', 'info');
   };
   reader.readAsDataURL(file);
 }
 
 async function saveCardTemplate() {
   if (!bridge) return;
-  const payload = {
-    churchName: ($('mcardChurch').value || '').trim() || 'Prayer Dome Ministry',
-    signatoryName: ($('mcardSignatory').value || '').trim(),
-    signatoryRole: ($('mcardRole').value || '').trim(),
+  const validity = Number(($('mcardValidityMonths') || {}).value) || 12;
+  if (validity < 1 || validity > 60) return toast('Card validity must be between 1 and 60 months.', 'error');
+  const payload = Object.assign({}, CARD_IDENTITY, {
     phone: ($('mcardPhone').value || '').trim(),
     email: ($('mcardEmail').value || '').trim(),
+    validityMonths: validity,
     signature: cardTemplateSignature || '',
     updatedAt: bridge.firestore.serverTimestamp(),
     updatedBy: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator'
-  };
-  if (!payload.signatoryName) return toast('Enter the authorised signatory’s name.', 'error');
+  });
   try {
     const store = bridge.firestore;
     await store.setDoc(store.doc(bridge.db, 'membershipCardSettings', 'main'), payload, { merge: true });
     try { localStorage.setItem('pd_membership_card_template', JSON.stringify(payload)); } catch (error) { /* private mode */ }
-    toast('Card template saved — every card now uses it.', 'success');
+    cardValidityMonths = validity;
+    toast('Card template saved. The founder name, designation and organisation are fixed.', 'success');
   } catch (error) {
     console.error('Template save failed:', error);
     toast(error && error.code === 'permission-denied'
@@ -442,18 +486,28 @@ async function loadMembershipCardAdmin() {
         : !verification
           ? '<span class="audit-pill warn">Not issued</span>'
           : verification.status === 'approved'
-            ? '<span class="audit-pill ok"><i class="pd-i pd-i-shield-check"></i> Verified</span>'
-            : '<span class="audit-pill bad">' + escapeHtml(verification.status || 'revoked') + '</span>';
+            ? '<span class="audit-pill ok"><i class="pd-i pd-i-shield-check"></i> Verified</span>' +
+              (verification.expiresAt ? '<br><span style="font-size:.66rem;color:var(--text-sub);">Expires ' + escapeHtml(cardDate(verification.expiresAt)) + '</span>' : '')
+            : '<span class="audit-pill ' + (verification.status === 'pending' ? 'warn' : 'bad') + '">' + escapeHtml(verification.status || 'revoked') + '</span>';
+      const actions = [];
+      if (number) {
+        actions.push('<button class="btn btn-outline btn-sm" type="button" onclick="issueCardVerification(\'' + escapeHtml(row.uid) + '\', ' + (verification ? 'true' : 'false') + ')"><i class="pd-i pd-i-shield-check"></i> ' + (verification ? 'Reissue' : 'Issue') + '</button>');
+        if (verification) {
+          actions.push('<button class="btn btn-outline btn-sm" type="button" onclick="suspendCardVerification(\'' + escapeHtml(number) + '\')"><i class="pd-i ' + (verification.status === 'suspended' ? 'pd-i-shield-check' : 'pd-i-shield-x') + '"></i> ' + (verification.status === 'suspended' ? 'Restore' : 'Suspend') + '</button>');
+          actions.push('<button class="btn btn-outline btn-sm" type="button" onclick="viewCardVerificationHistory(\'' + escapeHtml(number) + '\')"><i class="pd-i pd-i-rotate-ccw-clock"></i> History</button>');
+          if (verification.status !== 'revoked') {
+            actions.push('<button class="btn btn-danger btn-sm" type="button" onclick="revokeCardVerification(\'' + escapeHtml(number) + '\')"><i class="pd-i pd-i-shield-x"></i> Revoke</button>');
+          }
+          actions.push('<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="/verify?ref=' + encodeURIComponent(verification.verificationRef || number) + '"><i class="pd-i pd-i-external-link"></i> Verify</a>');
+        }
+      }
       return '<tr>' +
         '<td><strong>' + escapeHtml(row.fullName || row.name || 'Member') + '</strong><br><span style="font-size:.7rem;color:var(--text-sub);">' + escapeHtml(row.email || '') + '</span></td>' +
         '<td>' + escapeHtml(row.membershipId || '—') + '</td>' +
-        '<td>' + escapeHtml(row.branch || '—') + '</td>' +
-        '<td><span class="audit-pill ' + (row.status === 'approved' ? 'ok' : 'warn') + '">' + escapeHtml(row.status || 'pending') + '</span></td>' +
+        '<td>' + escapeHtml(row.branch || 'PRAYER DOME') + '</td>' +
+        '<td><span class="audit-pill ' + (row.status === 'approved' ? 'ok' : row.status === 'suspended' ? 'bad' : 'warn') + '">' + escapeHtml(row.status || 'pending') + '</span></td>' +
         '<td>' + verifyLabel + '</td>' +
-        '<td>' +
-          (number ? '<button class="btn btn-outline btn-sm" type="button" onclick="issueCardVerification(\'' + escapeHtml(row.uid) + '\')"><i class="pd-i pd-i-shield-check"></i> Issue</button> ' : '') +
-          (verification ? '<button class="btn btn-outline btn-sm" type="button" onclick="revokeCardVerification(\'' + escapeHtml(number) + '\')"><i class="pd-i pd-i-shield-x"></i> Revoke</button>' : '') +
-        '</td>' +
+        '<td><div style="display:flex;gap:5px;flex-wrap:wrap;">' + actions.join('') + '</div></td>' +
       '</tr>';
     }).join('');
   } catch (error) {
@@ -462,27 +516,87 @@ async function loadMembershipCardAdmin() {
   }
 }
 
-async function issueCardVerification(uid) {
+function cardDate(value) {
+  if (!value) return '';
+  const date = value && typeof value.toDate === 'function' ? value.toDate()
+    : value && value.seconds ? new Date(value.seconds * 1000)
+    : new Date(value);
+  return date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '';
+}
+
+async function writeVerificationHistory(number, userId, action, status, note) {
+  const store = bridge.firestore;
+  try {
+    await store.addDoc(store.collection(bridge.db, 'membershipVerificationHistory'), {
+      membershipId: number,
+      userId: userId || '',
+      action,
+      status: status || '',
+      note: note || '',
+      at: store.serverTimestamp(),
+      by: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator'
+    });
+  } catch (error) {
+    console.warn('Verification history could not be written:', error && error.message);
+  }
+}
+
+async function writeVerificationRef(reference, payload) {
+  if (!reference) return;
+  const store = bridge.firestore;
+  await store.setDoc(store.doc(bridge.db, 'membershipVerificationRefs', reference), Object.assign({}, payload, {
+    verificationRef: reference,
+    updatedAt: store.serverTimestamp()
+  }), { merge: true });
+}
+
+async function issueCardVerification(uid, reissue) {
   if (!bridge) return;
   const row = (window.__pdCardRows || []).filter((item) => item.uid === uid)[0];
   if (!row) return;
   const number = String(row.membershipId || '').trim().toUpperCase();
   if (!number) return toast('This member has no membership number yet. Approve the membership first.', 'error');
+  if (reissue && !window.confirm('Reissue the card for ' + number + '? The old QR reference will stop working and a new expiry date will be set.')) return;
   try {
     const store = bridge.firestore;
-    await store.setDoc(store.doc(bridge.db, 'membershipVerification', number), {
+    const mainRef = store.doc(bridge.db, 'membershipVerification', number);
+    const existingSnap = await store.getDoc(mainRef);
+    const existing = existingSnap.exists() ? existingSnap.data() : null;
+    const validity = Number((($('mcardValidityMonths') || {}).value) || cardValidityMonths || 12);
+    const reference = existing && existing.verificationRef && !reissue ? existing.verificationRef : newVerificationRef();
+    const status = verificationStatusForMember(row.status);
+    const issuedAt = store.Timestamp.fromDate(new Date());
+    const expiresAt = store.Timestamp.fromDate(cardAddMonths(new Date(), validity));
+    const payload = {
       membershipId: number,
+      userId: uid,
       displayName: row.fullName || row.name || 'Prayer Dome member',
       category: row.category || row.membershipType || row.role || 'Member',
-      branch: row.branch || '',
-      status: row.status === 'approved' ? 'approved' : 'pending',
-      issuedAt: row.status === 'approved' ? store.serverTimestamp() : null,
+      department: cardDepartment(row),
+      branch: /freedom/i.test(String(row.branch || '')) ? 'PRAYER DOME' : (row.branch || 'PRAYER DOME'),
+      organization: CARD_IDENTITY.organization,
+      photoUrl: row.photoUrl || row.photoURL || '',
+      photoAllowed: row.photoAllowed !== false,
+      membershipStatus: row.status || 'pending',
+      status,
+      verificationRef: reference,
+      issuedAt,
+      expiresAt,
       updatedAt: store.serverTimestamp(),
       issuedBy: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator'
-    }, { merge: true });
-    toast(row.status === 'approved'
-      ? 'Card verified — the QR code now resolves to an official record.'
-      : 'Pending record issued. Approve the membership to make the card verify as active.', 'success');
+    };
+    await store.setDoc(mainRef, payload, { merge: true });
+    if (existing && existing.verificationRef && existing.verificationRef !== reference) {
+      try { await store.deleteDoc(store.doc(bridge.db, 'membershipVerificationRefs', existing.verificationRef)); } catch (error) { /* old token may not exist */ }
+    }
+    await writeVerificationRef(reference, payload);
+    await writeVerificationHistory(number, uid, reissue ? 'reissued' : (existing ? 'updated' : 'issued'), status,
+      'Valid for ' + validity + ' months');
+    toast(status === 'approved'
+      ? 'Card issued and verifiable until ' + cardDate(expiresAt) + '.'
+      : 'Pending card record issued. Approve the membership to make it verify as active.', 'success');
     await loadMembershipCardAdmin();
   } catch (error) {
     console.error('Verification issue failed:', error);
@@ -494,18 +608,111 @@ async function issueCardVerification(uid) {
 
 async function revokeCardVerification(number) {
   if (!bridge || !number) return;
-  if (!window.confirm('Revoke verification for ' + number + '?\n\nThe member’s QR code will report the card as no longer valid.')) return;
+  if (!window.confirm('Revoke verification for ' + number + '?\n\nThe QR code will report the card as no longer valid.')) return;
   try {
     const store = bridge.firestore;
-    await store.setDoc(store.doc(bridge.db, 'membershipVerification', String(number).toUpperCase()), {
+    const mainRef = store.doc(bridge.db, 'membershipVerification', String(number).toUpperCase());
+    const snapshot = await store.getDoc(mainRef);
+    const existing = snapshot.exists() ? snapshot.data() : {};
+    await store.setDoc(mainRef, {
       status: 'revoked',
+      membershipStatus: 'rejected',
       updatedAt: store.serverTimestamp(),
       revokedBy: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator'
     }, { merge: true });
+    if (existing.verificationRef) {
+      await writeVerificationRef(existing.verificationRef, Object.assign({}, existing, {
+        status: 'revoked',
+        membershipStatus: 'rejected'
+      }));
+    }
+    await writeVerificationHistory(number, existing.userId || '', 'revoked', 'revoked', 'Card withdrawn by an administrator');
     toast('Card verification revoked.', 'success');
     await loadMembershipCardAdmin();
   } catch (error) {
     toast('The verification record could not be updated.', 'error');
+  }
+}
+
+async function suspendCardVerification(number) {
+  if (!bridge || !number) return;
+  const store = bridge.firestore;
+  const mainRef = store.doc(bridge.db, 'membershipVerification', String(number).toUpperCase());
+  try {
+    const snapshot = await store.getDoc(mainRef);
+    if (!snapshot.exists()) return toast('Issue the card before suspending it.', 'error');
+    const existing = snapshot.data();
+    const next = existing.status === 'suspended' ? 'approved' : 'suspended';
+    if (!window.confirm((next === 'suspended' ? 'Suspend' : 'Restore') + ' verification for ' + number + '?')) return;
+    await store.setDoc(mainRef, { status: next, updatedAt: store.serverTimestamp() }, { merge: true });
+    if (existing.verificationRef) {
+      await writeVerificationRef(existing.verificationRef, Object.assign({}, existing, { status: next }));
+    }
+    await writeVerificationHistory(number, existing.userId || '', next === 'suspended' ? 'suspended' : 'restored', next, '');
+    toast(next === 'suspended' ? 'Card suspended — the QR now reports a suspended membership.' : 'Card restored.', 'success');
+    await loadMembershipCardAdmin();
+  } catch (error) {
+    toast('The verification record could not be updated.', 'error');
+  }
+}
+
+async function viewCardVerificationHistory(number) {
+  if (!bridge || !number) return;
+  const body = $('verificationHistoryBody');
+  if (!body) return;
+  body.innerHTML = '<div class="spinner" style="width:26px;height:26px;margin:18px auto;"></div>';
+  $('modalVerificationHistory').style.display = 'flex';
+  try {
+    const store = bridge.firestore;
+    const snapshot = await store.getDocs(store.query(
+      store.collection(bridge.db, 'membershipVerificationHistory'),
+      store.where('membershipId', '==', String(number).toUpperCase()),
+      store.limit(100)
+    ));
+    const rows = snapshot.docs.map((entry) => entry.data());
+    rows.sort((a, b) => {
+      const left = a.at && a.at.toDate ? a.at.toDate() : new Date(0);
+      const right = b.at && b.at.toDate ? b.at.toDate() : new Date(0);
+      return right - left;
+    });
+    body.innerHTML = rows.length
+      ? '<h3 style="margin:0 0 4px;font-size:1rem;">' + escapeHtml(number) + '</h3><p style="font-size:.74rem;color:var(--text-sub);margin:0 0 12px;">Every issue, reissue, suspension and revocation is recorded. History rows are append-only.</p>' +
+        '<div class="table-responsive"><table><thead><tr><th>When</th><th>Action</th><th>Status</th><th>By</th><th>Note</th></tr></thead><tbody>' +
+        rows.map((row) => '<tr><td>' + escapeHtml(cardDate(row.at)) + '</td><td>' + escapeHtml(row.action) + '</td><td>' + escapeHtml(row.status) + '</td><td>' + escapeHtml(row.by) + '</td><td>' + escapeHtml(row.note || '') + '</td></tr>').join('') +
+        '</tbody></table></div>'
+      : '<p>No history recorded for this card yet.</p>';
+  } catch (error) {
+    body.innerHTML = '<p>History could not be loaded: ' + escapeHtml(error.message) + '</p>';
+  }
+}
+
+/* Keep the public verification projection in step when an administrator
+   suspends, reactivates or edits a member. */
+async function syncMemberCardStatus(uid, status, membershipId) {
+  if (!bridge || !uid) return;
+  try {
+    const store = bridge.firestore;
+    let number = String(membershipId || '').toUpperCase();
+    if (!number) {
+      const memberSnap = await store.getDoc(store.doc(bridge.db, 'memberships', uid));
+      number = String((memberSnap.exists() && memberSnap.data().membershipId) || '').toUpperCase();
+    }
+    if (!number) return;
+    const mainRef = store.doc(bridge.db, 'membershipVerification', number);
+    const snapshot = await store.getDoc(mainRef);
+    if (!snapshot.exists()) return;
+    const existing = snapshot.data();
+    const next = status === 'suspended' ? 'suspended'
+      : status === 'rejected' ? 'revoked'
+      : status === 'approved' ? (existing.status === 'revoked' ? 'revoked' : 'approved')
+      : 'pending';
+    await store.setDoc(mainRef, { membershipStatus: status, status: next, updatedAt: store.serverTimestamp() }, { merge: true });
+    if (existing.verificationRef) {
+      await writeVerificationRef(existing.verificationRef, Object.assign({}, existing, { membershipStatus: status, status: next }));
+    }
+    await writeVerificationHistory(number, uid, 'member_status_synced', next, 'Member status: ' + status);
+  } catch (error) {
+    console.warn('Card status sync failed:', error && error.message);
   }
 }
 
@@ -726,6 +933,9 @@ window.handleCardSignatureFile = handleCardSignatureFile;
 window.saveCardTemplate = saveCardTemplate;
 window.issueCardVerification = issueCardVerification;
 window.revokeCardVerification = revokeCardVerification;
+window.suspendCardVerification = suspendCardVerification;
+window.viewCardVerificationHistory = viewCardVerificationHistory;
+window.syncMemberCardStatus = syncMemberCardStatus;
 window.runDataAudit = runDataAudit;
 window.downloadDataAudit = downloadDataAudit;
 window.runIntegrityCheck = runIntegrityCheck;

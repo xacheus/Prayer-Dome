@@ -373,7 +373,10 @@ function installFakeEars(window) {
   paceHost.mouth.lastBoundaryAt = 0;
   paceHost.mouth.jumpToWord(1);
   pw.clearTimeout(paceHost.mouth.timer);
-  await sleep(40);
+  // Browsers may fire a 40 ms timer a hair early; the motor only learns when
+  // the gap is strictly greater than 40 ms. 80 ms is still far quicker than
+  // the 400 ms-per-word plan, but it never races the threshold.
+  await sleep(80);
   paceHost.mouth.jumpToWord(2);
   t('a quick voice compresses the mouth plan',
     paceHost.mouth.rateScale < 0.95, String(paceHost.mouth.rateScale));

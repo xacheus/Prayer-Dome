@@ -132,6 +132,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="/assets/pd-upload.js"></script>
+    <script src="/assets/pd-billing.js"></script>
 
     <style>
         :root {
@@ -364,6 +365,53 @@
             .sp-updates form { padding: 18px; }
         }
 
+        /* ---- subscription catalogue ---- */
+        .plan-catalog { display: grid; gap: 22px; }
+        .plan-program { background: var(--bg-card); border: 1px solid var(--border); border-radius: 26px; padding: clamp(16px, 3vw, 26px); box-shadow: var(--shadow-sm); }
+        .plan-program-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+        .plan-program-head h3 { margin: 0; font-weight: 900; font-size: clamp(1.05rem, 2.4vw, 1.35rem); color: var(--pd-navy); }
+        .plan-program-head p { margin: 0; color: var(--text-sub); font-size: .82rem; }
+        .plan-program-icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: rgba(10,77,155,.1); color: var(--pd-green); font-size: 1.15rem; flex: 0 0 auto; }
+        .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
+        .plan-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: 1px solid var(--border); border-radius: 20px; padding: 16px; background: linear-gradient(180deg, #fff, var(--bg-base)); }
+        .plan-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+        .plan-tier { font-size: .66rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: var(--pd-green); }
+        .plan-price { font-size: 1.35rem; font-weight: 900; color: var(--pd-navy); line-height: 1.1; white-space: nowrap; }
+        .plan-price small { display: block; font-size: .62rem; font-weight: 700; color: var(--text-sub); letter-spacing: .04em; }
+        .plan-card h4 { margin: 0; font-size: .95rem; font-weight: 800; color: var(--pd-navy); overflow-wrap: break-word; }
+        .plan-card p { margin: 0; font-size: .78rem; line-height: 1.5; color: var(--text-sub); }
+        .plan-benefits { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+        .plan-benefits li { position: relative; padding-left: 17px; font-size: .75rem; line-height: 1.4; color: var(--text-main); overflow-wrap: break-word; }
+        .plan-benefits li::before { content: ''; position: absolute; left: 0; top: .42em; width: 7px; height: 7px; border-radius: 50%; background: var(--pd-green); }
+        .plan-card .btn-main { margin-top: auto; padding: 11px 14px; font-size: .76rem; }
+        .plan-loading { display: flex; align-items: center; gap: 12px; padding: 22px; border: 1px dashed var(--border); border-radius: 20px; color: var(--text-sub); font-weight: 700; font-size: .86rem; }
+        .plan-loading .spinner { margin: 0; }
+        .plan-empty { padding: 20px; border: 1px dashed var(--border); border-radius: 20px; text-align: center; color: var(--text-sub); font-size: .86rem; line-height: 1.6; }
+        .my-plan-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 10px; margin-bottom: 18px; }
+        .my-plan-stat { padding: 13px 15px; border-radius: 16px; border: 1px solid var(--border); background: var(--bg-card); }
+        .my-plan-stat span { display: block; font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .my-plan-stat strong { display: block; margin-top: 3px; font-size: 1.02rem; color: var(--pd-navy); }
+        .checkout-eyebrow { font-size: .6rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--pd-green); }
+        .checkout-close { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-base); color: var(--text-sub); cursor: pointer; display: grid; place-items: center; }
+        .checkout-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr)); gap: 8px; margin: 14px 0; }
+        .checkout-grid > div { background: var(--bg-base); border: 1px solid var(--border); border-radius: 12px; padding: 9px 11px; min-width: 0; }
+        .checkout-grid dt { font-size: .55rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin: 0; }
+        .checkout-grid dd { margin: 3px 0 0; font-size: .84rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; }
+        .checkout-ref { font-family: 'SFMono-Regular', Consolas, monospace; letter-spacing: .06em; color: var(--pd-navy); word-break: break-all; }
+        .checkout-instructions { background: rgba(10,77,155,.06); border: 1px solid rgba(10,77,155,.14); border-radius: 14px; padding: 13px 15px; font-size: .79rem; line-height: 1.58; color: var(--text-main); }
+        .checkout-actions { display: grid; gap: 9px; margin-top: 15px; }
+        .checkout-actions .btn-main { margin: 0; }
+        .checkout-actions .btn-secondary { margin: 0; }
+        .checkout-evidence-card { display: flex; gap: 12px; align-items: center; border: 1px dashed var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; cursor: pointer; background: var(--bg-card); }
+        .checkout-evidence-card strong { display: block; font-size: .82rem; color: var(--text-main); }
+        .checkout-evidence-card span { font-size: .72rem; color: var(--text-sub); }
+        .checkout-evidence-card i { font-size: 1.35rem; color: var(--pd-gold); }
+        .checkout-note { font-size: .72rem; line-height: 1.5; color: var(--text-sub); margin: 10px 0 0; }
+        .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px; font-size: .62rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+        .status-chip.ok { background: rgba(16,185,129,.12); color: #047857; }
+        .status-chip.warn { background: rgba(245,158,11,.14); color: #b45309; }
+        .status-chip.bad { background: rgba(239,68,68,.12); color: #b91c1c; }
+
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--pd-navy);}
         .spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--pd-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -459,8 +507,8 @@
             <p class="sp-hero-sub">The Prayer Dome community supports its members with education, business seeding and compassion cover — empowering every household to walk in provision.</p>
             <div class="sp-hero-stats">
                 <div class="sp-hero-stat"><div class="sp-hero-num">12 mo</div><div class="sp-hero-lbl">Maturity</div></div>
-                <div class="sp-hero-stat"><div class="sp-hero-num">4</div><div class="sp-hero-lbl">Programs</div></div>
-                <div class="sp-hero-stat"><div class="sp-hero-num">4 tiers</div><div class="sp-hero-lbl">Per Program</div></div>
+                <div class="sp-hero-stat"><div class="sp-hero-num">11</div><div class="sp-hero-lbl">Support plans</div></div>
+                <div class="sp-hero-stat"><div class="sp-hero-num">3</div><div class="sp-hero-lbl">Programs</div></div>
                 <div class="sp-hero-stat"><div class="sp-hero-num">100%</div><div class="sp-hero-lbl">Community</div></div>
             </div>
         </div>
@@ -479,7 +527,19 @@
         <!-- SECTION 1: PROGRAMS (ENROLLMENT)           -->
         <!-- ========================================== -->
         <div id="view-programs" class="view-section active">
-            <p style="text-align: center; color: var(--text-sub); margin-bottom: 30px; font-weight: 500;">Select a kingdom support program. All plans require a 12-month maturity period before claims can be filed.</p>
+            <p style="text-align: center; color: var(--text-sub); margin-bottom: 30px; font-weight: 500;">Choose a support plan, pay its exact monthly amount, and upload your receipt. A plan becomes active only after the finance team verifies the payment against the ministry account.</p>
+
+            <section class="sp-section" aria-labelledby="subscriptionPlans" id="planCatalogSection">
+                <div class="sp-section-head">
+                    <span class="sp-eyebrow">Subscriptions</span>
+                    <h2 id="subscriptionPlans">Every support plan and its exact monthly amount</h2>
+                    <p>Prices are in US dollars and billed monthly. Each plan runs inside a 12-month support programme. Nothing is activated by clicking Subscribe — your plan starts after a verified payment.</p>
+                </div>
+                <div id="planCatalog" class="plan-catalog" aria-live="polite">
+                    <div class="plan-loading"><div class="spinner" style="width:34px;height:34px;border-width:3px;"></div><span>Loading the current plan catalogue…</span></div>
+                </div>
+                <p class="sp-impact-note" id="planCatalogNote">Payment is verified manually. Keep your mobile-money receipt — you will upload it at checkout.</p>
+            </section>
             
             <!-- EDUCATION -->
             <div class="hero-card">
@@ -494,21 +554,21 @@
                 <div class="hero-body">
                     <p class="hero-text">Secure the future. This program covers Tuition Fees, Books, and International Scholarship needs. Open a fund today for 12 months to secure their future.</p>
                     <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="openEnrollForm('Education', 'Bronze', 5, 50)">
+                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('education-bronze')">
                             <div><div class="tier-name">Bronze</div><div class="tier-desc">Basic Needs</div></div>
-                            <div class="tier-val">$5 - $50</div>
+                            <div class="tier-val">$5.00/mo</div>
                         </div>
-                        <div class="tier-box tier-gold" onclick="openEnrollForm('Education', 'Gold', 50, 100)">
+                        <div class="tier-box tier-gold" onclick="subscribeToPlan('education-gold')">
                             <div><div class="tier-name">Gold</div><div class="tier-desc">Standard Tuition</div></div>
-                            <div class="tier-val">$50 - $100</div>
+                            <div class="tier-val">$50.00/mo</div>
                         </div>
-                        <div class="tier-box tier-platinum" onclick="openEnrollForm('Education', 'Platinum', 100, 500)">
+                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('education-platinum')">
                             <div><div class="tier-name">Platinum</div><div class="tier-desc">University</div></div>
-                            <div class="tier-val">$100 - $500</div>
+                            <div class="tier-val">$100.00/mo</div>
                         </div>
-                        <div class="tier-box tier-diamond" onclick="openEnrollForm('Education', 'Diamond', 500, 1000)">
+                        <div class="tier-box tier-diamond" onclick="subscribeToPlan('education-diamond')">
                             <div><div class="tier-name">Diamond</div><div class="tier-desc">International</div></div>
-                            <div class="tier-val">$500 - $1k</div>
+                            <div class="tier-val">$500.00/mo</div>
                         </div>
                     </div>
                 </div>
@@ -527,21 +587,21 @@
                 <div class="hero-body">
                     <p class="hero-text">Empower your hands to work. We support members with material goods, machinery, or direct capital for business expansion.</p>
                     <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="openEnrollForm('Business', 'Bronze', 5, 50)">
+                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('business-bronze')">
                             <div><div class="tier-name">Bronze</div><div class="tier-desc">Micro Startup</div></div>
-                            <div class="tier-val">$5 - $50</div>
+                            <div class="tier-val">$5.00/mo</div>
                         </div>
-                        <div class="tier-box tier-gold" onclick="openEnrollForm('Business', 'Gold', 50, 100)">
+                        <div class="tier-box tier-gold" onclick="subscribeToPlan('business-gold')">
                             <div><div class="tier-name">Gold</div><div class="tier-desc">SME Support</div></div>
-                            <div class="tier-val">$50 - $100</div>
+                            <div class="tier-val">$50.00/mo</div>
                         </div>
-                        <div class="tier-box tier-platinum" onclick="openEnrollForm('Business', 'Platinum', 100, 500)">
+                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('business-platinum')">
                             <div><div class="tier-name">Platinum</div><div class="tier-desc">Expansion</div></div>
-                            <div class="tier-val">$100 - $500</div>
+                            <div class="tier-val">$100.00/mo</div>
                         </div>
-                        <div class="tier-box tier-diamond" onclick="openEnrollForm('Business', 'Diamond', 500, 1000)">
+                        <div class="tier-box tier-diamond" onclick="subscribeToPlan('business-diamond')">
                             <div><div class="tier-name">Diamond</div><div class="tier-desc">Enterprise</div></div>
-                            <div class="tier-val">$500 - $1k</div>
+                            <div class="tier-val">$500.00/mo</div>
                         </div>
                     </div>
                 </div>
@@ -560,17 +620,17 @@
                 <div class="hero-body">
                     <p class="hero-text">The church stands with you in grief. Dignified funeral support for bereaved families during difficult times.</p>
                     <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="openEnrollForm('Funeral', 'Basic', 2.50, 25)">
+                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('compassion-basic')">
                             <div><div class="tier-name">Basic</div><div class="tier-desc">Standard Care</div></div>
-                            <div class="tier-val">$2.50 - $25</div>
+                            <div class="tier-val">$2.50/mo</div>
                         </div>
-                        <div class="tier-box tier-platinum" onclick="openEnrollForm('Funeral', 'Standard', 25, 50)">
+                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('compassion-standard')">
                             <div><div class="tier-name">Standard</div><div class="tier-desc">Extended Family</div></div>
-                            <div class="tier-val">$25 - $50</div>
+                            <div class="tier-val">$25.00/mo</div>
                         </div>
-                        <div class="tier-box tier-gold" onclick="openEnrollForm('Funeral', 'Premium', 50, 100)">
+                        <div class="tier-box tier-gold" onclick="subscribeToPlan('compassion-premium')">
                             <div><div class="tier-name">Premium</div><div class="tier-desc">Full Support</div></div>
-                            <div class="tier-val">$50 - $100</div>
+                            <div class="tier-val">$50.00/mo</div>
                         </div>
                     </div>
                 </div>
@@ -586,10 +646,10 @@
                     <p>Education, Business and Compassion plans all follow the same simple path. You choose the tier, contribute what you can sustain, and the ministry keeps every step visible in your account.</p>
                 </div>
                 <div class="sp-steps">
-                    <div class="sp-step"><h3>Choose a program</h3><p>Pick Education, Business or Compassion, then the tier that matches your budget. Every tier and amount is shown on the cards above.</p></div>
-                    <div class="sp-step"><h3>Enrol with your details</h3><p>Sign in, choose your monthly amount and add next-of-kin details. The enrolment is confirmed straight away and appears under My Plans.</p></div>
-                    <div class="sp-step"><h3>Contribute securely</h3><p>Use the secure wallet to contribute. My Plans shows your progress and the 12-month maturity countdown at any time.</p></div>
-                    <div class="sp-step"><h3>Request support at maturity</h3><p>Once the plan matures, submit a claim with the supporting information. The ministry team reviews it and the status stays visible to you.</p></div>
+                    <div class="sp-step"><h3>Choose a plan</h3><p>Pick Education, Business or Compassion, then the exact monthly plan that matches your budget. Every price is shown above.</p></div>
+                    <div class="sp-step"><h3>Create a checkout</h3><p>Sign in and press Subscribe. The ministry issues a unique payment reference and shows the exact amount and payment instructions.</p></div>
+                    <div class="sp-step"><h3>Pay and upload the receipt</h3><p>Send the exact amount by Mobile Money, then upload the receipt against your reference. Your plan waits in “Awaiting verification”.</p></div>
+                    <div class="sp-step"><h3>Verification and activation</h3><p>A finance administrator checks the payment against the ministry account. Only then does the plan become active — you can follow every status in My Plans.</p></div>
                 </div>
             </section>
 
@@ -634,19 +694,19 @@
                 <div class="sp-faq">
                     <details>
                         <summary>Who can enrol?</summary>
-                        <p>Any signed-in member can enrol. The form records the program, tier and contact details for that enrolment, and the finished enrolment appears under My Plans.</p>
+                        <p>Any approved, signed-in member can subscribe. Choose a plan, pay its exact monthly amount and upload the receipt. The plan appears under My Plans as soon as checkout is created, and becomes active only after the finance team verifies your payment.</p>
                     </details>
                     <details>
                         <summary>How much do I need to contribute?</summary>
-                        <p>Contributions are monthly. Education and Business tiers accept $5 to $1,000 a month; Compassion tiers accept $2.50 to $100 a month. The minimum and maximum for each tier are printed on the program cards above. Choose a monthly amount you can sustain for the full 12 months rather than the largest tier.</p>
+                        <p>Every plan has one exact monthly price, printed on its plan card above. Education and Business start at $5.00 a month and rise to $500.00; Compassion starts at $2.50 and rises to $50.00. Choose the plan you can sustain for the full 12-month programme rather than the largest tier.</p>
                     </details>
                     <details>
                         <summary>How long does a plan run?</summary>
-                        <p>Every plan has a 12-month maturity. My Plans shows the days remaining, the progress bar and the plan's status, all calculated from the enrolment date.</p>
+                        <p>Your subscription is billed monthly and each verified payment covers one month. The support programme matures after 12 months. My Plans shows the current term, the renewal date and the programme progress from the dates stored in the database.</p>
                     </details>
                     <details>
                         <summary>Can I hold more than one plan?</summary>
-                        <p>You can hold one active plan per program, and the three programs can run at the same time. Each enrolment is tracked separately with its own tier, amount, progress and status under My Plans.</p>
+                        <p>You can hold one subscription per plan, and different plans for Education, Business and Compassion can run at the same time. Every payment reference and every plan status stays visible under My Plans.</p>
                     </details>
                     <details>
                         <summary>Is this insurance or an investment?</summary>
@@ -654,11 +714,11 @@
                     </details>
                     <details>
                         <summary>What happens when I need to claim?</summary>
-                        <p>Submit the claim from My Plans with the information the program requires. The ministry team reviews it and updates the status. You can follow every change from the same screen.</p>
+                        <p>Once a plan is active and the programme has matured, submit the claim from My Plans with the information the programme requires. The ministry team reviews it and updates the status. You can follow every change from the same screen.</p>
                     </details>
                     <details>
                         <summary>How is my information protected?</summary>
-                        <p>Your account is protected by Firebase Authentication. Documents upload to the ministry's secure Cloudinary storage, and only authorised ministry staff can review enrolment and claim records.</p>
+                        <p>Your account is protected by Firebase Authentication. Payment receipts upload to the ministry's secure Cloudinary storage. Only authorised finance administrators can verify a payment, and only they can approve or reject a claim. Your plan cannot be activated by a browser request.</p>
                     </details>
                 </div>
             </section>
@@ -724,9 +784,10 @@
         <!-- ========================================== -->
         <div id="view-myplans" class="view-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
-                <h2 style="font-weight: 900;"><i class="pd-i pd-i-list" style="color:var(--pd-green);"></i> Active Enrollments</h2>
+                <h2 style="font-weight: 900;"><i class="pd-i pd-i-list" style="color:var(--pd-green);"></i> My Plan</h2>
                 <button class="btn-main btn-gold" style="width: auto; padding: 10px 20px; font-size: 0.8rem;" onclick="loadMyPlans()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
             </div>
+            <div id="myPlanSummary" class="my-plan-summary" aria-live="polite"></div>
             <div id="myPlansList">
                 <!-- Injected via JS -->
             </div>
@@ -740,10 +801,10 @@
             <div class="wallet-card">
                 <div class="balance-label">Total Secure Balance</div>
                 <div class="balance-val" id="dispBalance">$ 0.00</div>
-                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 25px;">Available for Withdrawals & Contributions</div>
+                <div style="font-size: 12px; opacity: 0.8; margin-bottom: 25px;">Available for withdrawals and verified contributions · USD</div>
                 
                 <div style="display:flex; gap:15px;">
-                    <button class="btn-main btn-gold" style="flex:1;" onclick="document.getElementById('modalDeposit').style.display='flex'"><i class="pd-i pd-i-plus"></i> DEPOSIT</button>
+                    <button class="btn-main btn-gold" style="flex:1;" onclick="openDepositPanel()"><i class="pd-i pd-i-plus"></i> DEPOSIT</button>
                     <button class="btn-main btn-green" style="flex:1; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.3);" onclick="pinChallenge('withdraw_req')"><i class="pd-i pd-i-arrow-up"></i> WITHDRAW</button>
                 </div>
             </div>
@@ -780,38 +841,33 @@
          MODALS
          ========================================================= -->
 
-    <!-- ENROLLMENT MODAL -->
-    <div class="modal" id="modalEnroll">
+    <!-- CHECKOUT / PAYMENT VERIFICATION MODAL -->
+    <div class="modal" id="modalCheckout" role="dialog" aria-modal="true" aria-labelledby="checkoutTitle">
+        <div class="modal-body" style="max-height:88vh;overflow:auto;">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+                <div>
+                    <span class="checkout-eyebrow" id="checkoutKind">Subscription checkout</span>
+                    <h2 id="checkoutTitle" style="color: var(--pd-green); font-weight: 900; margin: 4px 0 6px;">Payment reference</h2>
+                </div>
+                <button type="button" class="checkout-close" onclick="closeCheckout()" aria-label="Close checkout"><i class="pd-i pd-i-x"></i></button>
+            </div>
+            <div id="checkoutBody"></div>
+            <div id="checkoutEvidence"></div>
+            <input type="file" id="checkoutReceiptInput" accept="image/*,application/pdf" style="display:none;" onchange="handleCheckoutReceipt(event)">
+            <div id="checkoutActions" class="checkout-actions"></div>
+            <p style="font-size:.72rem;color:var(--text-sub);line-height:1.55;margin:16px 0 0;">
+                <i class="pd-i pd-i-shield-check" aria-hidden="true"></i>
+                A receipt alone never activates a plan. Finance checks the payment against the ministry account before approving it.
+            </p>
+        </div>
+    </div>
+
+    <!-- RECEIPT PREVIEW -->
+    <div class="modal" id="modalReceiptPreview" role="dialog" aria-modal="true" aria-labelledby="receiptPreviewTitle">
         <div class="modal-body">
-            <h2 id="modalFormTitle" style="color: var(--pd-green); font-weight: 900; margin-bottom: 5px;">Enrollment</h2>
-            <p id="modalFormSub" style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 25px; line-height: 1.5;"></p>
-            
-            <div class="form-group">
-                <label>Monthly Contribution Amount ($)</label>
-                <input type="number" id="enAmount" placeholder="Enter amount within tier limits">
-                <small id="enLimits" style="color: var(--pd-gold); font-weight: 700; font-size: 0.75rem; display: block; margin-top: 5px;"></small>
-            </div>
-
-            <div style="background: var(--bg-base); padding: 20px; border-radius: 16px; margin: 25px 0; border: 1px solid var(--border);">
-                <h4 style="margin-bottom: 15px; font-size: 0.9rem; text-transform: uppercase; color: var(--text-sub);">Next of Kin Details</h4>
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="enKinName" placeholder="e.g. John Doe">
-                </div>
-                <div style="display: flex; gap: 15px;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>Phone Number</label>
-                        <input type="tel" id="enKinPhone" placeholder="+268...">
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>Relationship</label>
-                        <input type="text" id="enKinRel" placeholder="e.g. Spouse">
-                    </div>
-                </div>
-            </div>
-
-            <button class="btn-main btn-green" id="btnConfirmEnroll" onclick="confirmEnroll()">CONFIRM ACTIVATION</button>
-            <button class="btn-main" style="background:transparent; color:var(--text-sub); border: 2px solid var(--border); margin-top: 15px;" onclick="closeModal('modalEnroll')">Cancel</button>
+            <h2 id="receiptPreviewTitle" style="color:var(--pd-green);font-weight:900;margin-bottom:12px;">Payment receipt</h2>
+            <div id="receiptPreviewBody" style="text-align:center;"></div>
+            <button class="btn-main" style="margin-top:18px;background:transparent;color:var(--text-sub);border:2px solid var(--border);" onclick="closeModal('modalReceiptPreview')">Close</button>
         </div>
     </div>
 
@@ -826,22 +882,18 @@
     <div class="modal" id="modalDeposit">
         <div class="modal-body">
             <h2 style="color: var(--pd-green); font-weight: 900; margin-bottom: 10px;"><i class="pd-i pd-i-circle-plus"></i> Add Funds</h2>
-            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Send funds to the MoMo number, then upload the screenshot here.</p>
+            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Enter the amount you sent. The ministry issues a payment reference, then you upload the receipt. Your wallet is credited only after finance verifies the payment.</p>
             
             <div class="form-group">
-                <label>Amount Sent ($ equivalent)</label>
+                <label>Amount sent (USD)</label>
                 <input type="number" id="depAmount" placeholder="e.g. 50">
             </div>
             
-            <div class="doc-upload-zone" onclick="triggerCloudinary('deposit', 'receipt')">
-                <i class="pd-i pd-i-receipt-text" style="font-size: 1.8rem; color: var(--pd-gold);"></i>
-                <div style="text-align: left;">
-                    <div style="font-weight: 800; font-size: 0.95rem;">Payment Receipt</div>
-                    <div class="doc-status" id="stat_receipt">Waiting for upload...</div>
-                </div>
-            </div>
-            
-            <button class="btn-main btn-green" id="btnSubmitDep" onclick="submitDeposit()" style="margin-top: 25px;">SUBMIT FOR APPROVAL</button>
+            <p style="font-size:.76rem;color:var(--text-sub);line-height:1.55;margin:0 0 18px;">
+                The next screen shows a unique payment reference and the ministry Mobile Money details. Keep the exact amount — a different amount delays verification.
+            </p>
+
+            <button class="btn-main btn-green" id="btnSubmitDep" onclick="startWalletDeposit()" style="margin-top: 25px;">CONTINUE TO PAYMENT</button>
             <button class="btn-main" style="background:transparent; color:var(--text-sub); margin-top: 10px;" onclick="closeModal('modalDeposit')">Cancel</button>
         </div>
     </div>
@@ -850,10 +902,10 @@
     <div class="modal" id="modalWithdraw">
         <div class="modal-body">
             <h2 style="color: var(--pd-red); font-weight: 900; margin-bottom: 10px;"><i class="pd-i pd-i-arrow-up"></i> Request Withdrawal</h2>
-            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Funds will be sent to your provided Mobile Money number. Minimum $10 equivalent.</p>
+            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Funds will be sent to your Mobile Money number after finance approval. Minimum $10.00.</p>
             
             <div class="form-group">
-                <label>Amount to Withdraw ($)</label>
+                <label>Amount to withdraw (USD)</label>
                 <input type="number" id="withAmount" placeholder="e.g. 50">
             </div>
             <div class="form-group">
@@ -869,628 +921,959 @@
     <!-- FIREBASE & LOGIC -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+        import { getStorage, ref as storageRef, uploadBytes } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
+        const storage = getStorage(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const cloudFunctions = getFunctions(app);
+        const billingCall = httpsCallable(cloudFunctions, 'billing');
+        const Billing = window.PDBilling;
 
-        // Global State
+        // Global state
         let currentUser = null;
         let userData = null;
         let pinInput = "";
         let storedPin = null;
-        let actionTarget = ""; 
-        
-        // Enrollment & Claim State
-        let activeEnrollment = {};
-        let claimDocs = {}; // Stores uploaded URLs for claims
+        let actionTarget = "";
+        let billingPlans = [];
+        let currentCheckout = null;
+        let checkoutEvidence = null;
+        let currentSubscriptionId = null;
+        let claimDocs = {};
+        let activePlanIdForClaim = null;
+        let activeSubscriptionForClaim = null;
 
-        // --- AUTH CHECK ---
+        const esc = (value) => String(value == null ? '' : value)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        const money = (amount, currency) => Billing ? Billing.money(amount, currency || 'USD') : '$' + Number(amount || 0).toFixed(2);
+        const statusChip = (status) => '<span class="status-chip ' + (Billing.statusTone(status) || 'warn') + '">' +
+            esc(Billing.statusLabel(status)) + '</span>';
+        const planFor = (id) => billingPlans.filter(plan => plan.id === id)[0] || (Billing.planById ? Billing.planById(id) : null);
+
+        async function callBilling(action, payload) {
+            try {
+                const result = await billingCall(Object.assign({ action }, payload || {}));
+                return result.data || {};
+            } catch (error) {
+                const raw = error && error.message ? error.message : 'The billing service could not be reached.';
+                const friendly = /not found|unavailable|internal/i.test(raw)
+                    ? 'Billing is temporarily unavailable. Please try again in a moment. If it continues, contact info@prayerdome.net.'
+                    : raw.replace(/^FirebaseError:\s*/i, '');
+                throw new Error(friendly);
+            }
+        }
+
+        /* ---------------------------------------------------------------- auth */
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                try {
-                    const wDoc = await getDoc(doc(db, "wallets", user.uid));
-                    if(wDoc.exists()) {
-                        userData = wDoc.data();
-                        storedPin = userData.pin || null;
-                    } else {
-                        await setDoc(doc(db, "wallets", user.uid), { userId: user.uid, balance: 0, currency: 'USD', createdAt: serverTimestamp() });
-                        userData = { balance: 0 };
-                    }
-                    hideLoading();
-                } catch(e) { console.error(e); hideLoading(); }
-            } else {
-                window.location.href = 'account.html'; // Force login
+            if (!user) {
+                window.location.href = 'account.html';
+                return;
+            }
+            currentUser = user;
+            try {
+                let wallet = await getDoc(doc(db, "wallets", user.uid));
+                if (!wallet.exists()) {
+                    try {
+                        await setDoc(doc(db, "wallets", user.uid), {
+                            userId: user.uid,
+                            balance: 0,
+                            currency: 'USD',
+                            createdAt: serverTimestamp()
+                        });
+                    } catch (error) { console.warn('Wallet will be opened by finance:', error && error.message); }
+                    userData = { balance: 0, currency: 'USD' };
+                } else {
+                    userData = wallet.data();
+                    storedPin = userData.pin || null;
+                }
+                await loadPlanCatalogue();
+                hideLoading();
+                const fromUrl = new URLSearchParams(location.search).get('ref');
+                if (fromUrl) openCheckoutByReference(fromUrl);
+            } catch (error) {
+                console.error(error);
+                hideLoading();
+                const catalog = document.getElementById('planCatalog');
+                if (catalog) catalog.innerHTML = '<div class="plan-empty">The plan catalogue could not be loaded. Check your connection and refresh, or contact info@prayerdome.net.</div>';
             }
         });
 
-        // --- UI UTILS ---
-        window.showLoading = (txt = "Processing...") => { document.getElementById('loaderText').innerText = txt; document.getElementById('globalLoader').style.display = 'flex'; };
-        window.hideLoading = () => { document.getElementById('globalLoader').style.display = 'none'; };
-        window.toast = (msg, type='success') => {
-            const b = document.getElementById('toastBox');
-            const t = document.createElement('div');
-            t.className = `toast ${type === 'error' ? 'error' : ''}`;
-            t.innerHTML = `<i class="pd-i ${type === 'error' ? 'pd-i-circle-alert' : 'pd-i-circle-check'}"></i> <span>${msg}</span>`;
-            b.appendChild(t);
-            setTimeout(() => { t.style.animation = 'slideIn 0.3s ease reverse forwards'; setTimeout(() => t.remove(), 300); }, 3500);
+        /* ------------------------------------------------------------ ui utils */
+        window.showLoading = (txt = "Processing...") => {
+            const label = document.getElementById('loaderText');
+            if (label) label.innerText = txt;
+            const loader = document.getElementById('globalLoader');
+            if (loader) loader.style.display = 'flex';
         };
-        window.closeModal = (id) => { document.getElementById(id).style.display = 'none'; };
-        window.copyToClipboard = (txt) => { navigator.clipboard.writeText(txt); toast("Copied!"); };
+        window.hideLoading = () => {
+            const loader = document.getElementById('globalLoader');
+            if (loader) loader.style.display = 'none';
+        };
+        window.toast = (msg, type = 'success') => {
+            const box = document.getElementById('toastBox');
+            if (!box) return;
+            const item = document.createElement('div');
+            item.className = `toast ${type === 'error' ? 'error' : ''}`;
+            item.innerHTML = `<i class="pd-i ${type === 'error' ? 'pd-i-circle-alert' : 'pd-i-circle-check'}"></i> <span>${esc(msg)}</span>`;
+            box.appendChild(item);
+            setTimeout(() => { item.style.animation = 'slideIn 0.3s ease reverse forwards'; setTimeout(() => item.remove(), 300); }, 4200);
+        };
+        window.closeModal = (id) => {
+            const modal = document.getElementById(id);
+            if (modal) modal.style.display = 'none';
+        };
+        // Inline handlers built from templates reference esc() while the markup
+        // is assembled; publishing it also keeps the static wiring audit able
+        // to resolve every handler.
+        window.esc = esc;
+
+        window.copyToClipboard = async (txt) => {
+            try { await navigator.clipboard.writeText(txt); toast("Copied!"); }
+            catch (error) { toast('Copy failed — select the reference and copy it manually.', 'error'); }
+        };
 
         window.setView = (view, el) => {
-    // For wallet, check if PIN is already set and if numbers are revealed
-    if(view === 'wallet') {
-        // If wallet was already accessed and PIN verified, just show it
-        if(document.getElementById('revealTarget').classList.contains('unveiled')) {
+            if (view === 'wallet') {
+                if (document.getElementById('revealTarget').classList.contains('unveiled')) {
+                    showView('wallet', el);
+                    loadWalletData();
+                    return;
+                }
+                pinChallenge('wallet');
+                return;
+            }
+            showView(view, el);
+            if (view === 'myplans') loadMyPlans();
+        };
+
+        function showView(view, el) {
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-            document.getElementById(`view-${view}`).classList.add('active');
-            if(el) el.classList.add('active');
-            loadWalletData();
-            return;
+            const target = document.getElementById(`view-${view}`);
+            if (target) target.classList.add('active');
+            if (el) el.classList.add('active');
+            else {
+                const tabs = document.querySelectorAll('.tab-item');
+                const index = { programs: 0, myplans: 1, wallet: 2 }[view];
+                if (tabs[index]) tabs[index].classList.add('active');
+            }
         }
-        // Otherwise require PIN challenge
-        pinChallenge('wallet');
-        return;
-    }
-    
-    document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-    document.getElementById(`view-${view}`).classList.add('active');
-    if(el) el.classList.add('active');
 
-    if(view === 'myplans') loadMyPlans();
-};
-
-        // --- PIN ENGINE ---
-        window.pinChallenge = (target) => {
-    actionTarget = target;
-    pinInput = "";
-    updateDots();
-    
-    // Get stored PIN from wallet
-    const getStoredPin = async () => {
-        const wDoc = await getDoc(doc(db, "wallets", currentUser.uid));
-        if(wDoc.exists()) {
-            storedPin = wDoc.data().pin || null;
+        /* ------------------------------------------------------------ catalogue */
+        async function loadPlanCatalogue() {
+            const host = document.getElementById('planCatalog');
+            if (!host) return;
+            let rows = [];
+            let source = 'database';
+            try {
+                const snapshot = await getDocs(collection(db, 'supportPlans'));
+                snapshot.forEach(entry => rows.push(Billing.normalizePlan(entry.data(), entry.id)));
+            } catch (error) {
+                console.warn('Plan catalogue read failed:', error && error.message);
+            }
+            if (!rows.length) {
+                try {
+                    const result = await callBilling('plans.list', {});
+                    rows = (result.plans || []).map(plan => Billing.normalizePlan(plan, plan.id));
+                    source = 'database';
+                } catch (error) {
+                    console.warn('Plan callable unavailable:', error.message);
+                }
+            }
+            if (!rows.length) {
+                rows = Billing.PLANS.map(plan => Billing.normalizePlan(plan, plan.id));
+                source = 'standard';
+            }
+            billingPlans = rows.filter(plan => plan.active !== false).sort((a, b) => a.order - b.order);
+            renderPlanCatalogue();
+            const note = document.getElementById('planCatalogNote');
+            if (note && source === 'standard') {
+                note.innerHTML = '<i class="pd-i pd-i-info" aria-hidden="true"></i> Showing the standard plan catalogue. The same prices are enforced when checkout is created.';
+            }
         }
-        
-        if(!storedPin) {
-            document.getElementById('js-secure-title').innerText = "Create Wallet PIN";
-            document.getElementById('js-secure-sub').innerHTML = "Set a 4-digit PIN to secure your wallet.<br>This will be required for withdrawals.";
-        } else {
-            document.getElementById('js-secure-title').innerText = "Security Check";
-            document.getElementById('js-secure-sub').innerText = "Enter your 4-digit PIN to continue.";
-        }
-        
-        document.getElementById('secureOverlay').style.display = 'flex';
-    };
-    
-    getStoredPin();
-};
 
-        window.tapPin = (n) => {
-            if(pinInput.length < 4) { 
-                pinInput += n; 
-                updateDots(); 
-                if(pinInput.length === 4) confirmPinAction(); // Auto submit on 4th digit
+        function renderPlanCatalogue() {
+            const host = document.getElementById('planCatalog');
+            if (!host) return;
+            if (!billingPlans.length) {
+                host.innerHTML = '<div class="plan-empty"><strong>No support plans are open right now.</strong><br>Contact info@prayerdome.net and the finance team will help you start a plan.</div>';
+                return;
+            }
+            const groups = {};
+            billingPlans.forEach(plan => {
+                if (!groups[plan.program]) groups[plan.program] = [];
+                groups[plan.program].push(plan);
+            });
+            const order = (Billing.PROGRAM_ORDER || Object.keys(groups)).filter(program => groups[program]);
+            host.innerHTML = order.map(program => {
+                const theme = (Billing.PROGRAM_THEMES && Billing.PROGRAM_THEMES[program]) || { icon: 'pd-i-hand-heart' };
+                const description = {
+                    Education: 'Fees, books and study costs — from primary school to international university.',
+                    Business: 'Stock, tools, equipment and capital for a household business.',
+                    Compassion: 'Dignified funeral and bereavement support for the family.'
+                }[program] || 'Practical support for Prayer Dome members.';
+                return '<div class="plan-program">' +
+                    '<div class="plan-program-head"><div class="plan-program-icon"><i class="pd-i ' + theme.icon + '" aria-hidden="true"></i></div>' +
+                    '<div><h3>' + esc(program) + ' plans</h3><p>' + esc(description) + '</p></div></div>' +
+                    '<div class="plan-grid">' + groups[program].map(plan => {
+                        const benefits = (plan.benefits || []).slice(0, 4).map(item => '<li>' + esc(item) + '</li>').join('');
+                        return '<article class="plan-card">' +
+                            '<div class="plan-card-top"><span class="plan-tier">' + esc(plan.tier || plan.program) + ' tier</span>' +
+                            '<div class="plan-price">' + money(plan.price, plan.currency) + '<small>' + esc(Billing.planPeriodLabel(plan)) + '</small></div></div>' +
+                            '<h4>' + esc(plan.name) + '</h4>' +
+                            '<p>' + esc(plan.summary) + '</p>' +
+                            '<ul class="plan-benefits">' + benefits + '</ul>' +
+                            '<button type="button" class="btn-main btn-green" onclick="subscribeToPlan(\'' + esc(plan.id) + '\')">' +
+                            '<i class="pd-i pd-i-hand-heart" aria-hidden="true"></i> Subscribe · ' + money(plan.price, plan.currency) + '/mo</button>' +
+                        '</article>';
+                    }).join('') + '</div></div>';
+            }).join('');
+        }
+
+        /* ------------------------------------------------------------- checkout */
+        window.subscribeToPlan = async (planId) => {
+            if (!currentUser) return toast('Sign in to start a plan.', 'error');
+            const plan = planFor(planId);
+            if (!plan) return toast('That plan is no longer available. Refresh the catalogue.', 'error');
+            showLoading('Creating your payment reference...');
+            try {
+                const result = await callBilling('checkout.create', {
+                    kind: 'subscription',
+                    planId: plan.id,
+                    method: 'mobile-money',
+                    idempotencyKey: Billing.idempotencyKey()
+                });
+                checkoutEvidence = null;
+                currentCheckout = Object.assign({}, result.payment, { subscriptionId: result.subscriptionId });
+                currentSubscriptionId = result.subscriptionId || '';
+                openCheckoutModal();
+                loadMyPlans().catch(() => {});
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                hideLoading();
             }
         };
 
-        window.clearPin = () => { pinInput = ""; updateDots(); };
-        window.cancelSecure = () => { document.getElementById('secureOverlay').style.display = 'none'; };
+        window.startWalletDeposit = async () => {
+            if (!currentUser) return toast('Sign in to add funds.', 'error');
+            const field = document.getElementById('depAmount');
+            const value = Number(field && field.value);
+            if (!value || value < 5) return toast('Minimum deposit is $5.00', 'error');
+            showLoading('Creating your payment reference...');
+            try {
+                const result = await callBilling('checkout.create', {
+                    kind: 'wallet_deposit',
+                    amount: Math.round(value * 100) / 100,
+                    method: 'mobile-money',
+                    idempotencyKey: Billing.idempotencyKey()
+                });
+                checkoutEvidence = null;
+                currentCheckout = Object.assign({}, result.payment, { walletTransactionId: result.walletTransactionId });
+                currentSubscriptionId = null;
+                closeModal('modalDeposit');
+                if (field) field.value = '';
+                openCheckoutModal();
+                loadWalletData().catch(() => {});
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        };
 
-        function updateDots() {
-            const dots = document.querySelectorAll('.pin-dot');
-            dots.forEach((dot, i) => { dot.classList.toggle('active', i < pinInput.length); });
+        function checkoutStatus() {
+            return currentCheckout ? (currentCheckout.status || 'pending_payment') : '';
         }
 
-        window.confirmPinAction = async () => {
-            if(pinInput.length !== 4) return toast("Enter exactly 4 digits", "error");
+        function openCheckoutModal() {
+            if (!currentCheckout) return;
+            const isWallet = currentCheckout.kind === 'wallet_deposit';
+            document.getElementById('checkoutKind').innerText = isWallet ? 'Wallet deposit' : 'Subscription checkout';
+            document.getElementById('checkoutTitle').innerText = isWallet ? 'Deposit payment reference' : 'Subscription payment reference';
+            const status = checkoutStatus();
+            const reference = currentCheckout.reference || '';
+            const body = document.getElementById('checkoutBody');
+            body.innerHTML =
+                '<dl class="checkout-grid">' +
+                    '<div><dt>Reference</dt><dd class="checkout-ref">' + esc(reference) + '</dd></div>' +
+                    '<div><dt>Exact amount</dt><dd>' + money(currentCheckout.amount, currentCheckout.currency) + '</dd></div>' +
+                    '<div><dt>Plan</dt><dd>' + esc(currentCheckout.planName || 'Secure wallet deposit') + '</dd></div>' +
+                    '<div><dt>Status</dt><dd>' + statusChip(status) + '</dd></div>' +
+                '</dl>' +
+                (status === 'rejected' && currentCheckout.rejectionReason
+                    ? '<p class="checkout-note" style="color:#b91c1c;"><strong>Rejected:</strong> ' + esc(currentCheckout.rejectionReason) + '</p>'
+                    : '') +
+                '<div class="checkout-instructions"><strong>How to pay</strong><br>' + esc(currentCheckout.paymentInstructions || Billing.PAYMENT_INSTRUCTIONS) + '</div>';
+            renderCheckoutEvidence();
+            renderCheckoutActions();
+            const modal = document.getElementById('modalCheckout');
+            if (modal) modal.style.display = 'flex';
+        }
 
-            if(!storedPin) {
-                showLoading("Securing Wallet...");
+        function renderCheckoutEvidence() {
+            const host = document.getElementById('checkoutEvidence');
+            if (!host) return;
+            const status = checkoutStatus();
+            const evidenceUrl = (currentCheckout && (currentCheckout.evidencePath || currentCheckout.evidenceUrl)) || (checkoutEvidence && (checkoutEvidence.previewUrl || checkoutEvidence.path || checkoutEvidence.url)) || '';
+            if (status === 'approved' || status === 'cancelled' || status === 'rejected' || status === 'expired') {
+                host.innerHTML = evidenceUrl
+                    ? '<button type="button" class="checkout-evidence-card" onclick="openReceiptPreview(\'' + esc(evidenceUrl) + '\')"><i class="pd-i pd-i-receipt-text"></i><div><strong>Payment receipt</strong><span>Open the attached receipt</span></div></button>'
+                    : '';
+                return;
+            }
+            if (status === 'pending_verification') {
+                host.innerHTML = '<div class="checkout-evidence-card" style="cursor:default;"><i class="pd-i pd-i-circle-check"></i><div><strong>Receipt received</strong><span>Finance is checking the payment against the ministry account.</span></div></div>' +
+                    (evidenceUrl ? '<button type="button" class="btn-main" style="margin-top:8px;background:transparent;color:var(--text-sub);border:2px solid var(--border);" onclick="openReceiptPreview(\'' + esc(evidenceUrl) + '\')"><i class="pd-i pd-i-eye"></i> View attached receipt</button>' : '');
+                return;
+            }
+            host.innerHTML =
+                '<button type="button" class="checkout-evidence-card" onclick="pickCheckoutReceipt()">' +
+                    '<i class="pd-i pd-i-receipt-text"></i>' +
+                    '<div><strong>' + (evidenceUrl ? 'Receipt attached' : 'Upload payment receipt') + '</strong>' +
+                    '<span>' + (evidenceUrl ? 'Tap to replace the receipt' : 'PNG, JPG or PDF · maximum 5 MB') + '</span></div>' +
+                '</button>' +
+                (evidenceUrl ? '<p class="checkout-note">Stored privately. Press <strong>Submit for verification</strong> when the receipt is the correct one.</p>' : '');
+        }
+
+        function renderCheckoutActions() {
+            const host = document.getElementById('checkoutActions');
+            if (!host) return;
+            const status = checkoutStatus();
+            const reference = currentCheckout ? currentCheckout.reference : '';
+            const evidenceUrl = (currentCheckout && (currentCheckout.evidencePath || currentCheckout.evidenceUrl)) || (checkoutEvidence && (checkoutEvidence.previewUrl || checkoutEvidence.path || checkoutEvidence.url)) || '';
+            const buttons = [];
+            if (status === 'pending_payment') {
+                buttons.push('<button type="button" class="btn-main btn-gold" ' + (evidenceUrl ? '' : 'disabled') + ' onclick="submitCheckoutEvidence()"><i class="pd-i pd-i-shield-check"></i> Submit for verification</button>');
+                buttons.push('<button type="button" class="btn-main" style="background:transparent;color:var(--text-sub);border:2px solid var(--border);" onclick="copyToClipboard(\'' + esc(reference) + '\')"><i class="pd-i pd-i-copy"></i> Copy payment reference</button>');
+                buttons.push('<button type="button" class="btn-main" style="background:transparent;color:var(--pd-red);border:2px solid rgba(239,68,68,.35);" onclick="cancelCheckout()">Cancel checkout</button>');
+            } else if (status === 'pending_verification') {
+                buttons.push('<button type="button" class="btn-main btn-green" onclick="closeCheckout(); setView(\'myplans\', document.querySelectorAll(\'.tab-item\')[1])"><i class="pd-i pd-i-list"></i> Go to My Plan</button>');
+                buttons.push('<button type="button" class="btn-main" style="background:transparent;color:var(--text-sub);border:2px solid var(--border);" onclick="copyToClipboard(\'' + esc(reference) + '\')"><i class="pd-i pd-i-copy"></i> Copy payment reference</button>');
+                buttons.push('<button type="button" class="btn-main" style="background:transparent;color:var(--text-sub);border:2px solid var(--border);" onclick="closeCheckout()">Close</button>');
+            } else if (status === 'approved' || status === 'active') {
+                buttons.push('<button type="button" class="btn-main btn-green" onclick="closeCheckout(); setView(\'myplans\', document.querySelectorAll(\'.tab-item\')[1])"><i class="pd-i pd-i-circle-check"></i> View My Plan</button>');
+            } else {
+                buttons.push('<button type="button" class="btn-main btn-green" onclick="closeCheckout()">Close</button>');
+            }
+            host.innerHTML = buttons.join('');
+        }
+
+        window.closeCheckout = () => {
+            closeModal('modalCheckout');
+            currentCheckout = null;
+            checkoutEvidence = null;
+            loadPlanCatalogue();
+        };
+
+        window.pickCheckoutReceipt = () => {
+            const input = document.getElementById('checkoutReceiptInput');
+            if (!input) return;
+            input.value = '';
+            input.click();
+        };
+
+        window.handleCheckoutReceipt = async (event) => {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (!file) return;
+            if (file.size > 5 * 1024 * 1024) return toast('That receipt is too large. Choose a file under 5 MB.', 'error');
+            if (!/^(image\/|application\/pdf$)/.test(file.type)) return toast('Attach a PNG, JPG or PDF receipt.', 'error');
+            if (!currentUser) return toast('Sign in again before attaching a receipt.', 'error');
+            showLoading('Uploading receipt securely…');
+            try {
+                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
+                const path = 'billingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
+                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
+                checkoutEvidence = {
+                    path,
+                    name: file.name || 'Payment receipt',
+                    type: file.type || 'file',
+                    // A local object URL keeps the preview instant; the stored
+                    // path is what the callable and the admin signed URL use.
+                    previewUrl: URL.createObjectURL(file)
+                };
+                renderCheckoutEvidence();
+                renderCheckoutActions();
+                toast('Receipt attached privately — submit it for verification.');
+            } catch (error) {
+                console.error('Receipt upload failed:', error);
+                toast('The receipt could not be uploaded. Check your connection and try again.', 'error');
+            } finally {
+                hideLoading();
+            }
+        };
+
+        window.triggerCloudinary = async (context, docKey) => {
+            if (context !== 'checkout' && context !== 'claim') return;
+            const res = await PDUpload.pick({
+                title: context === 'checkout' ? 'Attach payment receipt' : 'Attach supporting document',
+                accept: 'image/*,application/pdf',
+                preset: 'gallery_uploads',
+                maxBytes: 5000000,
+                onError: (message) => toast(message, 'error')
+            });
+            if (!res || !res.ok) return;
+            const file = res.files[0];
+            if (context === 'checkout') {
+                checkoutEvidence = { url: file.url, name: file.name || 'Payment receipt', type: file.type || 'file' };
+                renderCheckoutEvidence();
+                renderCheckoutActions();
+                toast('Receipt attached — now submit it for verification.');
+            } else {
+                claimDocs[docKey] = file.url;
+                const label = document.getElementById(`stat_${docKey}`);
+                if (label) {
+                    label.innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Attached';
+                    label.classList.add('success');
+                }
+                toast('Document attached successfully!');
+            }
+        };
+
+        window.submitCheckoutEvidence = async () => {
+            if (!currentCheckout || !checkoutEvidence) return toast('Attach the receipt first.', 'error');
+            showLoading('Submitting receipt...');
+            try {
+                const payload = {
+                    reference: currentCheckout.reference,
+                    evidenceName: checkoutEvidence.name,
+                    evidenceType: checkoutEvidence.type
+                };
+                if (checkoutEvidence.path) payload.evidencePath = checkoutEvidence.path;
+                else payload.evidenceUrl = checkoutEvidence.url;
+                await callBilling('checkout.evidence', payload);
+                currentCheckout.status = 'pending_verification';
+                if (checkoutEvidence.path) currentCheckout.evidencePath = checkoutEvidence.path;
+                else currentCheckout.evidenceUrl = checkoutEvidence.url;
+                checkoutEvidence = null;
+                renderCheckoutEvidence();
+                renderCheckoutActions();
+                toast('Receipt submitted. Finance will verify the payment before your plan is activated.', 'success');
+                loadMyPlans().catch(() => {});
+                loadWalletData().catch(() => {});
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        };
+
+        window.cancelCheckout = async () => {
+            if (!currentCheckout) return;
+            if (!confirm('Cancel this checkout? The payment reference will stop working.')) return;
+            showLoading('Cancelling checkout...');
+            try {
+                await callBilling('checkout.cancel', { reference: currentCheckout.reference });
+                toast('Checkout cancelled.');
+                closeCheckout();
+                loadMyPlans().catch(() => {});
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                hideLoading();
+            }
+        };
+
+        window.openReceiptPreview = async (source) => {
+            const body = document.getElementById('receiptPreviewBody');
+            if (!body || !source) return;
+            let url = source;
+            if (source.indexOf('billingEvidence/') === 0) {
+                body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-sub);">Preparing the private receipt…</div>';
+                document.getElementById('modalReceiptPreview').style.display = 'flex';
+                try {
+                    const signed = await callBilling('evidence.signedUrl', { path: source });
+                    url = signed.url;
+                } catch (error) {
+                    body.innerHTML = '<p style="padding:20px;color:var(--pd-red);">' + esc(error.message) + '</p>';
+                    return;
+                }
+            }
+            const safe = esc(url);
+            const isPdf = /\.pdf($|\?)/i.test(source) || (currentCheckout && /pdf/i.test(currentCheckout.evidenceType || ''));
+            body.innerHTML = isPdf
+                ? '<iframe src="' + safe + '" title="Payment receipt" style="width:100%;height:70vh;border:1px solid var(--border);border-radius:14px;"></iframe>'
+                : '<img src="' + safe + '" alt="Payment receipt" style="max-width:100%;max-height:70vh;border-radius:14px;border:1px solid var(--border);">';
+            document.getElementById('modalReceiptPreview').style.display = 'flex';
+        };
+
+        window.openCheckoutByReference = async (reference) => {
+            if (!currentUser || !reference) return;
+            try {
+                const snap = await getDoc(doc(db, 'paymentRequests', String(reference).trim().toUpperCase()));
+                if (!snap.exists()) return;
+                currentCheckout = Object.assign({ id: snap.id }, snap.data());
+                currentSubscriptionId = currentCheckout.subscriptionId || null;
+                openCheckoutModal();
+                showView('myplans');
+            } catch (error) { console.warn('Checkout lookup failed:', error && error.message); }
+        };
+
+        window.cancelSubscription = async (subscriptionId) => {
+            if (!subscriptionId) return;
+            if (!window.confirm('Cancel this plan? Access continues until the end of the paid period; no further payment will be expected.')) return;
+            showLoading('Scheduling cancellation…');
+            try {
+                await callBilling('subscriptions.cancel', { subscriptionId });
+                toast('Cancellation scheduled. The plan stays active until its paid period ends.');
+                await loadMyPlans();
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally { hideLoading(); }
+        };
+
+        window.resumeSubscription = async (subscriptionId) => {
+            if (!subscriptionId) return;
+            showLoading('Resuming plan…');
+            try {
+                await callBilling('subscriptions.resume', { subscriptionId });
+                toast('Plan resumed. It will renew with the next verified payment.');
+                await loadMyPlans();
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally { hideLoading(); }
+        };
+
+        /* ------------------------------------------------------------- my plans */
+        async function fetchUserPayments() {
+            const snapshot = await getDocs(query(collection(db, 'paymentRequests'), where('userId', '==', currentUser.uid)));
+            const rows = [];
+            snapshot.forEach(entry => rows.push(Object.assign({ id: entry.id }, entry.data())));
+            rows.sort((a, b) => (Billing.toDate(b.createdAt) || 0) - (Billing.toDate(a.createdAt) || 0));
+            return rows;
+        }
+
+        async function fetchUserSubscriptions() {
+            const snapshot = await getDocs(query(collection(db, 'subscriptions'), where('userId', '==', currentUser.uid)));
+            const rows = [];
+            snapshot.forEach(entry => rows.push(Object.assign({ id: entry.id }, entry.data())));
+            return rows;
+        }
+
+        window.loadMyPlans = async () => {
+            const list = document.getElementById('myPlansList');
+            const summary = document.getElementById('myPlanSummary');
+            if (!list || !currentUser) return;
+            list.innerHTML = '<div style="text-align:center;padding:50px;"><div class="spinner"></div></div>';
+            try {
+                const [subscriptions, payments] = await Promise.all([fetchUserSubscriptions(), fetchUserPayments()]);
+                const latestByReference = {};
+                payments.forEach(payment => { latestByReference[payment.reference] = payment; });
+                const now = new Date();
+                const active = subscriptions.filter(row => Billing.effectiveStatus(row, now) === 'active');
+                const waiting = subscriptions.filter(row => ['pending_payment', 'pending_verification'].includes(Billing.effectiveStatus(row, now)));
+                if (summary) {
+                    summary.innerHTML =
+                        '<div class="my-plan-stat"><span>Active plans</span><strong>' + active.length + '</strong></div>' +
+                        '<div class="my-plan-stat"><span>Awaiting verification</span><strong>' + waiting.length + '</strong></div>' +
+                        '<div class="my-plan-stat"><span>Monthly commitment</span><strong>' + money(active.reduce((sum, row) => sum + Number(row.amount || 0), 0), 'USD') + '</strong></div>' +
+                        '<div class="my-plan-stat"><span>Plan records</span><strong>' + subscriptions.length + '</strong></div>';
+                }
+                if (!subscriptions.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:50px 20px;background:var(--bg-card);border-radius:30px;border:1px dashed var(--border);">' +
+                        '<i class="pd-i pd-i-package-open" style="font-size:50px;color:var(--border);margin-bottom:15px;"></i>' +
+                        '<h3 style="font-weight:800;color:var(--text-main);">No support plan yet</h3>' +
+                        '<p style="font-size:.9rem;color:var(--text-sub);margin-top:5px;">Choose a plan on the Global Vision tab. Your checkout will appear here immediately.</p>' +
+                        '<button class="btn-main btn-green" style="width:auto;padding:11px 22px;margin-top:16px;" onclick="setView(\'programs\', document.querySelectorAll(\'.tab-item\')[0])">Choose a plan</button></div>';
+                } else {
+                    list.innerHTML = subscriptions.sort((a, b) => (Billing.toDate(b.updatedAt) || 0) - (Billing.toDate(a.updatedAt) || 0)).map(row => {
+                        const status = Billing.effectiveStatus(row, now);
+                        const payment = latestByReference[row.pendingPaymentRef] || latestByReference[row.paymentRef] || null;
+                        const start = Billing.toDate(row.activatedAt || row.startDate);
+                        const expires = Billing.toDate(row.expiresAt || row.renewalDate);
+                        const programmeEnd = Billing.toDate(row.programExpiresAt);
+                        let progress = 0;
+                        if (start && programmeEnd) {
+                            progress = Math.max(0, Math.min(100, Math.round(((now - start) / (programmeEnd - start)) * 100)));
+                        } else if (start) {
+                            progress = Math.max(0, Math.min(100, Math.round(((now - start) / (365 * 86400000)) * 100)));
+                        }
+                        const reason = payment && payment.status === 'rejected' ? payment.rejectionReason : row.lastRejectionReason;
+                        return '<div class="hero-card" style="padding:clamp(18px,3vw,26px);margin-bottom:18px;border-left:6px solid ' + ((Billing.PROGRAM_THEMES[row.program] || {}).color || 'var(--pd-green)') + ';">' +
+                            '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;">' +
+                                '<div><span style="font-size:10px;font-weight:900;color:var(--pd-green);text-transform:uppercase;letter-spacing:1px;">' + esc(row.program || 'Support') + ' · ' + esc(row.tier || 'Plan') + '</span>' +
+                                '<h3 style="font-weight:900;color:var(--pd-navy);font-size:1.3rem;margin:3px 0 0;">' + esc(row.planName || row.planId) + '</h3></div>' +
+                                statusChip(status) +
+                            '</div>' +
+                            '<div style="background:var(--bg-base);padding:14px 16px;border-radius:16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));gap:10px;border:1px solid var(--border);">' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Monthly amount</div><div style="font-weight:900;color:var(--pd-green);font-size:1.05rem;">' + money(row.amount, row.currency) + '</div></div>' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Renews / expires</div><div style="font-weight:800;font-size:.9rem;">' + (expires ? esc(Billing.formatDate(expires)) : 'Not activated') + '</div></div>' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Payment reference</div><div style="font-family:monospace;font-weight:800;font-size:.76rem;word-break:break-all;">' + esc(payment ? payment.reference : row.pendingPaymentRef || row.paymentRef || '—') + '</div></div>' +
+                            '</div>' +
+                            (reason ? '<p style="font-size:.78rem;line-height:1.5;color:#b91c1c;margin:0 0 12px;"><strong>Payment note:</strong> ' + esc(reason) + '</p>' : '') +
+                            (row.cancelAtPeriodEnd ? '<p style="font-size:.78rem;line-height:1.5;color:#b45309;margin:0 0 12px;"><strong>Cancellation scheduled.</strong> Access continues until ' + esc(expires ? Billing.formatDate(expires) : 'the end of the paid period') + ', then the plan expires without renewal.</p>' : '') +
+                            '<div style="display:flex;justify-content:space-between;gap:10px;font-size:.68rem;font-weight:900;letter-spacing:.06em;color:var(--text-sub);text-transform:uppercase;"><span>Programme maturity</span><span>' + progress + '%</span></div>' +
+                            '<div style="height:8px;background:var(--bg-base);border-radius:999px;overflow:hidden;margin:6px 0 14px;border:1px solid var(--border);"><div style="height:100%;width:' + progress + '%;background:linear-gradient(90deg,var(--pd-green),var(--pd-gold));"></div></div>' +
+                            '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                                (payment ? '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:.75rem;background:transparent;color:var(--text-main);border:1px solid var(--border);" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-receipt-text"></i> View payment</button>' : '') +
+                                (['pending_payment', 'pending_verification'].includes(status) && payment ? '<button class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-upload"></i> Upload receipt</button>' : '') +
+                                (status === 'active' ? '<button class="btn-main btn-green" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="openClaimForm(\'' + esc(row.id) + '\', \'' + esc(row.claimType || row.program) + '\', \'' + esc(row.paymentRef || '') + '\')"><i class="pd-i pd-i-file-pen-line"></i> File a support claim</button>' : '') +
+                                (status === 'active' && !row.cancelAtPeriodEnd ? '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:.75rem;background:transparent;color:var(--text-sub);border:1px solid var(--border);" onclick="cancelSubscription(\'' + esc(row.id) + '\')"><i class="pd-i pd-i-circle-x"></i> Cancel plan</button>' : '') +
+                                (status === 'active' && row.cancelAtPeriodEnd ? '<button class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="resumeSubscription(\'' + esc(row.id) + '\')"><i class="pd-i pd-i-refresh-cw"></i> Keep plan</button>' : '') +
+                                (['expired', 'rejected', 'cancelled'].includes(status) ? '<button class="btn-main btn-green" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="subscribeToPlan(\'' + esc(row.planId) + '\')"><i class="pd-i pd-i-refresh-cw"></i> Start again</button>' : '') +
+                            '</div>' +
+                        '</div>';
+                    }).join('');
+                }
+                // Never hide historical enrolments: show the old auto-enrolled rows as
+                // read-only history, clearly separated from verified subscriptions.
+                const legacySnap = await getDocs(query(collection(db, 'activePlans'), where('userId', '==', currentUser.uid)));
+                const legacy = [];
+                legacySnap.forEach(entry => legacy.push(Object.assign({ id: entry.id }, entry.data())));
+                if (legacy.length) {
+                    list.insertAdjacentHTML('beforeend',
+                        '<details style="margin-top:18px;border:1px solid var(--border);border-radius:18px;padding:14px 16px;background:var(--bg-card);">' +
+                        '<summary style="cursor:pointer;font-weight:800;font-size:.85rem;color:var(--text-main);">Previous program enrolments (' + legacy.length + ') — historical record</summary>' +
+                        '<p style="font-size:.75rem;color:var(--text-sub);line-height:1.55;margin:8px 0 10px;">These older rows were created before payment verification was required. They are kept for your records and are not counted as active subscriptions.</p>' +
+                        legacy.map(row => '<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--border);font-size:.78rem;"><span>' + esc(row.planType || 'Program') + ' · ' + esc(row.planTier || 'Plan') + '</span><span style="font-weight:800;">' + money(row.monthlyAmount, 'USD') + '/mo</span></div>').join('') +
+                        '</details>');
+                }
+            } catch (error) {
+                console.error(error);
+                list.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--pd-red);"><i class="pd-i pd-i-triangle-alert" style="font-size:40px;margin-bottom:12px;"></i><p>' + esc(error.message) + '</p></div>';
+            }
+        };
+
+        /* ---------------------------------------------------------------- claims */
+        window.openClaimForm = (planId, planType, paymentRef) => {
+            activePlanIdForClaim = planId;
+            activeSubscriptionForClaim = paymentRef || null;
+            claimDocs = {};
+            const modalBody = document.getElementById('claimModalBody');
+            let formFields = '';
+            let requiredDocs = [];
+            if (planType === 'Education') {
+                formFields = '<div class="form-group"><label>Institution / School Name</label><input type="text" id="clSchool" placeholder="e.g. University of Zambia"></div>' +
+                    '<div class="form-group"><label>Student ID Number</label><input type="text" id="clStudentId" placeholder="ID Number"></div>';
+                requiredDocs = [
+                    { key: 'acceptance', label: 'Acceptance Letter / Proof of Enrollment', icon: 'pd-i-mail-open' },
+                    { key: 'results', label: 'Latest Academic Results', icon: 'pd-i-chart-bar' }
+                ];
+            } else if (planType === 'Business') {
+                formFields = '<div class="form-group"><label>Business Name</label><input type="text" id="clBizName" placeholder="Name of Enterprise"></div>' +
+                    '<div class="form-group"><label>Registration Number (if applicable)</label><input type="text" id="clBizReg" placeholder="Registration No."></div>';
+                requiredDocs = [
+                    { key: 'bizplan', label: 'Business Plan / Proposal', icon: 'pd-i-file-text' },
+                    { key: 'identity', label: 'National ID Copy', icon: 'pd-i-id-card' }
+                ];
+            } else {
+                formFields = '<div class="form-group"><label>Name of Deceased</label><input type="text" id="clDecName" placeholder="Full Name"></div>' +
+                    '<div class="form-group"><label>Date of Passing</label><input type="date" id="clDecDate"></div>';
+                requiredDocs = [
+                    { key: 'deathcert', label: 'Official Death Certificate', icon: 'pd-i-file-heart' },
+                    { key: 'identity', label: 'Your ID Copy', icon: 'pd-i-id-card' }
+                ];
+            }
+            modalBody.innerHTML =
+                '<h2 style="color:var(--pd-gold);font-weight:900;margin-bottom:5px;"><i class="pd-i pd-i-file-text"></i> ' + esc(planType) + ' claim</h2>' +
+                '<p style="font-size:.85rem;color:var(--text-sub);margin-bottom:25px;">Provide the details and official documents for this programme. Finance reviews the claim against your verified subscription.</p>' +
+                (paymentRef ? '<p style="font-size:.72rem;font-family:monospace;color:var(--text-sub);margin-bottom:16px;">Subscription payment: ' + esc(paymentRef) + '</p>' : '') +
+                '<div class="form-group"><label>Requested support amount (USD)</label><input type="number" id="clAmount" placeholder="e.g. 500"></div>' +
+                formFields +
+                '<h3 style="font-size:.95rem;font-weight:800;margin:30px 0 15px;border-bottom:2px solid var(--border);padding-bottom:8px;">Required documents</h3>' +
+                requiredDocs.map(item => '<div class="doc-upload-zone" onclick="triggerCloudinary(\'claim\', \'' + item.key + '\')"><i class="pd-i ' + item.icon + '" style="font-size:1.5rem;color:var(--pd-navy);"></i><div style="flex:1;text-align:left;"><div style="font-weight:800;font-size:.85rem;">' + item.label + '</div><div class="doc-status" id="stat_' + item.key + '">Tap to upload PDF/Image</div></div></div>').join('') +
+                '<button class="btn-main btn-gold" id="btnSubmitClaim" style="margin-top:30px;" onclick="submitClaim(\'' + esc(planType) + '\', \'' + esc(JSON.stringify(requiredDocs).replace(/"/g, '&quot;')) + '\')">SUBMIT FOR REVIEW</button>' +
+                '<button class="btn-main" style="background:transparent;color:var(--text-sub);border:2px solid var(--border);margin-top:10px;" onclick="closeModal(\'modalClaim\')">Cancel</button>';
+            document.getElementById('modalClaim').style.display = 'flex';
+        };
+
+        window.submitClaim = async (planType, docsJson) => {
+            const amountField = document.getElementById('clAmount');
+            const value = Number(amountField && amountField.value);
+            const requiredDocs = JSON.parse(String(docsJson).replace(/&quot;/g, '"'));
+            if (!value || value <= 0) return toast("Enter a valid claim amount", "error");
+            const extraData = {};
+            if (planType === 'Education') {
+                extraData.school = document.getElementById('clSchool').value.trim();
+                extraData.studentId = document.getElementById('clStudentId').value.trim();
+                if (!extraData.school) return toast("Enter institution name", "error");
+            } else if (planType === 'Business') {
+                extraData.businessName = document.getElementById('clBizName').value.trim();
+                extraData.registration = document.getElementById('clBizReg').value.trim();
+                if (!extraData.businessName) return toast("Enter business name", "error");
+            } else {
+                extraData.deceasedName = document.getElementById('clDecName').value.trim();
+                extraData.dateOfDeath = document.getElementById('clDecDate').value;
+                if (!extraData.deceasedName || !extraData.dateOfDeath) return toast("Complete deceased details", "error");
+            }
+            for (const doc of requiredDocs) {
+                if (!claimDocs[doc.key]) return toast(`Please upload: ${doc.label}`, "error");
+            }
+            const button = document.getElementById('btnSubmitClaim');
+            button.innerText = "Processing...";
+            try {
+                await addDoc(collection(db, "supportClaims"), {
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email,
+                    planId: activePlanIdForClaim,
+                    planType: planType,
+                    subscriptionId: activePlanIdForClaim,
+                    paymentRef: activeSubscriptionForClaim || '',
+                    requestedAmount: value,
+                    currency: 'USD',
+                    details: extraData,
+                    documents: claimDocs,
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                });
+                closeModal('modalClaim');
+                toast("Claim submitted for review.", "success");
+                if (window.confetti) confetti();
+                loadWalletData();
+                loadMyPlans();
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                if (button) button.innerText = "SUBMIT FOR REVIEW";
+            }
+        };
+
+        /* ---------------------------------------------------------------- wallet */
+        function transactionLabel(status) {
+            return Billing.statusLabel(status || 'pending_payment');
+        }
+
+        window.loadWalletData = async () => {
+            if (!currentUser) return;
+            try {
+                const walletSnap = await getDoc(doc(db, "wallets", currentUser.uid));
+                const balance = walletSnap.exists() ? Number(walletSnap.data().balance) || 0 : 0;
+                const currency = walletSnap.exists() ? (walletSnap.data().currency || 'USD') : 'USD';
+                const display = document.getElementById('dispBalance');
+                if (display) display.innerText = money(balance, currency);
+
+                const [txSnap, paymentSnap, depositSnap, withdrawalSnap, claimSnap] = await Promise.all([
+                    getDocs(query(collection(db, "walletTransactions"), where("userId", "==", currentUser.uid))),
+                    getDocs(query(collection(db, "paymentRequests"), where("userId", "==", currentUser.uid))),
+                    getDocs(query(collection(db, "deposits"), where("userId", "==", currentUser.uid))),
+                    getDocs(query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid))),
+                    getDocs(query(collection(db, "supportClaims"), where("userId", "==", currentUser.uid)))
+                ]);
+                const history = [];
+                txSnap.forEach(entry => {
+                    const row = entry.data();
+                    history.push({
+                        type: row.type === 'deposit' ? 'Wallet deposit' : 'Wallet transaction',
+                        amount: row.amount,
+                        currency: row.currency,
+                        status: row.status,
+                        date: Billing.toDate(row.createdAt),
+                        reference: row.reference || entry.id,
+                        direction: row.direction || 'in',
+                        credit: row.status === 'approved' && row.type === 'deposit' ? 1 : 0
+                    });
+                });
+                paymentSnap.forEach(entry => {
+                    const row = entry.data();
+                    if (row.kind !== 'subscription') return;
+                    if (history.some(item => item.reference === row.reference)) return;
+                    history.push({
+                        type: 'Subscription · ' + (row.planName || row.planId),
+                        amount: row.amount,
+                        currency: row.currency,
+                        status: row.status,
+                        date: Billing.toDate(row.createdAt),
+                        reference: row.reference,
+                        direction: 'out',
+                        credit: 0
+                    });
+                });
+                depositSnap.forEach(entry => {
+                    const row = entry.data();
+                    history.push({
+                        type: 'Legacy deposit',
+                        amount: row.amount,
+                        currency: row.currency || 'USD',
+                        status: row.status,
+                        date: Billing.toDate(row.createdAt),
+                        reference: 'Legacy · ' + entry.id,
+                        direction: 'in',
+                        credit: 0,
+                        legacy: true
+                    });
+                });
+                withdrawalSnap.forEach(entry => {
+                    const row = entry.data();
+                    history.push({
+                        type: 'Withdrawal',
+                        amount: row.amount,
+                        currency: row.currency || 'USD',
+                        status: row.status,
+                        date: Billing.toDate(row.createdAt),
+                        reference: 'Withdrawal · ' + entry.id,
+                        direction: 'out',
+                        credit: 0,
+                        legacy: true
+                    });
+                });
+                claimSnap.forEach(entry => {
+                    const row = entry.data();
+                    history.push({
+                        type: 'Support claim',
+                        amount: row.requestedAmount,
+                        currency: row.currency || 'USD',
+                        status: row.status,
+                        date: Billing.toDate(row.createdAt),
+                        reference: 'Claim · ' + entry.id,
+                        direction: 'out',
+                        credit: 0,
+                        legacy: true
+                    });
+                });
+                history.sort((a, b) => (b.date || 0) - (a.date || 0));
+                const list = document.getElementById('txHistoryList');
+                if (!history.length) {
+                    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-sub);font-weight:600;"><i class="pd-i pd-i-receipt" style="font-size:40px;opacity:.3;margin-bottom:10px;display:block;"></i>No transactions yet.</div>';
+                    return;
+                }
+                list.innerHTML = history.slice(0, 40).map(item => {
+                    const tone = Billing.statusTone(item.status);
+                    const icon = item.direction === 'out' ? 'pd-i-arrow-up' : 'pd-i-arrow-down';
+                    const amountColor = item.credit ? 'var(--pd-green)' : 'var(--text-main)';
+                    return '<div class="tx-item">' +
+                        '<div style="display:flex;align-items:center;gap:12px;min-width:0;">' +
+                            '<div class="tx-icon ' + (item.direction === 'out' ? 'wth' : 'dep') + '"><i class="pd-i ' + icon + '"></i></div>' +
+                            '<div style="min-width:0;"><strong style="display:block;font-size:.9rem;color:var(--text-main);overflow-wrap:break-word;">' + esc(item.type) + '</strong>' +
+                            '<span style="font-size:.7rem;color:var(--text-sub);font-weight:600;">' + (item.date ? esc(Billing.formatDate(item.date)) : '—') + (item.legacy ? ' · historical' : '') + '</span>' +
+                            '<div style="font-family:monospace;font-size:.62rem;color:var(--text-sub);word-break:break-all;">' + esc(item.reference) + '</div></div>' +
+                        '</div>' +
+                        '<div style="text-align:right;flex:0 0 auto;">' +
+                            '<div style="font-weight:800;color:' + amountColor + ';">' + money(item.amount, item.currency) + '</div>' +
+                            '<div style="margin-top:3px;">' + statusChip(item.status) + '</div>' +
+                        '</div></div>';
+                }).join('');
+            } catch (error) {
+                console.error("Wallet load error:", error);
+                const list = document.getElementById('txHistoryList');
+                if (list) list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--pd-red);">' + esc(error.message) + '</div>';
+            }
+        };
+
+        window.openDepositPanel = () => {
+            const field = document.getElementById('depAmount');
+            if (field) field.value = '';
+            document.getElementById('modalDeposit').style.display = 'flex';
+        };
+
+        window.submitWithdrawal = async () => {
+            const amountField = document.getElementById('withAmount');
+            const phoneField = document.getElementById('withPhone');
+            const value = Number(amountField.value);
+            const phone = phoneField.value.trim();
+            if (!value || value < 10) return toast("Minimum withdrawal is $10.00", "error");
+            if (!phone) return toast("Enter the Mobile Money number", "error");
+            const button = document.getElementById('btnSubmitWith');
+            button.innerText = "Processing...";
+            try {
+                const walletSnap = await getDoc(doc(db, "wallets", currentUser.uid));
+                const balance = walletSnap.exists() ? Number(walletSnap.data().balance) || 0 : 0;
+                if (balance < value) return toast("Insufficient wallet balance", "error");
+                await addDoc(collection(db, "withdrawals"), {
+                    userId: currentUser.uid,
+                    userEmail: currentUser.email,
+                    userName: currentUser.displayName || 'Member',
+                    amount: value,
+                    currency: 'USD',
+                    receivePhone: phone,
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                });
+                closeModal('modalWithdraw');
+                toast("Withdrawal requested. Finance will review it before any funds move.");
+                amountField.value = "";
+                phoneField.value = "";
+                loadWalletData();
+            } catch (error) {
+                toast(error.message, 'error');
+            } finally {
+                if (button) button.innerText = "WITHDRAW FUNDS";
+            }
+        };
+
+        /* ------------------------------------------------------------- wallet PIN */
+        window.pinChallenge = (target) => {
+            actionTarget = target;
+            pinInput = "";
+            updateDots();
+            (async () => {
+                try {
+                    const wallet = await getDoc(doc(db, "wallets", currentUser.uid));
+                    storedPin = wallet.exists() ? (wallet.data().pin || null) : null;
+                } catch (error) { storedPin = null; }
+                const title = document.getElementById('js-secure-title');
+                const sub = document.getElementById('js-secure-sub');
+                if (!storedPin) {
+                    title.innerText = "Create wallet PIN";
+                    sub.innerHTML = "Set a 4-digit privacy PIN.<br>It is required when opening the wallet and revealing payment details.";
+                } else {
+                    title.innerText = "Security check";
+                    sub.innerText = "Enter your 4-digit PIN to continue.";
+                }
+                document.getElementById('secureOverlay').style.display = 'flex';
+            })();
+        };
+        window.tapPin = (n) => {
+            if (pinInput.length < 4) {
+                pinInput += n;
+                updateDots();
+                if (pinInput.length === 4) confirmPinAction();
+            }
+        };
+        window.clearPin = () => { pinInput = ""; updateDots(); };
+        window.cancelSecure = () => { document.getElementById('secureOverlay').style.display = 'none'; };
+        function updateDots() {
+            document.querySelectorAll('.pin-dot').forEach((dot, index) => dot.classList.toggle('active', index < pinInput.length));
+        }
+        window.confirmPinAction = async () => {
+            if (pinInput.length !== 4) return toast("Enter exactly 4 digits", "error");
+            if (!storedPin) {
+                showLoading("Securing wallet...");
                 try {
                     await updateDoc(doc(db, "wallets", currentUser.uid), { pin: btoa(pinInput) });
                     storedPin = btoa(pinInput);
-                    successAnimate("PIN Secured!");
-                } catch(e) { toast(e.message, 'error'); }
+                    successAnimate("PIN secured!");
+                } catch (error) { toast(error.message, 'error'); }
                 finally { hideLoading(); }
+            } else if (btoa(pinInput) === storedPin) {
+                successAnimate("Verified!");
             } else {
-                if(btoa(pinInput) === storedPin) {
-                    successAnimate("Verified!");
-                } else {
-                    toast("Invalid PIN", "error");
-                    clearPin();
-                }
+                toast("Invalid PIN", "error");
+                clearPin();
             }
         };
-
         function successAnimate(msg) {
             document.getElementById('js-secure-title').innerText = msg;
             document.getElementById('js-secure-icon').innerHTML = '<i class="pd-i pd-i-shield-check" style="color:var(--pd-green)"></i>';
             document.getElementById('js-secure-icon').style.boxShadow = '0 0 30px rgba(59,130,246,0.4)';
-            
             setTimeout(() => {
                 document.getElementById('secureOverlay').style.display = 'none';
                 document.getElementById('js-secure-icon').innerHTML = '<i class="pd-i pd-i-fingerprint-pattern"></i>';
                 document.getElementById('js-secure-icon').style.boxShadow = '0 0 30px rgba(212,175,55,0.2)';
                 finalizeAccess();
-            }, 800);
+            }, 700);
         }
-
         function finalizeAccess() {
-    if(actionTarget === 'wallet') {
-        // Mark that wallet is now accessible
-        // Also reveal the numbers automatically
-        document.getElementById('revealTarget').classList.add('unveiled');
-        // Now switch to wallet view
-        document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-        document.getElementById('view-wallet').classList.add('active');
-        document.querySelectorAll('.tab-item')[2].classList.add('active');
-        loadWalletData();
-    } else if (actionTarget === 'reveal') {
-        document.getElementById('revealTarget').classList.add('unveiled');
-        if(document.getElementById('btnReveal')) {
-            document.getElementById('btnReveal').style.display = 'none';
-        }
-        toast("Payment details revealed!", "success");
-    } else if (actionTarget === 'withdraw_req') {
-        document.getElementById('modalWithdraw').style.display = 'flex';
-    }
-}
-
-        // --- ENROLLMENT LOGIC ---
-        window.openEnrollForm = (type, tier, min, max) => {
-            if(!currentUser) return toast('Login required', 'error');
-            
-            activeEnrollment = { type, tier, min, max };
-            
-            document.getElementById('modalFormTitle').innerText = `${tier} ${type}`;
-            document.getElementById('modalFormSub').innerText = `You are opening a ${type} fund. This account matures in 365 days.`;
-            document.getElementById('enLimits').innerText = `Amount must be between $${min} and $${max} per month.`;
-            document.getElementById('enAmount').value = min; // Default to minimum
-            
-            document.getElementById('modalEnroll').style.display = 'flex';
-        };
-
-        window.confirmEnroll = async () => {
-            const amt = parseFloat(document.getElementById('enAmount').value);
-            const kName = document.getElementById('enKinName').value;
-            const kPhone = document.getElementById('enKinPhone').value;
-            const kRel = document.getElementById('enKinRel').value;
-            
-            if(!amt || amt < activeEnrollment.min || amt > activeEnrollment.max) return toast(`Amount must be between $${activeEnrollment.min} and $${activeEnrollment.max}`, "error");
-            if(!kName || !kPhone || !kRel) return toast("Fill all Next of Kin fields", "error");
-
-            document.getElementById('btnConfirmEnroll').innerText = "Processing...";
-            try {
-                // Prevent duplicate active plans of the same type
-                const exist = await getDocs(query(collection(db, "activePlans"), where("userId", "==", currentUser.uid), where("planType", "==", activeEnrollment.type), where("status", "==", "active")));
-                if(!exist.empty) {
-                    toast(`You already have an active ${activeEnrollment.type} plan.`, "error");
-                    closeModal('modalEnroll');
-                    return;
-                }
-
-                await addDoc(collection(db, "activePlans"), {
-                    userId: currentUser.uid,
-                    userName: currentUser.displayName || currentUser.email,
-                    planType: activeEnrollment.type,
-                    planTier: activeEnrollment.tier,
-                    monthlyAmount: amt,
-                    nextOfKin: { name: kName, phone: kPhone, relation: kRel },
-                    status: 'active',
-                    createdAt: serverTimestamp()
-                });
-
-                closeModal('modalEnroll');
-                toast(`Successfully enrolled in ${activeEnrollment.tier} ${activeEnrollment.type}!`);
-                confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-                
-                // Clear form
-                document.getElementById('enAmount').value = "";
-                document.getElementById('enKinName').value = "";
-                document.getElementById('enKinPhone').value = "";
-                document.getElementById('enKinRel').value = "";
-
-                setView('myplans', document.querySelectorAll('.tab-item')[1]);
-
-            } catch(e) { toast(e.message, 'error'); }
-            finally { document.getElementById('btnConfirmEnroll').innerText = "CONFIRM ACTIVATION"; }
-        };
-
-       // --- MY PLANS & 1-YEAR MATURITY UI (FIXED - No orderBy) ---
-window.loadMyPlans = async () => {
-    const list = document.getElementById('myPlansList');
-    list.innerHTML = '<div style="text-align:center; padding:60px;"><div class="spinner"></div></div>';
-    
-    try {
-        // Remove orderBy to avoid index requirement
-        const q = query(collection(db, "activePlans"), where("userId", "==", currentUser.uid));
-        const snap = await getDocs(q);
-        
-        if(snap.empty) {
-            list.innerHTML = `<div style="text-align:center; padding:60px 20px; background: var(--bg-card); border-radius: 30px; border: 1px dashed var(--border);">
-                <i class="pd-i pd-i-package-open" style="font-size: 50px; color:var(--border); margin-bottom:15px;"></i>
-                <h3 style="font-weight: 800; color: var(--text-main);">No Active Portfolios</h3>
-                <p style="font-size:0.9rem; color:var(--text-sub); margin-top: 5px;">Enroll in a program from the Global Vision tab.</p>
-            </div>`;
-            return;
-        }
-
-        // Convert to array and sort in memory
-        let plans = [];
-        snap.forEach(d => {
-            plans.push({ id: d.id, ...d.data() });
-        });
-        plans.sort((a,b) => (b.createdAt?.toDate() || 0) - (a.createdAt?.toDate() || 0));
-
-        let html = '';
-        plans.forEach(data => {
-            const createdAt = data.createdAt ? moment(data.createdAt.toDate()) : moment();
-            const daysActive = moment().diff(createdAt, 'days');
-            const progress = Math.min((daysActive / 365) * 100, 100);
-            
-            let maturityText = progress >= 100 ? `<span style="color: var(--pd-green);"><i class="pd-i pd-i-circle-check"></i> MATURED</span>` : `Matures in ${365 - daysActive} days`;
-            
-            // Determine theme color
-            let themeColor = 'var(--pd-green)';
-            if(data.planType === 'Business') themeColor = '#1e3a5f';
-            if(data.planType === 'Funeral') themeColor = '#5f1e1e';
-
-            html += `
-                <div class="hero-card" style="padding: 25px; margin-bottom: 20px; border-left: 6px solid ${themeColor};">
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 15px;">
-                        <div>
-                            <span style="font-size: 10px; font-weight: 900; color: ${themeColor}; text-transform: uppercase; letter-spacing: 1px;">${data.planTier || 'Standard'} TIER</span>
-                            <h3 style="font-weight:900; color:var(--pd-navy); font-size: 1.4rem;">${data.planType}</h3>
-                        </div>
-                        <span style="background:rgba(59,130,246,0.1); color:var(--pd-green); padding:6px 14px; border-radius:20px; font-size:0.75rem; font-weight:800;">ACTIVE</span>
-                    </div>
-                    
-                    <div style="background:var(--bg-base); padding:15px 20px; border-radius:18px; margin-bottom:20px; display:flex; justify-content:space-between; border: 1px solid var(--border);">
-                        <div><div style="font-size:10px; font-weight:800; color:var(--text-sub);">MONTHLY SEED</div><div style="font-weight:900; color:var(--pd-green); font-size: 1.1rem;">$${data.monthlyAmount}</div></div>
-                        <div style="text-align:right;"><div style="font-size:10px; font-weight:800; color:var(--text-sub);">NEXT OF KIN</div><div style="font-weight:700; font-size:0.95rem;">${data.nextOfKin?.name || 'Not provided'}</div></div>
-                    </div>
-
-                    <div class="maturity-text">
-                        <span>FUND MATURITY</span>
-                        <span>${maturityText}</span>
-                    </div>
-                    <div class="plan-progress-container">
-                        <div class="plan-progress-bar" style="width: ${progress}%"></div>
-                    </div>
-                    
-                    <button class="btn-main" style="background: ${themeColor}; color: white; margin-top:20px;" onclick="openClaimForm('${data.id}', '${data.planType}')">
-                        <i class="pd-i pd-i-file-pen-line"></i> FILE A SUPPORT CLAIM
-                    </button>
-                </div>
-            `;
-        });
-        list.innerHTML = html;
-    } catch(e) { 
-        console.error(e);
-        list.innerHTML = `<div style="text-align:center; padding:60px 20px; color: var(--pd-red);">
-            <i class="pd-i pd-i-triangle-alert" style="font-size: 40px; margin-bottom: 15px;"></i>
-            <p>Error loading plans: ${e.message}</p>
-        </div>`;
-    }
-};
-
-        // --- DYNAMIC CLAIM FORM ---
-        window.openClaimForm = (planId, planType) => {
-            activePlanIdForClaim = planId;
-            claimDocs = {}; // reset docs
-
-            const modalBody = document.getElementById('claimModalBody');
-            
-            let formFields = '';
-            let requiredDocs =[];
-
-            if (planType === 'Education') {
-                formFields = `
-                    <div class="form-group"><label>Institution / School Name</label><input type="text" id="clSchool" placeholder="e.g. University of Zambia"></div>
-                    <div class="form-group"><label>Student ID Number</label><input type="text" id="clStudentId" placeholder="ID Number"></div>
-                `;
-                requiredDocs =[
-                    { key: 'acceptance', label: 'Acceptance Letter / Proof of Enrollment', icon: 'pd-i-mail-open' },
-                    { key: 'results', label: 'Latest Academic Results', icon: 'pd-i-chart-bar' }
-                ];
-            } else if (planType === 'Business') {
-                formFields = `
-                    <div class="form-group"><label>Business Name</label><input type="text" id="clBizName" placeholder="Name of Enterprise"></div>
-                    <div class="form-group"><label>Registration Number (if applicable)</label><input type="text" id="clBizReg" placeholder="Registration No."></div>
-                `;
-                requiredDocs =[
-                    { key: 'bizplan', label: 'Business Plan / Proposal', icon: 'pd-i-file-text' },
-                    { key: 'identity', label: 'National ID Copy', icon: 'pd-i-id-card' }
-                ];
-            } else if (planType === 'Funeral') {
-                formFields = `
-                    <div class="form-group"><label>Name of Deceased</label><input type="text" id="clDecName" placeholder="Full Name"></div>
-                    <div class="form-group"><label>Date of Passing</label><input type="date" id="clDecDate"></div>
-                `;
-                requiredDocs =[
-                    { key: 'deathcert', label: 'Official Death Certificate', icon: 'pd-i-file-heart' },
-                    { key: 'identity', label: 'Your ID Copy', icon: 'pd-i-id-card' }
-                ];
-            }
-
-            modalBody.innerHTML = `
-                <h2 style="color: var(--pd-gold); font-weight: 900; margin-bottom: 5px;"><i class="pd-i pd-i-file-text"></i> ${planType} Claim</h2>
-                <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 25px;">Please provide the specific details and official documents required for this program.</p>
-                
-                <div class="form-group">
-                    <label>Requested Support Amount ($)</label>
-                    <input type="number" id="clAmount" placeholder="e.g. 500">
-                </div>
-                
-                ${formFields}
-
-                <h3 style="font-size: 0.95rem; font-weight: 800; margin: 30px 0 15px; border-bottom: 2px solid var(--border); padding-bottom: 8px;">Required Documents</h3>
-                
-                ${requiredDocs.map(doc => `
-                    <div class="doc-upload-zone" onclick="triggerCloudinary('claim', '${doc.key}')">
-                        <i class="pd-i ${doc.icon}" style="font-size: 1.5rem; color: var(--pd-navy);"></i>
-                        <div style="flex: 1; text-align: left;">
-                            <div style="font-weight: 800; font-size: 0.85rem;">${doc.label}</div>
-                            <div class="doc-status" id="stat_${doc.key}">Tap to upload PDF/Image</div>
-                        </div>
-                    </div>
-                `).join('')}
-
-                <button class="btn-main btn-gold" id="btnSubmitClaim" style="margin-top: 30px;" onclick="submitClaim('${planType}', '${JSON.stringify(requiredDocs).replace(/"/g, '&quot;')}')">SUBMIT TO ADMIN</button>
-                <button class="btn-main" style="background:transparent; color:var(--text-sub); border: 2px solid var(--border); margin-top: 10px;" onclick="closeModal('modalClaim')">Cancel</button>
-            `;
-
-            document.getElementById('modalClaim').style.display = 'flex';
-        };
-
-        // --- ATTACHMENTS (native picker, upload in background) ---
-        window.triggerCloudinary = async (context, docKey) => {
-            const res = await PDUpload.pick({
-                title: context === 'deposit' ? 'Attach payment receipt' : 'Attach document',
-                accept: 'image/*,application/pdf',
-                preset: 'gallery_uploads',
-                maxBytes: 5000000,
-                onError: (m) => toast(m, 'error')
-            });
-            if (!res.ok) return;
-            const url = res.files[0].url;
-
-            if(context === 'deposit') {
-                claimDocs['receipt'] = url;
-                document.getElementById('stat_receipt').innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Attached';
-                document.getElementById('stat_receipt').classList.add('success');
-                toast('Payment receipt attached!');
-            } else if (context === 'claim') {
-                claimDocs[docKey] = url;
-                document.getElementById(`stat_${docKey}`).innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Attached';
-                document.getElementById(`stat_${docKey}`).classList.add('success');
-                toast('Document attached successfully!');
-            }
-        };
-
-        window.submitClaim = async (planType, docsJson) => {
-            const amt = document.getElementById('clAmount').value;
-            const requiredDocs = JSON.parse(docsJson.replace(/&quot;/g, '"'));
-
-            if(!amt || amt <= 0) return toast("Enter valid claim amount", "error");
-
-            // Verify specific fields based on plan type
-            let extraData = {};
-            if(planType === 'Education') {
-                extraData.school = document.getElementById('clSchool').value;
-                extraData.studentId = document.getElementById('clStudentId').value;
-                if(!extraData.school) return toast("Enter institution name", "error");
-            } else if (planType === 'Business') {
-                extraData.businessName = document.getElementById('clBizName').value;
-                extraData.registration = document.getElementById('clBizReg').value;
-                if(!extraData.businessName) return toast("Enter business name", "error");
-            } else if (planType === 'Funeral') {
-                extraData.deceasedName = document.getElementById('clDecName').value;
-                extraData.dateOfDeath = document.getElementById('clDecDate').value;
-                if(!extraData.deceasedName || !extraData.dateOfDeath) return toast("Complete deceased details", "error");
-            }
-
-            // Verify all required docs are uploaded
-            for(let d of requiredDocs) {
-                if(!claimDocs[d.key]) return toast(`Please upload: ${d.label}`, "error");
-            }
-
-            document.getElementById('btnSubmitClaim').innerText = "Processing...";
-            try {
-                await addDoc(collection(db, "supportClaims"), {
-                    userId: currentUser.uid, 
-                    userEmail: currentUser.email, 
-                    planId: activePlanIdForClaim,
-                    planType: planType,
-                    requestedAmount: parseFloat(amt), 
-                    details: extraData, 
-                    documents: claimDocs,
-                    status: 'pending', 
-                    createdAt: serverTimestamp()
-                });
-
-                closeModal('modalClaim');
-                toast("Claim securely submitted for admin review!", "success");
-                confetti();
-                loadWalletData(); // Refresh history
-            } catch(e) { toast(e.message, 'error'); }
-            finally { document.getElementById('btnSubmitClaim').innerText = "SUBMIT TO ADMIN"; }
-        };
-
-        // --- WALLET & TRANSACTIONS (FIXED) ---
-window.loadWalletData = async () => {
-    try {
-        // Get wallet balance
-        const wDoc = await getDoc(doc(db, "wallets", currentUser.uid));
-        if(wDoc.exists()) {
-            document.getElementById('dispBalance').innerText = `$ ${(wDoc.data().balance || 0).toFixed(2)}`;
-        } else {
-            document.getElementById('dispBalance').innerText = `$ 0.00`;
-        }
-
-        // Fetch deposits (no orderBy)
-        const depositsQuery = query(collection(db, "deposits"), where("userId", "==", currentUser.uid));
-        const dSnap = await getDocs(depositsQuery);
-        
-        // Fetch withdrawals
-        const withdrawalsQuery = query(collection(db, "withdrawals"), where("userId", "==", currentUser.uid));
-        const wSnap = await getDocs(withdrawalsQuery);
-        
-        // Fetch claims
-        const claimsQuery = query(collection(db, "supportClaims"), where("userId", "==", currentUser.uid));
-        const cSnap = await getDocs(claimsQuery);
-
-        let history = [];
-        
-        dSnap.forEach(d => {
-            const data = d.data();
-            history.push({ 
-                type: 'Deposit', 
-                amt: data.amount, 
-                stat: data.status, 
-                date: data.createdAt?.toDate() || new Date(), 
-                pos: true 
-            });
-        });
-        
-        wSnap.forEach(w => {
-            const data = w.data();
-            history.push({ 
-                type: 'Withdrawal', 
-                amt: data.amount, 
-                stat: data.status, 
-                date: data.createdAt?.toDate() || new Date(), 
-                pos: false 
-            });
-        });
-        
-        cSnap.forEach(c => {
-            const data = c.data();
-            history.push({ 
-                type: 'Claim Filed', 
-                amt: data.requestedAmount, 
-                stat: data.status, 
-                date: data.createdAt?.toDate() || new Date(), 
-                pos: true 
-            });
-        });
-
-        // Sort in memory by date (newest first)
-        history.sort((a,b) => b.date - a.date);
-
-        const list = document.getElementById('txHistoryList');
-        if(history.length === 0) {
-            list.innerHTML = '<div style="text-align:center; padding:40px; color:var(--text-sub); font-weight:600;"><i class="pd-i pd-i-receipt" style="font-size:40px; opacity:0.3; margin-bottom:10px; display:block;"></i>No transactions yet.</div>';
-            return;
-        }
-
-        list.innerHTML = history.slice(0, 20).map(t => {
-            let icon = '';
-            let iconClass = '';
-            if(t.type === 'Deposit') {
-                icon = '<i class="pd-i pd-i-arrow-down"></i>';
-                iconClass = 'dep';
-            } else if(t.type === 'Withdrawal') {
-                icon = '<i class="pd-i pd-i-arrow-up"></i>';
-                iconClass = 'wth';
-            } else {
-                icon = '<i class="pd-i pd-i-receipt-text"></i>';
-                iconClass = 'dep';
-            }
-            
-            const statColor = t.stat === 'approved' ? '#3b82f6' : (t.stat === 'rejected' ? '#ef4444' : '#f59e0b');
-            const statText = t.stat === 'approved' ? '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> Approved' : (t.stat === 'rejected' ? '<i class="pd-i pd-i-circle-x" aria-hidden="true"></i> Rejected' : '<i class="pd-i pd-i-hourglass" aria-hidden="true"></i> Pending');
-
-            return `
-                <div class="tx-item">
-                    <div style="display:flex; align-items:center; gap:15px;">
-                        <div class="tx-icon ${iconClass}">${icon}</div>
-                        <div>
-                            <strong style="display:block; font-size:0.95rem; color: var(--text-main);">${t.type}</strong>
-                            <span style="font-size:0.75rem; color:var(--text-sub); font-weight:600;">${moment(t.date).format('MMM D, YYYY')}</span>
-                        </div>
-                    </div>
-                    <div style="text-align:right;">
-                        <div style="font-weight: 800; color: ${t.pos ? 'var(--pd-green)' : 'var(--pd-red)'};">${t.pos ? '+' : '-'} $${t.amt.toFixed(2)}</div>
-                        <div style="font-size:0.65rem; font-weight:800; color:${statColor}; text-transform:uppercase; margin-top:3px;">${statText}</div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-    } catch(e) { 
-        console.error("Wallet load error:", e);
-        document.getElementById('txHistoryList').innerHTML = `<div style="text-align:center; padding:40px; color: var(--pd-red);">Error loading transactions: ${e.message}</div>`;
-    }
-};
-
-        window.openDepositPanel = () => { claimDocs = {}; document.getElementById('modalDeposit').style.display = 'flex'; };
-        
-        window.submitDeposit = async () => {
-            const amt = document.getElementById('depAmount').value;
-            const url = claimDocs['receipt'];
-            if(!amt || amt < 5) return toast("Minimum deposit is $5", "error");
-            if(!url) return toast("Attach payment receipt", "error");
-
-            document.getElementById('btnSubmitDep').innerText = "Processing...";
-            try {
-                await addDoc(collection(db, "deposits"), {
-                    userId: currentUser.uid, userEmail: currentUser.email, userName: currentUser.displayName || 'Member',
-                    amount: parseFloat(amt), currency: 'USD', proofUrl: url, status: 'pending', createdAt: serverTimestamp()
-                });
-                
-                closeModal('modalDeposit');
-                toast("Deposit submitted for approval!");
-                confetti();
-                
-                document.getElementById('depAmount').value = "";
-                document.getElementById('stat_receipt').innerText = "Waiting for upload...";
-                document.getElementById('stat_receipt').classList.remove('success');
-
+            if (actionTarget === 'wallet') {
+                document.getElementById('revealTarget').classList.add('unveiled');
+                showView('wallet');
                 loadWalletData();
-            } catch(e) { toast(e.message, 'error'); }
-            finally { document.getElementById('btnSubmitDep').innerText = "SUBMIT FOR APPROVAL"; }
-        };
-
-        window.submitWithdrawal = async () => {
-            const amt = document.getElementById('withAmount').value;
-            const phone = document.getElementById('withPhone').value;
-            if(!amt || amt < 10) return toast("Minimum withdrawal is $10", "error");
-            if(!phone) return toast("Enter MoMo number", "error");
-
-            document.getElementById('btnSubmitWith').innerText = "Processing...";
-            try {
-                const wDoc = await getDoc(doc(db, "wallets", currentUser.uid));
-                if(!wDoc.exists() || wDoc.data().balance < parseFloat(amt)) {
-                    toast("Insufficient wallet balance", "error");
-                    document.getElementById('btnSubmitWith').innerText = "WITHDRAW FUNDS";
-                    return;
-                }
-
-                await addDoc(collection(db, "withdrawals"), {
-                    userId: currentUser.uid, userEmail: currentUser.email, userName: currentUser.displayName || 'Member',
-                    amount: parseFloat(amt), receivePhone: phone, status: 'pending', createdAt: serverTimestamp()
-                });
-
-                closeModal('modalWithdraw');
-                toast("Withdrawal requested successfully!");
-                document.getElementById('withAmount').value = "";
-                document.getElementById('withPhone').value = "";
-                loadWalletData();
-            } catch(e) { toast(e.message, 'error'); }
-            finally { document.getElementById('btnSubmitWith').innerText = "WITHDRAW FUNDS"; }
-        };
-
+            } else if (actionTarget === 'reveal') {
+                document.getElementById('revealTarget').classList.add('unveiled');
+                const button = document.getElementById('btnReveal');
+                if (button) button.style.display = 'none';
+                toast("Payment details revealed!", "success");
+            } else if (actionTarget === 'withdraw_req') {
+                document.getElementById('modalWithdraw').style.display = 'flex';
+            }
+        }
     </script>
 </body>
 </html>

@@ -2545,6 +2545,14 @@
     },
     setLocal: function (data) {
       lsSet('pd_founder', data || null);
+      // The certificate renderer also reads this legacy key; keep both caches
+      // in step so a signature saved in the console is used on the next page.
+      lsSet('pd_founder_signature', data ? {
+        signatureUrl: data.signatureUrl || '',
+        administratorName: data.administratorName || '',
+        administratorTitle: data.administratorTitle || '',
+        administratorSignatureUrl: data.administratorSignatureUrl || ''
+      } : null);
       try {
         var meta = document.querySelector('meta[name="pd-founder-signature"]');
         if (!meta) {
@@ -2553,20 +2561,39 @@
           document.head.appendChild(meta);
         }
         meta.content = (data && data.signatureUrl) || '';
+        var adminMeta = document.querySelector('meta[name="pd-administrator-signature"]');
+        if (!adminMeta) {
+          adminMeta = document.createElement('meta');
+          adminMeta.name = 'pd-administrator-signature';
+          document.head.appendChild(adminMeta);
+        }
+        adminMeta.content = (data && data.administratorSignatureUrl) || '';
       } catch (e) {}
       broadcast('founder:update', data);
       return data;
     },
     get: function () {
       var local = founder.getLocal();
-      if (local && (local.signatureUrl || local.founderName)) return local;
+      if (local && (local.signatureUrl || local.founderName || local.administratorSignatureUrl)) {
+        local.founderName = 'SEEDWELL K. KHAYALETHU MASUKU';
+        local.founderTitle = 'Founder and President';
+        local.url = local.signatureUrl || local.url || '';
+        return local;
+      }
       var inj = window.PD_FOUNDER;
       if (inj && (inj.signatureUrl || inj.founderName)) return inj;
-      return { signatureUrl: '', founderName: '', founderTitle: 'Founder' };
+      return {
+        signatureUrl: '',
+        founderName: 'SEEDWELL K. KHAYALETHU MASUKU',
+        founderTitle: 'Founder and President',
+        administratorName: '',
+        administratorTitle: 'Authorised Administrator',
+        administratorSignatureUrl: ''
+      };
     },
     refresh: function () {
       return founder.fetch().then(function (d) {
-        if (d && d.signatureUrl) founder.setLocal(d);
+        if (d && (d.signatureUrl || d.administratorSignatureUrl || d.administratorName)) founder.setLocal(d);
         return founder.get();
       });
     },
@@ -2585,9 +2612,13 @@
         try {
           var ref = fb.doc(fb.db, 'settings', 'founder');
           fb.setDoc(ref, {
-            founderName: data.founderName || '',
-            founderTitle: data.founderTitle || 'Founder',
+            founderName: data.founderName || 'SEEDWELL K. KHAYALETHU MASUKU',
+            founderTitle: data.founderTitle || 'Founder and President',
             signatureUrl: data.signatureUrl || '',
+            administratorName: data.administratorName || '',
+            administratorTitle: data.administratorTitle || 'Authorised Administrator',
+            administratorSignatureUrl: data.administratorSignatureUrl || '',
+            organization: 'PRAYER DOME',
             updatedAt: new Date().toISOString(),
             updatedBy: (fb.auth && fb.auth.currentUser && fb.auth.currentUser.email) || ''
           }, { merge: true }).catch(function () {});
@@ -2602,7 +2633,7 @@
         try {
           if (fb && fb.auth && fb.auth.currentUser) {
             founder.fetch().then(function (d) {
-              if (d && d.signatureUrl) founder.setLocal(d);
+              if (d && (d.signatureUrl || d.administratorSignatureUrl || d.administratorName)) founder.setLocal(d);
               resolve(founder.get());
             }).catch(function () { resolve(founder.get()); });
             return;

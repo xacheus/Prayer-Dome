@@ -24,6 +24,10 @@
   var MUTED = '#6b675c';
   var SERIF = "Georgia, 'Times New Roman', serif";
   var VERSE = '“He does everything blamelessly.” — Mark 7:37';
+  var ORGANISATION = 'PRAYER DOME';
+  var FOUNDER_NAME = 'SEEDWELL K. KHAYALETHU MASUKU';
+  var FOUNDER_TITLE = 'Founder and President';
+  var ADMIN_DEFAULT_TITLE = 'Authorised Administrator';
 
   var logoPromise = null;
   var sigPromise = null;
@@ -98,9 +102,30 @@
       var raw = localStorage.getItem('pd_founder_signature');
       if (!raw) return null;
       var parsed = JSON.parse(raw);
-      if (parsed && parsed.signatureUrl) return { url: parsed.signatureUrl, name: parsed.founderName || '', title: parsed.founderTitle || '' };
+      if (parsed && (parsed.signatureUrl || parsed.administratorSignatureUrl)) {
+        return {
+          url: parsed.signatureUrl || '',
+          name: FOUNDER_NAME,
+          title: FOUNDER_TITLE,
+          administratorName: parsed.administratorName || '',
+          administratorTitle: parsed.administratorTitle || '',
+          administratorSignatureUrl: parsed.administratorSignatureUrl || ''
+        };
+      }
       return null;
     } catch (e) { return null; }
+  }
+
+  function normalizeSignatureMeta(meta) {
+    if (!meta) return null;
+    return {
+      url: meta.url || meta.signatureUrl || '',
+      name: FOUNDER_NAME,
+      title: FOUNDER_TITLE,
+      administratorName: meta.administratorName || '',
+      administratorTitle: meta.administratorTitle || '',
+      administratorSignatureUrl: meta.administratorSignatureUrl || ''
+    };
   }
 
   function loadFounderSignatureData() {
@@ -112,12 +137,12 @@
           // Firestore is authoritative when signed in.
           var pd = window.PDApp;
           if (pd && pd._fb && pd._fb.auth && pd._fb.auth.currentUser) {
-            pd.loadFounderSignature().then(function (m) { done(m); }).catch(function () { done(null); });
+            pd.loadFounderSignature().then(function (m) { done(normalizeSignatureMeta(m)); }).catch(function () { done(null); });
             setTimeout(function () { done(null); }, 2500);
             return;
           }
         } catch (e) {}
-        done(founderSignatureFromStorage() || { url: founderSignatureFromDom(), name: '', title: '' });
+        done(founderSignatureFromStorage() || { url: founderSignatureFromDom(), name: FOUNDER_NAME, title: FOUNDER_TITLE, administratorSignatureUrl: '' });
       });
     }
     return sigPromise;
@@ -126,6 +151,11 @@
   function loadFounderSignatureImage(meta) {
     if (!meta || !meta.url) return Promise.resolve(null);
     return loadImage(meta.url);
+  }
+
+  function loadAdministratorSignatureImage(meta) {
+    if (!meta || !meta.administratorSignatureUrl) return Promise.resolve(null);
+    return loadImage(meta.administratorSignatureUrl);
   }
 
   function ellipse(ctx, cx, cy, rx, ry, color) {
@@ -230,7 +260,41 @@
     }
   }
 
-  function draw(ctx, opts, logo, sigMeta, sigImg) {
+  function drawSignatureBlock(ctx, x, name, title, image) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    var label = name || '';
+    var imageDrawn = false;
+    if (image && image.naturalWidth) {
+      var sw = 250;
+      var sh = (sw * image.naturalHeight) / image.naturalWidth;
+      if (sh > 88) { sh = 88; sw = (sh * image.naturalWidth) / image.naturalHeight; }
+      try { ctx.drawImage(image, x - sw / 2, 906 - sh, sw, sh); imageDrawn = true; } catch (e) { imageDrawn = false; }
+    }
+    ctx.strokeStyle = MUTED; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x - 160, 1000); ctx.lineTo(x + 160, 1000); ctx.stroke();
+    if (!imageDrawn && name) {
+      ctx.fillStyle = NAVY;
+      var nameSize = Math.min(24, 330 / Math.max(12, name.length) * 2.0);
+      ctx.font = 'italic 600 ' + Math.max(15, nameSize) + 'px ' + SERIF;
+      ctx.fillText(name, x, 966);
+    }
+    ctx.fillStyle = MUTED;
+    if (label) {
+      var size = Math.min(20, 330 / Math.max(12, label.length) * 2.0);
+      ctx.font = '700 ' + Math.max(12, size) + 'px ' + SERIF;
+      spaced(ctx, label, x, 1028, Math.max(1.2, 4.6 - label.length * 0.08));
+    }
+    ctx.fillStyle = NAVY_SOFT;
+    ctx.font = '600 17px ' + SERIF;
+    ctx.fillText(title || '', x, 1052);
+    ctx.fillStyle = GOLD_DARK;
+    ctx.font = '700 15px ' + SERIF;
+    spaced(ctx, ORGANISATION, x, 1072, 4);
+    ctx.restore();
+  }
+
+  function draw(ctx, opts, logo, sigMeta, sigImg, adminSigImg) {
     var name = String(opts.name || 'Prayer Dome Member');
     var course = String(opts.course || 'Prayer Dome Academy Lesson');
     var score = Math.round(Number(opts.score) || 0);
@@ -312,30 +376,17 @@
     ctx.font = "italic 27px " + SERIF;
     ctx.fillText(VERSE, W / 2, 846);
 
-    // signature
-    var founderName = (sigMeta && sigMeta.name) ? sigMeta.name : '';
-    var founderTitle = (sigMeta && sigMeta.title) ? sigMeta.title : 'FOUNDER';
-    var sigLabel = founderName || 'Prayer Dome';
-    var hasSigImage = sigImg && sigImg.naturalWidth;
-    ctx.textAlign = 'center';
-    if (hasSigImage) {
-      var sw = 250;
-      var sh = (sw * sigImg.naturalHeight) / sigImg.naturalWidth;
-      if (sh > 90) { sh = 90; sw = (sh * sigImg.naturalWidth) / sigImg.naturalHeight; }
-      // Signature image centred on the left signature block (above its rule).
-      ctx.drawImage(sigImg, 400 - sw / 2, 906 - sh, sw, sh);
-    } else {
-      ctx.fillStyle = NAVY;
-      ctx.font = "italic 600 46px " + SERIF;
-      ctx.fillText(sigLabel, 400, 968);
-    }
-    ctx.strokeStyle = MUTED; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(240, 1000); ctx.lineTo(560, 1000); ctx.stroke();
-    ctx.fillStyle = MUTED;
-    ctx.font = "600 21px " + SERIF;
-    spaced(ctx, founderName ? (founderName.toUpperCase() + (founderTitle ? ' — ' + founderTitle.toUpperCase() : '')) : 'MINISTRY TEAM', 400, 1038, 6);
+    // Two separate signature areas. The founder block is fixed: the ministry
+    // name and designation may never be abbreviated or replaced by a variant.
+    // The right block is the authorised administrator who signed this
+    // certificate; it stays blank when no administrator signature is configured
+    // rather than inventing one.
+    var adminName = (sigMeta && sigMeta.administratorName) ? String(sigMeta.administratorName) : '';
+    var adminTitle = (sigMeta && sigMeta.administratorTitle) ? String(sigMeta.administratorTitle) : ADMIN_DEFAULT_TITLE;
+    drawSignatureBlock(ctx, 400, FOUNDER_NAME, FOUNDER_TITLE, sigImg);
+    drawSignatureBlock(ctx, 1200, adminName, adminName ? adminTitle : ADMIN_DEFAULT_TITLE, adminSigImg);
 
-    seal(ctx, 1205, 946);
+    seal(ctx, 800, 946);
 
     ctx.fillStyle = '#a09a8b';
     ctx.font = "20px " + SERIF;
@@ -474,8 +525,11 @@
   function render(opts) {
     opts = opts || {};
     var founderWork = loadFounderSignatureData().then(function (meta) {
-      return loadFounderSignatureImage(meta).then(function (img) {
-        return { meta: meta, img: img };
+      return Promise.all([
+        loadFounderSignatureImage(meta),
+        loadAdministratorSignatureImage(meta)
+      ]).then(function (images) {
+        return { meta: meta, img: images[0], adminImg: images[1] };
       });
     });
     return Promise.all([loadLogo(), founderWork]).then(function (res) {
@@ -486,7 +540,7 @@
       canvas.height = H;
       var ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas is not supported in this browser.');
-      draw(ctx, opts, logo, founder.meta, founder.img);
+      draw(ctx, opts, logo, founder.meta, founder.img, founder.adminImg);
       return canvas;
     });
   }

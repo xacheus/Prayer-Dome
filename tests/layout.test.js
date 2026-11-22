@@ -134,7 +134,7 @@ for (const page of pages) {
     `${page}: table wrappers are never nested`);
   window.close();
 }
-assert.equal(totalTables, 29, 'admin (28) and finance (1) tables are all covered');
+assert.equal(totalTables, 39, 'admin (38, including the billing workspaces) and finance (1) tables are all covered');
 
 /* --------------------------------------------------- dynamic admin/report rows */
 (async () => {

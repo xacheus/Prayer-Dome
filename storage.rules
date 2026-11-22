@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// Private payment and claim evidence.
+// There is deliberately no public read: a receipt is opened through a
+// short-lived signed URL minted by the `billing` callable after it checks the
+// owner or administrator role.
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null && (
+        firestore.get(/databases/(default)/documents/memberships/$(request.auth.uid)).data.role == 'admin' ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    match /billingEvidence/{uid}/{fileName} {
+      allow read: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow create: if request.auth != null &&
+        request.auth.uid == uid &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*|application/pdf');
+      allow update, delete: if false;
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

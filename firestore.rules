@@ -243,7 +243,63 @@ service cloud.firestore {
     }
     match /wallets/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isAdmin();
+      // A member may open an empty wallet and change only their privacy PIN.
+      // Balances are written by the billing function after a verified payment,
+      // never by the browser.
+      allow create: if isOwner(userId) &&
+        request.resource.data.userId == userId &&
+        request.resource.data.balance == 0 &&
+        request.resource.data.currency is string &&
+        request.resource.data.currency.size() <= 8;
+      allow update: if isAdmin() || (isOwner(userId) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pin']) &&
+        (!('pin' in request.resource.data) ||
+          (request.resource.data.pin is string &&
+           request.resource.data.pin.size() <= 40)));
+      allow delete: if isAdmin();
+    }
+
+    // Support plan catalogue and subscriptions
+    // ---------------------------------------------------------------------
+    // The catalogue is public so the support page can render real prices
+    // without a privileged API. Payment requests, subscriptions and wallet
+    // transactions are created and changed only by the `billing` callable;
+    // Firestore Rules deny every client write to those three collections.
+    match /supportPlans/{planId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+        request.resource.data.id == planId &&
+        request.resource.data.price is number &&
+        request.resource.data.price > 0 &&
+        request.resource.data.currency == 'USD' &&
+        request.resource.data.active is bool;
+    }
+
+    match /paymentRequests/{reference} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;   // server only
+    }
+
+    match /subscriptions/{id} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;   // server only
+    }
+
+    match /walletTransactions/{id} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;   // server only
+    }
+
+    match /billingAudit/{id} {
+      allow read: if isAdmin();
+      allow write: if false;   // server only
+    }
+
+    match /billingIdempotency/{id} {
+      allow read, write: if false;   // server only
     }
 
     // Support Claims
@@ -542,6 +598,20 @@ service cloud.firestore {
     }
 
     // ==========================================
+    // Official identity settings
+    // ==========================================
+    // The founder signature is printed on public certificates and membership
+    // cards. Everyone may read that one document; every other setting stays
+    // administrator-only, and only an administrator may replace the image.
+    match /settings/founder {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /settings/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // ==========================================
     // Membership card verification projection
     // ==========================================
     // Deliberately contains only what is printed on the card. Email, phone,
@@ -557,11 +627,30 @@ service cloud.firestore {
         request.resource.data.membershipId is string &&
         request.resource.data.membershipId.size() > 0 &&
         request.resource.data.membershipId.size() <= 40 &&
-        request.resource.data.status in ['pending', 'approved', 'rejected', 'revoked'] &&
+        request.resource.data.status in ['pending', 'approved', 'rejected', 'revoked', 'suspended', 'expired'] &&
         (!('displayName' in request.resource.data) ||
           (request.resource.data.displayName is string &&
-           request.resource.data.displayName.size() <= 120));
+           request.resource.data.displayName.size() <= 120)) &&
+        (!('verificationRef' in request.resource.data) ||
+          (request.resource.data.verificationRef is string &&
+           request.resource.data.verificationRef.size() >= 12 &&
+           request.resource.data.verificationRef.size() <= 80));
       allow delete: if isAdmin();
+    }
+
+    // A card can also carry an unguessable reference instead of the printed
+    // membership number. This projection is deliberately public-by-reference:
+    // one exact token at a time, never a list.
+    match /membershipVerificationRefs/{reference} {
+      allow get: if true;
+      allow list: if isAdmin();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // Who issued, suspended, reissued or revoked a card, and when.
+    match /membershipVerificationHistory/{id} {
+      allow read, create: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ==========================================
