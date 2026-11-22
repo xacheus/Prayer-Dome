@@ -6,8 +6,8 @@
     <!-- PD-SEO:START -->
     <!-- Managed by seo/apply-seo.py from seo/pages.json. Do not hand-edit this block. -->
     <title>Support &amp; Member Wallet | Prayer Dome</title>
-    <meta name="description" content="Manage your Prayer Dome wallet, giving history and support requests, and get help from the ministry team.">
-    <meta name="keywords" content="church support, member wallet, giving history, help centre">
+    <meta name="description" content="Explore Prayer Dome Kingdom Support: Education, Business and Compassion plans, monthly tiers, how enrolment works, answers to common questions and the ministry updates list.">
+    <meta name="keywords" content="church support, kingdom support, education fund, business seeding, compassion fund, member wallet, giving history, help centre">
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://prayerdome.net/support">
@@ -23,7 +23,7 @@
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Prayer Dome">
     <meta property="og:title" content="Support &amp; Member Wallet | Prayer Dome">
-    <meta property="og:description" content="Manage your Prayer Dome wallet, giving history and support requests, and get help from the ministry team.">
+    <meta property="og:description" content="Explore Prayer Dome Kingdom Support: Education, Business and Compassion plans, monthly tiers, how enrolment works, answers to common questions and the ministry updates list.">
     <meta property="og:url" content="https://prayerdome.net/support">
     <meta property="og:image" content="https://prayerdome.net/assets/og-image.png">
     <meta property="og:image:width" content="1200">
@@ -35,7 +35,7 @@
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="@prayerdome">
     <meta name="twitter:title" content="Support &amp; Member Wallet | Prayer Dome">
-    <meta name="twitter:description" content="Manage your Prayer Dome wallet, giving history and support requests, and get help from the ministry team.">
+    <meta name="twitter:description" content="Explore Prayer Dome Kingdom Support: Education, Business and Compassion plans, monthly tiers, how enrolment works, answers to common questions and the ministry updates list.">
     <meta name="twitter:image" content="https://prayerdome.net/assets/og-image.png">
 
     <!-- Performance hints -->
@@ -93,7 +93,7 @@
   "@type": "WebPage",
   "url": "https://prayerdome.net/support",
   "name": "Support & Member Wallet | Prayer Dome",
-  "description": "Manage your Prayer Dome wallet, giving history and support requests, and get help from the ministry team.",
+  "description": "Explore Prayer Dome Kingdom Support: Education, Business and Compassion plans, monthly tiers, how enrolment works, answers to common questions and the ministry updates list.",
   "isPartOf": {
     "@id": "https://prayerdome.net/#website"
   },
@@ -298,6 +298,72 @@
         .toast.error { border-left-color: var(--pd-red); }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
+
+        /* --- SUPPORT INFORMATION SECTIONS --- */
+        .sp-section { margin: 48px 0; }
+        .sp-section-head { text-align: center; max-width: 760px; margin: 0 auto 26px; }
+        .sp-eyebrow { display: inline-block; font-size: 0.7rem; font-weight: 900; letter-spacing: 2.5px; text-transform: uppercase; color: var(--pd-green); background: rgba(10,77,155,0.08); border: 1px solid rgba(10,77,155,0.16); padding: 6px 14px; border-radius: 999px; margin-bottom: 12px; }
+        .sp-section-head h2 { font-size: clamp(1.45rem, 3vw, 2rem); font-weight: 900; color: var(--pd-navy); margin: 0 0 10px; letter-spacing: -0.5px; }
+        .sp-section-head p { color: var(--text-sub); font-size: 0.95rem; line-height: 1.7; margin: 0; }
+        .sp-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; counter-reset: sp-step; }
+        .sp-step { background: var(--bg-card); border: 1px solid var(--border); border-radius: 22px; padding: 24px 20px; position: relative; box-shadow: var(--shadow-sm); }
+        .sp-step::before { counter-increment: sp-step; content: counter(sp-step); display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--pd-green); color: #fff; font-weight: 900; font-size: 0.9rem; margin-bottom: 14px; }
+        .sp-step h3 { font-size: 0.98rem; font-weight: 900; margin: 0 0 7px; color: var(--pd-navy); }
+        .sp-step p { font-size: 0.82rem; line-height: 1.6; color: var(--text-sub); margin: 0; }
+        .sp-impact { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+        .sp-impact-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 26px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; transition: 0.35s; }
+        .sp-impact-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); border-color: var(--pd-green); }
+        .sp-impact-card img { width: 100%; height: 190px; object-fit: cover; display: block; }
+        .sp-impact-body { padding: 20px 20px 22px; }
+        .sp-impact-body h3 { font-size: 1rem; font-weight: 900; margin: 0 0 8px; color: var(--pd-navy); }
+        .sp-impact-body p { font-size: 0.84rem; line-height: 1.65; color: var(--text-sub); margin: 0; }
+        .sp-impact-note { text-align: center; font-size: 0.72rem; color: var(--text-sub); opacity: 0.8; margin: 14px 0 0; }
+        .sp-faq { max-width: 860px; margin: 0 auto; }
+        .sp-faq details { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 0 20px; margin-bottom: 10px; overflow: hidden; }
+        .sp-faq details[open] { border-color: var(--pd-green); }
+        .sp-faq summary { cursor: pointer; font-weight: 800; font-size: 0.92rem; color: var(--pd-navy); padding: 17px 0; list-style: none; display: flex; justify-content: space-between; gap: 16px; align-items: center; }
+        .sp-faq summary::-webkit-details-marker { display: none; }
+        .sp-faq summary::after { content: "+"; font-size: 1.25rem; font-weight: 900; color: var(--pd-green); flex: 0 0 auto; }
+        .sp-faq details[open] summary::after { content: "\2212"; }
+        .sp-faq details p { margin: 0 0 18px; font-size: 0.86rem; line-height: 1.7; color: var(--text-sub); }
+        .sp-updates { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 28px; align-items: center; background: linear-gradient(135deg, #062b57, var(--pd-green)); border-radius: 32px; padding: 32px; color: #fff; box-shadow: var(--shadow-lg); }
+        .sp-updates h2 { color: #fff; font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 900; margin: 0 0 10px; letter-spacing: -0.5px; }
+        .sp-updates p { color: rgba(255,255,255,0.82); font-size: 0.9rem; line-height: 1.7; margin: 0 0 10px; }
+        .sp-updates .sp-updates-trust { display: flex; align-items: center; gap: 8px; font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.72); margin-top: 14px; }
+        .sp-updates form { background: #fff; color: #0f172a; border-radius: 22px; padding: 22px; position: relative; }
+        .sp-field { margin-bottom: 12px; text-align: left; }
+        .sp-field label { display: block; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.7px; text-transform: uppercase; color: #334155; margin-bottom: 6px; }
+        .sp-field input { width: 100%; padding: 13px 14px; border-radius: 13px; border: 2px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-size: 0.95rem; font-family: inherit; }
+        .sp-field input:focus { border-color: var(--pd-green); background: #fff; box-shadow: 0 0 0 4px rgba(10,77,155,0.12); outline: none; }
+        .sp-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.74rem; line-height: 1.5; color: #475569; margin: 4px 0 14px; text-align: left; }
+        .sp-consent input { width: 19px; height: 19px; min-width: 19px; margin: 1px 0 0; accent-color: var(--pd-green); }
+        .sp-consent a { color: var(--pd-green); font-weight: 800; }
+        .sp-updates .btn-main { margin: 0; }
+        .sp-form-status { min-height: 1.2em; font-size: 0.78rem; font-weight: 700; line-height: 1.5; margin: 10px 0 0; color: #475569; }
+        .sp-form-status[data-state="success"] { color: #047857; }
+        .sp-form-status[data-state="error"] { color: #b91c1c; }
+        .sp-form-note { font-size: 0.68rem; color: #94a3b8; margin: 8px 0 0; line-height: 1.5; }
+        .sp-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+        .sp-help { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .sp-help-card { display: flex; gap: 13px; align-items: flex-start; background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 20px; text-decoration: none; color: inherit; transition: 0.3s; }
+        .sp-help-card:hover { border-color: var(--pd-green); transform: translateY(-3px); }
+        .sp-help-card i { font-size: 1.2rem; color: var(--pd-green); margin-top: 2px; }
+        .sp-help-card strong { display: block; font-size: 0.85rem; color: var(--pd-navy); margin-bottom: 3px; }
+        .sp-help-card span { display: block; font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; word-break: break-word; }
+        @media (max-width: 900px) {
+            .sp-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .sp-impact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .sp-updates { grid-template-columns: 1fr; padding: 24px; }
+            .sp-help { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 560px) {
+            .sp-steps, .sp-impact { grid-template-columns: 1fr; }
+            .sp-impact-card img { height: 170px; }
+            .sp-section { margin: 34px 0; }
+            .sp-updates { border-radius: 24px; padding: 20px; }
+            .sp-updates form { padding: 18px; }
+        }
+
         .loader-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-base); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--pd-navy);}
         .spinner { width: 60px; height: 60px; border: 5px solid var(--border); border-top-color: var(--pd-green); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;}
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -309,6 +375,7 @@
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+<script src="/assets/pd-newsletter.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
 </head>
@@ -508,7 +575,148 @@
                     </div>
                 </div>
             </div>
-            
+
+            <!-- ========================================== -->
+            <!-- SUPPORT INFORMATION                        -->
+            <!-- ========================================== -->
+            <section class="sp-section" aria-labelledby="howSupportWorks">
+                <div class="sp-section-head">
+                    <span class="sp-eyebrow">Kingdom Support</span>
+                    <h2 id="howSupportWorks">How Kingdom Support works</h2>
+                    <p>Education, Business and Compassion plans all follow the same simple path. You choose the tier, contribute what you can sustain, and the ministry keeps every step visible in your account.</p>
+                </div>
+                <div class="sp-steps">
+                    <div class="sp-step"><h3>Choose a program</h3><p>Pick Education, Business or Compassion, then the tier that matches your budget. Every tier and amount is shown on the cards above.</p></div>
+                    <div class="sp-step"><h3>Enrol with your details</h3><p>Sign in, choose your monthly amount and add next-of-kin details. The enrolment is confirmed straight away and appears under My Plans.</p></div>
+                    <div class="sp-step"><h3>Contribute securely</h3><p>Use the secure wallet to contribute. My Plans shows your progress and the 12-month maturity countdown at any time.</p></div>
+                    <div class="sp-step"><h3>Request support at maturity</h3><p>Once the plan matures, submit a claim with the supporting information. The ministry team reviews it and the status stays visible to you.</p></div>
+                </div>
+            </section>
+
+            <section class="sp-section" aria-labelledby="supportImpact">
+                <div class="sp-section-head">
+                    <span class="sp-eyebrow">Where it goes</span>
+                    <h2 id="supportImpact">Support that reaches real homes</h2>
+                    <p>Every program exists for a practical need in the church family — a child in school, a family business, or a household carrying grief. These are the three purposes your plan supports.</p>
+                </div>
+                <div class="sp-impact">
+                    <article class="sp-impact-card">
+                        <img src="/assets/support/support-learning.jpg" alt="A stack of school textbooks, exercise books and pencils on a classroom desk" width="1264" height="848" loading="lazy" decoding="async">
+                        <div class="sp-impact-body">
+                            <h3>Learning that lasts</h3>
+                            <p>The Education plan builds a 12-month fund for school-related costs such as fees, books, uniforms and exam needs, so a child is not sent home because a term is hard.</p>
+                        </div>
+                    </article>
+                    <article class="sp-impact-card">
+                        <img src="/assets/support/support-market.jpg" alt="A small market stall stocked with tomatoes, maize and folded fabric at golden hour" width="1264" height="848" loading="lazy" decoding="async">
+                        <div class="sp-impact-body">
+                            <h3>Work that provides</h3>
+                            <p>The Business plan helps traders, farmers and small business owners protect stock, tools or equipment — keeping a household's income steady through a difficult season.</p>
+                        </div>
+                    </article>
+                    <article class="sp-impact-card">
+                        <img src="/assets/support/support-community.jpg" alt="Hands sharing a bowl of food at a wooden table" width="1264" height="848" loading="lazy" decoding="async">
+                        <div class="sp-impact-body">
+                            <h3>A community that carries</h3>
+                            <p>The Compassion plan stands with families during funerals and other heavy seasons, covering the practical costs that arrive when people are least able to carry them.</p>
+                        </div>
+                    </article>
+                </div>
+                <p class="sp-impact-note">Images illustrate the purpose of each program.</p>
+            </section>
+
+            <section class="sp-section" aria-labelledby="supportQuestions">
+                <div class="sp-section-head">
+                    <span class="sp-eyebrow">Questions</span>
+                    <h2 id="supportQuestions">Before you enrol</h2>
+                    <p>Straight answers to what members ask most. If your question is not here, the team is one call or email away.</p>
+                </div>
+                <div class="sp-faq">
+                    <details>
+                        <summary>Who can enrol?</summary>
+                        <p>Any signed-in member can enrol. The form records the program, tier and contact details for that enrolment, and the finished enrolment appears under My Plans.</p>
+                    </details>
+                    <details>
+                        <summary>How much do I need to contribute?</summary>
+                        <p>Contributions are monthly. Education and Business tiers accept $5 to $1,000 a month; Compassion tiers accept $2.50 to $100 a month. The minimum and maximum for each tier are printed on the program cards above. Choose a monthly amount you can sustain for the full 12 months rather than the largest tier.</p>
+                    </details>
+                    <details>
+                        <summary>How long does a plan run?</summary>
+                        <p>Every plan has a 12-month maturity. My Plans shows the days remaining, the progress bar and the plan's status, all calculated from the enrolment date.</p>
+                    </details>
+                    <details>
+                        <summary>Can I hold more than one plan?</summary>
+                        <p>You can hold one active plan per program, and the three programs can run at the same time. Each enrolment is tracked separately with its own tier, amount, progress and status under My Plans.</p>
+                    </details>
+                    <details>
+                        <summary>Is this insurance or an investment?</summary>
+                        <p>No. Kingdom Support is a church mutual-support program, not an insurance policy and not an investment product. It does not promise interest or a financial return. It is a disciplined way for members to prepare for a known need together.</p>
+                    </details>
+                    <details>
+                        <summary>What happens when I need to claim?</summary>
+                        <p>Submit the claim from My Plans with the information the program requires. The ministry team reviews it and updates the status. You can follow every change from the same screen.</p>
+                    </details>
+                    <details>
+                        <summary>How is my information protected?</summary>
+                        <p>Your account is protected by Firebase Authentication. Documents upload to the ministry's secure Cloudinary storage, and only authorised ministry staff can review enrolment and claim records.</p>
+                    </details>
+                </div>
+            </section>
+
+            <section class="sp-section sp-updates" id="updates" aria-labelledby="supportUpdates">
+                <div>
+                    <span class="sp-eyebrow" style="background:rgba(255,255,255,0.14);border-color:rgba(255,255,255,0.25);color:#fff;">Stay connected</span>
+                    <h2 id="supportUpdates">Prayer, teaching and program notes</h2>
+                    <p>Join the Prayer Dome updates list for occasional emails: a word for the season, new teaching, and practical notices about Kingdom Support and church life.</p>
+                    <p>Your address is used only for these updates. Every email includes an unsubscribe link, and you can ask us to remove you at any time.</p>
+                    <div class="sp-updates-trust"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> Delivered securely through Brevo. We never sell or share your address.</div>
+                </div>
+                <form data-pd-newsletter>
+                    <div class="sp-field">
+                        <label for="newsletterEmail">Email address</label>
+                        <input id="newsletterEmail" name="email" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" required>
+                    </div>
+                    <div class="sp-field">
+                        <label for="newsletterName">First name <span style="font-weight:600;text-transform:none;letter-spacing:0;">(optional)</span></label>
+                        <input id="newsletterName" name="name" type="text" autocomplete="given-name" maxlength="60" placeholder="How we should greet you">
+                    </div>
+                    <div class="sp-hp" aria-hidden="true">
+                        <label for="newsletterWebsite">Website</label>
+                        <input id="newsletterWebsite" name="website" type="text" tabindex="-1" autocomplete="off">
+                    </div>
+                    <label class="sp-consent" for="newsletterConsent">
+                        <input id="newsletterConsent" name="consent" type="checkbox" required>
+                        <span>I agree to receive occasional Prayer Dome updates by email and have read the <a href="/privacy.html">Privacy Policy</a>. I can unsubscribe at any time.</span>
+                    </label>
+                    <button type="submit" class="btn-main" style="width:100%;"><i class="pd-i pd-i-mail" aria-hidden="true"></i> Join the updates list</button>
+                    <p class="sp-form-status" data-pd-newsletter-status role="status" aria-live="polite"></p>
+                    <p class="sp-form-note">We may send one confirmation email before updates begin. Every message includes an unsubscribe link.</p>
+                </form>
+            </section>
+
+            <section class="sp-section" aria-labelledby="supportHelp">
+                <div class="sp-section-head">
+                    <span class="sp-eyebrow">Talk to us</span>
+                    <h2 id="supportHelp">A real person, not a ticket queue</h2>
+                    <p>Enrolment questions, a contribution that needs checking, or a claim that needs attention — reach the ministry team directly.</p>
+                </div>
+                <div class="sp-help">
+                    <a class="sp-help-card" href="tel:+26876581804">
+                        <i class="pd-i pd-i-phone" aria-hidden="true"></i>
+                        <div><strong>Call or WhatsApp</strong><span>+268 7658 1804<br>Speak directly with the ministry team</span></div>
+                    </a>
+                    <a class="sp-help-card" href="mailto:info@prayerdome.net">
+                        <i class="pd-i pd-i-mail" aria-hidden="true"></i>
+                        <div><strong>Email the team</strong><span>info@prayerdome.net<br>Enrolment, giving and claim questions</span></div>
+                    </a>
+                    <a class="sp-help-card" href="/contact.html">
+                        <i class="pd-i pd-i-map-pin" aria-hidden="true"></i>
+                        <div><strong>Visit a campus</strong><span>Mahlabane or Hluthi, Eswatini<br>Service times and directions on the contact page</span></div>
+                    </a>
+                </div>
+            </section>
+
+
         </div>
 
         <!-- ========================================== -->

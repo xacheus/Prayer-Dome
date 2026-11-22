@@ -35,6 +35,10 @@
         "function": "translate"
       },
       {
+        "source": "/api/newsletter",
+        "function": "brevoSubscribe"
+      },
+      {
         "source": "/testimony/**",
         "function": "share"
       },
