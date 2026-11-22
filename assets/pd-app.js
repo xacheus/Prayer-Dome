@@ -4,7 +4,7 @@
    Shared functionality for every page: language selector, live location,
    moving announcements, notification center, scheduled hero banners,
    community statistics, live-stream bridge, news center, splash screen,
-   drawer navigation and gospel radio.
+   drawer navigation, gospel radio and horizontal data-table wrapping.
 
    Plain global script. Load AFTER assets/pd-content-data.js and
    assets/pd-motion.js. Every module scans for its own targets and no-ops
@@ -89,6 +89,88 @@
       document.dispatchEvent(evt);
     };
   }
+
+  /* ----------------------------------------------------------- data tables */
+  /* Every table gets a horizontal scroll wrapper and a per-table minimum
+     width measured from its real column count. Headings stay horizontal;
+     narrow phones swipe the table instead of squeezing columns into letters.
+     Tables already inside .table-responsive/.report-table reuse that wrapper.
+     Pages keep their markup untouched, and dynamic tables are picked up by the
+     observer when they are inserted (for example a generated report). */
+  var tables = {
+    MIN_COL: 132,
+    scan: function (root) {
+      var scope = root || document;
+      if (!scope || !scope.querySelectorAll) return;
+      Array.prototype.slice.call(scope.querySelectorAll('table')).forEach(function (table) {
+        tables.enhance(table);
+      });
+    },
+    columns: function (table) {
+      var row = (table.tHead && table.tHead.rows[0]) || table.rows[0];
+      if (!row) return 0;
+      var count = 0;
+      Array.prototype.slice.call(row.cells).forEach(function (cell) {
+        count += Math.max(1, Number(cell.colSpan) || 1);
+      });
+      return count;
+    },
+    enhance: function (table) {
+      if (!table || table.tagName !== 'TABLE') return;
+      if (table.getAttribute('data-pd-no-scroll') !== null) return;
+      if (table.closest('.doc-sheet, .pd-no-table-scroll, [contenteditable="true"]')) return;
+      var parent = table.parentElement;
+      var wrapper = null;
+      if (parent && parent.classList && parent.classList.contains('pd-table-scroll')) {
+        wrapper = parent;
+      } else if (parent) {
+        // Reuse a scroll wrapper only when the table is its direct child. A
+        // nested table inside a cell gets its own wrapper instead of
+        // overwriting the outer table's column minimum.
+        var candidate = parent.closest('.table-responsive, .report-table');
+        if (candidate && table.parentElement === candidate) wrapper = candidate;
+      }
+      if (!wrapper) {
+        wrapper = document.createElement('div');
+        wrapper.className = 'pd-table-scroll';
+        if (parent) parent.insertBefore(wrapper, table);
+        else return;
+        wrapper.appendChild(table);
+      } else {
+        wrapper.classList.add('pd-table-scroll');
+      }
+
+      var columns = tables.columns(table);
+      var minimum = 0;
+      if (columns >= 4) minimum = Math.min(1300, Math.max(560, columns * tables.MIN_COL));
+      else if (columns === 3) minimum = 420;
+      var explicit = parseInt(table.getAttribute('data-pd-table-min'), 10);
+      if (explicit > 0) minimum = explicit;
+      wrapper.style.setProperty('--pd-table-min', minimum + 'px');
+      wrapper.setAttribute('data-pd-table-cols', String(columns));
+      wrapper.setAttribute('role', 'region');
+      wrapper.setAttribute('aria-label',
+        table.getAttribute('aria-label') || table.getAttribute('data-label') || 'Scrollable data table');
+      if (!wrapper.hasAttribute('tabindex')) wrapper.setAttribute('tabindex', '0');
+      table.classList.add('pd-data-table');
+    },
+    init: function () {
+      if (!document.body) return;
+      tables.scan(document);
+      if (typeof MutationObserver === 'undefined') return;
+      if (tables.observer) return;
+      tables.observer = new MutationObserver(function (records) {
+        records.forEach(function (record) {
+          Array.prototype.slice.call(record.addedNodes || []).forEach(function (node) {
+            if (!node || node.nodeType !== 1) return;
+            if (node.tagName === 'TABLE') tables.enhance(node);
+            else if (node.querySelector && node.querySelector('table')) tables.scan(node);
+          });
+        });
+      });
+      tables.observer.observe(document.body, { childList: true, subtree: true });
+    }
+  };
 
   /* --------------------------------------------------------- academy nav */
   /* Kept as a named module because pages and older builds reference
@@ -3129,12 +3211,14 @@
     scripture: scripture,
     radio: radio,
     share: share,
+    tables: tables,
     toast: toast,
     broadcast: broadcast,
     on: on,
     init: function () {
       // Each module is isolated: one failure must never break the rest.
       var modules = [
+        ['tables', tables.init],
         ['layout', layout.init],
         ['appShell', appShell.init],
         ['pwa', pwa.init],

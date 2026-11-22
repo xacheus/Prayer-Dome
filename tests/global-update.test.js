@@ -76,9 +76,10 @@ t('passed-away and archived members never reach the public grid',
   /filter\(m => !m\.archived && !m\.deceased\)/.test(team));
 t('team cards show role, location and a readable bio',
   team.includes('team-location') && team.includes('team-bio') && team.includes('team-title'));
-t('team card text is allowed to wrap instead of overflowing',
-  /\.team-name[\s\S]{0,220}overflow-wrap: anywhere/.test(team) &&
-  /\.team-bio[\s\S]{0,220}overflow-wrap: anywhere/.test(team));
+t('team card text wraps between words without letter stacking',
+  /\.team-name[\s\S]{0,220}overflow-wrap: break-word/.test(team) &&
+  /\.team-bio[\s\S]{0,220}overflow-wrap: break-word/.test(team) &&
+  /\.team-name[\s\S]{0,220}word-break: normal/.test(team));
 const admin = read('admin.html');
 t('admin can permanently remove a team member from the roster',
   admin.includes('deleteAdminTeamMemberById') && admin.includes('> Remove</button>'));

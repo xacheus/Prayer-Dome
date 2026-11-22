@@ -1276,7 +1276,7 @@ body.light-mode .pd-mascot {
 
 .pdm-log-you .pdm-log-who { color: #8a6d1a; }
 
-.pdm-log-text { min-width: 0; overflow-wrap: anywhere; }
+.pdm-log-text { min-width: 0; overflow-wrap: break-word; word-break: normal; }
 
 /* ---- narrow phones: the four choices stack, everything breathes ----------- */
 

@@ -323,12 +323,19 @@
         /* Report Table */
         .report-table {
             width: 100%;
+            max-width: 100%;
             overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-x: contain;
             margin-bottom: 30px;
         }
 
         table {
             width: 100%;
+            max-width: none;
+            min-width: var(--pd-table-min, 720px);
+            table-layout: auto;
             border-collapse: collapse;
             background: var(--bg-card);
         }
@@ -341,11 +348,17 @@
             color: var(--accent-green);
             border-bottom: 2px solid var(--border-color);
             font-size: 0.85rem;
+            white-space: nowrap;
+            word-break: normal;
         }
 
         td {
             padding: 12px 15px;
             border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+            white-space: normal;
+            word-break: normal;
+            overflow-wrap: break-word;
         }
 
         input {

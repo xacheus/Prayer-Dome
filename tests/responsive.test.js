@@ -109,7 +109,7 @@ const overflowCss = fs.readFileSync(path.join(ROOT, 'assets/pd-responsive-fix.cs
 assert.match(overflowCss, /html,\s*body\s*\{[^}]*overflow-x:\s*hidden/s,
   'The page root must never scroll sideways');
 assert.match(overflowCss, /overflow-wrap:\s*break-word/);
-assert.match(overflowCss, /word-break:\s*break-word/);
+assert.match(overflowCss, /word-break:\s*normal/);
 assert.match(overflowCss, /white-space:\s*normal/);
 assert.match(overflowCss, /max-width:\s*100%/);
 assert.match(overflowCss, /flex-wrap:\s*wrap/);

@@ -303,10 +303,10 @@
         .panel-header { padding: 20px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--bg-main); flex-wrap: wrap; gap: 15px;}
         .panel-header h3 { font-size: 1.2rem; font-weight: 800; color: var(--accent-green); }
     
-        .table-responsive { overflow-x: auto; width: 100%; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th { padding: 15px 25px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); border-bottom: 1px solid var(--border); background: var(--bg-panel); font-weight: 800; }
-        td { padding: 16px 25px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 0.9rem; vertical-align: middle; }
+        .table-responsive { overflow-x: auto; overflow-y: visible; width: 100%; max-width: 100%; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+        table { width: 100%; border-collapse: collapse; min-width: var(--pd-table-min, 800px); max-width: none; table-layout: auto; }
+        th { padding: 15px 25px; text-align: left; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-sub); border-bottom: 1px solid var(--border); background: var(--bg-panel); font-weight: 800; white-space: nowrap; word-break: normal; }
+        td { padding: 16px 25px; border-bottom: 1px solid var(--border); color: var(--text-main); font-size: 0.9rem; vertical-align: middle; white-space: normal; word-break: normal; overflow-wrap: break-word; }
         tr:hover td { background: rgba(59,130,246,0.05); }
         tr:last-child td { border-bottom: none; }
 
@@ -725,7 +725,7 @@
         .cr-chat-body { flex:1; min-width:0; }
         .cr-chat-name { font-weight:800; font-size:.72rem; color:var(--pd-blue,#0A4D9B); display:flex; gap:5px; align-items:center; }
         .cr-chat-name .adm { background:var(--pd-blue,#0A4D9B); color:#fff; font-size:.55rem; padding:1px 5px; border-radius:4px; }
-        .cr-chat-text { line-height:1.4; word-break:break-word; }
+        .cr-chat-text { line-height:1.4; word-break:normal; overflow-wrap:break-word; }
         .cr-chat-actions { display:flex; gap:4px; margin-top:4px; }
         .cr-mini-btn { background:none; border:none; color:var(--text-sub); font-size:.7rem; cursor:pointer; padding:2px 6px; border-radius:6px; }
         .cr-mini-btn:hover { background:var(--bg-main); color:var(--pd-red,#ef4444); }
