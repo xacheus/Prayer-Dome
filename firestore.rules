@@ -540,9 +540,11 @@ service cloud.firestore {
       allow write: if isOwner(userId) || isAdmin();
     }
 
-    // Per-category device notification switches. The Cloud Function consults
-    // these before sending a push, so a member who muted "news" is not buzzed
-    // even though the story still appears in their bell.
+    // Per-category device and email switches. The Cloud Functions consult
+    // this document before a push or a non-essential email, so a member who
+    // muted "news" is not buzzed or emailed even though the story still
+    // appears in their bell. Essential account and payment mail ignores these
+    // switches and is always delivered.
     match /userNotificationPrefs/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow write: if isOwner(userId) || isAdmin();
@@ -609,6 +611,33 @@ service cloud.firestore {
     }
     match /settings/{docId} {
       allow read, write: if isAdmin();
+    }
+
+    // ==========================================
+    // Transactional email + member notifications
+    // ==========================================
+    // The mail service is server-side only. A member may read their own bell
+    // entries and mark them read; they can never create, delete or alter the
+    // message text, and the delivery log (which carries recipient addresses)
+    // stays administrator-only.
+    match /emailSettings/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /emailTemplates/{id} {
+      allow read, write: if isAdmin();
+    }
+    match /emailOutbox/{id} {
+      allow read: if isAdmin();
+      allow write: if false;   // created by Cloud Functions only
+    }
+    match /userNotifications/{id} {
+      allow read: if isSignedIn() &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read', 'readAt']) &&
+        request.resource.data.read is bool;
+      allow create, delete: if false;
     }
 
     // ==========================================

@@ -1860,6 +1860,19 @@
                 finalizeAccess();
             }, 700);
         }
+        // Notification emails link to /support.html#myplans so the member lands
+        // on their plan and payment status, not the top of the page.
+        function applyHashView() {
+            if (location.hash === '#myplans') {
+                try { window.setView('myplans', document.querySelectorAll('.tab-item')[1]); } catch (e) {}
+            } else if (location.hash === '#wallet') {
+                try { window.setView('wallet', document.querySelectorAll('.tab-item')[2]); } catch (e) {}
+            }
+        }
+        window.addEventListener('hashchange', applyHashView);
+        document.addEventListener('DOMContentLoaded', applyHashView);
+        applyHashView();
+
         function finalizeAccess() {
             if (actionTarget === 'wallet') {
                 document.getElementById('revealTarget').classList.add('unveiled');

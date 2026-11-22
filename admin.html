@@ -1075,6 +1075,7 @@
             <div class="nav-group">
                 <div class="nav-group-label">Communication</div>
                 <div class="nav-item" data-view="notifications" onclick="switchView('notifications', this)"><i class="pd-i pd-i-bell"></i> Notifications</div>
+                <div class="nav-item" data-view="email" onclick="switchView('email', this)"><i class="pd-i pd-i-mail"></i> Email Delivery</div>
                 <div class="nav-item" data-view="facebook" onclick="switchView('facebook', this)"><i class="pd-i pd-i-brand-facebook"></i> Facebook Campaign</div>
                 <div class="nav-item" data-view="languages" onclick="switchView('languages', this)"><i class="pd-i pd-i-languages"></i> Languages</div>
                 <div class="nav-item" data-view="translations" onclick="switchView('translations', this)"><i class="pd-i pd-i-languages"></i> Translation Review</div>
@@ -1961,6 +1962,65 @@
                 </div>
             </div>
 
+            <!-- EMAIL DELIVERY VIEW -->
+            <div id="view-email" class="section-view">
+                <div class="page-title"><span><i class="pd-i pd-i-mail"></i> Email Delivery</span><button class="btn btn-outline" type="button" onclick="loadEmailAdmin()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
+
+                <div class="panel-card" style="padding:18px; margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                        <h3 style="margin:0; font-size:.95rem; flex:1;"><i class="pd-i pd-i-activity"></i> Delivery health</h3>
+                        <span id="emailHealthSummary" style="font-size:.74rem; color:var(--text-sub);">Loading delivery log…</span>
+                    </div>
+                    <div id="emailHealthGrid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px;"></div>
+                    <p style="font-size:.72rem; color:var(--text-sub); margin:12px 0 0; line-height:1.6;"><i class="pd-i pd-i-info"></i> Email is sent server-side through Brevo using the verified Prayer Dome sender. API keys never reach this browser. Every event has a unique id, so a refresh cannot send a second copy; failed temporary deliveries are retried automatically.</p>
+                </div>
+
+                <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr)); gap:18px; margin-bottom:18px;">
+                    <div class="panel-card">
+                        <div class="panel-header"><h3><i class="pd-i pd-i-mail"></i> Sender and switches</h3></div>
+                        <div style="padding:20px;">
+                            <div class="form-group"><label>Sender name</label><input id="emailSenderName" class="form-control" maxlength="80" placeholder="Prayer Dome"></div>
+                            <div class="form-group"><label>Sender email (must be verified in Brevo)</label><input id="emailSenderEmail" class="form-control" type="email" maxlength="254" placeholder="noreply@prayerdome.net"></div>
+                            <div class="form-group"><label>Reply-to (optional)</label><input id="emailReplyTo" class="form-control" type="email" maxlength="254" placeholder="info@prayerdome.net"></div>
+                            <label class="notif-pref-item" style="margin-bottom:12px;display:flex;justify-content:space-between;gap:12px;align-items:center;"><span><strong>Send email notifications</strong><br><small style="color:var(--text-sub);">Turning this off stops all outbound email but keeps in-app notifications working.</small></span><input type="checkbox" id="emailEnabled"></label>
+                            <div id="emailCategoryList" style="display:grid;gap:8px;margin-bottom:14px;"></div>
+                            <button class="btn btn-primary" type="button" onclick="saveEmailSettings()"><i class="pd-i pd-i-check"></i> Save settings</button>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="panel-header"><h3><i class="pd-i pd-i-flask-conical"></i> Delivery test</h3></div>
+                        <div style="padding:20px;">
+                            <p style="font-size:.8rem;color:var(--text-sub);margin-top:0;">Send a real branded test through Brevo. It is logged like any other message and does not touch a member record.</p>
+                            <div class="form-group"><label>Send to</label><input id="emailTestTo" class="form-control" type="email" maxlength="254" placeholder="your-admin-email@example.com"></div>
+                            <button class="btn btn-outline" type="button" id="emailTestBtn" onclick="sendEmailTest()"><i class="pd-i pd-i-send"></i> Send test email</button>
+                            <p id="emailTestState" style="font-size:.74rem;color:var(--text-sub);margin:12px 0 0;"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:18px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-file-text"></i> Template</h3></div>
+                    <div style="padding:20px;">
+                        <div class="form-group"><label>Event</label><select id="emailTemplateEvent" class="form-control" onchange="loadEmailTemplate()"></select></div>
+                        <div class="form-group"><label>Subject</label><input id="emailTemplateSubject" class="form-control" maxlength="180"></div>
+                        <div class="form-group"><label>Heading</label><input id="emailTemplateHeading" class="form-control" maxlength="120"></div>
+                        <div class="form-group"><label>Message</label><textarea id="emailTemplateMessage" class="form-control" rows="5" maxlength="3000"></textarea></div>
+                        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:12px;">
+                            <div class="form-group"><label>Button label</label><input id="emailTemplateActionLabel" class="form-control" maxlength="80"></div>
+                            <div class="form-group"><label>Link path</label><input id="emailTemplateActionPath" class="form-control" maxlength="300" placeholder="/account.html"></div>
+                        </div>
+                        <p style="font-size:.72rem;color:var(--text-sub);">Placeholders: <code>{{name}}</code>, <code>{{status}}</code>, <code>{{reference}}</code>, <code>{{plan}}</code>, <code>{{amount}}</code>, <code>{{reason}}</code>, <code>{{date}}</code>, <code>{{site}}</code>. The PRAYER DOME name and footer are fixed.</p>
+                        <button class="btn btn-primary" type="button" onclick="saveEmailTemplate()"><i class="pd-i pd-i-check"></i> Save template</button>
+                    </div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-inbox"></i> Delivery log</h3><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><select id="emailLogStatus" class="form-control" style="width:auto;" onchange="loadEmailLogs()"><option value="all">All statuses</option><option value="sent">Sent</option><option value="failed">Failed</option><option value="pending">Pending</option><option value="sending">Sending</option><option value="missing_email">Missing email</option><option value="opted_out">Opted out</option><option value="disabled">Disabled</option></select><button class="btn btn-outline btn-sm" type="button" onclick="loadEmailLogs()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div></div>
+                    <div class="table-responsive"><table><thead><tr><th>Created</th><th>Event</th><th>Recipient</th><th>Subject</th><th>Status</th><th>Attempts</th><th>Actions</th></tr></thead><tbody id="emailLogsBody"><tr><td colspan="7"><div class="spinner" style="width:28px;height:28px;"></div></td></tr></tbody></table></div>
+                </div>
+            </div>
+
             <!-- CONTACT MESSAGES VIEW -->
             <div id="view-contacts" class="section-view">
                 <div class="page-title"><i class="pd-i pd-i-mail"></i> Contact Messages</div>
@@ -2629,7 +2689,37 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer"><button class="btn btn-danger" id="suspendFullBtn">Suspend</button><button class="btn btn-warning" type="button" onclick="resetMemberAccount()"><i class="pd-i pd-i-rotate-ccw"></i> Reset Account</button><button class="btn btn-outline" onclick="closeModal('modalFullMemberDetails')">Cancel</button><button class="btn btn-primary" onclick="saveFullMemberDetails()">Save Changes</button></div>
+            <div class="modal-footer"><button class="btn btn-danger" id="rejectFullBtn" type="button" onclick="openRejectMember(document.getElementById('editMemberId').value)">Reject Application</button><button class="btn btn-danger" id="suspendFullBtn">Suspend</button><button class="btn btn-warning" type="button" onclick="resetMemberAccount()"><i class="pd-i pd-i-rotate-ccw"></i> Reset Account</button><button class="btn btn-outline" onclick="closeModal('modalFullMemberDetails')">Cancel</button><button class="btn btn-primary" onclick="saveFullMemberDetails()">Save Changes</button></div>
+        </div>
+    </div>
+
+    <div id="modalRejectTestimony" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rejectTestimonyTitle">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header"><h2 id="rejectTestimonyTitle"><i class="pd-i pd-i-circle-x"></i> Reject testimony</h2><button class="modal-close" type="button" onclick="closeModal('modalRejectTestimony')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="rejectTestimonyId">
+                <p style="margin-top:0;color:var(--text-sub);font-size:.86rem;">The member is emailed this reason once and sees it in their Prayer Dome notifications. The testimony is not published.</p>
+                <div class="form-group"><label for="rejectTestimonyReason">Reason <span style="color:var(--danger,#ef4444);">*</span></label><textarea id="rejectTestimonyReason" class="form-control" rows="3" maxlength="600" placeholder="e.g. The testimony includes personal details about another person."></textarea><small id="rejectTestimonyReasonError" style="display:none;color:var(--danger,#ef4444);">Please write a reason of at least 4 characters.</small></div>
+                <div class="form-group"><label for="rejectTestimonyInstructions">What the member should do next (optional)</label><textarea id="rejectTestimonyInstructions" class="form-control" rows="2" maxlength="400" placeholder="e.g. Remove the other person's name and submit it again."></textarea></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline" type="button" onclick="closeModal('modalRejectTestimony')">Cancel</button><button class="btn btn-danger" type="button" id="confirmRejectTestimonyBtn" onclick="confirmRejectTestimony()"><i class="pd-i pd-i-circle-x"></i> Reject and notify member</button></div>
+        </div>
+    </div>
+
+    <!-- Rejection is its own step so a reason can never be skipped. The
+         membership record is only written after the reason is present; the
+         Cloud Function trigger then sends the one email for that status. -->
+    <div id="modalRejectMember" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rejectMemberTitle">
+        <div class="modal-card" style="max-width: 560px;">
+            <div class="modal-header"><h2 id="rejectMemberTitle"><i class="pd-i pd-i-circle-x"></i> Reject Membership Application</h2><button class="modal-close" type="button" onclick="closeModal('modalRejectMember')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="rejectMemberUid">
+                <p style="margin-top:0;color:var(--text-sub);font-size:.86rem;">The member receives this reason by email and in their Prayer Dome notifications. Write it plainly and kindly — it is shown exactly as typed.</p>
+                <div class="form-group"><label for="rejectMemberReason">Reason for rejection <span style="color:var(--danger,#ef4444);">*</span></label><textarea id="rejectMemberReason" class="form-control" rows="3" maxlength="600" placeholder="e.g. The identity document supplied does not match the name on the application."></textarea><small id="rejectMemberReasonError" style="display:none;color:var(--danger,#ef4444);">Please write a reason of at least 4 characters.</small></div>
+                <div class="form-group"><label for="rejectMemberInstructions">What the member should do next (optional)</label><textarea id="rejectMemberInstructions" class="form-control" rows="2" maxlength="400" placeholder="e.g. Re-apply with a clear copy of your national ID."></textarea></div>
+                <p style="font-size:.75rem;color:var(--text-sub);margin-bottom:0;">Saving sets the status to Rejected, records who decided and when, sends one email and creates one in-app notification.</p>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline" type="button" onclick="closeModal('modalRejectMember')">Cancel</button><button class="btn btn-danger" type="button" id="confirmRejectMemberBtn" onclick="confirmRejectMember()"><i class="pd-i pd-i-circle-x"></i> Reject and notify member</button></div>
         </div>
     </div>
 
@@ -4023,6 +4113,11 @@ window.toggleDarkMode = function() {
                 document.getElementById('editMemberId').value=uid;
                 const sigDisplay=document.getElementById('signatureDisplay');
                 sigDisplay.innerHTML=member.signatureUrl?`<img src="${member.signatureUrl}" style="max-width:100%;max-height:80px;">`:'<p>No signature on file</p>';
+                const rejectBtn=document.getElementById('rejectFullBtn');
+                if (rejectBtn) {
+                    rejectBtn.style.display = member.status === 'rejected' ? 'none' : '';
+                    rejectBtn.onclick = function () { openRejectMember(uid); };
+                }
                 const suspendBtn=document.getElementById('suspendFullBtn');
                 if(member.status==='suspended'){ suspendBtn.innerHTML='Activate'; suspendBtn.onclick=()=>activateMemberFull(uid); suspendBtn.classList.remove('btn-danger'); suspendBtn.classList.add('btn-primary'); }
                 else if(member.status==='approved' || member.status==='pending'){ suspendBtn.innerHTML='Suspend'; suspendBtn.onclick=()=>suspendMemberFull(uid); suspendBtn.classList.remove('btn-primary'); suspendBtn.classList.add('btn-danger'); }
@@ -4038,6 +4133,14 @@ window.toggleDarkMode = function() {
             const gifts=document.getElementById('fullMemberGifts').value.split(',').map(g=>g.trim()).filter(g=>g);
             const ministries=document.getElementById('fullMemberMinistries').value.split(',').map(m=>m.trim()).filter(m=>m);
             // Keep both fields in sync for legacy membership page (boolean + giftNames) and new admin array shape
+            const chosenStatus = document.getElementById('fullMemberStatus').value;
+            if (chosenStatus === 'rejected') {
+                // Never write a rejection from the general save button: it has no
+                // reason field, and the member-facing email requires one.
+                closeModal('modalFullMemberDetails');
+                openRejectMember(uid);
+                return;
+            }
             const data={ membershipId:document.getElementById('fullMemberId').value.trim(), fullName:document.getElementById('fullMemberName').value, phone:document.getElementById('fullMemberPhone').value, idNumber:document.getElementById('fullMemberIdNumber').value, dateOfBirth:document.getElementById('fullMemberDob').value, gender:document.getElementById('fullMemberGender').value, maritalStatus:document.getElementById('fullMemberMarital').value, branch:document.getElementById('fullMemberBranch').value, role:document.getElementById('fullMemberRole').value, badge:document.getElementById('fullMemberBadge').value, status:document.getElementById('fullMemberStatus').value, bio:document.getElementById('fullMemberBio').value, spiritualGifts:gifts, giftNames:gifts.join(', '), ministries:ministries, adminNotes:document.getElementById('fullMemberAdminNotes').value, updatedAt:serverTimestamp(), updatedBy:adminUser?.email || adminUser?.uid };
             showLoading();
             try{
@@ -4050,6 +4153,66 @@ window.toggleDarkMode = function() {
                 loadMembers();
             } catch(e){ toast(e.message,'error'); }
             finally { hideLoading(); }
+        };
+
+        window.openRejectMember = function(uid) {
+            if (!uid) return toast('Nothing to reject — the member record is missing.', 'error');
+            const member = allMembersCache.find(x => x.id === uid) || {};
+            document.getElementById('rejectMemberUid').value = uid;
+            document.getElementById('rejectMemberReason').value = '';
+            document.getElementById('rejectMemberInstructions').value = '';
+            document.getElementById('rejectMemberReasonError').style.display = 'none';
+            const title = document.getElementById('rejectMemberTitle');
+            if (title) title.innerHTML = '<i class="pd-i pd-i-circle-x"></i> Reject ' + escapeHTML(member.fullName || 'Membership Application');
+            openModal('modalRejectMember');
+            setTimeout(function () { const field = document.getElementById('rejectMemberReason'); if (field) field.focus(); }, 80);
+        };
+
+        window.confirmRejectMember = async function() {
+            const uid = (document.getElementById('rejectMemberUid') || {}).value || '';
+            const reason = String((document.getElementById('rejectMemberReason') || {}).value || '').trim();
+            const instructions = String((document.getElementById('rejectMemberInstructions') || {}).value || '').trim();
+            const error = document.getElementById('rejectMemberReasonError');
+            if (!uid) return toast('Nothing to reject — the member record is missing.', 'error');
+            if (reason.length < 4) {
+                if (error) error.style.display = '';
+                const field = document.getElementById('rejectMemberReason');
+                if (field) field.focus();
+                return;
+            }
+            if (error) error.style.display = 'none';
+            const btn = document.getElementById('confirmRejectMemberBtn');
+            if (btn) btn.disabled = true;
+            showLoading();
+            try {
+                // Single atomic record first. The trigger only fires after this
+                // write succeeds, so a failed email can never produce a status
+                // that was not actually saved.
+                const data = {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectReason: reason,
+                    rejectionInstructions: instructions,
+                    rejectedAt: serverTimestamp(),
+                    rejectedBy: adminUser?.email || adminUser?.uid,
+                    updatedAt: serverTimestamp(),
+                    updatedBy: adminUser?.email || adminUser?.uid
+                };
+                await updateDoc(doc(db, 'memberships', uid), data);
+                await logAdminActivity('member_rejected', { memberId: uid, reason: reason, instructions: instructions || null });
+                if (window.syncMemberCardStatus) await window.syncMemberCardStatus(uid, 'rejected');
+                toast('Membership rejected. The member will be emailed once.');
+                closeModal('modalRejectMember');
+                closeModal('modalFullMemberDetails');
+                await loadDashboardPerformance();
+                loadMembers();
+                if (typeof window.loadEmailLogs === 'function') { try { window.loadEmailLogs(); } catch (e) {} }
+            } catch (e) {
+                toast('Rejection was not saved: ' + e.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+                hideLoading();
+            }
         };
 
         // Reset only member-facing profile/session data; never delete the membership record.
@@ -4236,7 +4399,20 @@ window.toggleDarkMode = function() {
 
         window.loadSupport = async function(){ const tbody=document.getElementById('listSupportClaims'); if(tbody) tbody.innerHTML='<td colspan="7"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"supportClaims"),orderBy("createdAt","desc"),limit(30))); let html=''; snap.forEach(d=>{ const data=d.data(); const badge=data.status==='approved'?'<span class="badge badge-success">Approved</span>':data.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'; let docs=''; if(data.documents){ for(const[key,url] of Object.entries(data.documents)) docs+=`<button class="btn btn-sm btn-outline" onclick="viewDoc('${url}','auto')">${key}</button>`; } html+=`<tr><td>${data.createdAt?moment(data.createdAt.toDate()).format('MMM D, YYYY'):'N/A'}</td><td>${escapeHTML(data.userName||data.userEmail)}</td><td>${data.planType}</td><td style="color:var(--accent-green);font-weight:bold;">E${data.requestedAmount}</td><td>${docs||'None'}</td><td>${badge}</td><td>${data.status==='pending'?`<button class="btn btn-sm btn-primary" onclick="approveClaim('${d.id}')">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectClaim('${d.id}')">Reject</button>`:'-'}</td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="7">No claims<\/td>'; } catch(e){ console.error(e); } };
         window.approveClaim = async function(id){ if(!confirm("Approve claim?")) return; await updateDoc(doc(db,"supportClaims",id),{status:'approved',approvedBy:adminUser?.uid,approvedAt:serverTimestamp()}); toast("Claim approved!"); await loadSupport(); await loadDashboardPerformance(); };
-        window.rejectClaim = async function(id){ const reason=prompt("Reason:"); if(!reason) return; await updateDoc(doc(db,"supportClaims",id),{status:'rejected',rejectReason:reason,rejectedAt:serverTimestamp(),rejectedBy:adminUser?.uid}); toast("Claim rejected!"); await loadSupport(); await loadDashboardPerformance(); };
+        window.rejectClaim = async function(id){
+            const reason = String(prompt('Reason for rejecting this support claim? The member will see this exact reason.') || '').trim();
+            if (reason.length < 4) return toast('A reason of at least 4 characters is required. Nothing was changed.', 'error');
+            try {
+                await updateDoc(doc(db, 'supportClaims', id), {
+                    status: 'rejected', rejectReason: reason, rejectionReason: reason,
+                    rejectedAt: serverTimestamp(), rejectedBy: adminUser?.email || adminUser?.uid
+                });
+                await logAdminActivity('support_claim_rejected', { claimId: id, reason: reason });
+                toast('Claim rejected. The member will be emailed once.');
+                await loadSupport();
+                await loadDashboardPerformance();
+            } catch (e) { toast('Rejection was not saved: ' + e.message, 'error'); }
+        };
 
         window.loadEvents = async function(){ const tbody=document.getElementById('listEvents'); if(tbody) tbody.innerHTML='<td colspan="5"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"events"),orderBy("date","desc"))); let html=''; snap.forEach(d=>{ const data=d.data(); html+=`<tr><td>${data.date?moment(data.date.toDate()).format('MMM D, YYYY HH:mm'):'N/A'}</td><td><strong>${escapeHTML(data.title)}</strong></td><td>${escapeHTML(data.location)}</td><td>${data.category}</td><td><button class="btn btn-sm btn-danger" onclick="deleteRecord('events','${d.id}')">Delete</button></td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="5">No events<\/td>'; } catch(e){ console.error(e); } };
         window.saveEvent = async function(){ const title=document.getElementById('evTitle').value, date=document.getElementById('evDate').value; if(!title||!date) return toast("Title and date required","error"); showLoading(); try{ await addDoc(collection(db,"events"),{title:title,date:new Date(date),location:document.getElementById('evLocation').value,category:document.getElementById('evCategory').value,description:document.getElementById('evDesc').value,attendeeCount:0,createdAt:serverTimestamp(),createdBy:adminUser?.uid}); closeModal('modalEvent'); toast("Event published!"); await loadEvents(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
@@ -4280,6 +4456,7 @@ window.toggleDarkMode = function() {
                             <button class="btn btn-sm btn-primary" onclick="moderateContent('${col}','${d.id}','${data.status==='approved'||data.status==='published'?'pending':'approved'}')">${data.status==='approved'||data.status==='published'?'<i class="pd-i pd-i-eye-off"></i> Hide':'<i class="pd-i pd-i-check"></i> Approve'}</button>
                             ${col==='prayers'?`<button class="btn btn-sm" style="background:rgba(212,175,55,.15);color:#a67c00;border:1px solid rgba(212,175,55,.4);" onclick="moderateContent('${col}','${d.id}','highlight')"><i class="pd-i pd-i-star"></i> ${data.highlighted?'Unhighlight':'Highlight'}</button>`:''}
                             ${col==='testimonies'?`<button class="btn btn-sm" style="background:rgba(10,77,155,.1);color:#0A4D9B;border:1px solid rgba(10,77,155,.3);" onclick="moderateContent('${col}','${d.id}','feature')"><i class="pd-i pd-i-crown"></i> ${data.featured?'Unfeature':'Feature'}</button>`:''}
+                            ${col==='testimonies' && data.status!=='rejected'?`<button class="btn btn-sm btn-danger" onclick="openRejectTestimony('${d.id}')"><i class="pd-i pd-i-circle-x"></i> Reject</button>`:''}
                             <button class="btn btn-sm btn-danger" onclick="deleteRecord('${col}','${d.id}')" aria-label="Delete"><i class="pd-i pd-i-trash"></i></button>
                         </td>
                     </tr>`;
@@ -4309,6 +4486,54 @@ window.toggleDarkMode = function() {
                 await logAdminActivity('content_moderated', { col, id, action });
                 await loadContent();
             } catch(e) { toast('Error: ' + e.message, 'error'); } finally { hideLoading(); }
+        };
+
+        window.openRejectTestimony = function(id) {
+            if (!id) return toast('Nothing to reject — the testimony is missing.', 'error');
+            document.getElementById('rejectTestimonyId').value = id;
+            document.getElementById('rejectTestimonyReason').value = '';
+            document.getElementById('rejectTestimonyInstructions').value = '';
+            document.getElementById('rejectTestimonyReasonError').style.display = 'none';
+            openModal('modalRejectTestimony');
+            setTimeout(() => { const field = document.getElementById('rejectTestimonyReason'); if (field) field.focus(); }, 80);
+        };
+
+        window.confirmRejectTestimony = async function() {
+            const id = (document.getElementById('rejectTestimonyId') || {}).value || '';
+            const reason = String((document.getElementById('rejectTestimonyReason') || {}).value || '').trim();
+            const instructions = String((document.getElementById('rejectTestimonyInstructions') || {}).value || '').trim();
+            const error = document.getElementById('rejectTestimonyReasonError');
+            if (!id) return toast('Nothing to reject — the testimony is missing.', 'error');
+            if (reason.length < 4) {
+                if (error) error.style.display = '';
+                const field = document.getElementById('rejectTestimonyReason');
+                if (field) field.focus();
+                return;
+            }
+            if (error) error.style.display = 'none';
+            const button = document.getElementById('confirmRejectTestimonyBtn');
+            if (button) button.disabled = true;
+            showLoading();
+            try {
+                await updateDoc(doc(db, 'testimonies', id), {
+                    status: 'rejected',
+                    rejectionReason: reason,
+                    rejectReason: reason,
+                    rejectionInstructions: instructions,
+                    rejectedAt: serverTimestamp(),
+                    rejectedBy: adminUser?.email || adminUser?.uid,
+                    updatedAt: serverTimestamp()
+                });
+                await logAdminActivity('testimony_rejected', { testimonyId: id, reason: reason });
+                toast('Testimony rejected. The member will be emailed once.');
+                closeModal('modalRejectTestimony');
+                await loadContent();
+            } catch (e) {
+                toast('Rejection was not saved: ' + e.message, 'error');
+            } finally {
+                if (button) button.disabled = false;
+                hideLoading();
+            }
         };
 
         // ==================== NEWS CENTER (admin) ====================
@@ -7738,7 +7963,7 @@ window.toggleDarkMode = function() {
             'aivideo': 'AI Video Studio', 'media': 'Media Upload', 'content': 'Prayers & Testimonies',
             'news': 'News Center', 'sermons': 'Sermon Center', 'banners': 'Hero Banners',
             'languages': 'Languages', 'translations': 'Translation Review',
-            'notifications': 'Notifications', 'facebook': 'Facebook Campaign', 'team': 'Team Management',
+            'notifications': 'Notifications', 'email': 'Email Delivery', 'facebook': 'Facebook Campaign', 'team': 'Team Management',
             'contacts': 'Contact Messages', 'certificates': 'Certificates',
             'locations': 'Church Locations', 'daily-challenges': 'Daily Challenges',
             'document-studio': 'Document Studio', 'membership-cards': 'Membership Cards',
@@ -7797,6 +8022,7 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'news') await loadAdminNews();
                 else if (viewId === 'team') await loadAdminTeam();
                 else if (viewId === 'notifications') { await loadNotificationHealth(); loadReminderStats(); }
+                else if (viewId === 'email' && window.loadEmailAdmin) await window.loadEmailAdmin();
                 else if (viewId === 'sermons') await loadAdminSermons();
                 else if (viewId === 'translations') await loadTranslationReview();
                 else if (viewId === 'facebook') await loadFacebookCampaign();
@@ -8114,6 +8340,19 @@ window.toggleDarkMode = function() {
     </div>
 
     <!-- CARD VERIFICATION HISTORY MODAL -->
+    <div id="modalRevokeCard" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="revokeCardTitle">
+        <div class="modal-card" style="max-width:560px;">
+            <div class="modal-header"><h2 id="revokeCardTitle"><i class="pd-i pd-i-shield-x"></i> Reject or revoke church ID</h2><button class="modal-close" type="button" onclick="closeModal('modalRevokeCard')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="revokeCardNumber">
+                <p style="margin-top:0;color:var(--text-sub);font-size:.86rem;">The QR code stops verifying immediately. The member is emailed this reason once, and the decision is added to the card history.</p>
+                <div class="form-group"><label for="revokeCardReason">Reason <span style="color:var(--danger,#ef4444);">*</span></label><textarea id="revokeCardReason" class="form-control" rows="3" maxlength="600" placeholder="e.g. The membership this card belongs to has been rejected."></textarea><small id="revokeCardReasonError" style="display:none;color:var(--danger,#ef4444);">Please write a reason of at least 4 characters.</small></div>
+                <div class="form-group"><label for="revokeCardInstructions">What the member should do next (optional)</label><textarea id="revokeCardInstructions" class="form-control" rows="2" maxlength="400" placeholder="e.g. Contact the church office once your membership is restored."></textarea></div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-outline" type="button" onclick="closeModal('modalRevokeCard')">Cancel</button><button class="btn btn-danger" type="button" id="confirmRevokeCardBtn" onclick="confirmRevokeCardVerification()"><i class="pd-i pd-i-shield-x"></i> Revoke and notify member</button></div>
+        </div>
+    </div>
+
     <div id="modalVerificationHistory" class="modal-overlay">
         <div class="modal-card" style="max-width:720px;">
             <div class="modal-header"><h2><i class="pd-i pd-i-rotate-ccw-clock"></i> Card verification history</h2><button class="modal-close" onclick="closeModal('modalVerificationHistory')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
@@ -8148,6 +8387,7 @@ window.toggleDarkMode = function() {
         </div>
     </div>
 
+<script type="module" src="/assets/pd-email-admin.js"></script>
 <script type="module" src="/assets/pd-admin-extras.js"></script>
 <script type="module" src="/assets/pd-billing-admin.js"></script>
 </body>

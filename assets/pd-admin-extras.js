@@ -606,32 +606,76 @@ async function issueCardVerification(uid, reissue) {
   }
 }
 
-async function revokeCardVerification(number) {
+function openCardRevoke(number) {
   if (!bridge || !number) return;
-  if (!window.confirm('Revoke verification for ' + number + '?\n\nThe QR code will report the card as no longer valid.')) return;
+  const field = $('revokeCardNumber');
+  if (!field) return;
+  field.value = String(number).toUpperCase();
+  $('revokeCardReason').value = '';
+  $('revokeCardInstructions').value = '';
+  $('revokeCardReasonError').style.display = 'none';
+  const title = $('revokeCardTitle');
+  if (title) title.innerHTML = '<i class="pd-i pd-i-shield-x"></i> Reject or revoke ' + escapeHtml(String(number).toUpperCase());
+  if (typeof window.openModal === 'function') window.openModal('modalRevokeCard');
+  setTimeout(() => { const reason = $('revokeCardReason'); if (reason) reason.focus(); }, 80);
+}
+
+async function confirmRevokeCardVerification() {
+  if (!bridge) return;
+  const number = String(($('revokeCardNumber') || {}).value || '').trim().toUpperCase();
+  const reason = String(($('revokeCardReason') || {}).value || '').trim();
+  const instructions = String(($('revokeCardInstructions') || {}).value || '').trim();
+  const error = $('revokeCardReasonError');
+  if (!number) return;
+  if (reason.length < 4) {
+    if (error) error.style.display = '';
+    const field = $('revokeCardReason');
+    if (field) field.focus();
+    return;
+  }
+  if (error) error.style.display = 'none';
+  const button = $('confirmRevokeCardBtn');
+  if (button) button.disabled = true;
   try {
     const store = bridge.firestore;
-    const mainRef = store.doc(bridge.db, 'membershipVerification', String(number).toUpperCase());
+    const mainRef = store.doc(bridge.db, 'membershipVerification', number);
     const snapshot = await store.getDoc(mainRef);
-    const existing = snapshot.exists() ? snapshot.data() : {};
+    if (!snapshot.exists()) throw new Error('This card record no longer exists.');
+    const existing = snapshot.data() || {};
+    // Record the decision once, with the reason, before the trigger emails it.
     await store.setDoc(mainRef, {
       status: 'revoked',
       membershipStatus: 'rejected',
-      updatedAt: store.serverTimestamp(),
-      revokedBy: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator'
+      rejectionReason: reason,
+      rejectReason: reason,
+      rejectionInstructions: instructions,
+      revokedAt: store.serverTimestamp(),
+      revokedBy: (bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.displayName)) || 'Administrator',
+      updatedAt: store.serverTimestamp()
     }, { merge: true });
     if (existing.verificationRef) {
       await writeVerificationRef(existing.verificationRef, Object.assign({}, existing, {
         status: 'revoked',
-        membershipStatus: 'rejected'
+        membershipStatus: 'rejected',
+        rejectionReason: reason,
+        rejectionInstructions: instructions
       }));
     }
-    await writeVerificationHistory(number, existing.userId || '', 'revoked', 'revoked', 'Card withdrawn by an administrator');
-    toast('Card verification revoked.', 'success');
+    await writeVerificationHistory(number, existing.userId || '', 'rejected', 'revoked', reason + (instructions ? ' — Next: ' + instructions : ''));
+    if (typeof toast === 'function') toast('Church ID rejected. The member will be emailed once.', 'success');
+    if (typeof window.closeModal === 'function') window.closeModal('modalRevokeCard');
     await loadMembershipCardAdmin();
   } catch (error) {
-    toast('The verification record could not be updated.', 'error');
+    if (typeof toast === 'function') toast('The rejection was not saved: ' + (error && error.message ? error.message : 'please try again.'), 'error');
+  } finally {
+    if (button) button.disabled = false;
   }
+}
+
+/* The existing Revoke button opens the reason dialog; nothing is written until
+   the administrator confirms a reason. */
+function revokeCardVerification(number) {
+  openCardRevoke(number);
 }
 
 async function suspendCardVerification(number) {
@@ -933,6 +977,8 @@ window.handleCardSignatureFile = handleCardSignatureFile;
 window.saveCardTemplate = saveCardTemplate;
 window.issueCardVerification = issueCardVerification;
 window.revokeCardVerification = revokeCardVerification;
+window.openCardRevoke = openCardRevoke;
+window.confirmRevokeCardVerification = confirmRevokeCardVerification;
 window.suspendCardVerification = suspendCardVerification;
 window.viewCardVerificationHistory = viewCardVerificationHistory;
 window.syncMemberCardStatus = syncMemberCardStatus;

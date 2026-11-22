@@ -1169,7 +1169,7 @@
                 <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0;"><div id="pMinistriesDisplay">Not specified</div></div>
 
                 <!-- MY CERTIFICATES -->
-                <div class="certificates-block" style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0; border: 1px solid rgba(212,175,55,.35);">
+                <div id="certificates" class="certificates-block" style="scroll-margin-top:90px;background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0; border: 1px solid rgba(212,175,55,.35);">
                     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;">
                         <h3 style="margin: 0; font-family: 'Poppins', serif; color: var(--accent-gold);"><i class="pd-i pd-i-award"></i> My Certificates</h3>
                         <span style="font-size: .72rem; color: var(--text-sub);">Earn them by passing Academy quizzes with 80% or higher.</span>
@@ -1224,10 +1224,22 @@
                         <div id="notifHealthList" class="notif-health-grid"></div>
                     </div>
 
-                    <details class="notif-card notif-prefs">
+                    <details class="notif-card notif-prefs" open>
                         <summary><i class="pd-i pd-i-sliders-horizontal"></i> Notification preferences</summary>
                         <p class="notif-note">These switches control what reaches your phone’s notification shade and lock screen — even when the app is closed. Everything still appears in the bell inside the app.</p>
                         <div id="notifPrefList" class="notif-pref-grid"></div>
+
+                        <div class="email-pref-block">
+                            <div class="notif-card-copy" style="margin-bottom:8px;">
+                                <strong><i class="pd-i pd-i-mail"></i> Email notifications</strong>
+                                <small id="emailPrefAddress">Sent to the email address registered on your Prayer Dome account.</small>
+                            </div>
+                            <p class="notif-note">Choose which optional updates Prayer Dome emails you about. Account, church ID and payment receipts are essential and are always sent when something actually happens.</p>
+                            <div id="emailPrefList" class="notif-pref-grid">
+                                <div class="notif-pref-item"><span>Loading your email preferences…</span></div>
+                            </div>
+                            <div class="notif-note" style="margin:8px 0 0;"><i class="pd-i pd-i-lock" aria-hidden="true"></i> Essential account and financial emails cannot be turned off. Each event is emailed once — never twice.</div>
+                        </div>
                     </details>
 
                     <!-- Daily prayer reminder: the only reminder that reaches a
@@ -2732,6 +2744,89 @@
                 });
             });
         }
+
+        /* ---------------- email notification preferences ----------------
+           Non-essential categories only. The server also checks these before
+           a non-essential message is queued; account, church ID and payment
+           receipts ignore them because they are part of the member's record. */
+        const EMAIL_PREF_TYPES = {
+            certificates: 'Certificates and documents',
+            prayer: 'Prayer requests',
+            testimony: 'Testimonies',
+            support: 'Support claims'
+        };
+        function emailBindings() {
+            const f = window.PDApp && PDApp._fb;
+            const user = f && f.auth && f.auth.currentUser;
+            return user && f.db && f.doc ? { f, user } : null;
+        }
+        function renderEmailPrefs(prefs) {
+            const host = document.getElementById('emailPrefList');
+            if (!host) return;
+            const saved = prefs && typeof prefs === 'object' ? prefs : {};
+            host.innerHTML = Object.keys(EMAIL_PREF_TYPES).map(key => `
+                <label class="notif-pref-item">
+                    <span>${EMAIL_PREF_TYPES[key]}</span>
+                    <input type="checkbox" data-email-pref="${key}" ${saved[key] === false ? '' : 'checked'}>
+                </label>`).join('');
+            host.querySelectorAll('[data-email-pref]').forEach(input => {
+                input.addEventListener('change', () => saveEmailPreference(input.getAttribute('data-email-pref'), input.checked));
+            });
+        }
+        async function loadEmailPrefs() {
+            const host = document.getElementById('emailPrefList');
+            if (!host) return;
+            const bound = emailBindings();
+            if (!bound) {
+                renderEmailPrefs({});
+                const address = document.getElementById('emailPrefAddress');
+                if (address) address.textContent = 'Sign in to choose the optional updates Prayer Dome emails you.';
+                return;
+            }
+            const { f, user } = bound;
+            const address = document.getElementById('emailPrefAddress');
+            if (address) address.textContent = user.email
+                ? `Sent to ${user.email} — the email registered on your Prayer Dome account.`
+                : 'Sent to the email address registered on your Prayer Dome account.';
+            try {
+                const snap = await f.getDoc(f.doc(f.db, 'userNotificationPrefs', user.uid));
+                const row = snap && snap.exists() ? (snap.data() || {}) : {};
+                renderEmailPrefs(row.emailPrefs || {});
+                host.setAttribute('data-loaded', '1');
+            } catch (e) {
+                renderEmailPrefs({});
+            }
+        }
+        async function saveEmailPreference(category, on) {
+            if (!EMAIL_PREF_TYPES[category]) return;
+            const bound = emailBindings();
+            if (!bound) {
+                if (window.PDApp) PDApp.toast('Sign in to save your email preferences.', 'info');
+                renderEmailPrefs({});
+                return;
+            }
+            const { f, user } = bound;
+            const ref = f.doc(f.db, 'userNotificationPrefs', user.uid);
+            try {
+                const snap = await f.getDoc(ref);
+                const row = snap && snap.exists() ? (snap.data() || {}) : {};
+                const emailPrefs = Object.assign({}, row.emailPrefs || {});
+                emailPrefs[category] = !!on;
+                await f.setDoc(ref, {
+                    uid: user.uid,
+                    emailPrefs,
+                    updatedAt: f.serverTimestamp ? f.serverTimestamp() : new Date().toISOString()
+                }, { merge: true });
+                if (window.PDApp) PDApp.toast(on ? 'Email updates for this category are on' : 'Email updates for this category are off');
+            } catch (e) {
+                if (window.PDApp) PDApp.toast('Could not save your email preference just now. Please try again.', 'error');
+                loadEmailPrefs();
+            }
+        }
+        document.addEventListener('pd:role', loadEmailPrefs);
+        document.addEventListener('DOMContentLoaded', loadEmailPrefs);
+        setTimeout(loadEmailPrefs, 4200);
+        loadEmailPrefs();
 
         function renderPrayerReminder() {
             const row = document.getElementById('prayerReminderRow');
