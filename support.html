@@ -137,23 +137,40 @@
     <style>
         :root {
             --pd-green: #0A4D9B;
+            --pd-blue: #2563eb;
             --pd-gold: #d4af37;
-            --pd-navy: #0f172a;
+            /* Deep navy rather than pure black keeps long support copy softer. */
+            --pd-navy: #12304f;
             --pd-red: #ef4444;
             --tier-bronze: #cd7f32;
             --tier-gold: #d4af37;
             --tier-platinum: #94a3b8;
             --tier-diamond: #0ea5e9;
             --bg-base: #f8fafc;
+            --bg-card: #ffffff;
             --glass: rgba(255, 255, 255, 0.9);
-            --border: #e2e8f0;
+            --border: #dbe4ef;
+            --text-main: #12304f;
+            --text-sub: #5b6b82;
+            --placeholder: #7b8ba3;
+            --input-bg: #ffffff;
             --shadow-sm: 0 4px 6px -1px rgba(0,0,0,0.1);
             --shadow-lg: 0 20px 25px -5px rgba(0,0,0,0.1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background: var(--bg-base); color: var(--pd-navy); transition: 0.4s; overflow-x: hidden; padding-bottom: 120px; }
-        body.dark-mode { --bg-base: #020617; --glass: rgba(15, 23, 42, 0.95); --pd-navy: #f8fafc; --border: #1e293b; }
+        body { background: var(--bg-base); color: var(--text-main); transition: 0.4s; overflow-x: hidden; padding-bottom: 120px; }
+        body.dark-mode {
+            --bg-base: #020617;
+            --bg-card: #0f1b31;
+            --glass: rgba(15, 23, 42, 0.95);
+            --pd-navy: #f1f5f9;
+            --text-main: #f1f5f9;
+            --text-sub: #cbd5e1;
+            --placeholder: #9fb0c7;
+            --input-bg: #0b1425;
+            --border: #334155;
+        }
 
         /* --- SUPPORT HERO BANNER --- */
         .sp-hero {
@@ -255,7 +272,7 @@
         
         .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; max-width: 320px; }
         .n-key { width: 75px; height: 75px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 600; cursor: pointer; transition: 0.2s; margin: 0 auto;}
-        .n-key:active { background: var(--pd-gold); color: black; transform: scale(0.9);}
+        .n-key:active { background: var(--pd-gold); color: #12304f; transform: scale(0.9);}
 
         /* --- WALLET DASHBOARD ---
            Compact, readable finance UI: one hierarchy of sizes, one status
@@ -315,19 +332,62 @@
         /* --- BUTTONS --- */
         .btn-main { width: 100%; padding: 16px; border-radius: 40px; border: none; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.3s; display: flex; align-items: center; justify-content: center; gap: 10px; text-transform: uppercase; letter-spacing: 1px;}
         .btn-green { background: linear-gradient(135deg, var(--pd-green), #16a34a); color: white; }
-        .btn-gold { background: linear-gradient(135deg, #fbbf24, var(--pd-gold)); color: black; }
+        .btn-gold { background: linear-gradient(135deg, #fbbf24, var(--pd-gold)); color: #12304f; }
         .btn-main:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
         .btn-main:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* --- MODALS & FORMS --- */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: 20px;}
-        .modal-body { background: var(--bg-card); border-radius: 35px; padding: 35px; width: 100%; max-width: 550px; animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto;}
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(2, 10, 24, 0.82); z-index: 2000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(10px); padding: 20px;}
+        .modal-body { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); border-radius: 32px; padding: 32px; width: 100%; max-width: 550px; animation: modalIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 70px rgba(2, 10, 24, .35);}
         @keyframes modalIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         
         .form-group { margin-bottom: 20px; text-align: left; }
-        .form-group label { display: block; font-weight: 800; font-size: 0.85rem; margin-bottom: 8px; color: var(--pd-navy); text-transform: uppercase; letter-spacing: 0.5px;}
-        input, select, textarea { width: 100%; padding: 16px; border-radius: 16px; border: 2px solid var(--border); background: var(--bg-base); color: var(--text-main); font-size: 1rem; font-weight: 500; outline: none; transition: 0.3s; font-family: inherit;}
-        input:focus, select:focus, textarea:focus { border-color: var(--pd-green); background: var(--bg-card); box-shadow: 0 0 0 4px rgba(59,130,246,0.1);}
+        .form-group label { display: block; font-weight: 800; font-size: 0.78rem; margin-bottom: 8px; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px;}
+        input, select, textarea { width: 100%; padding: 15px 16px; border-radius: 14px; border: 2px solid var(--border); background: var(--input-bg); color: var(--text-main); font-size: 1rem; font-weight: 600; outline: none; transition: 0.3s; font-family: inherit;}
+        input::placeholder, textarea::placeholder { color: var(--placeholder); opacity: 1; font-weight: 500; }
+        select option { color: var(--text-main); background: var(--bg-card); }
+        input:focus, select:focus, textarea:focus { border-color: var(--pd-green); background: var(--bg-card); box-shadow: 0 0 0 4px rgba(37,99,235,0.14);}
+
+        /* --- MONEY SHEETS (deposit / withdrawal) --- */
+        .money-modal .modal-body { max-width: 500px; border-radius: 28px; padding: clamp(22px, 4vw, 32px); }
+        .money-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .money-icon { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 15px; display: grid; place-items: center; font-size: 1.25rem; color: #fff; background: linear-gradient(135deg, var(--pd-green), #1d6fd1); box-shadow: 0 8px 18px rgba(10,77,155,.25); }
+        .money-icon--out { background: linear-gradient(135deg, #b91c1c, var(--pd-red)); box-shadow: 0 8px 18px rgba(239,68,68,.22); }
+        .money-head-text { min-width: 0; flex: 1; }
+        .money-eyebrow { display: block; font-size: .6rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--pd-green); margin-bottom: 3px; }
+        .money-head h2 { margin: 0; font-size: clamp(1.25rem, 3vw, 1.55rem); line-height: 1.2; font-weight: 900; color: var(--text-main); }
+        .money-close { width: 38px; height: 38px; flex: 0 0 auto; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-base); color: var(--text-sub); cursor: pointer; display: grid; place-items: center; font-size: 1rem; }
+        .money-close:hover { color: var(--pd-red); border-color: var(--pd-red); }
+        .money-lede { margin: 0 0 20px; color: var(--text-sub); font-size: .88rem; line-height: 1.65; }
+        .money-field { margin-bottom: 16px; }
+        .money-field > label { display: block; margin-bottom: 7px; font-size: .7rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; color: var(--text-main); }
+        .money-input-wrap { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 0 14px; border: 2px solid var(--border); border-radius: 16px; background: var(--input-bg); transition: .25s; }
+        .money-input-wrap:focus-within { border-color: var(--pd-green); box-shadow: 0 0 0 4px rgba(37,99,235,.14); background: var(--bg-card); }
+        .money-input-wrap .money-currency { font-size: 1.15rem; font-weight: 900; color: var(--pd-green); }
+        .money-input-wrap .money-unit { font-size: .64rem; font-weight: 900; letter-spacing: .08em; color: var(--text-sub); }
+        .money-input-wrap--phone { grid-template-columns: auto minmax(0, 1fr); }
+        .money-input-wrap--phone > i { color: var(--pd-green); font-size: 1.05rem; }
+        .money-input-wrap input { border: 0; border-radius: 0; padding: 15px 0; background: transparent; box-shadow: none; font-size: 1.2rem; font-weight: 800; color: var(--text-main); }
+        .money-input-wrap input:focus { border: 0; background: transparent; box-shadow: none; }
+        .money-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+        .money-chip { width: auto; min-width: 58px; padding: 8px 13px; border-radius: 999px; border: 1px solid rgba(10,77,155,.22); background: rgba(10,77,155,.07); color: var(--pd-green); font: inherit; font-size: .75rem; font-weight: 800; cursor: pointer; transition: .2s; }
+        .money-chip:hover, .money-chip:focus-visible { background: var(--pd-green); color: #fff; border-color: var(--pd-green); outline: none; }
+        .money-hint { margin: 8px 0 0; font-size: .7rem; line-height: 1.5; color: var(--text-sub); }
+        .money-note { display: flex; gap: 10px; align-items: flex-start; margin: 18px 0; padding: 12px 13px; border-radius: 14px; border: 1px solid rgba(212,175,55,.4); background: rgba(212,175,55,.11); color: var(--text-main); font-size: .74rem; line-height: 1.55; }
+        .money-note i { flex: 0 0 auto; margin-top: 2px; color: #9a7414; }
+        .money-note strong { color: var(--text-main); }
+        .money-actions { display: grid; gap: 9px; margin-top: 6px; }
+        .money-actions .btn-main { margin: 0; }
+        .money-cancel { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-sub); font: inherit; font-weight: 800; cursor: pointer; }
+        .money-cancel:hover { color: var(--text-main); border-color: var(--text-sub); }
+        .money-summary { margin-top: 16px; padding: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-base); color: var(--text-main); font-size: .8rem; line-height: 1.65; }
+        .money-summary strong { color: var(--text-main); }
+        .money-summary p { color: var(--text-sub); }
+        @media (max-width: 420px) {
+            .money-modal .modal-body { padding: 20px; border-radius: 22px; }
+            .money-head { align-items: flex-start; }
+            .money-chip { flex: 1 1 calc(50% - 7px); }
+        }
 
         /* Document Upload Zone */
         .doc-upload-zone { border: 2px dashed var(--border); border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; background: var(--bg-base); margin-bottom: 15px; display: flex; align-items: center; gap: 15px; justify-content: center;}
@@ -337,7 +397,7 @@
 
         /* --- TOASTS & LOADERS --- */
         .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px;}
-        .toast { background: var(--bg-card); padding: 16px 24px; border-radius: 20px; box-shadow: var(--shadow-lg); border-left: 5px solid var(--pd-green); display: flex; align-items: center; gap: 12px; font-weight: 700; animation: slideIn 0.3s ease; font-size: 0.95rem;}
+        .toast { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); padding: 16px 24px; border-radius: 20px; box-shadow: var(--shadow-lg); border-left: 5px solid var(--pd-green); display: flex; align-items: center; gap: 12px; font-weight: 700; animation: slideIn 0.3s ease; font-size: 0.95rem;}
         .toast.error { border-left-color: var(--pd-red); }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
@@ -373,10 +433,10 @@
         .sp-updates h2 { color: #fff; font-size: clamp(1.4rem, 3vw, 1.9rem); font-weight: 900; margin: 0 0 10px; letter-spacing: -0.5px; }
         .sp-updates p { color: rgba(255,255,255,0.82); font-size: 0.9rem; line-height: 1.7; margin: 0 0 10px; }
         .sp-updates .sp-updates-trust { display: flex; align-items: center; gap: 8px; font-size: 0.76rem; font-weight: 700; color: rgba(255,255,255,0.72); margin-top: 14px; }
-        .sp-updates form { background: #fff; color: #0f172a; border-radius: 22px; padding: 22px; position: relative; }
+        .sp-updates form { background: #fff; color: #12304f; border-radius: 22px; padding: 22px; position: relative; }
         .sp-field { margin-bottom: 12px; text-align: left; }
         .sp-field label { display: block; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.7px; text-transform: uppercase; color: #334155; margin-bottom: 6px; }
-        .sp-field input { width: 100%; padding: 13px 14px; border-radius: 13px; border: 2px solid #e2e8f0; background: #f8fafc; color: #0f172a; font-size: 0.95rem; font-family: inherit; }
+        .sp-field input { width: 100%; padding: 13px 14px; border-radius: 13px; border: 2px solid #e2e8f0; background: #f8fafc; color: #12304f; font-size: 0.95rem; font-family: inherit; }
         .sp-field input:focus { border-color: var(--pd-green); background: #fff; box-shadow: 0 0 0 4px rgba(10,77,155,0.12); outline: none; }
         .sp-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 0.74rem; line-height: 1.5; color: #475569; margin: 4px 0 14px; text-align: left; }
         .sp-consent input { width: 19px; height: 19px; min-width: 19px; margin: 1px 0 0; accent-color: var(--pd-green); }
@@ -463,7 +523,7 @@
         .plan-program-head p { margin: 0; color: var(--text-sub); font-size: .82rem; }
         .plan-program-icon { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; background: rgba(10,77,155,.1); color: var(--pd-green); font-size: 1.15rem; flex: 0 0 auto; }
         .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 14px; }
-        .plan-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: 1px solid var(--border); border-radius: 20px; padding: 16px; background: linear-gradient(180deg, #fff, var(--bg-base)); }
+        .plan-card { display: flex; flex-direction: column; gap: 10px; min-width: 0; border: 1px solid var(--border); border-radius: 20px; padding: 16px; background: linear-gradient(180deg, var(--bg-card), var(--bg-base)); }
         .plan-card-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
         .plan-tier { font-size: .66rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: var(--pd-green); }
         .plan-price { font-size: 1.35rem; font-weight: 900; color: var(--pd-navy); line-height: 1.1; white-space: nowrap; }
@@ -896,49 +956,101 @@
     </div>
 
     <!-- DEPOSIT MODAL -->
-    <div class="modal" id="modalDeposit">
+    <div class="modal money-modal" id="modalDeposit" role="dialog" aria-modal="true" aria-labelledby="depositTitle">
         <div class="modal-body">
-            <h2 style="color: var(--pd-green); font-weight: 900; margin-bottom: 10px;"><i class="pd-i pd-i-circle-plus"></i> Add Funds</h2>
-            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Enter the amount you sent. The ministry issues a payment reference, then you upload the receipt. Your wallet is credited only after finance verifies the payment.</p>
-            
-            <div class="form-group">
-                <label>Amount sent (USD)</label>
-                <input type="number" id="depAmount" placeholder="e.g. 50">
+            <div class="money-head">
+                <span class="money-icon"><i class="pd-i pd-i-circle-plus" aria-hidden="true"></i></span>
+                <div class="money-head-text">
+                    <span class="money-eyebrow">Member wallet</span>
+                    <h2 id="depositTitle">Add funds</h2>
+                </div>
+                <button class="money-close" type="button" onclick="closeModal('modalDeposit')" aria-label="Close add funds"><i class="pd-i pd-i-x" aria-hidden="true"></i></button>
             </div>
-            
-            <p style="font-size:.76rem;color:var(--text-sub);line-height:1.55;margin:0 0 18px;">
-                The next screen shows a unique payment reference and the ministry Mobile Money details. Keep the exact amount — a different amount delays verification.
-            </p>
+            <p class="money-lede">Enter the amount you sent. We issue a payment reference and the official Mobile Money details, then you upload the receipt. Your wallet is credited only after finance verifies the payment.</p>
 
-            <button class="btn-main btn-green" id="btnSubmitDep" onclick="startWalletDeposit()" style="margin-top: 25px;">CONTINUE TO PAYMENT</button>
-            <button class="btn-main" style="background:transparent; color:var(--text-sub); margin-top: 10px;" onclick="closeModal('modalDeposit')">Cancel</button>
+            <div class="money-field">
+                <label for="depAmount">Amount sent</label>
+                <div class="money-input-wrap">
+                    <span class="money-currency" aria-hidden="true">$</span>
+                    <input type="number" id="depAmount" placeholder="50.00" inputmode="decimal" min="5" step="0.01" autocomplete="off" aria-describedby="depAmountHint">
+                    <span class="money-unit">USD</span>
+                </div>
+                <div class="money-chips" role="group" aria-label="Quick deposit amounts">
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('depAmount', 10)">$10</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('depAmount', 25)">$25</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('depAmount', 50)">$50</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('depAmount', 100)">$100</button>
+                </div>
+                <p class="money-hint" id="depAmountHint">Minimum $5.00. Send the exact amount shown on the next screen — a different amount delays verification.</p>
+            </div>
+
+            <div class="money-note">
+                <i class="pd-i pd-i-shield-check" aria-hidden="true"></i>
+                <p><strong>No money moves yet.</strong> The next screen gives you a unique reference and the verified ministry Mobile Money number. Keep that reference safe.</p>
+            </div>
+
+            <div class="money-actions">
+                <button class="btn-main btn-green" id="btnSubmitDep" type="button" onclick="startWalletDeposit()">Continue to payment</button>
+                <button class="money-cancel" type="button" onclick="closeModal('modalDeposit')">Cancel</button>
+            </div>
         </div>
     </div>
 
     <!-- WITHDRAW MODAL -->
-    <div class="modal" id="modalWithdraw">
+    <div class="modal money-modal" id="modalWithdraw" role="dialog" aria-modal="true" aria-labelledby="withdrawTitle">
         <div class="modal-body">
-            <h2 style="color: var(--pd-red); font-weight: 900; margin-bottom: 10px;"><i class="pd-i pd-i-arrow-up"></i> Request Withdrawal</h2>
-            <p style="font-size: 0.9rem; color: var(--text-sub); margin-bottom: 25px;">Funds will be sent to your Mobile Money number after finance approval. Minimum $10.00.</p>
-            
-            <div class="form-group">
-                <label>Amount to withdraw (USD)</label>
-                <input type="number" id="withAmount" placeholder="e.g. 50">
+            <div class="money-head">
+                <span class="money-icon money-icon--out"><i class="pd-i pd-i-arrow-up" aria-hidden="true"></i></span>
+                <div class="money-head-text">
+                    <span class="money-eyebrow">Member wallet</span>
+                    <h2 id="withdrawTitle">Request withdrawal</h2>
+                </div>
+                <button class="money-close" type="button" onclick="closeModal('modalWithdraw')" aria-label="Close withdrawal request"><i class="pd-i pd-i-x" aria-hidden="true"></i></button>
             </div>
-            <div class="form-group">
-                <label>MoMo Number to Receive</label>
-                <input type="tel" id="withPhone" placeholder="+268...">
+            <p class="money-lede">Finance reviews every request before money leaves the ministry account. Minimum withdrawal is $10.00.</p>
+
+            <div class="money-field">
+                <label for="withAmount">Amount to withdraw</label>
+                <div class="money-input-wrap">
+                    <span class="money-currency" aria-hidden="true">$</span>
+                    <input type="number" id="withAmount" placeholder="50.00" inputmode="decimal" min="10" step="0.01" autocomplete="off" aria-describedby="withAmountHint">
+                    <span class="money-unit">USD</span>
+                </div>
+                <div class="money-chips" role="group" aria-label="Quick withdrawal amounts">
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('withAmount', 10)">$10</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('withAmount', 25)">$25</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('withAmount', 50)">$50</button>
+                    <button class="money-chip" type="button" onclick="setMoneyAmount('withAmount', 100)">$100</button>
+                </div>
+                <p class="money-hint" id="withAmountHint">You can only request verified funds that are not already on hold.</p>
             </div>
 
-            <div id="withdrawSummary" hidden style="margin-top:18px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-base);font-size:.82rem;line-height:1.6;">
-                <strong style="display:block;margin-bottom:6px;color:var(--pd-navy);">Review your request</strong>
+            <div class="money-field">
+                <label for="withPhone">Mobile Money number to receive</label>
+                <div class="money-input-wrap money-input-wrap--phone">
+                    <i class="pd-i pd-i-smartphone" aria-hidden="true"></i>
+                    <input type="tel" id="withPhone" placeholder="+268 76 123 456" autocomplete="tel" inputmode="tel">
+                </div>
+                <p class="money-hint">Include the country code. Finance sends the payment only to this number after approval.</p>
+            </div>
+
+            <div id="withdrawSummary" class="money-summary" hidden>
+                <strong style="display:block;margin-bottom:6px;">Review your request</strong>
                 <div>Amount: <strong id="withSummaryAmount">$0.00</strong></div>
                 <div>Receive on: <strong id="withSummaryPhone">—</strong></div>
                 <div>Available after this request: <strong id="withSummaryAvailable">$0.00</strong></div>
-                <p style="margin:8px 0 0;color:var(--text-sub);font-size:.74rem;">Submitting places the amount on hold; it is not paid yet. Finance reviews it first. Money leaves your balance only when the payment is actually confirmed.</p>
+                <p style="margin:8px 0 0;font-size:.74rem;">Submitting places the amount on hold; it is not paid yet. Finance reviews it first. Money leaves your balance only when the payment is actually confirmed.</p>
             </div>
-            <button class="btn-main btn-green" style="background: var(--pd-red); margin-top: 25px;" id="btnSubmitWith" type="button" onclick="prepareWithdrawal()">Review withdrawal</button>
-            <button class="btn-main" style="background:transparent; color:var(--text-sub); margin-top: 10px;" type="button" onclick="closeModal('modalWithdraw')">Cancel</button>
+
+            <div class="money-note">
+                <i class="pd-i pd-i-clock" aria-hidden="true"></i>
+                <p><strong>Held, not paid.</strong> A request moves no money. Finance checks it and records the Mobile Money reference when the payout is complete.</p>
+            </div>
+
+            <div class="money-actions">
+                <button class="btn-main btn-green" style="background: var(--pd-red);" id="btnSubmitWith" type="button" onclick="prepareWithdrawal()">Review withdrawal</button>
+                <button class="money-cancel" type="button" onclick="closeModal('modalWithdraw')">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -1070,6 +1182,18 @@
         window.hideLoading = () => {
             const loader = document.getElementById('globalLoader');
             if (loader) loader.style.display = 'none';
+        };
+        // Quick-amount chips on the deposit and withdrawal sheets. They only
+        // fill the field; the existing validation still decides whether the
+        // amount can be submitted.
+        window.setMoneyAmount = (id, value) => {
+            const field = document.getElementById(id);
+            if (!field) return;
+            const number = Number(value);
+            if (!Number.isFinite(number) || number <= 0) return;
+            field.value = String(Math.round(number * 100) / 100);
+            field.focus();
+            field.dispatchEvent(new Event('input', { bubbles: true }));
         };
         window.toast = (msg, type = 'success') => {
             const box = document.getElementById('toastBox');

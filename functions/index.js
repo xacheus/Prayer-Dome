@@ -16,8 +16,16 @@ const { signUpload } = require('./cloudinary');
 const cloudinaryApiSecret = defineSecret('CLOUDINARY_API_SECRET');
 const brevoApiKey = defineSecret('BREVO_API_KEY');
 
-if (!admin.getApps().length) {
+if (!admin.apps.length) {
   admin.initializeApp();
+}
+// A single undefined field used to reject an otherwise valid wallet or
+// checkout write with an opaque internal error. Ignoring undefined values is
+// safer than letting a display-only field block a payment record.
+try {
+  admin.firestore().settings({ ignoreUndefinedProperties: true });
+} catch (error) {
+  console.warn('Firestore settings were already initialised:', error && error.message);
 }
 
 const verseBank = require('./verse-bank');

@@ -203,6 +203,27 @@ test('a programme card cannot invent a price or a plan', () => {
   assert.equal(JSON.stringify(card.planPrograms), '[]');
 });
 
+test('support text uses the theme colours, never a black fallback', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  for (const name of ['--bg-card', '--text-main', '--text-sub', '--placeholder', '--pd-blue']) {
+    assert.match(source, new RegExp(name.replace(/-/g, '\\-') + '\\s*:'), `missing ${name}`);
+  }
+  assert.match(source, /input::placeholder, textarea::placeholder/);
+  assert.doesNotMatch(source, /color:\s*black/i);
+});
+
+test('the deposit and withdrawal sheets are redesigned and wired', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  assert.match(source, /class="modal money-modal" id="modalDeposit"/);
+  assert.match(source, /class="modal money-modal" id="modalWithdraw"/);
+  assert.match(source, /class="money-input-wrap"/);
+  assert.match(source, /class="money-chips"/);
+  assert.match(source, /window\.setMoneyAmount = \(id, value\)/);
+  assert.match(source, /onclick="setMoneyAmount\('depAmount', 10\)"/);
+  assert.match(source, /onclick="setMoneyAmount\('withAmount', 10\)"/);
+  assert.match(source, /id="withdrawSummary" class="money-summary"/);
+});
+
 test('every programme plan shows its full terms before checkout', () => {
   const source = fs.readFileSync('support.html', 'utf8');
   assert.match(source, /function programmePlanListHtml\(programme, open\)/);

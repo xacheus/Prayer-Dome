@@ -6,11 +6,11 @@
   },
   "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^14.5.0",
+    "firebase-admin": "^13.10.0",
     "firebase-functions": "^7.4.0"
   },
   "scripts": {
-    "verify": "node --check index.js && node -e \"require('./index.js'); console.log('Functions module loads successfully.')\""
+    "verify": "node --check index.js && node --check billing.js && node -e \"const admin=require('firebase-admin'); if (typeof admin.firestore !== 'function' || !Array.isArray(admin.apps)) throw new Error('firebase-admin namespace API missing; keep firebase-admin on 13.x'); require('./index.js'); console.log('Functions module loads successfully.')\""
   },
   "overrides": {
     "uuid": "^11.1.1"
