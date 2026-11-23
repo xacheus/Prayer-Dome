@@ -39,7 +39,7 @@ assert.match(server, /normaliseId/, 'server must normalise the ID');
 assert.match(server, /text\(value, 40\)\.toUpperCase\(\)/, 'server case rule must be explicit');
 assert.match(server, /resolveState/, 'server must resolve status separately from existence');
 assert.match(server, /membershipVerificationRefs/, 'server must resolve QR tokens');
-assert.match(server, /randomBytes\(18\)\.toString\('base64url'\)/, 'QR token must be unpredictable');
+assert.match(server, /randomBytes\(12\)\.toString\('base64url'\)/, 'QR token must be unpredictable');
 assert.match(server, /ensureMyCard/, 'server must issue a card projection for approved members');
 assert.match(server, /membershipVerificationHistory/, 'server must append issuance history');
 assert.doesNotMatch(server, /userId:\s*context\.auth\.uid[^]*return\s*\{[^}]*userId/,
@@ -49,7 +49,7 @@ assert.doesNotMatch(server, /userId:\s*context\.auth\.uid[^]*return\s*\{[^}]*use
 assert.match(membership, /aspect-ratio:\s*85\.6\s*\/\s*54/, 'card must use CR80 proportions');
 assert.match(membership, /object-fit:\s*cover/, 'portrait must cover its frame');
 assert.match(membership, /object-position:\s*center top/, 'portrait must keep the face at the top');
-assert.match(membership, /SEEDWELL K\. KHAYALETHU MASUKU/, 'founder name must be exact');
+assert.match(membership, /S\.K\. MASUKU/, 'founder name must be exact');
 assert.match(membership, /Founder and President/, 'founder role must be present');
 assert.doesNotMatch(membership, /barcodeImg|JsBarcode/, 'barcode must not compete with the QR');
 assert.match(membership, /verify\?ref=/, 'QR must point at a token URL');
@@ -63,6 +63,16 @@ assert.match(membership, /downloadID\('back'\)/, 'back download action missing')
 assert.match(membership, /@page \{ size: 85\.6mm 54mm; margin: 0; \}/, 'print page must be CR80');
 assert.match(membership, /ensureMyCardCall/, 'card page must ask the server for its token');
 assert.match(membership, /Secure QR could not be registered/, 'card must explain a missing token');
+assert.match(membership, /\/assets\/qrcode-generator\.js/, 'QR encoder must be bundled, not CDN-only');
+assert.doesNotMatch(membership, /cdn\.jsdelivr\.net\/npm\/qrcode-generator/, 'QR encoder must not depend on a CDN');
+assert.match(membership, /pd-signature\.png/, 'membership card must use the official signature image');
+assert.match(membership, /S\.K\. MASUKU/, 'membership card must print the authorised founder name');
+assert.match(read('assets/pd-certificate.js'), /pd-signature\.png/, 'certificate must fall back to the official signature');
+assert.match(read('assets/pd-certificate.js'), /S\.K\. MASUKU/, 'certificate must print the authorised founder name');
+assert.ok(fs.existsSync(path.join(ROOT, 'assets/pd-signature.png')), 'signature PNG must ship');
+assert.ok(fs.existsSync(path.join(ROOT, 'assets/pd-signature.svg')), 'signature vector must ship');
+assert.match(read('certificates.html'), /pd-signature\.png/, 'certificate card must show the signature image');
+assert.match(read('certificates.html'), /S\.K\. MASUKU/, 'certificate card must print the authorised founder name');
 
 // ---- approval creates the issued projection --------------------------------
 assert.match(admin, /window\.issueCardVerification\(uid, false\)/,

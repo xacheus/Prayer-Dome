@@ -1462,6 +1462,8 @@
             lang: (navigator.language || 'en').slice(0, 2),
             placeholder: 'Type what you would like prayer for…'
         });
+        // Domey and the Live chat share one remembered guest name.
+        if (domeyHost && guestName && !domeyHost.name) domeyHost.name = guestName;
         return domeyHost;
     }
 
@@ -1473,7 +1475,10 @@
             nextService: () => nextServiceText,
             onName: name => {
                 guestName = name;
-                try { localStorage.setItem('pd_guest_name', name); } catch (e) {}
+                try {
+                    localStorage.setItem('pd_guest_name', name);
+                    localStorage.setItem('pd_domey_name', name);
+                } catch (e) {}
             },
             onPrayer: request => postPrayerRequest(request)
         });
@@ -1675,6 +1680,5 @@
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
-  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

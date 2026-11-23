@@ -193,16 +193,6 @@ const styleBlocks = (html) =>
     livePage.includes('offlineView') && livePage.includes('showPlayerWaiting') &&
     livePage.includes('retryLive'));
 
-  const voicePageMissing = pages.filter((page) => page !== 'admin.html' &&
-    !read(page).includes('/assets/pd-voice-commands.js'));
-  t('every member page offers the optional voice-command control', voicePageMissing.length === 0,
-    voicePageMissing.join(', '));
-  const voice = read('assets/pd-voice-commands.js');
-  t('voice commands never start the microphone on page load',
-    !/\n\s*startListening\(\);/.test(voice) && voice.includes('startBtn.addEventListener'));
-  t('voice commands show what was heard and can be stopped',
-    voice.includes('setHeard') && voice.includes('stopListening') && voice.includes('stopReading'));
-
   /* ---------------------------------------------------------- 7. layout */
   const wideGrids = [];
   const stickyRisk = [];

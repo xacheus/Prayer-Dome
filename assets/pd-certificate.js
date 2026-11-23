@@ -25,8 +25,11 @@
   var SERIF = "Georgia, 'Times New Roman', serif";
   var VERSE = '“He does everything blamelessly.” — Mark 7:37';
   var ORGANISATION = 'PRAYER DOME';
-  var FOUNDER_NAME = 'SEEDWELL K. KHAYALETHU MASUKU';
+  var FOUNDER_NAME = 'S.K. MASUKU';
   var FOUNDER_TITLE = 'Founder and President';
+  // The founder's official signing mark ships with the site, so a certificate
+  // always carries a real signature even before an administrator uploads one.
+  var DEFAULT_SIGNATURE_URL = '/assets/pd-signature.png';
   var ADMIN_DEFAULT_TITLE = 'Authorised Administrator';
 
   var logoPromise = null;
@@ -149,8 +152,9 @@
   }
 
   function loadFounderSignatureImage(meta) {
-    if (!meta || !meta.url) return Promise.resolve(null);
-    return loadImage(meta.url);
+    // An administrator-uploaded mark wins; the bundled official mark is the
+    // permanent fallback so no certificate is ever issued with a blank line.
+    return loadImage((meta && meta.url) || DEFAULT_SIGNATURE_URL);
   }
 
   function loadAdministratorSignatureImage(meta) {
@@ -266,10 +270,11 @@
     var label = name || '';
     var imageDrawn = false;
     if (image && image.naturalWidth) {
-      var sw = 250;
+      // Sit the ink on the signature rule, the way a signed document does.
+      var sw = 280;
       var sh = (sw * image.naturalHeight) / image.naturalWidth;
-      if (sh > 88) { sh = 88; sw = (sh * image.naturalWidth) / image.naturalHeight; }
-      try { ctx.drawImage(image, x - sw / 2, 906 - sh, sw, sh); imageDrawn = true; } catch (e) { imageDrawn = false; }
+      if (sh > 92) { sh = 92; sw = (sh * image.naturalWidth) / image.naturalHeight; }
+      try { ctx.drawImage(image, x - sw / 2, 992 - sh, sw, sh); imageDrawn = true; } catch (e) { imageDrawn = false; }
     }
     ctx.strokeStyle = MUTED; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x - 160, 1000); ctx.lineTo(x + 160, 1000); ctx.stroke();
@@ -376,11 +381,11 @@
     ctx.font = "italic 27px " + SERIF;
     ctx.fillText(VERSE, W / 2, 846);
 
-    // Two separate signature areas. The founder block is fixed: the ministry
-    // name and designation may never be abbreviated or replaced by a variant.
-    // The right block is the authorised administrator who signed this
-    // certificate; it stays blank when no administrator signature is configured
-    // rather than inventing one.
+    // Two separate signature areas. The founder block carries the authorised
+    // name (S.K. MASUKU), designation and official signing mark. The right
+    // block is the authorised administrator who signed this certificate; it
+    // stays blank when no administrator signature is configured rather than
+    // inventing one.
     var adminName = (sigMeta && sigMeta.administratorName) ? String(sigMeta.administratorName) : '';
     var adminTitle = (sigMeta && sigMeta.administratorTitle) ? String(sigMeta.administratorTitle) : ADMIN_DEFAULT_TITLE;
     drawSignatureBlock(ctx, 400, FOUNDER_NAME, FOUNDER_TITLE, sigImg);
@@ -390,7 +395,7 @@
 
     ctx.fillStyle = '#a09a8b';
     ctx.font = "20px " + SERIF;
-    ctx.fillText('Verify at prayerdome.net/academy — ' + certId, W / 2, 1082);
+    ctx.fillText('Certificate reference: ' + certId + '  ·  Issued by Prayer Dome Academy', W / 2, 1082);
   }
 
   function slug(v) {

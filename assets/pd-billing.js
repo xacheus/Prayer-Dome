@@ -25,7 +25,7 @@
   };
 
   var FOUNDER = {
-    name: 'SEEDWELL K. KHAYALETHU MASUKU',
+    name: 'S.K. MASUKU',
     title: 'Founder and President',
     organization: 'PRAYER DOME'
   };

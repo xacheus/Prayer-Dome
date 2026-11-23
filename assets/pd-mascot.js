@@ -1034,7 +1034,8 @@
     this.destroyed = false;
     this.speechBlocked = false;
     this.lastSpoken = '';
-    this.name = '';
+    // Keep the name restored above. A previous unconditional reset here made
+    // Domey ask for the member's name again on every page and every visit.
     this.history = [];
     this._stateTimer = null;
     this._actTimer = null;
@@ -2824,7 +2825,8 @@
       var token = { cancelled: false };
       return host.say(greeting(), { emote: 'happy' }).then(function () {
         if (!guard(token)) return null;
-        return askName(token);
+        // Returning members are greeted by name, not interrogated again.
+        return host.name || askName(token);
       }).then(function (name) {
         if (!guard(token)) return null;
         return host.say(name ? 'Thank you, ' + name + '. What would you like to do?' : 'What would you like to do?',

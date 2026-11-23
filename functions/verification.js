@@ -247,9 +247,12 @@ async function ensureMyCardHandler(data, context) {
   const mainRef = db.collection('membershipVerification').doc(id);
   const existingSnap = await mainRef.get();
   const existing = existingSnap.exists ? existingSnap.data() : null;
+  // 16 base64url characters = 96 bits. Keeping the token short leaves the
+  // printed QR at version 3 (29 modules) instead of version 4, so the code in
+  // the 68 px card back has visibly larger modules and scans reliably.
   const token = existing && validToken(String(existing.verificationRef || ''))
     ? String(existing.verificationRef)
-    : crypto.randomBytes(18).toString('base64url');
+    : crypto.randomBytes(12).toString('base64url');
 
   // A card status is derived from the live membership, except that an explicit
   // revoke/suspend/expiry (or a rejection) is preserved until an administrator
@@ -324,7 +327,11 @@ const region = functions.region(REGION);
 module.exports = {
   verifyMembership: region.https.onCall(verifyMembershipHandler),
   ensureMyCard: region.https.onCall(ensureMyCardHandler),
-  // Exported for unit-style checks.
+  // Exported for unit-style checks. These are pure helpers or accept an
+  // injected Firestore handle, so the public projection and the QR-pointer
+  // path can be exercised without deploying or touching live data.
   _normaliseId: normaliseId,
-  _resolveState: resolveState
+  _resolveState: resolveState,
+  _publicRecord: publicRecord,
+  _resolveRequest: resolveRequest
 };

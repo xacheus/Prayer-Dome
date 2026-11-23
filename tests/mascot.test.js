@@ -90,6 +90,17 @@ const SW = read('sw.js');
       .every((key) => typeof M[key] === 'function'));
 
   const host = M.mount('#stage', { name: 'Domey' });
+  // A member's name must survive the mount. It used to be read from storage
+  // and then immediately overwritten with '', so Domey asked again on every
+  // visit and on every page.
+  const namedDom = new JSDOM('<!doctype html><html><body><div id="stage"></div></body></html>',
+    { runScripts: 'outside-only', url: 'https://prayerdome.net/game' });
+  namedDom.window.localStorage.setItem('pd_domey_name', 'Grace');
+  namedDom.window.eval(MASCOT_JS);
+  const rememberedHost = namedDom.window.PDMascot.mount('#stage', { name: 'Domey' });
+  t('Domey remembers the member name across mounts', rememberedHost.name === 'Grace');
+  t('returning members are greeted by name instead of being asked again',
+    MASCOT_JS.includes('return host.name || askName(token)'));
   // Members can tap the speech bubble to skip ahead; the test does the same so
   // the suite does not sit through every line of dialogue in real time.
   const hurryTicker = setInterval(() => { try { host.hurry(); } catch (e) {} }, 90);

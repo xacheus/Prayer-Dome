@@ -132,7 +132,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+    <script src="/assets/qrcode-generator.js"></script>
     <script src="/assets/pd-upload.js"></script>
     
     <style>
@@ -569,7 +569,7 @@
         .cr80-back .cr80-kind { color: #8a6d1a; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .12); letter-spacing: .06em; }
         .cr80-back-body {
             display: grid;
-            grid-template-columns: clamp(48px, 15cqi, 68px) minmax(0, 1fr) minmax(96px, 31cqi);
+            grid-template-columns: clamp(52px, 18cqi, 78px) minmax(0, 1fr) minmax(96px, 31cqi);
             gap: clamp(7px, 2.1cqi, 13px);
             flex: 1;
             min-height: 0;
@@ -579,7 +579,7 @@
             background: #fff;
             border: 1px solid rgba(10, 77, 155, .2);
             border-radius: 7px;
-            padding: 4px;
+            padding: 5px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -589,6 +589,7 @@
             min-width: 0;
         }
         .cr80-qr svg, .cr80-qr img { width: 100%; height: auto; max-height: 100%; display: block; }
+        .cr80-qr svg { shape-rendering: crispEdges; }
         .cr80-qr small { font-size: clamp(.3rem, 1.2cqi, .42rem); color: #5b6b82; letter-spacing: .04em; text-transform: uppercase; line-height: 1.15; }
         .cr80-qr-fallback { font-size: .38rem; color: #5b6b82; word-break: normal; overflow-wrap: break-word; line-height: 1.25; }
         .cr80-back-info { display: grid; gap: 2px; align-content: center; min-width: 0; }
@@ -1306,7 +1307,7 @@
                             <img id="idSignature" src="" alt="" hidden>
                             <div class="cr80-sign-line"></div>
                             <small>Authorized signature</small>
-                            <span class="cr80-sign-name" id="idSignName">SEEDWELL K. KHAYALETHU MASUKU</span>
+                            <span class="cr80-sign-name" id="idSignName">S.K. MASUKU</span>
                             <small id="idSignRole">Founder and President</small>
                         </div>
                     </div>
@@ -1417,11 +1418,11 @@
             if (!data.signatoryName) return;
             localStorage.setItem('pd_membership_card_template', JSON.stringify({
                 churchName: 'PRAYER DOME',
-                signatoryName: data.signatoryName || 'SEEDWELL K. KHAYALETHU MASUKU',
-                signatoryRole: data.signatoryRole || 'Founder and President — Prayer Dome',
+                signatoryName: 'S.K. MASUKU',
+                signatoryRole: 'Founder and President — Prayer Dome',
                 phone: data.phone || '',
                 email: data.email || '',
-                signature: data.signature || ''
+                signature: data.signature || '/assets/pd-signature.png'
             }));
             if (typeof renderAuthorizedSignature === 'function') renderAuthorizedSignature();
             if (typeof currentMemberData !== 'undefined' && currentMemberData && typeof renderCard === 'function') {
@@ -2306,25 +2307,32 @@
         }
     };
     
-    /* The card template is managed in Admin → Membership Cards. Only an
-       administrator can save an authorized signature image; the member page
-       simply displays what the ministry has approved. When no template is
-       stored, the ministry signatory's printed name is shown with a signature
-       line — never a fabricated copy of a real person's signature. */
+    /* The card template is managed in Admin → Membership Cards. An
+       administrator may replace the signature image; the identity and the
+       official signing mark are fixed. The bundled mark means a card always
+       carries a real signature, even when the member is offline or the
+       template has not been saved yet. */
     function cardTemplate() {
         const defaults = {
             churchName: 'PRAYER DOME',
-            signatoryName: 'SEEDWELL K. KHAYALETHU MASUKU',
+            signatoryName: 'S.K. MASUKU',
             signatoryRole: 'Founder and President — Prayer Dome',
             phone: '+268 7658 1804',
             email: 'info@prayerdome.net',
-            signature: ''
+            signature: '/assets/pd-signature.png'
         };
         try {
             const raw = localStorage.getItem('pd_membership_card_template');
             if (!raw) return defaults;
             const saved = JSON.parse(raw);
-            return Object.assign(defaults, saved && typeof saved === 'object' ? saved : {});
+            const merged = Object.assign({}, defaults, saved && typeof saved === 'object' ? saved : {});
+            // The founder's name, designation and signing mark are not
+            // member-editable fields. An old or partial cache must not blank
+            // the signature or resurrect a superseded name.
+            merged.signatoryName = defaults.signatoryName;
+            merged.signatoryRole = defaults.signatoryRole;
+            if (!merged.signature) merged.signature = defaults.signature;
+            return merged;
         } catch (error) {
             return defaults;
         }
@@ -2379,10 +2387,15 @@
             return;
         }
         try {
-            const qr = qrcode(0, 'M');
+            // Level L keeps a 50-byte URL at 29 modules instead of 33, so the
+            // dots are ~15% larger on the 68 px card. The mark is printed on
+            // clean, laminated stock and is also offered as a vector PDF.
+            const qr = qrcode(0, 'L');
             qr.addData(verificationUrl(reference));
             qr.make();
-            host.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 0, scalable: true });
+            // A white quiet zone and a vector SVG keep the code scannable in
+            // the on-screen card, the 4× PNG export and the CR80 PDF alike.
+            host.innerHTML = qr.createSvgTag({ cellSize: 3, margin: 4, scalable: true });
             const svg = host.querySelector('svg');
             if (svg) {
                 svg.removeAttribute('width');
@@ -2815,6 +2828,5 @@
         setTimeout(() => toast.remove(), 5000);
     }
 </script>
-  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

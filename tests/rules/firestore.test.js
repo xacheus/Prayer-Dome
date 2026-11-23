@@ -146,7 +146,7 @@ const assert = require('node:assert/strict');
     // The fixed founder identity is public; only an administrator can replace
     // the stored signature images.
     await assertSucceeds(setDoc(doc(admin, 'settings/founder'), {
-      founderName: 'SEEDWELL K. KHAYALETHU MASUKU', founderTitle: 'Founder and President'
+      founderName: 'S.K. MASUKU', founderTitle: 'Founder and President'
     }));
     await assertSucceeds(getDoc(doc(guest, 'settings/founder')));
     await assertFails(setDoc(doc(member, 'settings/founder'), { founderName: 'Someone else' }));

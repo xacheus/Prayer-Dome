@@ -87,6 +87,8 @@ function assertOpsSane(ops) {
   const ops = h1.logs.drew ? h1.logs.drew.ops : [];
   t('drawing ops have finite in-range coordinates', assertOpsSane(ops), ops.length + ' ops');
   t('logo is drawn onto the certificate', ops.some(o => o[0] === 'drawImage'));
+  t('the official founder signature is drawn even without a cloud upload',
+    ops.filter(o => o[0] === 'drawImage').length >= 2);
   t('recipient, course and verse are rendered', ['Jane Doe', 'Foundations of Prayer'].every(s => ops.some(o => o[0] === 'fillText' && o[1] === s)));
   t('certificate id is included on the certificate', ops.some(o => o[0] === 'fillText' && o[1].includes('PD-FOUND-ABC123')));
 

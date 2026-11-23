@@ -208,7 +208,7 @@
             </div>
             <form class="verify-form" id="verifyForm">
                 <label for="verifyId" class="pd-visually-hidden" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);">Membership number</label>
-                <input id="verifyId" name="id" type="text" inputmode="text" autocomplete="off" placeholder="Membership number or card code" maxlength="40">
+                <input id="verifyId" name="id" type="text" inputmode="text" autocomplete="off" placeholder="Membership number or card code" maxlength="180" autocapitalize="off" spellcheck="false">
                 <button type="submit"><i class="pd-i pd-i-search" aria-hidden="true"></i> Verify</button>
             </form>
             <div class="verify-actions">
@@ -340,7 +340,18 @@
         }
 
         async function lookup(raw, isReference) {
-            const inputValue = String(raw || '').trim();
+            let inputValue = String(raw || '').trim();
+            // A member may paste the whole URL from a shared QR instead of the
+            // bare code. Accept either form, but keep the token's exact case.
+            if (/^https?:\/\//i.test(inputValue)) {
+                try {
+                    const parsed = new URL(inputValue);
+                    const ref = parsed.searchParams.get('ref');
+                    const id = parsed.searchParams.get('id');
+                    if (ref) { inputValue = ref.trim(); isReference = true; }
+                    else if (id) { inputValue = id.trim(); isReference = false; }
+                } catch (error) { /* keep the raw text for the server to judge */ }
+            }
             // Printed numbers are case-insensitive; secure card codes are not,
             // so never upper-case a pasted code.
             if (!isReference) input.value = /^PD[0-9]/i.test(inputValue) ? inputValue.toUpperCase() : inputValue;
@@ -387,6 +398,5 @@
     </script>
     <script src="/assets/pd-nav.js" defer></script>
     <script src="/assets/pd-app.js" defer></script>
-  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>
