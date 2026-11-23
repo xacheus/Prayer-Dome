@@ -2,8 +2,9 @@
 
 /**
  * Public Radio and Podcasts API.
- * Uses the same fallback data as the browser so a cold Vercel function never
- * returns misleading empty collections.
+ * Uses the same data as the browser. A station with no licensed stream is
+ * returned honestly with an empty streamUrl; podcasts are empty until an
+ * administrator publishes an episode with its rights recorded.
  */
 
 const CONTENT = (typeof window !== 'undefined' && window.PD_CONTENT)
@@ -71,9 +72,12 @@ function handler(req, res) {
     return send(res, 405, { success: false, error: 'Method not allowed' }, method);
   }
 
+  const radio = getRadio().map(serializeRadio);
   return send(res, 200, {
     success: true,
-    radio: getRadio().map(serializeRadio),
+    radio,
+    radioConfigured: radio.some((station) => Boolean(station.streamUrl)),
+    count: radio.length,
     podcasts: getPodcasts().map(serializePodcast)
   }, method);
 }

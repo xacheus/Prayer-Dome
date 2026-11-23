@@ -17,7 +17,7 @@
   const store = bridge.firestore;
   const Billing = window.PDBilling;
   const {
-    collection, getDocs, getDoc, doc, query, orderBy, limit
+    collection, getDocs, getDoc, doc, setDoc, serverTimestamp, query, orderBy, limit
   } = store;
 
   let payments = [];
@@ -25,6 +25,7 @@
   let walletTransactions = [];
   let wallets = [];
   let plans = [];
+  let programmes = [];
   let activity = [];
 
   const esc = (value) => String(value == null ? '' : value)
@@ -245,27 +246,55 @@
       body.innerHTML = '<p>Payment request not found.</p>';
       return;
     }
-    const evidence = row.evidenceUrl
-      ? (/\.pdf($|\?)/i.test(row.evidenceUrl)
+
+    // Receipts uploaded through Storage have a private path, not a public URL.
+    // Ask the billing callable for a 15-minute signed URL; never guess one.
+    let evidenceSource = row.evidenceUrl || '';
+    let evidenceError = '';
+    if (!evidenceSource && row.evidencePath) {
+      try {
+        const signed = await callBilling('evidence.signedUrl', { path: row.evidencePath });
+        evidenceSource = signed.url || '';
+      } catch (error) {
+        evidenceError = error.message;
+      }
+    }
+    const evidenceType = row.evidenceType || (/\.pdf($|\?)/i.test(String(row.evidencePath || evidenceSource)) ? 'application/pdf' : 'image');
+    const evidence = evidenceSource
+      ? (/pdf/i.test(evidenceType)
         ? '<a class="btn btn-outline btn-sm" href="' + esc(evidenceSource) + '" target="_blank" rel="noopener"><i class="pd-i pd-i-file-text"></i> Open PDF receipt</a>'
-        : '<a href="' + esc(evidenceSource) + '" target="_blank" rel="noopener"><img src="' + esc(evidenceSource) + '" alt="Payment receipt" style="max-width:100%;max-height:320px;border-radius:12px;border:1px solid var(--border);"></a>')
-      : '<p style="color:var(--pd-red);font-weight:700;">No receipt has been uploaded. This payment cannot be approved.</p>';
+        : '<a href="' + esc(evidenceSource) + '" target="_blank" rel="noopener"><img src="' + esc(evidenceSource) + '" alt="Payment receipt" style="max-width:100%;max-height:380px;border-radius:12px;border:1px solid var(--border);"></a>')
+      : '<p style="color:var(--pd-red);font-weight:700;">' + (evidenceError ? 'The private receipt could not be opened: ' + esc(evidenceError) : 'No receipt has been uploaded. This payment cannot be approved.') + '</p>';
+
+    const snapshotPrice = row.planSnapshot && Number(row.planSnapshot.price);
+    const livePlan = plans.filter((plan) => plan.id === row.planId)[0];
+    const expectedPrice = snapshotPrice || (livePlan && Number(livePlan.price)) || 0;
+    const amountCheck = row.kind === 'subscription' && expectedPrice
+      ? (Math.abs(Number(row.amount) - expectedPrice) < 0.005
+        ? '<p style="margin:0 0 12px;padding:9px 12px;border-radius:10px;background:rgba(16,185,129,.1);color:#047857;font-size:.78rem;font-weight:700;"><i class="pd-i pd-i-circle-check"></i> Amount matches the saved plan price (' + money(expectedPrice, row.currency) + ').</p>'
+        : '<p style="margin:0 0 12px;padding:9px 12px;border-radius:10px;background:rgba(239,68,68,.1);color:#b91c1c;font-size:.78rem;font-weight:700;"><i class="pd-i pd-i-triangle-alert"></i> Amount does not match the saved plan price (' + money(expectedPrice, row.currency) + '). Do not approve until this is explained.</p>')
+      : '';
+    const reviewer = (bridge.auth && bridge.auth.currentUser && (bridge.auth.currentUser.email || bridge.auth.currentUser.uid)) || 'Signed-in administrator';
+
     const details = [
       ['Reference', row.reference],
       ['Member', row.userName || row.userEmail || row.userId],
-      ['Plan / deposit', row.planName || (row.kind === 'wallet_deposit' ? 'Wallet deposit' : 'Support plan')],
+      ['Programme', row.program || ''],
+      ['Plan / deposit', row.planName || (row.kind === 'wallet_deposit' ? 'Savings / wallet contribution' : 'Support plan')],
       ['Amount', money(row.amount, row.currency)],
+      ['Expected plan price', expectedPrice ? money(expectedPrice, row.currency) : ''],
       ['Method', row.method || 'mobile-money'],
       ['Status', statusLabel(row.status)],
       ['Created', date(row.createdAt)],
       ['Submitted', date(row.submittedAt)],
-      ['Approved by', row.approvedBy || ''],
+      ['Reviewed by', row.approvedBy || row.rejectedBy || ''],
+      ['Reviewing now', reviewer],
       ['Rejection reason', row.rejectionReason || '']
     ].filter((item) => item[1]);
     body.innerHTML =
       '<dl class="verify-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr));gap:8px;margin:0 0 16px;">' +
         details.map((item) => '<div style="background:var(--bg-elev);border:1px solid var(--border);border-radius:10px;padding:8px 10px;min-width:0;"><dt style="font-size:.58rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:var(--text-sub);">' + esc(item[0]) + '</dt><dd style="margin:3px 0 0;font-size:.82rem;font-weight:700;overflow-wrap:break-word;">' + esc(item[1]) + '</dd></div>').join('') +
-      '</dl>' +
+      '</dl>' + amountCheck +
       '<h3 style="font-size:.92rem;margin:0 0 8px;">Payment evidence</h3>' + evidence +
       (row.status === 'pending_verification' ?
         '<div style="margin-top:18px;padding:14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-elev);">' +
@@ -485,6 +514,7 @@
       const snapshot = await getDocs(collection(bridge.db, 'supportPlans'));
       plans = snapshot.docs.map((entry) => normalizePlan(entry.data(), entry.id)).sort((a, b) => a.order - b.order || a.name.localeCompare(b.name));
       renderPlans();
+      await window.loadProgrammesAdmin();
     } catch (error) {
       console.error('Plans load failed:', error);
       body.innerHTML = emptyRow(8, 'Plans could not be loaded: ' + error.message);
@@ -611,6 +641,146 @@
     }
   };
 
+  /* --------------------------------------------------------- programme cards */
+  window.loadProgrammesAdmin = async function () {
+    const body = document.getElementById('programmeList');
+    if (!body) return;
+    body.innerHTML = loadingRow(7, 'Loading programme cards…');
+    try {
+      const snapshot = await getDocs(collection(bridge.db, 'supportProgrammes'));
+      programmes = snapshot.docs.map((entry) => Billing.normalizeProgramme(entry.data(), entry.id));
+      programmes.sort((a, b) => a.order - b.order);
+      if (!programmes.length) {
+        programmes = (Billing.SUPPORT_PROGRAMMES || []).map((row) => Billing.normalizeProgramme(row, row.id));
+        body.innerHTML = emptyRow(7, 'The approved cards are shown from the bundled defaults. Press “Install approved cards” to store editable copies in Firestore.');
+        return;
+      }
+      renderProgrammes();
+    } catch (error) {
+      console.error('Programme load failed:', error);
+      programmes = (Billing.SUPPORT_PROGRAMMES || []).map((row) => Billing.normalizeProgramme(row, row.id));
+      renderProgrammes();
+    }
+  };
+
+  function renderProgrammes() {
+    const body = document.getElementById('programmeList');
+    if (!body) return;
+    if (!programmes.length) {
+      body.innerHTML = emptyRow(7, 'No programme cards configured.');
+      return;
+    }
+    body.innerHTML = programmes.map((programme) => {
+      const planNames = programme.kind === 'savings'
+        ? (programme.contributionOptions || []).map((value) => money(value, 'USD')).join(', ')
+        : (programme.planPrograms || []).join(', ') || 'None selected';
+      return '<tr>' +
+        '<td>' + Number(programme.order) + '</td>' +
+        '<td><strong>' + esc(programme.name) + '</strong><br><span style="font-size:.7rem;color:var(--text-sub);">' + esc(programme.id) + '</span></td>' +
+        '<td>' + esc(programme.kind === 'savings' ? 'Savings' : 'Plans') + '</td>' +
+        '<td>' + esc(planNames) + '</td>' +
+        '<td>' + esc(programme.availability || 'Open') + '</td>' +
+        '<td><span class="audit-pill ' + (programme.active ? 'ok' : 'bad') + '">' + (programme.active ? 'Visible' : 'Hidden') + '</span></td>' +
+        '<td><button class="btn btn-outline btn-sm" type="button" onclick="openProgrammeEditor(\'' + esc(programme.id) + '\')"><i class="pd-i pd-i-square-pen"></i> Edit</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  window.openProgrammeEditor = function (id) {
+    const programme = programmes.filter((row) => row.id === id)[0]
+      || (Billing.SUPPORT_PROGRAMMES || []).map((row) => Billing.normalizeProgramme(row, row.id)).filter((row) => row.id === id)[0];
+    if (!programme) return window.toast('That programme card was not found.', 'error');
+    document.getElementById('programmeId').value = programme.id;
+    document.getElementById('programmeName').value = programme.name || '';
+    document.getElementById('programmeEyebrow').value = programme.eyebrow || '';
+    document.getElementById('programmeKind').value = programme.kind === 'savings' ? 'savings' : 'plans';
+    document.getElementById('programmeAvailability').value = programme.availability || 'Open';
+    document.getElementById('programmeOrder').value = programme.order || 100;
+    document.getElementById('programmeActive').checked = programme.active !== false;
+    document.getElementById('programmeDescription').value = programme.description || '';
+    document.getElementById('programmeImage').value = programme.image || '';
+    document.getElementById('programmeImageAlt').value = programme.imageAlt || '';
+    document.getElementById('programmeEligibility').value = programme.eligibility || '';
+    document.getElementById('programmeNote').value = programme.note || '';
+    document.getElementById('programmeContributions').value = (programme.contributionOptions || []).join(', ');
+    document.querySelectorAll('.programme-plan-program').forEach((box) => {
+      box.checked = (programme.planPrograms || []).indexOf(box.value) !== -1;
+    });
+    window.toggleProgrammeKind();
+    document.getElementById('modalProgrammeEditor').style.display = 'flex';
+  };
+
+  window.toggleProgrammeKind = function () {
+    const savings = (document.getElementById('programmeKind') || {}).value === 'savings';
+    const plansGroup = document.getElementById('programmePlansGroup');
+    const savingsGroup = document.getElementById('programmeSavingsGroup');
+    if (plansGroup) plansGroup.style.display = savings ? 'none' : 'block';
+    if (savingsGroup) savingsGroup.style.display = savings ? 'block' : 'none';
+  };
+
+  window.saveProgrammeCard = async function () {
+    const id = String((document.getElementById('programmeId') || {}).value || '').trim().toLowerCase();
+    if (!/^[a-z0-9-]{3,60}$/.test(id)) return window.toast('That programme id is not valid.', 'error');
+    const name = String((document.getElementById('programmeName') || {}).value || '').trim();
+    if (!name) return window.toast('Enter a programme name.', 'error');
+    const kind = (document.getElementById('programmeKind') || {}).value === 'savings' ? 'savings' : 'plans';
+    const image = String((document.getElementById('programmeImage') || {}).value || '').trim();
+    if (image && !/^(\/assets\/|https:\/\/)/i.test(image)) return window.toast('Use an /assets/ image path or an https:// image URL.', 'error');
+    const contributions = String((document.getElementById('programmeContributions') || {}).value || '')
+      .split(',').map((value) => Number(value.trim())).filter((value) => value >= 5);
+    if (kind === 'savings' && !contributions.length) return window.toast('Add at least one savings contribution of $5 or more.', 'error');
+    const planPrograms = Array.from(document.querySelectorAll('.programme-plan-program:checked')).map((box) => box.value);
+    if (kind === 'plans' && !planPrograms.length) return window.toast('Choose at least one plan programme.', 'error');
+    const payload = {
+      id,
+      name,
+      eyebrow: String((document.getElementById('programmeEyebrow') || {}).value || '').trim(),
+      kind,
+      availability: String((document.getElementById('programmeAvailability') || {}).value || 'Open').trim() || 'Open',
+      order: Number((document.getElementById('programmeOrder') || {}).value) || 100,
+      active: !!(document.getElementById('programmeActive') || {}).checked,
+      description: String((document.getElementById('programmeDescription') || {}).value || '').trim(),
+      image: image || '/assets/support/support-education.jpg',
+      imageAlt: String((document.getElementById('programmeImageAlt') || {}).value || name).trim(),
+      eligibility: String((document.getElementById('programmeEligibility') || {}).value || '').trim(),
+      note: String((document.getElementById('programmeNote') || {}).value || '').trim(),
+      planPrograms,
+      contributionOptions: kind === 'savings' ? contributions : [],
+      updatedAt: serverTimestamp(),
+      updatedBy: (bridge.auth && bridge.auth.currentUser && bridge.auth.currentUser.email) || ''
+    };
+    window.showLoading();
+    try {
+      await setDoc(doc(bridge.db, 'supportProgrammes', id), payload, { merge: true });
+      window.hideLoading();
+      window.closeModal('modalProgrammeEditor');
+      window.toast('Programme card saved. /support now shows the updated wording.');
+      await window.loadProgrammesAdmin();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
+  window.installProgrammeCards = async function () {
+    if (!window.confirm('Install or update the four approved programme cards in Firestore? Existing wording for the same ids is overwritten.')) return;
+    const rows = (Billing.SUPPORT_PROGRAMMES || []).map((row) => Billing.normalizeProgramme(row, row.id));
+    if (!rows.length) return window.toast('The bundled programme defaults are missing.', 'error');
+    window.showLoading();
+    try {
+      await Promise.all(rows.map((row) => setDoc(doc(bridge.db, 'supportProgrammes', row.id), Object.assign({}, row, {
+        updatedAt: serverTimestamp(),
+        updatedBy: (bridge.auth && bridge.auth.currentUser && bridge.auth.currentUser.email) || ''
+      }), { merge: true })));
+      window.hideLoading();
+      window.toast(rows.length + ' programme cards installed.');
+      await window.loadProgrammesAdmin();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
   /* ----------------------------------------------------------------- activity */
   async function fetchActivity(max) {
     const [logs, audits] = await Promise.allSettled([
@@ -709,6 +879,7 @@
   /* Re-render the overview when the dashboard cache refreshes. */
   window.PDBillingAdmin = {
     loadPayments: window.loadPayments,
+    loadProgrammesAdmin: window.loadProgrammesAdmin,
     loadSubscriptions: window.loadSubscriptions,
     loadWalletTransactions: window.loadWalletTransactions,
     loadWalletBalances: window.loadWalletBalances,

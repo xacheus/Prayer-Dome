@@ -169,9 +169,11 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
     news.headers['cache-control'].includes('s-maxage=300'));
 
   const radio = await invoke('api/radio.js');
-  test('/api/radio returns stations and podcasts',
+  test('/api/radio is honest about stations, streams and podcasts',
     radio.status === 200 && radio.json.success === true && radio.json.radio.length > 0 &&
-    radio.json.podcasts.length > 0);
+    Array.isArray(radio.json.podcasts) && typeof radio.json.radioConfigured === 'boolean' &&
+    radio.json.radio.every(station => !/soundhelix|sample\.mp3/i.test(station.streamUrl || '')) &&
+    radio.json.radioConfigured === radio.json.radio.some(station => Boolean(station.streamUrl)));
 
   const ice = await invoke('api/system.js', 'GET', null, { op: 'live-ice' });
   test('/api/live-ice returns STUN servers and no committed TURN secret',

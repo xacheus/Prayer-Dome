@@ -958,6 +958,12 @@
             overflow-wrap: break-word;
         }
         .notif-reminder-controls { align-items: center; }
+        .widget-support-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 10px; padding: 0 16px 16px; }
+        .widget-support-item { background: var(--bg-primary); border: 1px solid var(--border); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .widget-support-item strong { font-size: .82rem; color: var(--text-main); display: flex; align-items: center; gap: 6px; }
+        .widget-support-item span { font-size: .74rem; line-height: 1.5; color: var(--text-sub); }
+        .widget-support-item a, .widget-support-item button { font-size: .74rem; font-weight: 700; color: var(--accent-blue, #0A4D9B); background: none; border: 0; padding: 0; text-align: left; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; }
+        .widget-support-item a:hover, .widget-support-item button:hover { text-decoration: underline; }
         .notif-time {
             width: auto;
             min-width: 118px;
@@ -1321,6 +1327,46 @@
                                 </label>
                                 <button class="btn btn-outline notif-btn" type="button" onclick="savePrayerReminder()"><i class="pd-i pd-i-check"></i> Save</button>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Widgets & lock screen: one honest place that says what
+                         the phone can show outside the app, and what it cannot. -->
+                    <div class="notif-card" id="widgetsLockRow">
+                        <div class="notif-card-head">
+                            <div class="notif-card-copy">
+                                <strong><i class="pd-i pd-i-smartphone"></i> Widgets &amp; lock screen</strong>
+                                <small>What Prayer Dome can show on your home screen and lock screen — and what it cannot.</small>
+                            </div>
+                            <div class="notif-card-actions">
+                                <a class="btn btn-outline notif-btn" href="/widgets"><i class="pd-i pd-i-layout-dashboard"></i> Verse widget</a>
+                            </div>
+                        </div>
+                        <div class="widget-support-grid">
+                            <div class="widget-support-item">
+                                <strong><i class="pd-i pd-i-book-open"></i> Daily Verse</strong>
+                                <span>Android home-screen widget in the Prayer Dome app. Keyguard layout on supported Android versions. No iPhone widget.</span>
+                                <a href="/widgets">Set it up <i class="pd-i pd-i-arrow-right"></i></a>
+                            </div>
+                            <div class="widget-support-item">
+                                <strong><i class="pd-i pd-i-hands-praying"></i> Prayer Reminder</strong>
+                                <span>A notification at the time you choose, not a widget. Your phone shows it on the lock screen when notifications are allowed.</span>
+                                <button type="button" onclick="document.getElementById('prayerReminderTime').focus()">Set a time <i class="pd-i pd-i-arrow-right"></i></button>
+                            </div>
+                            <div class="widget-support-item">
+                                <strong><i class="pd-i pd-i-radio"></i> Radio</strong>
+                                <span>Background audio with lock-screen media controls where your browser or app allows it. There is no radio home-screen widget.</span>
+                                <a href="/radio">Open radio <i class="pd-i pd-i-arrow-right"></i></a>
+                            </div>
+                            <div class="widget-support-item">
+                                <strong><i class="pd-i pd-i-video"></i> Live Service</strong>
+                                <span>Live and upcoming services are pages and notifications. There is no live-service home-screen widget.</span>
+                                <a href="/live">Open live <i class="pd-i pd-i-arrow-right"></i></a>
+                            </div>
+                        </div>
+                        <div class="notif-note" style="margin:10px 0 0;">
+                            <i class="pd-i pd-i-info" aria-hidden="true"></i>
+                            A website tab cannot add a home-screen widget. On Android use <strong>Install app</strong> in the browser menu for a shortcut, or install the Prayer Dome Android app for the native Daily Verse widget. On iPhone, use the lock-screen wallpaper from <a href="/widgets">/widgets</a>. Widgets never bypass your phone’s notification permission.
                         </div>
                     </div>
 

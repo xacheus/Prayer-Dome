@@ -5,7 +5,7 @@
  * Google Maps place link supplied by the ministry and matched against the
  * place name Google returns for that link:
  *
- *   Freedom Zambia          maps.app.goo.gl/rZXU1owB82cCMi166
+ *   Prayer Dome Zambia          maps.app.goo.gl/rZXU1owB82cCMi166
  *     Google place: "Prayer Dome Zambia" — Chama 54049, Zambia
  *     3d -11.193343   4d 33.1525404   plus code R543+M2
  *
@@ -38,7 +38,7 @@
   var OFFICIAL = [
     {
       id: 'freedom-zambia',
-      name: 'Freedom Zambia',
+      name: 'Prayer Dome Zambia',
       country: 'Zambia',
       province: 'Muchinga',
       district: 'Chama',

@@ -11,7 +11,7 @@
   'use strict';
   var TEAM = [
   {
-    "name": "Seedwell K. Khayalethu Masuku",
+    "name": "Seedwell Khayalethu Masuku",
     "title": "Founder and President",
     "category": "founder",
     "image": "https://i.ibb.co/RTbNh1hB/founder-2.jpg",

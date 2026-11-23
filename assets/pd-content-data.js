@@ -100,16 +100,11 @@ PD_CONTENT.DEFAULT_RADIO = [
   {
     id: 'radio-1',
     name: 'Prayer Dome Radio',
-    tagline: 'Worship, teaching and prayer around the clock',
-    streamUrl: 'https://stream.radio.co/sample.mp3',   // admin replaces with licensed stream
+    tagline: 'A licensed stream has not been connected yet',
+    // Intentionally empty. Never point members at a sample or unlicensed URL;
+    // an administrator adds the real, licensed station stream in Admin → Media.
+    streamUrl: '',
     icon: 'pd-i-radio'
-  },
-  {
-    id: 'radio-2',
-    name: 'Prayer Dome Worship Mix',
-    tagline: 'Continuous worship atmosphere',
-    streamUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3', // demo audio — replace in Admin
-    icon: 'pd-i-music'
   }
 ];
 
@@ -118,14 +113,21 @@ PD_CONTENT.DEFAULT_RADIO = [
    uses this schedule to name the current programme honestly; it never presents
    the schedule itself as a live broadcast. */
 PD_CONTENT.RADIO_PROGRAMMES = [
-  { days: [0,1,2,3,4,5,6], start: 0, end: 360, title: 'Night Watch & Worship', host: 'Prayer Dome Radio', kind: 'Music and prayer' },
-  { days: [1,2,3,4,5], start: 360, end: 540, title: 'Morning Devotion', host: 'Prayer Dome Ministry Team', kind: 'Devotion and prayer' },
-  { days: [1,2,3,4,5], start: 540, end: 720, title: 'Word for the Day', host: 'Teaching Team', kind: 'Bible teaching' },
-  { days: [0,1,2,3,4,5,6], start: 720, end: 900, title: 'Worship Midday', host: 'Prayer Dome Worship', kind: 'Worship music' },
-  { days: [1,2,3,4,5], start: 900, end: 1080, title: 'Afternoon Encouragement', host: 'Pastoral Team', kind: 'Encouragement' },
-  { days: [0,1,2,3,4,5,6], start: 1080, end: 1260, title: 'Evening Praise', host: 'Prayer Dome Worship', kind: 'Worship and testimony' },
-  { days: [0,1,2,3,4,5,6], start: 1260, end: 1440, title: 'Late Night Prayer', host: 'Intercession Team', kind: 'Prayer and quiet worship' }
+  { id: 'morning-prayer', days: [0,1,2,3,4,5,6], start: 300, end: 360, title: 'Morning Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and scripture' },
+  { id: 'bible-teaching', days: [0,1,2,3,4,5,6], start: 360, end: 420, title: 'Bible Teaching', host: 'Prayer Dome Teaching Team', kind: 'Bible teaching' },
+  { id: 'gospel-worship', days: [0,1,2,3,4,5,6], start: 420, end: 540, title: 'Gospel Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music' },
+  { id: 'encouragement', days: [0,1,2,3,4,5,6], start: 540, end: 720, title: 'Encouragement', host: 'Pastoral Team', kind: 'Encouragement and prayer' },
+  { id: 'scripture-reflection', days: [0,1,2,3,4,5,6], start: 720, end: 900, title: 'Scripture Reflection', host: 'Prayer Dome Ministry Team', kind: 'Scripture reflection' },
+  { id: 'afternoon-worship', days: [0,1,2,3,4,5,6], start: 900, end: 1080, title: 'Afternoon Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music' },
+  { id: 'evening-prayer', days: [0,1,2,3,4,5,6], start: 1080, end: 1200, title: 'Evening Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and thanksgiving' },
+  { id: 'announcements', days: [0,1,2,3,4,5,6], start: 1200, end: 1230, title: 'Announcements', host: 'Prayer Dome Office', kind: 'Church announcements' },
+  { id: 'night-watch', days: [0,1,2,3,4,5,6], start: 1230, end: 300, title: 'Night Watch & Worship', host: 'Prayer Dome Radio', kind: 'Quiet worship and prayer' }
 ];
+
+PD_CONTENT.RADIO_WELCOME = 'Welcome to Prayer Dome Radio, a listening room from Prayer Dome Ministries. You are among a family that prays in Zambia, Eswatini, South Africa, Malawi and Ireland. Settle in, breathe slowly, and let the Word of God and worship music steady your heart. Every programme below is scheduled content, not a claim that a live studio is on air.';
+
+PD_CONTENT.RADIO_CLOSING = 'Thank you for listening to Prayer Dome Radio. Go in peace, keep the Word of God close, and remember that you are prayed for. Prayer Dome Ministries — a house of prayer for all nations.';
+
 
 PD_CONTENT.radioClock = function (date) {
   var when = date instanceof Date ? date : new Date(date || Date.now());
@@ -152,7 +154,10 @@ PD_CONTENT.currentRadioProgramme = function (date) {
   var found = null;
   for (var i = 0; i < list.length; i++) {
     var item = list[i];
-    if (item.days.indexOf(clock.weekday) >= 0 && clock.minutes >= item.start && clock.minutes < item.end) { found = item; break; }
+    var inSlot = item.end > item.start
+      ? (clock.minutes >= item.start && clock.minutes < item.end)
+      : (clock.minutes >= item.start || clock.minutes < item.end);
+    if (item.days.indexOf(clock.weekday) >= 0 && inSlot) { found = item; break; }
   }
   return { clock: clock, programme: found };
 };
@@ -164,35 +169,10 @@ PD_CONTENT.radioTimeLabel = function (minutes) {
 };
 
 /* --- Podcast episodes (admin can replace) ---------------------------------- */
-PD_CONTENT.DEFAULT_PODCASTS = [
-  {
-    id: 'pod-1',
-    title: 'The Father Who Ran — A Story of Grace',
-    series: 'Narrated Bible Stories',
-    description: 'The prodigal son, told as a story you can hear. Part of the Prayer Dome sermon collection.',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // demo audio — replace in Admin
-    duration: '~12 min',
-    date: null
-  },
-  {
-    id: 'pod-2',
-    title: 'Daily Encouragement — He Does Everything Blamelessly',
-    series: 'Daily Encouragement',
-    description: 'A short word of faith from Mark 7:37 to carry with you through the day.',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', // demo audio — replace in Admin
-    duration: '~5 min',
-    date: null
-  },
-  {
-    id: 'pod-3',
-    title: 'The Giant Was the Smaller Problem',
-    series: 'Narrated Bible Stories',
-    description: 'David and Goliath — a fresh hearing of an old, mighty story.',
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', // demo audio — replace in Admin
-    duration: '~15 min',
-    date: null
-  }
-];
+PD_CONTENT.DEFAULT_PODCASTS = [];
+// Podcast episodes are published only from Admin → Media after the audio and
+// its rights are recorded. The old sample SoundHelix links were removed
+// because they were not Prayer Dome content and were not licensed to us.
 
 /* --- Community statistics baseline ---------------------------------------- */
 PD_CONTENT.DEFAULT_STATS = {

@@ -365,6 +365,34 @@
             .sp-updates form { padding: 18px; }
         }
 
+        /* ---- four public programme cards ---- */
+        .programme-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+        .programme-card { display: flex; flex-direction: column; min-width: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-sm); }
+        .programme-media { position: relative; height: 168px; background: #0a3d7a; overflow: hidden; }
+        .programme-media img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .programme-media::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(4,20,45,.02) 25%, rgba(4,20,45,.78) 100%); }
+        .programme-status { position: absolute; z-index: 2; left: 14px; top: 14px; padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.94); color: #064e3b; font-size: .6rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+        .programme-media-copy { position: absolute; z-index: 2; left: 16px; right: 16px; bottom: 12px; color: #fff; }
+        .programme-media-copy span { display: block; font-size: .58rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: #f6df8a; }
+        .programme-media-copy h3 { margin: 3px 0 0; font-size: clamp(1.05rem, 2.4vw, 1.3rem); line-height: 1.2; color: #fff; }
+        .programme-body { display: flex; flex-direction: column; flex: 1; gap: 12px; padding: 16px; }
+        .programme-body > p { margin: 0; font-size: .8rem; line-height: 1.55; color: var(--text-sub); }
+        .programme-facts { display: grid; gap: 8px; margin: 0; padding: 0; }
+        .programme-facts > div { border-left: 3px solid rgba(10,77,155,.22); padding-left: 10px; }
+        .programme-facts dt { font-size: .55rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--pd-green); }
+        .programme-facts dd { margin: 2px 0 0; font-size: .74rem; line-height: 1.45; color: var(--text-main); overflow-wrap: anywhere; }
+        .programme-choose { margin-top: auto; padding-top: 4px; display: grid; gap: 8px; }
+        .programme-choose label { font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .programme-choose select { padding: 11px 12px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--bg-base); color: var(--text-main); font-size: .82rem; font-weight: 700; }
+        .programme-amount { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(10,77,155,.06); border: 1px solid rgba(10,77,155,.14); }
+        .programme-amount span { font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--text-sub); }
+        .programme-amount strong { font-size: 1.1rem; color: var(--pd-navy); white-space: nowrap; }
+        .programme-choose .btn-main { padding: 12px 16px; font-size: .78rem; }
+        .programme-note { margin: 0; font-size: .66rem; line-height: 1.5; color: var(--text-sub); }
+        .programme-savings { padding: 10px 12px; border-radius: 12px; background: rgba(212,175,55,.12); border: 1px solid rgba(212,175,55,.35); font-size: .72rem; line-height: 1.5; color: var(--text-main); }
+        @media (max-width: 720px) { .programme-grid { grid-template-columns: 1fr; } .programme-media { height: 155px; } }
+        @media (max-width: 380px) { .programme-body { padding: 14px; } .programme-amount { align-items: flex-start; flex-direction: column; gap: 2px; } }
+
         /* ---- subscription catalogue ---- */
         .plan-catalog { display: grid; gap: 22px; }
         .plan-program { background: var(--bg-card); border: 1px solid var(--border); border-radius: 26px; padding: clamp(16px, 3vw, 26px); box-shadow: var(--shadow-sm); }
@@ -398,6 +426,10 @@
         .checkout-grid dt { font-size: .55rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); margin: 0; }
         .checkout-grid dd { margin: 3px 0 0; font-size: .84rem; font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; }
         .checkout-ref { font-family: 'SFMono-Regular', Consolas, monospace; letter-spacing: .06em; color: var(--pd-navy); word-break: break-all; }
+        .checkout-paybox { display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:12px 0;padding:13px 14px;border:1px solid rgba(212,175,55,.5);background:rgba(212,175,55,.12);border-radius:14px; }
+        .checkout-paybox span { display:block;font-size:.58rem;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--text-sub); }
+        .checkout-paybox strong { display:block;font-size:1.22rem;letter-spacing:.04em;color:var(--pd-navy); }
+        .checkout-paybox small { display:block;font-size:.66rem;color:var(--text-sub); }
         .checkout-instructions { background: rgba(10,77,155,.06); border: 1px solid rgba(10,77,155,.14); border-radius: 14px; padding: 13px 15px; font-size: .79rem; line-height: 1.58; color: var(--text-main); }
         .checkout-actions { display: grid; gap: 9px; margin-top: 15px; }
         .checkout-actions .btn-main { margin: 0; }
@@ -504,21 +536,21 @@
         <div class="sp-hero-content">
             <span class="sp-hero-eyebrow"><i class="pd-i pd-i-hand-helping"></i>&nbsp; KINGDOM SUPPORT &amp; FINANCE</span>
             <h1 class="sp-hero-title">Seed Today. <span>Harvest Tomorrow.</span></h1>
-            <p class="sp-hero-sub">The Prayer Dome community supports its members with education, business seeding and compassion cover — empowering every household to walk in provision.</p>
+            <p class="sp-hero-sub">Four approved programmes for Prayer Dome households: business education, financial cover, a member-held savings programme, and community and family support. Every payment is verified by the finance team before any plan becomes active.</p>
             <div class="sp-hero-stats">
-                <div class="sp-hero-stat"><div class="sp-hero-num">12 mo</div><div class="sp-hero-lbl">Maturity</div></div>
+                <div class="sp-hero-stat"><div class="sp-hero-num">4</div><div class="sp-hero-lbl">Approved programmes</div></div>
                 <div class="sp-hero-stat"><div class="sp-hero-num">11</div><div class="sp-hero-lbl">Support plans</div></div>
-                <div class="sp-hero-stat"><div class="sp-hero-num">3</div><div class="sp-hero-lbl">Programs</div></div>
-                <div class="sp-hero-stat"><div class="sp-hero-num">100%</div><div class="sp-hero-lbl">Community</div></div>
+                <div class="sp-hero-stat"><div class="sp-hero-num">12 mo</div><div class="sp-hero-lbl">Programme term</div></div>
+                <div class="sp-hero-stat"><div class="sp-hero-num">Manual</div><div class="sp-hero-lbl">Payment review</div></div>
             </div>
         </div>
     </section>
 
     <!-- TABS -->
     <div class="tab-wrapper">
-        <div class="tab-item active" onclick="setView('programs', this)">GLOBAL VISION</div>
+        <div class="tab-item active" onclick="setView('programs', this)">PROGRAMMES</div>
         <div class="tab-item" onclick="setView('myplans', this)">MY PLANS</div>
-        <div class="tab-item" onclick="setView('wallet', this)">SECURE WALLET</div>
+        <div class="tab-item" onclick="setView('wallet', this)">SAVINGS &amp; WALLET</div>
     </div>
 
     <main class="page-container">
@@ -529,112 +561,17 @@
         <div id="view-programs" class="view-section active">
             <p style="text-align: center; color: var(--text-sub); margin-bottom: 30px; font-weight: 500;">Choose a support plan, pay its exact monthly amount, and upload your receipt. A plan becomes active only after the finance team verifies the payment against the ministry account.</p>
 
-            <section class="sp-section" aria-labelledby="subscriptionPlans" id="planCatalogSection">
+            <section class="sp-section" aria-labelledby="programmeHeading" id="planCatalogSection">
                 <div class="sp-section-head">
-                    <span class="sp-eyebrow">Subscriptions</span>
-                    <h2 id="subscriptionPlans">Every support plan and its exact monthly amount</h2>
-                    <p>Prices are in US dollars and billed monthly. Each plan runs inside a 12-month support programme. Nothing is activated by clicking Subscribe — your plan starts after a verified payment.</p>
+                    <span class="sp-eyebrow">Four approved programmes</span>
+                    <h2 id="programmeHeading">Choose the programme that fits your household</h2>
+                    <p>Every card below is an approved Prayer Dome programme. The plans and prices are read from the live support catalogue and enforced again by the billing server. Selecting a plan creates a payment request only — nothing becomes active until finance verifies your receipt.</p>
                 </div>
-                <div id="planCatalog" class="plan-catalog" aria-live="polite">
-                    <div class="plan-loading"><div class="spinner" style="width:34px;height:34px;border-width:3px;"></div><span>Loading the current plan catalogue…</span></div>
+                <div id="planCatalog" class="programme-grid" aria-live="polite">
+                    <div class="plan-loading"><div class="spinner" style="width:34px;height:34px;border-width:3px;"></div><span>Loading the approved programmes…</span></div>
                 </div>
-                <p class="sp-impact-note" id="planCatalogNote">Payment is verified manually. Keep your mobile-money receipt — you will upload it at checkout.</p>
+                <p class="sp-impact-note" id="planCatalogNote"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> Payment is verified manually. Keep your mobile-money receipt — you will upload it at checkout.</p>
             </section>
-            
-            <!-- EDUCATION -->
-            <div class="hero-card">
-                <div class="hero-image">
-                    <img src="/assets/support/support-education.jpg" alt="Education">
-                    <div class="img-tint"></div>
-                    <div class="hero-title-overlay">
-                        <span class="hero-tag">Legacy & Knowledge</span>
-                        <h2 class="hero-title">Education Support</h2>
-                    </div>
-                </div>
-                <div class="hero-body">
-                    <p class="hero-text">Secure the future. This program covers Tuition Fees, Books, and International Scholarship needs. Open a fund today for 12 months to secure their future.</p>
-                    <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('education-bronze')">
-                            <div><div class="tier-name">Bronze</div><div class="tier-desc">Basic Needs</div></div>
-                            <div class="tier-val">$5.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-gold" onclick="subscribeToPlan('education-gold')">
-                            <div><div class="tier-name">Gold</div><div class="tier-desc">Standard Tuition</div></div>
-                            <div class="tier-val">$50.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('education-platinum')">
-                            <div><div class="tier-name">Platinum</div><div class="tier-desc">University</div></div>
-                            <div class="tier-val">$100.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-diamond" onclick="subscribeToPlan('education-diamond')">
-                            <div><div class="tier-name">Diamond</div><div class="tier-desc">International</div></div>
-                            <div class="tier-val">$500.00/mo</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- BUSINESS -->
-            <div class="hero-card">
-                <div class="hero-image">
-                    <img src="/assets/support/support-business.jpg" alt="Business">
-                    <div class="img-tint"></div>
-                    <div class="hero-title-overlay">
-                        <span class="hero-tag">Economic Growth</span>
-                        <h2 class="hero-title">Business Seeding</h2>
-                    </div>
-                </div>
-                <div class="hero-body">
-                    <p class="hero-text">Empower your hands to work. We support members with material goods, machinery, or direct capital for business expansion.</p>
-                    <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('business-bronze')">
-                            <div><div class="tier-name">Bronze</div><div class="tier-desc">Micro Startup</div></div>
-                            <div class="tier-val">$5.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-gold" onclick="subscribeToPlan('business-gold')">
-                            <div><div class="tier-name">Gold</div><div class="tier-desc">SME Support</div></div>
-                            <div class="tier-val">$50.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('business-platinum')">
-                            <div><div class="tier-name">Platinum</div><div class="tier-desc">Expansion</div></div>
-                            <div class="tier-val">$100.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-diamond" onclick="subscribeToPlan('business-diamond')">
-                            <div><div class="tier-name">Diamond</div><div class="tier-desc">Enterprise</div></div>
-                            <div class="tier-val">$500.00/mo</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- FUNERAL COVER -->
-            <div class="hero-card">
-                <div class="hero-image">
-                    <img src="/assets/support/support-funeral.jpg" alt="Funeral">
-                    <div class="img-tint"></div>
-                    <div class="hero-title-overlay">
-                        <span class="hero-tag">Community Care</span>
-                        <h2 class="hero-title">Compassion Cover</h2>
-                    </div>
-                </div>
-                <div class="hero-body">
-                    <p class="hero-text">The church stands with you in grief. Dignified funeral support for bereaved families during difficult times.</p>
-                    <div class="tiers-grid">
-                        <div class="tier-box tier-bronze" onclick="subscribeToPlan('compassion-basic')">
-                            <div><div class="tier-name">Basic</div><div class="tier-desc">Standard Care</div></div>
-                            <div class="tier-val">$2.50/mo</div>
-                        </div>
-                        <div class="tier-box tier-platinum" onclick="subscribeToPlan('compassion-standard')">
-                            <div><div class="tier-name">Standard</div><div class="tier-desc">Extended Family</div></div>
-                            <div class="tier-val">$25.00/mo</div>
-                        </div>
-                        <div class="tier-box tier-gold" onclick="subscribeToPlan('compassion-premium')">
-                            <div><div class="tier-name">Premium</div><div class="tier-desc">Full Support</div></div>
-                            <div class="tier-val">$50.00/mo</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <!-- ========================================== -->
             <!-- SUPPORT INFORMATION                        -->
@@ -643,12 +580,12 @@
                 <div class="sp-section-head">
                     <span class="sp-eyebrow">Kingdom Support</span>
                     <h2 id="howSupportWorks">How Kingdom Support works</h2>
-                    <p>Education, Business and Compassion plans all follow the same simple path. You choose the tier, contribute what you can sustain, and the ministry keeps every step visible in your account.</p>
+                    <p>All four programmes follow the same simple path. Choose a programme, choose an approved plan or savings contribution, and the ministry keeps every payment and status visible in your account.</p>
                 </div>
                 <div class="sp-steps">
-                    <div class="sp-step"><h3>Choose a plan</h3><p>Pick Education, Business or Compassion, then the exact monthly plan that matches your budget. Every price is shown above.</p></div>
-                    <div class="sp-step"><h3>Create a checkout</h3><p>Sign in and press Subscribe. The ministry issues a unique payment reference and shows the exact amount and payment instructions.</p></div>
-                    <div class="sp-step"><h3>Pay and upload the receipt</h3><p>Send the exact amount by Mobile Money, then upload the receipt against your reference. Your plan waits in “Awaiting verification”.</p></div>
+                    <div class="sp-step"><h3>Choose a programme and plan</h3><p>Pick Business Education, Financial Cover, Savings Programme or Community &amp; Family Support, then the exact approved plan or contribution amount. Every price is shown on the card.</p></div>
+                    <div class="sp-step"><h3>Create a checkout</h3><p>Sign in and press Choose Plan. The ministry issues a unique payment reference and shows the exact amount, Mobile Money number and payment instructions.</p></div>
+                    <div class="sp-step"><h3>Pay and upload the receipt</h3><p>Send the exact amount by Mobile Money, then upload the receipt against your reference. Your record waits in “Pending verification”.</p></div>
                     <div class="sp-step"><h3>Verification and activation</h3><p>A finance administrator checks the payment against the ministry account. Only then does the plan become active — you can follow every status in My Plans.</p></div>
                 </div>
             </section>
@@ -657,7 +594,7 @@
                 <div class="sp-section-head">
                     <span class="sp-eyebrow">Where it goes</span>
                     <h2 id="supportImpact">Support that reaches real homes</h2>
-                    <p>Every program exists for a practical need in the church family — a child in school, a family business, or a household carrying grief. These are the three purposes your plan supports.</p>
+                    <p>Each programme exists for a practical need in the church family — a child in school, a family business, a household carrying grief, or a member building a savings buffer. These are the four purposes your contributions support.</p>
                 </div>
                 <div class="sp-impact">
                     <article class="sp-impact-card">
@@ -694,19 +631,19 @@
                 <div class="sp-faq">
                     <details>
                         <summary>Who can enrol?</summary>
-                        <p>Any approved, signed-in member can subscribe. Choose a plan, pay its exact monthly amount and upload the receipt. The plan appears under My Plans as soon as checkout is created, and becomes active only after the finance team verifies your payment.</p>
+                        <p>Any approved, signed-in member can enrol. Choose a plan or savings contribution, pay its exact amount and upload the receipt. The record appears under My Plans as soon as checkout is created, and a plan becomes active only after the finance team verifies your payment. Savings are credited to your wallet, not activated as a plan.</p>
                     </details>
                     <details>
                         <summary>How much do I need to contribute?</summary>
-                        <p>Every plan has one exact monthly price, printed on its plan card above. Education and Business start at $5.00 a month and rise to $500.00; Compassion starts at $2.50 and rises to $50.00. Choose the plan you can sustain for the full 12-month programme rather than the largest tier.</p>
+                        <p>Every plan has one exact monthly price, printed in the plan selector on its card. Education and Business plans start at $5.00 a month and rise to $500.00; Compassion plans start at $2.50 and rise to $50.00. Savings contributions start at $5.00 and are not a subscription. Choose the amount you can sustain for the full programme rather than the largest tier.</p>
                     </details>
                     <details>
                         <summary>How long does a plan run?</summary>
-                        <p>Your subscription is billed monthly and each verified payment covers one month. The support programme matures after 12 months. My Plans shows the current term, the renewal date and the programme progress from the dates stored in the database.</p>
+                        <p>A plan contribution is billed monthly and each verified payment covers one month. The support programme matures after 12 months. My Plans shows the current term, activation date, expiry date and programme progress from the dates stored in the database.</p>
                     </details>
                     <details>
                         <summary>Can I hold more than one plan?</summary>
-                        <p>You can hold one subscription per plan, and different plans for Education, Business and Compassion can run at the same time. Every payment reference and every plan status stays visible under My Plans.</p>
+                        <p>You can hold one record per plan, and plans under different programmes can run at the same time. Savings sit alongside them in the Secure Wallet. Every payment reference, proof status and plan status stays visible under My Plans.</p>
                     </details>
                     <details>
                         <summary>Is this insurance or an investment?</summary>
@@ -942,7 +879,9 @@
         let storedPin = null;
         let actionTarget = "";
         let billingPlans = [];
+        let supportProgrammes = [];
         let currentCheckout = null;
+        let checkoutInFlight = false;
         let checkoutEvidence = null;
         let currentSubscriptionId = null;
         let claimDocs = {};
@@ -1092,6 +1031,24 @@
                 source = 'standard';
             }
             billingPlans = rows.filter(plan => plan.active !== false).sort((a, b) => a.order - b.order);
+
+            // Programme wording is managed in `supportProgrammes`. The approved
+            // defaults ship with the app; a failed/empty read never blocks plans.
+            try {
+                const programmeSnap = await getDocs(collection(db, 'supportProgrammes'));
+                supportProgrammes = programmeSnap.docs
+                    .map(entry => Billing.normalizeProgramme(entry.data(), entry.id))
+                    .filter(row => row.active !== false)
+                    .sort((a, b) => a.order - b.order);
+            } catch (error) {
+                console.warn('Programme presentation read failed:', error && error.message);
+            }
+            if (!supportProgrammes.length) {
+                supportProgrammes = (Billing.SUPPORT_PROGRAMMES || [])
+                    .map(row => Billing.normalizeProgramme(row, row.id))
+                    .sort((a, b) => a.order - b.order);
+            }
+
             renderPlanCatalogue();
             const note = document.getElementById('planCatalogNote');
             if (note && source === 'standard') {
@@ -1099,49 +1056,117 @@
             }
         }
 
+        function plansForProgramme(programme) {
+            const wanted = (programme.planPrograms || []).map(value => String(value).toLowerCase());
+            return billingPlans.filter(plan => wanted.includes(String(plan.program || '').toLowerCase()));
+        }
+
+        function programmeOptionValue(programme) {
+            if (programme.kind === 'savings') {
+                const options = programme.contributionOptions && programme.contributionOptions.length
+                    ? programme.contributionOptions : [5, 10, 25, 50, 100, 250];
+                return options.map(value => '<option value="' + Number(value) + '" data-price="' + Number(value) + '" data-unit="contribution">' +
+                    money(value, 'USD') + ' contribution</option>').join('');
+            }
+            return plansForProgramme(programme).map(plan =>
+                '<option value="' + esc(plan.id) + '" data-price="' + Number(plan.price) + '" data-unit="' + esc(Billing.planPeriodLabel(plan)) + '">' +
+                esc(plan.name) + ' — ' + money(plan.price, plan.currency) + ' ' + esc(Billing.planPeriodLabel(plan)) + '</option>'
+            ).join('');
+        }
+
+        function programmePriceLine(programme) {
+            const plans = plansForProgramme(programme);
+            if (programme.kind === 'savings') {
+                const options = programme.contributionOptions && programme.contributionOptions.length
+                    ? programme.contributionOptions : [5, 10, 25, 50, 100, 250];
+                return money(Math.min.apply(null, options), 'USD') + '–' + money(Math.max.apply(null, options), 'USD') + ' contribution';
+            }
+            if (!plans.length) return 'No plan open';
+            const prices = plans.map(plan => Number(plan.price) || 0);
+            const low = Math.min.apply(null, prices);
+            const high = Math.max.apply(null, prices);
+            return low === high ? money(low, 'USD') + '/mo' : money(low, 'USD') + '–' + money(high, 'USD') + '/mo';
+        }
+
+        function renderProgrammeCard(programme) {
+            const plans = plansForProgramme(programme);
+            const open = String(programme.availability || '').toLowerCase() === 'open' && programme.active !== false;
+            const optionHtml = programmeOptionValue(programme);
+            if (!optionHtml) {
+                return '<article class="programme-card"><div class="programme-media"><img src="' + esc(programme.image) + '" alt="' + esc(programme.imageAlt || programme.name) + '" loading="lazy" decoding="async"><div class="programme-status">Opening soon</div><div class="programme-media-copy"><span>' + esc(programme.eyebrow) + '</span><h3>' + esc(programme.name) + '</h3></div></div>' +
+                    '<div class="programme-body"><p>' + esc(programme.description) + '</p><div class="programme-savings">No plan is open under this programme right now. The ministry will publish the approved plan and price here when enrolment opens.</div></div></article>';
+            }
+            const firstOption = programme.kind === 'savings'
+                ? { price: (programme.contributionOptions || [5])[0], unit: 'contribution' }
+                : (plans[0] ? { price: plans[0].price, unit: Billing.planPeriodLabel(plans[0]) } : { price: 0, unit: '' });
+            const savingsLine = programme.kind === 'savings'
+                ? '<div class="programme-savings"><strong>Current savings balance: <span data-savings-balance>' + money((userData && userData.balance) || 0, 'USD') + '</span></strong><br>Every verified contribution appears in the Secure Wallet ledger. Withdrawals are reviewed by finance; the minimum is $10.00.</div>'
+                : '';
+            return '<article class="programme-card" data-programme="' + esc(programme.id) + '">' +
+                '<div class="programme-media">' +
+                    '<img src="' + esc(programme.image) + '" alt="' + esc(programme.imageAlt || programme.name) + '" loading="lazy" decoding="async">' +
+                    '<div class="programme-status">' + (open ? 'Open' : 'Closed') + '</div>' +
+                    '<div class="programme-media-copy"><span>' + esc(programme.eyebrow) + '</span><h3>' + esc(programme.name) + '</h3></div>' +
+                '</div>' +
+                '<div class="programme-body">' +
+                    '<p>' + esc(programme.description) + '</p>' +
+                    '<dl class="programme-facts">' +
+                        '<div><dt>' + (programme.kind === 'savings' ? 'Contributions' : 'Available plans') + '</dt><dd>' + (programme.kind === 'savings' ? 'Choose any amount from the approved contribution list.' : plans.length + ' ' + (plans.length === 1 ? 'plan' : 'plans') + ' · ' + programmePriceLine(programme)) + '</dd></div>' +
+                        '<div><dt>Eligibility</dt><dd>' + esc(programme.eligibility || 'Approved Prayer Dome members.') + '</dd></div>' +
+                        '<div><dt>Availability</dt><dd>' + esc(programme.availability || 'Open') + '</dd></div>' +
+                    '</dl>' +
+                    savingsLine +
+                    '<div class="programme-choose">' +
+                        '<label for="programme-select-' + esc(programme.id) + '">' + (programme.kind === 'savings' ? 'Choose your contribution' : 'Choose a plan') + '</label>' +
+                        '<select id="programme-select-' + esc(programme.id) + '" data-programme-select="' + esc(programme.id) + '"' + (open ? '' : ' disabled') + ' onchange="updateProgrammeAmount(\'' + esc(programme.id) + '\')">' + optionHtml + '</select>' +
+                        '<div class="programme-amount"><span>' + (programme.kind === 'savings' ? 'Contribution' : 'Exact amount') + '</span><strong data-programme-amount="' + esc(programme.id) + '">' + money(firstOption.price, 'USD') + ' ' + esc(firstOption.unit) + '</strong></div>' +
+                        '<button type="button" class="btn-main btn-green" ' + (open ? '' : 'disabled') + ' onclick="' + (programme.kind === 'savings' ? 'chooseProgrammeSavings' : 'chooseProgrammePlan') + '(\'' + esc(programme.id) + '\')"><i class="pd-i ' + (programme.kind === 'savings' ? 'pd-i-coins' : 'pd-i-hand-heart') + '" aria-hidden="true"></i> ' + (programme.kind === 'savings' ? 'Add to savings' : 'Choose Plan') + '</button>' +
+                    '</div>' +
+                    (programme.note ? '<p class="programme-note">' + esc(programme.note) + '</p>' : '') +
+                '</div>' +
+            '</article>';
+        }
+
         function renderPlanCatalogue() {
             const host = document.getElementById('planCatalog');
             if (!host) return;
-            if (!billingPlans.length) {
-                host.innerHTML = '<div class="plan-empty"><strong>No support plans are open right now.</strong><br>Contact info@prayerdome.net and the finance team will help you start a plan.</div>';
+            const visible = supportProgrammes.filter(row => row.active !== false);
+            if (!visible.length) {
+                host.innerHTML = '<div class="plan-empty"><strong>No support programme is open right now.</strong><br>Contact info@prayerdome.net and the finance team will help you.</div>';
                 return;
             }
-            const groups = {};
-            billingPlans.forEach(plan => {
-                if (!groups[plan.program]) groups[plan.program] = [];
-                groups[plan.program].push(plan);
-            });
-            const order = (Billing.PROGRAM_ORDER || Object.keys(groups)).filter(program => groups[program]);
-            host.innerHTML = order.map(program => {
-                const theme = (Billing.PROGRAM_THEMES && Billing.PROGRAM_THEMES[program]) || { icon: 'pd-i-hand-heart' };
-                const description = {
-                    Education: 'Fees, books and study costs — from primary school to international university.',
-                    Business: 'Stock, tools, equipment and capital for a household business.',
-                    Compassion: 'Dignified funeral and bereavement support for the family.'
-                }[program] || 'Practical support for Prayer Dome members.';
-                return '<div class="plan-program">' +
-                    '<div class="plan-program-head"><div class="plan-program-icon"><i class="pd-i ' + theme.icon + '" aria-hidden="true"></i></div>' +
-                    '<div><h3>' + esc(program) + ' plans</h3><p>' + esc(description) + '</p></div></div>' +
-                    '<div class="plan-grid">' + groups[program].map(plan => {
-                        const benefits = (plan.benefits || []).slice(0, 4).map(item => '<li>' + esc(item) + '</li>').join('');
-                        return '<article class="plan-card">' +
-                            '<div class="plan-card-top"><span class="plan-tier">' + esc(plan.tier || plan.program) + ' tier</span>' +
-                            '<div class="plan-price">' + money(plan.price, plan.currency) + '<small>' + esc(Billing.planPeriodLabel(plan)) + '</small></div></div>' +
-                            '<h4>' + esc(plan.name) + '</h4>' +
-                            '<p>' + esc(plan.summary) + '</p>' +
-                            '<ul class="plan-benefits">' + benefits + '</ul>' +
-                            '<button type="button" class="btn-main btn-green" onclick="subscribeToPlan(\'' + esc(plan.id) + '\')">' +
-                            '<i class="pd-i pd-i-hand-heart" aria-hidden="true"></i> Subscribe · ' + money(plan.price, plan.currency) + '/mo</button>' +
-                        '</article>';
-                    }).join('') + '</div></div>';
-            }).join('');
+            host.innerHTML = visible.map(renderProgrammeCard).join('');
         }
+
+        window.updateProgrammeAmount = (programmeId) => {
+            const select = document.getElementById('programme-select-' + programmeId);
+            const target = document.querySelector('[data-programme-amount="' + programmeId + '"]');
+            if (!select || !target) return;
+            const option = select.options[select.selectedIndex];
+            if (!option) return;
+            target.textContent = money(option.dataset.price, 'USD') + ' ' + (option.dataset.unit || '');
+        };
+
+        window.chooseProgrammePlan = (programmeId) => {
+            const select = document.getElementById('programme-select-' + programmeId);
+            if (!select || !select.value) return toast('Choose a plan first.', 'error');
+            subscribeToPlan(select.value);
+        };
+
+        window.chooseProgrammeSavings = (programmeId) => {
+            const select = document.getElementById('programme-select-' + programmeId);
+            const value = Number(select && select.value);
+            if (!value || value < 5) return toast('Choose a valid savings contribution.', 'error');
+            openDepositPanel(value);
+        };
 
         /* ------------------------------------------------------------- checkout */
         window.subscribeToPlan = async (planId) => {
             if (!currentUser) return toast('Sign in to start a plan.', 'error');
+            if (checkoutInFlight) return toast('A payment reference is already being created. Please wait.', 'error');
             const plan = planFor(planId);
             if (!plan) return toast('That plan is no longer available. Refresh the catalogue.', 'error');
+            checkoutInFlight = true;
             showLoading('Creating your payment reference...');
             try {
                 const result = await callBilling('checkout.create', {
@@ -1158,15 +1183,18 @@
             } catch (error) {
                 toast(error.message, 'error');
             } finally {
+                checkoutInFlight = false;
                 hideLoading();
             }
         };
 
         window.startWalletDeposit = async () => {
             if (!currentUser) return toast('Sign in to add funds.', 'error');
+            if (checkoutInFlight) return toast('A payment reference is already being created. Please wait.', 'error');
             const field = document.getElementById('depAmount');
             const value = Number(field && field.value);
             if (!value || value < 5) return toast('Minimum deposit is $5.00', 'error');
+            checkoutInFlight = true;
             showLoading('Creating your payment reference...');
             try {
                 const result = await callBilling('checkout.create', {
@@ -1185,6 +1213,7 @@
             } catch (error) {
                 toast(error.message, 'error');
             } finally {
+                checkoutInFlight = false;
                 hideLoading();
             }
         };
@@ -1196,22 +1225,29 @@
         function openCheckoutModal() {
             if (!currentCheckout) return;
             const isWallet = currentCheckout.kind === 'wallet_deposit';
-            document.getElementById('checkoutKind').innerText = isWallet ? 'Wallet deposit' : 'Subscription checkout';
-            document.getElementById('checkoutTitle').innerText = isWallet ? 'Deposit payment reference' : 'Subscription payment reference';
+            document.getElementById('checkoutKind').innerText = isWallet ? 'Savings contribution' : 'Plan checkout';
+            document.getElementById('checkoutTitle').innerText = isWallet ? 'Savings payment reference' : 'Plan payment reference';
             const status = checkoutStatus();
             const reference = currentCheckout.reference || '';
             const body = document.getElementById('checkoutBody');
+            const instructions = currentCheckout.paymentInstructions || Billing.PAYMENT_INSTRUCTIONS;
+            const phoneMatch = String(instructions).match(/\+?\d[\d\s().-]{6,}\d/);
+            const paymentNumber = phoneMatch ? phoneMatch[0].trim() : '';
             body.innerHTML =
                 '<dl class="checkout-grid">' +
                     '<div><dt>Reference</dt><dd class="checkout-ref">' + esc(reference) + '</dd></div>' +
                     '<div><dt>Exact amount</dt><dd>' + money(currentCheckout.amount, currentCheckout.currency) + '</dd></div>' +
-                    '<div><dt>Plan</dt><dd>' + esc(currentCheckout.planName || 'Secure wallet deposit') + '</dd></div>' +
+                    '<div><dt>Programme</dt><dd>' + esc(currentCheckout.program || (currentCheckout.kind === 'wallet_deposit' ? 'Savings Programme' : 'Support programme')) + '</dd></div>' +
+                    '<div><dt>Plan</dt><dd>' + esc(currentCheckout.planName || 'Savings contribution') + '</dd></div>' +
                     '<div><dt>Status</dt><dd>' + statusChip(status) + '</dd></div>' +
                 '</dl>' +
                 (status === 'rejected' && currentCheckout.rejectionReason
                     ? '<p class="checkout-note" style="color:#b91c1c;"><strong>Rejected:</strong> ' + esc(currentCheckout.rejectionReason) + '</p>'
                     : '') +
-                '<div class="checkout-instructions"><strong>How to pay</strong><br>' + esc(currentCheckout.paymentInstructions || Billing.PAYMENT_INSTRUCTIONS) + '</div>';
+                (status === 'pending_payment' && paymentNumber
+                    ? '<div class="checkout-paybox"><div><span>Pay by Mobile Money</span><strong>' + esc(paymentNumber) + '</strong><small>Account: PRAYER DOME GROUP</small></div><button type="button" class="btn-main btn-gold" style="width:auto;padding:11px 16px;font-size:.74rem;" onclick="copyToClipboard(\'' + esc(paymentNumber.replace(/[^+\d]/g, '')) + '\')"><i class="pd-i pd-i-copy"></i> Copy number</button></div>'
+                    : '') +
+                '<div class="checkout-instructions"><strong>How to pay</strong><br>' + esc(instructions) + '</div>';
             renderCheckoutEvidence();
             renderCheckoutActions();
             const modal = document.getElementById('modalCheckout');
@@ -1458,13 +1494,76 @@
             return rows;
         }
 
+        function programmeNameForPlan(row) {
+            const program = String((row && row.program) || '').toLowerCase();
+            const match = supportProgrammes.filter(programme =>
+                (programme.planPrograms || []).some(value => String(value).toLowerCase() === program))[0];
+            return match ? match.name : (row && row.program) || 'Support programme';
+        }
+
+        function proofStatus(payment) {
+            if (!payment) return { label: 'No receipt submitted', tone: 'warn' };
+            const status = payment.status || 'pending_payment';
+            if (status === 'pending_verification') return { label: 'Pending verification', tone: 'warn' };
+            if (status === 'approved' || status === 'active') return { label: 'Verified by finance', tone: 'ok' };
+            if (status === 'rejected') return { label: 'Rejected — reason shown', tone: 'bad' };
+            if (status === 'cancelled' || status === 'expired') return { label: Billing.statusLabel(status), tone: 'bad' };
+            return { label: 'Awaiting payment', tone: 'warn' };
+        }
+
+        function savingsSummaryHtml(payments) {
+            const deposits = payments.filter(payment => payment.kind === 'wallet_deposit');
+            const verified = deposits.filter(payment => payment.status === 'approved');
+            const pending = deposits.filter(payment => ['pending_payment', 'pending_verification'].includes(payment.status));
+            const balance = Number(userData && userData.balance) || 0;
+            const totalVerified = verified.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+            return '<div class="hero-card" style="padding:clamp(16px,3vw,22px);margin-bottom:18px;border-left:6px solid var(--pd-gold);">' +
+                '<div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap;">' +
+                    '<div><span style="font-size:10px;font-weight:900;color:var(--pd-green);text-transform:uppercase;letter-spacing:1px;">Savings Programme</span>' +
+                    '<h3 style="font-weight:900;color:var(--pd-navy);font-size:1.18rem;margin:3px 0 0;">Member-held savings</h3></div>' +
+                    '<div style="text-align:right;"><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Current balance</div><div style="font-weight:900;color:var(--pd-green);font-size:1.35rem;">' + money(balance, 'USD') + '</div></div>' +
+                '</div>' +
+                '<p style="font-size:.76rem;line-height:1.55;color:var(--text-sub);margin:10px 0 12px;">' + verified.length + ' verified contribution' + (verified.length === 1 ? '' : 's') + ' totalling ' + money(totalVerified, 'USD') + (pending.length ? ' · ' + pending.length + ' awaiting finance' : '') + '. Savings are not invested and do not earn interest. Withdrawals are reviewed by finance; the minimum is $10.00.</p>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                    '<button type="button" class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.72rem;" onclick="openDepositPanel()"><i class="pd-i pd-i-plus"></i> Add savings</button>' +
+                    '<button type="button" class="btn-main" style="width:auto;padding:10px 16px;font-size:.72rem;background:transparent;color:var(--text-main);border:1px solid var(--border);" onclick="setView(\'wallet\', document.querySelectorAll(\'.tab-item\')[2])"><i class="pd-i pd-i-coins"></i> Open ledger</button>' +
+                '</div>' +
+            '</div>';
+        }
+
+        function paymentHistoryHtml(payments) {
+            if (!payments.length) return '';
+            const rows = payments.slice(0, 100).map(payment => {
+                const label = Billing.statusLabel(payment.status || 'pending_payment');
+                return '<tr>' +
+                    '<td>' + esc(Billing.formatDate(payment.createdAt) || '—') + '</td>' +
+                    '<td><strong>' + esc(payment.planName || (payment.kind === 'wallet_deposit' ? 'Savings contribution' : 'Support plan')) + '</strong><br><span style="font-size:.66rem;color:var(--text-sub);">' + esc(payment.program || '') + '</span></td>' +
+                    '<td>' + money(payment.amount, payment.currency) + '</td>' +
+                    '<td style="font-family:monospace;font-size:.68rem;word-break:break-all;">' + esc(payment.reference || '') + '</td>' +
+                    '<td>' + statusChip(payment.status || 'pending_payment') + '</td>' +
+                    '<td style="max-width:180px;font-size:.7rem;color:var(--text-sub);">' + esc(payment.rejectionReason || payment.verificationNote || label) + '</td>' +
+                    '<td><button type="button" class="btn-main" style="width:auto;padding:7px 11px;font-size:.66rem;background:transparent;color:var(--text-main);border:1px solid var(--border);" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-eye"></i> View</button></td>' +
+                '</tr>';
+            }).join('');
+            return '<details style="margin-top:18px;border:1px solid var(--border);border-radius:18px;padding:14px 16px;background:var(--bg-card);">' +
+                '<summary style="cursor:pointer;font-weight:800;font-size:.85rem;color:var(--text-main);">Full payment history (' + payments.length + ')</summary>' +
+                '<p style="font-size:.72rem;color:var(--text-sub);line-height:1.55;margin:8px 0 10px;">Every checkout, submitted receipt, verification decision and rejection reason is kept here. Only a finance-verified payment can activate a plan or credit savings.</p>' +
+                '<div class="table-responsive" style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:.76rem;"><thead><tr><th style="text-align:left;padding:7px 6px;">Date</th><th style="text-align:left;padding:7px 6px;">Programme / plan</th><th style="text-align:left;padding:7px 6px;">Amount</th><th style="text-align:left;padding:7px 6px;">Reference</th><th style="text-align:left;padding:7px 6px;">Status</th><th style="text-align:left;padding:7px 6px;">Note</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+            '</details>';
+        }
+
         window.loadMyPlans = async () => {
             const list = document.getElementById('myPlansList');
             const summary = document.getElementById('myPlanSummary');
             if (!list || !currentUser) return;
             list.innerHTML = '<div style="text-align:center;padding:50px;"><div class="spinner"></div></div>';
             try {
-                const [subscriptions, payments] = await Promise.all([fetchUserSubscriptions(), fetchUserPayments()]);
+                const [subscriptions, payments, walletSnap] = await Promise.all([
+                    fetchUserSubscriptions(),
+                    fetchUserPayments(),
+                    getDoc(doc(db, 'wallets', currentUser.uid))
+                ]);
+                if (walletSnap.exists()) userData = walletSnap.data();
                 const latestByReference = {};
                 payments.forEach(payment => { latestByReference[payment.reference] = payment; });
                 const now = new Date();
@@ -1497,16 +1596,19 @@
                             progress = Math.max(0, Math.min(100, Math.round(((now - start) / (365 * 86400000)) * 100)));
                         }
                         const reason = payment && payment.status === 'rejected' ? payment.rejectionReason : row.lastRejectionReason;
+                        const proof = proofStatus(payment);
                         return '<div class="hero-card" style="padding:clamp(18px,3vw,26px);margin-bottom:18px;border-left:6px solid ' + ((Billing.PROGRAM_THEMES[row.program] || {}).color || 'var(--pd-green)') + ';">' +
                             '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px;">' +
-                                '<div><span style="font-size:10px;font-weight:900;color:var(--pd-green);text-transform:uppercase;letter-spacing:1px;">' + esc(row.program || 'Support') + ' · ' + esc(row.tier || 'Plan') + '</span>' +
+                                '<div><span style="font-size:10px;font-weight:900;color:var(--pd-green);text-transform:uppercase;letter-spacing:1px;">' + esc(programmeNameForPlan(row)) + ' · ' + esc(row.tier || 'Plan') + '</span>' +
                                 '<h3 style="font-weight:900;color:var(--pd-navy);font-size:1.3rem;margin:3px 0 0;">' + esc(row.planName || row.planId) + '</h3></div>' +
                                 statusChip(status) +
                             '</div>' +
                             '<div style="background:var(--bg-base);padding:14px 16px;border-radius:16px;margin-bottom:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));gap:10px;border:1px solid var(--border);">' +
                                 '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Monthly amount</div><div style="font-weight:900;color:var(--pd-green);font-size:1.05rem;">' + money(row.amount, row.currency) + '</div></div>' +
-                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Renews / expires</div><div style="font-weight:800;font-size:.9rem;">' + (expires ? esc(Billing.formatDate(expires)) : 'Not activated') + '</div></div>' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Activated</div><div style="font-weight:800;font-size:.9rem;">' + (start ? esc(Billing.formatDate(start)) : 'Not activated') + '</div></div>' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Expires / renews</div><div style="font-weight:800;font-size:.9rem;">' + (expires ? esc(Billing.formatDate(expires)) : 'Not activated') + '</div></div>' +
                                 '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Payment reference</div><div style="font-family:monospace;font-weight:800;font-size:.76rem;word-break:break-all;">' + esc(payment ? payment.reference : row.pendingPaymentRef || row.paymentRef || '—') + '</div></div>' +
+                                '<div><div style="font-size:9px;font-weight:900;color:var(--text-sub);letter-spacing:.08em;text-transform:uppercase;">Proof status</div><div style="margin-top:2px;"><span class="status-chip ' + proof.tone + '">' + esc(proof.label) + '</span></div></div>' +
                             '</div>' +
                             (reason ? '<p style="font-size:.78rem;line-height:1.5;color:#b91c1c;margin:0 0 12px;"><strong>Payment note:</strong> ' + esc(reason) + '</p>' : '') +
                             (row.cancelAtPeriodEnd ? '<p style="font-size:.78rem;line-height:1.5;color:#b45309;margin:0 0 12px;"><strong>Cancellation scheduled.</strong> Access continues until ' + esc(expires ? Billing.formatDate(expires) : 'the end of the paid period') + ', then the plan expires without renewal.</p>' : '') +
@@ -1514,7 +1616,8 @@
                             '<div style="height:8px;background:var(--bg-base);border-radius:999px;overflow:hidden;margin:6px 0 14px;border:1px solid var(--border);"><div style="height:100%;width:' + progress + '%;background:linear-gradient(90deg,var(--pd-green),var(--pd-gold));"></div></div>' +
                             '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
                                 (payment ? '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:.75rem;background:transparent;color:var(--text-main);border:1px solid var(--border);" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-receipt-text"></i> View payment</button>' : '') +
-                                (['pending_payment', 'pending_verification'].includes(status) && payment ? '<button class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-upload"></i> Upload receipt</button>' : '') +
+                                (status === 'pending_payment' && payment ? '<button class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="openCheckoutByReference(\'' + esc(payment.reference) + '\')"><i class="pd-i pd-i-upload"></i> Complete payment</button>' : '') +
+                                (status === 'pending_verification' && payment ? '<span style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;background:rgba(212,175,55,.14);font-size:.72rem;font-weight:800;color:#92400e;"><i class="pd-i pd-i-clock"></i> Pending verification</span>' : '') +
                                 (status === 'active' ? '<button class="btn-main btn-green" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="openClaimForm(\'' + esc(row.id) + '\', \'' + esc(row.claimType || row.program) + '\', \'' + esc(row.paymentRef || '') + '\')"><i class="pd-i pd-i-file-pen-line"></i> File a support claim</button>' : '') +
                                 (status === 'active' && !row.cancelAtPeriodEnd ? '<button class="btn-main" style="width:auto;padding:10px 16px;font-size:.75rem;background:transparent;color:var(--text-sub);border:1px solid var(--border);" onclick="cancelSubscription(\'' + esc(row.id) + '\')"><i class="pd-i pd-i-circle-x"></i> Cancel plan</button>' : '') +
                                 (status === 'active' && row.cancelAtPeriodEnd ? '<button class="btn-main btn-gold" style="width:auto;padding:10px 16px;font-size:.75rem;" onclick="resumeSubscription(\'' + esc(row.id) + '\')"><i class="pd-i pd-i-refresh-cw"></i> Keep plan</button>' : '') +
@@ -1523,6 +1626,8 @@
                         '</div>';
                     }).join('');
                 }
+                list.insertAdjacentHTML('afterbegin', savingsSummaryHtml(payments));
+                list.insertAdjacentHTML('beforeend', paymentHistoryHtml(payments));
                 // Never hide historical enrolments: show the old auto-enrolled rows as
                 // read-only history, clearly separated from verified subscriptions.
                 const legacySnap = await getDocs(query(collection(db, 'activePlans'), where('userId', '==', currentUser.uid)));
@@ -1647,8 +1752,10 @@
                 const walletSnap = await getDoc(doc(db, "wallets", currentUser.uid));
                 const balance = walletSnap.exists() ? Number(walletSnap.data().balance) || 0 : 0;
                 const currency = walletSnap.exists() ? (walletSnap.data().currency || 'USD') : 'USD';
+                userData = walletSnap.exists() ? walletSnap.data() : { balance: 0, currency: 'USD' };
                 const display = document.getElementById('dispBalance');
                 if (display) display.innerText = money(balance, currency);
+                document.querySelectorAll('[data-savings-balance]').forEach(node => { node.textContent = money(balance, currency); });
 
                 const [txSnap, paymentSnap, depositSnap, withdrawalSnap, claimSnap] = await Promise.all([
                     getDocs(query(collection(db, "walletTransactions"), where("userId", "==", currentUser.uid))),
@@ -1757,10 +1864,13 @@
             }
         };
 
-        window.openDepositPanel = () => {
+        window.openDepositPanel = (suggestedAmount) => {
             const field = document.getElementById('depAmount');
-            if (field) field.value = '';
-            document.getElementById('modalDeposit').style.display = 'flex';
+            const amount = Number(suggestedAmount);
+            if (field) field.value = amount >= 5 ? String(Math.round(amount * 100) / 100) : '';
+            const modal = document.getElementById('modalDeposit');
+            if (modal) modal.style.display = 'flex';
+            if (field && !field.value) setTimeout(() => field.focus(), 60);
         };
 
         window.submitWithdrawal = async () => {

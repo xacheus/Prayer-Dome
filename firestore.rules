@@ -280,6 +280,19 @@ service cloud.firestore {
         request.resource.data.active is bool;
     }
 
+    // Programme cards shown on /support. Wording, imagery, eligibility and
+    // availability may be edited by an administrator; the plans and prices
+    // themselves stay in supportPlans and are charged by the billing callable.
+    match /supportProgrammes/{programmeId} {
+      allow read: if true;
+      allow write: if isAdmin() &&
+        request.resource.data.id == programmeId &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.name.size() <= 120 &&
+        request.resource.data.active is bool;
+    }
+
     match /paymentRequests/{reference} {
       allow read: if isSignedIn() &&
         (resource.data.userId == request.auth.uid || isAdmin());
@@ -313,6 +326,27 @@ service cloud.firestore {
       allow create: if isSignedIn();
       allow update: if isAdmin();
       allow delete: if isAdmin();
+    }
+
+    // Reviewed radio programme briefings. Public read; only an administrator
+    // can publish a script, and only an approved one is rendered on /radio.
+    match /radioScripts/{scriptId} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow create, update: if isAdmin() &&
+        request.resource.data.programmeId is string &&
+        request.resource.data.programmeId.size() > 0 &&
+        request.resource.data.programmeId.size() <= 80 &&
+        request.resource.data.weekday is int &&
+        request.resource.data.weekday >= 0 &&
+        request.resource.data.weekday <= 6 &&
+        request.resource.data.status in ['approved', 'draft', 'rejected'] &&
+        request.resource.data.script is string &&
+        request.resource.data.script.size() >= 40 &&
+        request.resource.data.script.size() <= 6000 &&
+        (request.resource.data.status != 'approved' ||
+          (request.resource.data.reviewedBy is string &&
+           request.resource.data.reviewedAt is string));
     }
 
     // Contact Messages
