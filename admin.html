@@ -2183,7 +2183,7 @@
                             <h4 style="margin:0 0 10px;font-size:.9rem;color:var(--pd-navy);">Founder and President</h4>
                             <div class="form-group">
                                 <label>Founder name (fixed)</label>
-                                <input type="text" id="founderNameInput" class="form-control" value="S.K. MASUKU" readonly>
+                                <input type="text" id="founderNameInput" class="form-control" value="S. K. MASUKU" readonly>
                             </div>
                             <div class="form-group">
                                 <label>Position (fixed)</label>
@@ -2191,13 +2191,13 @@
                             </div>
                             <div class="form-group">
                                 <label>Founder signature image</label>
-                                <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;"><img src="/assets/pd-signature.png" alt="Official signature of S.K. Masuku" style="max-height:90px;max-width:100%;"></div>
+                                <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;"><img src="/assets/pd-signature.png" alt="Official signature of S. K. MASUKU, Founder and President" style="max-height:90px;max-width:100%;"></div>
                                 <canvas id="founderSignatureCanvas" aria-label="Draw founder signature" style="display:block;width:100%;height:120px;touch-action:none;background:#fff;border:1px solid var(--border);border-radius:10px;margin:10px 0"></canvas>
                                 <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                                     <button class="btn btn-outline btn-sm" type="button" onclick="uploadFounderSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload founder signature</button>
                                     <button class="btn btn-outline btn-sm" type="button" onclick="useDrawnFounderSignature()">Use drawing</button>
                                     <button class="btn btn-outline btn-sm" type="button" onclick="clearFounderSignatureCanvas()">Clear drawing</button>
-                                    <input type="file" id="founderSigFileInput" accept="image/*" style="display:none;" onchange="handleFounderSigUpload(event)">
+                                    <input type="file" id="founderSigFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleFounderSigUpload(event)">
                                 </div>
                             </div>
                         </div>
@@ -2214,15 +2214,25 @@
                             <div class="form-group">
                                 <label>Administrator signature image</label>
                                 <div id="administratorSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items: center; justify-content: center; margin-bottom: 10px;">No administrator signature saved yet.</div>
+                                <canvas id="administratorSignatureCanvas" aria-label="Draw the administrator signature" style="display:block;width:100%;height:120px;touch-action:none;background:#fff;border:1px solid var(--border);border-radius:10px;margin:10px 0"></canvas>
                                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                                     <button class="btn btn-outline btn-sm" type="button" onclick="uploadAdministratorSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload administrator signature</button>
-                                    <input type="file" id="administratorSigFileInput" accept="image/*" style="display:none;" onchange="handleAdministratorSigUpload(event)">
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="useDrawnAdministratorSignature()">Use drawing</button>
+                                    <button class="btn btn-outline btn-sm" type="button" onclick="clearAdministratorSignatureCanvas()">Clear drawing</button>
+                                    <input type="file" id="administratorSigFileInput" accept="image/png,image/jpeg,image/webp" style="display:none;" onchange="handleAdministratorSigUpload(event)">
                                 </div>
                             </div>
                             <p style="font-size:.7rem;color:var(--text-sub);line-height:1.55;margin:0;">Never upload or draw a signature on someone else's behalf. The administrator block prints a signature line and designation until an authorised signature image is saved.</p>
                         </div>
-                        <div style="grid-column:1/-1;display:flex;justify-content:flex-end;">
-                            <button class="btn btn-primary btn-sm" type="button" onclick="saveFounderSignature()"><i class="pd-i pd-i-save"></i> Save signatures</button>
+                        <div style="grid-column:1/-1;display:grid;gap:10px;border-top:1px solid var(--border);padding-top:14px;">
+                            <label style="display:flex;align-items:flex-start;gap:9px;font-size:.72rem;line-height:1.55;color:var(--text-sub);">
+                                <input type="checkbox" id="signatureAuthorityConfirm" style="width:16px;height:16px;margin-top:2px;flex:0 0 auto;accent-color:var(--accent-gold);">
+                                <span>I confirm that I am authorised to change these signatures, and that the image or drawing supplied is the signatory’s own signature or an image they provided. I will not trace, recreate or imitate anyone else’s signature.</span>
+                            </label>
+                            <div style="display:flex;justify-content:flex-end;align-items:center;gap:14px;flex-wrap:wrap;">
+                                <span id="signatureAuditNote" style="font-size:.68rem;color:var(--text-sub);margin-right:auto;"></span>
+                                <button class="btn btn-primary btn-sm" type="button" onclick="saveFounderSignature()"><i class="pd-i pd-i-save"></i> Save signatures</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2500,7 +2510,7 @@
                         <div style="padding:18px;">
                             <div class="admin-field-grid">
                                 <div class="form-group"><label>Church name on card</label><input type="text" id="mcardChurch" class="form-control" value="PRAYER DOME" readonly></div>
-                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="S.K. MASUKU" readonly></div>
+                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="S. K. MASUKU" readonly></div>
                                 <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" value="Founder and President — Prayer Dome" readonly></div>
                                 <div class="form-group"><label>Contact phone</label><input type="text" id="mcardPhone" class="form-control" maxlength="40" value="+268 7658 1804"></div>
                                 <div class="form-group"><label>Contact email</label><input type="email" id="mcardEmail" class="form-control" maxlength="160" value="info@prayerdome.net"></div>
@@ -3525,29 +3535,107 @@ window.toggleDarkMode = function() {
         // change — already-issued certificates keep the signature they had.
         let founderSigDataUrl = '';
         let administratorSigDataUrl = '';
-        (function initFounderSignaturePad(){
-            const canvas = document.getElementById('founderSignatureCanvas');
+        const SIGNATURE_FILE_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+
+        function setupSignaturePad(canvasId) {
+            const canvas = document.getElementById(canvasId);
             if (!canvas) return;
             const ctx = canvas.getContext('2d');
-            const resize = () => { const box=canvas.getBoundingClientRect(), ratio=window.devicePixelRatio||1; canvas.width=Math.max(1,box.width*ratio); canvas.height=Math.max(1,box.height*ratio); ctx.setTransform(ratio,0,0,ratio,0,0); ctx.lineWidth=2.4; ctx.lineCap='round'; ctx.lineJoin='round'; ctx.strokeStyle='#163b68'; };
-            resize(); window.addEventListener('resize',resize);
-            let drawing=false;
-            canvas.addEventListener('pointerdown',e=>{drawing=true;canvas.setPointerCapture(e.pointerId);const r=canvas.getBoundingClientRect();ctx.beginPath();ctx.moveTo(e.clientX-r.left,e.clientY-r.top);});
-            canvas.addEventListener('pointermove',e=>{if(!drawing)return;const r=canvas.getBoundingClientRect();ctx.lineTo(e.clientX-r.left,e.clientY-r.top);ctx.stroke();});
-            ['pointerup','pointercancel','lostpointercapture'].forEach(name=>canvas.addEventListener(name,()=>drawing=false));
-        })();
-        window.clearFounderSignatureCanvas = function(){const c=document.getElementById('founderSignatureCanvas');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height);};
-        window.useDrawnFounderSignature = function(){const c=document.getElementById('founderSignatureCanvas');if(!c)return;const ctx=c.getContext('2d');if(!ctx.getImageData(0,0,c.width,c.height).data.some((v,i)=>i%4===3&&v>0))return toast('Draw a signature before using it.','error');founderSigDataUrl=c.toDataURL('image/png');const d=document.getElementById('founderSigDisplay');if(d)d.innerHTML=`<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature preview" style="max-height:90px;max-width:100%">`;toast('Drawing ready — save to apply it to future certificates.');};
+            const resize = () => {
+                // Preserve any ink when the panel is resized.
+                const previous = canvas.width > 1 ? canvas.toDataURL('image/png') : '';
+                const box = canvas.getBoundingClientRect();
+                const ratio = window.devicePixelRatio || 1;
+                canvas.width = Math.max(1, Math.round(box.width * ratio));
+                canvas.height = Math.max(1, Math.round(box.height * ratio));
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#163b68';
+                if (previous) {
+                    const img = new Image();
+                    img.onload = () => ctx.drawImage(img, 0, 0, box.width, box.height);
+                    img.src = previous;
+                }
+            };
+            resize();
+            window.addEventListener('resize', resize);
+            let drawing = false;
+            canvas.addEventListener('pointerdown', (event) => {
+                drawing = true;
+                try { canvas.setPointerCapture(event.pointerId); } catch (error) {}
+                const rect = canvas.getBoundingClientRect();
+                ctx.beginPath(); ctx.moveTo(event.clientX - rect.left, event.clientY - rect.top);
+            });
+            canvas.addEventListener('pointermove', (event) => {
+                if (!drawing) return;
+                const rect = canvas.getBoundingClientRect();
+                ctx.lineTo(event.clientX - rect.left, event.clientY - rect.top); ctx.stroke();
+            });
+            ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((name) => {
+                canvas.addEventListener(name, () => { drawing = false; });
+            });
+        }
+        setupSignaturePad('founderSignatureCanvas');
+        setupSignaturePad('administratorSignatureCanvas');
+
+        function signatureCanvasHasInk(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return false;
+            const ctx = canvas.getContext('2d');
+            const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+            for (let index = 3; index < pixels.length; index += 4) {
+                if (pixels[index] > 8) return true;
+            }
+            return false;
+        }
+
+        function signatureFileIsSafe(file) {
+            if (!file) return false;
+            if (SIGNATURE_FILE_TYPES.indexOf(file.type) < 0) {
+                toast('Choose a PNG, JPG or WebP image. SVG uploads are not accepted for signatures.', 'error');
+                return false;
+            }
+            if (file.size > 300 * 1024) {
+                toast('Signature images must stay under 300 KB so the secure settings document remains valid.', 'error');
+                return false;
+            }
+            return true;
+        }
+
+        window.clearFounderSignatureCanvas = function () {
+            const canvas = document.getElementById('founderSignatureCanvas');
+            if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        };
+        window.clearAdministratorSignatureCanvas = function () {
+            const canvas = document.getElementById('administratorSignatureCanvas');
+            if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        };
+        window.useDrawnFounderSignature = function () {
+            if (!signatureCanvasHasInk('founderSignatureCanvas')) return toast('Draw the founder signature before using it.', 'error');
+            const canvas = document.getElementById('founderSignatureCanvas');
+            founderSigDataUrl = canvas.toDataURL('image/png');
+            const display = document.getElementById('founderSigDisplay');
+            if (display) display.innerHTML = `<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature preview" style="max-height:90px;max-width:100%">`;
+            toast('Founder drawing ready — save to apply it to future certificates.');
+        };
+        window.useDrawnAdministratorSignature = function () {
+            if (!signatureCanvasHasInk('administratorSignatureCanvas')) return toast('Draw the administrator signature before using it.', 'error');
+            const canvas = document.getElementById('administratorSignatureCanvas');
+            administratorSigDataUrl = canvas.toDataURL('image/png');
+            const display = document.getElementById('administratorSigDisplay');
+            if (display) display.innerHTML = `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature preview" style="max-height:90px;max-width:100%">`;
+            toast('Administrator drawing ready — add their name below, then save.');
+        };
 
         window.loadFounderSignatureUI = async function () {
             let f = window.PDApp && PDApp.founder ? PDApp.founder.get() : {};
+            let stored = null;
             try {
                 if (window.PDApp && PDApp.founder && PDApp.founder.fetch) {
-                    const stored = await PDApp.founder.fetch();
+                    stored = await PDApp.founder.fetch();
                     if (stored) { PDApp.founder.setLocal(stored); f = PDApp.founder.get(); }
                 }
             } catch (e) { console.warn('Founder settings refresh:', e); }
-            document.getElementById('founderNameInput').value = 'S.K. MASUKU';
+            document.getElementById('founderNameInput').value = 'S. K. MASUKU';
             document.getElementById('founderTitleInput').value = 'Founder and President';
             document.getElementById('administratorNameInput').value = f.administratorName || '';
             document.getElementById('administratorTitleInput').value = f.administratorTitle || '';
@@ -3555,13 +3643,25 @@ window.toggleDarkMode = function() {
             administratorSigDataUrl = f.administratorSignatureUrl || '';
             const disp = document.getElementById('founderSigDisplay');
             if (disp) {
-                disp.innerHTML = `<img src="${escapeHTML(founderSigDataUrl)}" alt="Signature of S.K. Masuku" style="max-height:90px; max-width:100%;">`;
+                disp.innerHTML = `<img src="${escapeHTML(founderSigDataUrl)}" alt="Signature of S. K. MASUKU, Founder and President" style="max-height:90px; max-width:100%;">`;
             }
             const adminDisp = document.getElementById('administratorSigDisplay');
             if (adminDisp) {
                 adminDisp.innerHTML = administratorSigDataUrl
                     ? `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature" style="max-height:90px; max-width:100%;">`
                     : 'No administrator signature saved — the certificate prints a signature line and designation.';
+            }
+            const audit = document.getElementById('signatureAuditNote');
+            if (audit) {
+                if (stored && stored.updatedBy) {
+                    const when = stored.updatedAt ? new Date(stored.updatedAt) : null;
+                    const stamp = when && !Number.isNaN(when.getTime())
+                        ? when.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                        : 'an earlier session';
+                    audit.innerText = `Last authorised change: ${stored.updatedBy} · ${stamp}`;
+                } else {
+                    audit.innerText = 'Using the official bundled signature artwork until an authorised change is saved.';
+                }
             }
         };
 
@@ -3575,49 +3675,88 @@ window.toggleDarkMode = function() {
             if (input) input.click();
         };
 
-        window.handleAdministratorSigUpload = function (event) {
-            const file = event.target.files && event.target.files[0];
-            if (!file) return;
-            if (!/^image\//.test(file.type)) return toast('Choose a PNG or JPG image.', 'error');
-            if (file.size > 400 * 1024) return toast('Signature images must stay under 400 KB.', 'error');
+        function readSignatureImage(file, apply) {
             const reader = new FileReader();
-            reader.onload = function (e) {
-                administratorSigDataUrl = e.target.result;
-                const disp = document.getElementById('administratorSigDisplay');
-                if (disp) disp.innerHTML = `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature" style="max-height:90px; max-width:100%;">`;
-                toast('Administrator signature ready — press “Save signatures” to keep it.');
+            reader.onload = function (event) {
+                const probe = new Image();
+                probe.onload = function () {
+                    if (probe.naturalWidth < 80 || probe.naturalHeight < 30) {
+                        toast('That image is too small to print. Use a clear signature image at least 80 × 30 pixels.', 'error');
+                        return;
+                    }
+                    // Normalise oversized camera images before they reach the
+                    // settings document. Keep transparency (PNG) and never
+                    // stretch the signature.
+                    const maxWidth = 1400;
+                    const maxHeight = 500;
+                    const scale = Math.min(1, maxWidth / probe.naturalWidth, maxHeight / probe.naturalHeight);
+                    if (scale < 1) {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round(probe.naturalWidth * scale));
+                        canvas.height = Math.max(1, Math.round(probe.naturalHeight * scale));
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(probe, 0, 0, canvas.width, canvas.height);
+                        apply(canvas.toDataURL('image/png'));
+                        return;
+                    }
+                    apply(event.target.result);
+                };
+                probe.onerror = function () { toast('That image could not be read. Use a PNG, JPG or WebP file.', 'error'); };
+                probe.src = event.target.result;
             };
             reader.onerror = function () { toast('Could not read that file. Try a PNG or JPG image.', 'error'); };
             reader.readAsDataURL(file);
+        }
+
+        window.handleAdministratorSigUpload = function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            if (!signatureFileIsSafe(file)) { event.target.value = ''; return; }
+            readSignatureImage(file, function (dataUrl) {
+                administratorSigDataUrl = dataUrl;
+                const disp = document.getElementById('administratorSigDisplay');
+                if (disp) disp.innerHTML = `<img src="${escapeHTML(administratorSigDataUrl)}" alt="Administrator signature" style="max-height:90px; max-width:100%;">`;
+                toast('Administrator signature ready — press “Save signatures” to keep it.');
+            });
             event.target.value = '';
         };
 
         window.handleFounderSigUpload = function (event) {
             const file = event.target.files && event.target.files[0];
             if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                founderSigDataUrl = e.target.result;
+            if (!signatureFileIsSafe(file)) { event.target.value = ''; return; }
+            readSignatureImage(file, function (dataUrl) {
+                founderSigDataUrl = dataUrl;
                 const disp = document.getElementById('founderSigDisplay');
                 if (disp) disp.innerHTML = `<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature" style="max-height:90px; max-width:100%;">`;
-                toast('Signature image ready — press “Save Signature” to keep it permanently');
-            };
-            reader.onerror = function () { toast('Could not read that file. Try a PNG or JPG image.', 'error'); };
-            reader.readAsDataURL(file);
+                toast('Founder signature ready — press “Save signatures” to keep it permanently.');
+            });
             event.target.value = '';
         };
 
         window.saveFounderSignature = async function () {
+            if (!adminUser) {
+                toast('Only an authorised administrator may change certificate signatures.', 'error');
+                return;
+            }
+            const authority = document.getElementById('signatureAuthorityConfirm');
+            if (!authority || !authority.checked) {
+                toast('Confirm that you are authorised and that this is the signatory’s own signature before saving.', 'error');
+                return;
+            }
             const administratorName = document.getElementById('administratorNameInput').value.trim();
             const administratorTitle = document.getElementById('administratorTitleInput').value.trim();
             if (!administratorName && administratorSigDataUrl) {
                 toast('Add the administrator’s name before saving their signature.', 'error');
                 return;
             }
+            const previousFounderSignature = (window.PDApp && PDApp.founder ? PDApp.founder.get().signatureUrl : '') || '';
             showLoading();
             try {
                 const data = {
-                    founderName: 'S.K. MASUKU',
+                    founderName: 'S. K. MASUKU',
                     founderTitle: 'Founder and President',
                     organization: 'PRAYER DOME',
                     signatureUrl: founderSigDataUrl,
@@ -3626,7 +3765,7 @@ window.toggleDarkMode = function() {
                     administratorSignatureUrl: administratorSigDataUrl
                 };
                 if (window.PDApp && PDApp.founder) {
-                    PDApp.founder.save(data);
+                    await PDApp.founder.save(data);
                 } else {
                     // Fallback: persist directly to Firestore + local cache.
                     await setDoc(doc(db, 'settings', 'founder'), Object.assign({}, data, {
@@ -3644,7 +3783,20 @@ window.toggleDarkMode = function() {
                     adminMeta.content = data.administratorSignatureUrl;
                 }
                 toast('Certificate signatures saved. New certificates use them immediately.');
-                await logAdminActivity('founder_signature_saved', { name: data.founderName, administrator: administratorName });
+                try {
+                    await logAdminActivity('founder_signature_saved', {
+                        founder: 'S. K. MASUKU',
+                        founderSignatureChanged: founderSigDataUrl !== previousFounderSignature,
+                        administrator: administratorName || 'not set',
+                        administratorSignatureChanged: !!administratorSigDataUrl,
+                        savedBy: adminUser?.email || adminUser?.uid || '',
+                        savedAt: new Date().toISOString()
+                    });
+                } catch (auditError) {
+                    // The signature is already saved. Surface the audit issue in
+                    // the console without telling the administrator it failed.
+                    console.warn('Signature audit entry could not be written:', auditError);
+                }
                 loadFounderSignatureUI();
             } catch (e) {
                 toast('Could not save signature: ' + e.message, 'error');
@@ -4302,6 +4454,52 @@ window.toggleDarkMode = function() {
             tbody.innerHTML = count>0?html:'<tr><td colspan="7">No members found</td></tr>';
         };
 
+        async function reserveMembershipId() {
+            try {
+                const reserve = httpsCallable(cloudFunctions, 'reserveMembershipNumber');
+                const response = await reserve();
+                const membershipId = response && response.data && response.data.membershipId;
+                if (membershipId && /^PD\d{4}\d{4,}$/.test(String(membershipId))) return String(membershipId);
+                throw new Error('The server did not return a membership number.');
+            } catch (error) {
+                console.warn('Atomic membership-number reservation unavailable:', error && error.message);
+            }
+            // Deployment-safe fallback. It still checks the server for every
+            // candidate; the callable is the authoritative path once deployed.
+            const year = new Date().getFullYear();
+            const prefix = `PD${year}`;
+            let seq = 1;
+            try {
+                const lastSnap = await getDocs(query(
+                    collection(db, 'memberships'),
+                    where('membershipId', '>=', prefix),
+                    where('membershipId', '<', prefix + '\uf8ff'),
+                    orderBy('membershipId', 'desc'),
+                    limit(1)
+                ));
+                if (!lastSnap.empty) {
+                    const parsed = parseInt(String(lastSnap.docs[0].data().membershipId || '').slice(prefix.length), 10);
+                    if (Number.isFinite(parsed)) seq = parsed + 1;
+                }
+            } catch (error) {
+                let max = 0;
+                (allMembersCache || []).forEach((member) => {
+                    const id = String(member.membershipId || '').toUpperCase();
+                    if (id.startsWith(prefix)) {
+                        const num = parseInt(id.slice(prefix.length), 10);
+                        if (Number.isFinite(num) && num > max) max = num;
+                    }
+                });
+                seq = max + 1;
+            }
+            for (let attempt = 0; attempt < 40; attempt += 1) {
+                const candidate = `${prefix}${String(seq + attempt).padStart(4, '0')}`;
+                const clash = await getDocs(query(collection(db, 'memberships'), where('membershipId', '==', candidate), limit(1)));
+                if (clash.empty) return candidate;
+            }
+            throw new Error('Could not allocate a unique membership number. Please try again.');
+        }
+
         window.approveMember = async function(uid) {
             if(!confirm("Approve this membership application?")) return;
             showLoading();
@@ -4318,28 +4516,7 @@ window.toggleDarkMode = function() {
                 // Never renumber an existing member. If an ID already exists on
                 // the record it is the canonical ID and must be reused.
                 let newId = String(existing.membershipId || '').trim().toUpperCase();
-                if (!newId) {
-                    const year = new Date().getFullYear();
-                    const prefix = `PD${year}`;
-                    let max = 0;
-                    (allMembersCache || []).forEach(m => {
-                        const id = String(m.membershipId || '').toUpperCase();
-                        if (id.startsWith(prefix)) {
-                            const num = parseInt(id.substring(prefix.length), 10);
-                            if (!isNaN(num) && num > max) max = num;
-                        }
-                    });
-                    let seq = max + 1;
-                    // The local cache can be stale. Check the server before
-                    // assigning, so two approvals can never share a number.
-                    for (let attempt = 0; attempt < 40; attempt++) {
-                        const candidate = `${prefix}${String(seq).padStart(4, '0')}`;
-                        const clash = await getDocs(query(collection(db, 'memberships'), where('membershipId', '==', candidate), limit(1)));
-                        if (clash.empty) { newId = candidate; break; }
-                        seq++;
-                    }
-                    if (!newId) throw new Error('Could not allocate a unique membership number. Please try again.');
-                }
+                if (!newId) newId = await reserveMembershipId();
                 await updateDoc(doc(db,"memberships",uid),{ status:'approved', membershipId:newId, approvedAt:serverTimestamp(), approvedBy:adminUser?.email || adminUser?.uid });
                 const wRef=doc(db,"wallets",uid);
                 if(!(await getDoc(wRef)).exists()) await setDoc(wRef,{userId:uid,balance:0,currency:'USD',createdAt:serverTimestamp()});
@@ -4347,8 +4524,21 @@ window.toggleDarkMode = function() {
                 // Without this step an approved ID exists but /verify has
                 // nothing to match, which was the PD20260002 failure.
                 if (typeof window.issueCardVerification === 'function') {
-                    try { await window.issueCardVerification(uid, false); }
-                    catch (issueError) { console.error('Card issuance failed:', issueError); toast('Membership approved, but the card record could not be issued yet. Use Membership Cards → Issue.', 'info'); }
+                    let issued = false;
+                    for (let attempt = 0; attempt < 2 && !issued; attempt += 1) {
+                        try {
+                            // silent=true: approval owns the single user-facing
+                            // message, while a transient failure gets one retry.
+                            issued = await window.issueCardVerification(uid, false, true);
+                        } catch (issueError) {
+                            console.warn('Card issuance attempt failed:', issueError);
+                        }
+                        if (!issued && attempt === 0) await new Promise((resolve) => setTimeout(resolve, 600));
+                    }
+                    if (!issued) {
+                        console.error('Card issuance failed for', uid);
+                        toast('Membership approved, but the card record could not be issued yet. Use Membership Cards → Repair missing cards.', 'info');
+                    }
                 }
                 await logAdminActivity('member_approved', { memberId: uid, membershipId: newId });
                 toast(`Membership Approved! ID: ${newId}`);

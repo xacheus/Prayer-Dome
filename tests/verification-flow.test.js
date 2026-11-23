@@ -163,13 +163,23 @@ const db = makeDb({
     assert.equal(result.state, 'invalid');
   });
 
-  await ta('a legacy approved member without a projection still verifies', async () => {
+  await ta('an approved number without an issued card is not yet issued, never verified', async () => {
     const legacyDb = makeDb({
       members: { 'uid-2': { membershipId: 'PD20260002', fullName: 'John Banda', status: 'approved' } }
     });
     const result = await _resolveRequest(legacyDb, 'PD20260002', false);
-    assert.equal(result.state, 'active');
+    assert.equal(result.state, 'not_issued');
     assert.equal(result.record.membershipId, 'PD20260002');
+  });
+
+  await ta('the category is a membership category, never a raw admin role', () => {
+    assert.equal(_publicRecord({ membershipId: 'PD1', category: 'member' }, {}, 'active').category, 'MEMBER');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, { role: 'pastor' }, 'active').category, 'PASTOR');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, { role: 'admin' }, 'active').category, 'TEAM MANAGEMENT');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, { role: 'finance' }, 'active').category, 'TEAM MANAGEMENT');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, { role: 'worship' }, 'active').category, 'TEAM MANAGEMENT');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, { role: 'member' }, 'active').category, 'MEMBER');
+    assert.equal(_publicRecord({ membershipId: 'PD1' }, {}, 'active').category, 'MEMBER');
   });
 
   await ta('a pending member is not reported as active', async () => {

@@ -65,22 +65,26 @@ assert.ok(png.length > 5000, 'signature must contain the drawn mark, not an empt
 
 const svg = read('assets/pd-signature.svg');
 assert.match(svg, /<path[^>]*d="/, 'signature must be vector-drawn');
-assert.match(svg, /S\.K\. Masuku/, 'signature artwork must identify the founder');
+assert.match(svg, /S\. K\. MASUKU/, 'signature artwork must identify the founder');
 assert.ok(fs.existsSync(path.join(ROOT, 'assets/pd-signature.LICENSE.txt')),
   'the signature lettering licence must ship with the asset');
 
 const certificate = read('assets/pd-certificate.js');
-assert.match(certificate, /var FOUNDER_NAME = 'S\.K\. MASUKU';/, 'certificate founder name must be exact');
+assert.match(certificate, /var FOUNDER_NAME = 'S\. K\. MASUKU';/, 'certificate founder name must be exact');
 assert.match(certificate, /var DEFAULT_SIGNATURE_URL = '\/assets\/pd-signature\.png';/,
   'certificate must default to the official signature image');
 assert.match(certificate, /loadImage\(\(meta && meta\.url\) \|\| DEFAULT_SIGNATURE_URL\)/,
   'a missing cloud signature must not leave the certificate unsigned');
-assert.match(certificate, /992 - sh/, 'signature ink must sit on the signature rule');
+assert.match(certificate, /ruleY - sh - 6/, 'signature ink must sit above its own rule');
+assert.match(certificate, /drawSignatureBlock\(ctx, 400, FOUNDER_NAME/, 'founder signature has a dedicated block');
+assert.match(certificate, /drawSignatureBlock\(ctx, 1200/, 'administrator signature has a separate block');
+assert.match(certificate, /CERTIFICATE REFERENCE/, 'certificate reference must be visible in the footer');
+assert.match(certificate, /if \(typeof ctx\.scale === 'function'\) ctx\.scale\(SCALE, SCALE\)/, 'certificate must render at print resolution');
 
 const membership = read('membership.html');
 assert.match(membership, /signature: '\/assets\/pd-signature\.png'/,
   'membership card must default to the official signature image');
-assert.match(membership, /signatoryName: 'S\.K\. MASUKU'/,
+assert.match(membership, /signatoryName: 'S\. K\. MASUKU'/,
   'membership card founder name must be exact');
 
 // ---- the card's actual render path ----------------------------------------
@@ -92,11 +96,46 @@ const qrEnd = moduleScript.indexOf('function formatCardDate', qrStart);
 assert.ok(qrStart >= 0 && qrEnd > qrStart, 'the card QR functions must be present');
 const qrFunctions = moduleScript.slice(qrStart, qrEnd);
 
+// ---- category and badge rules ---------------------------------------------
+const roleStart = moduleScript.indexOf('function cardRoleLabel');
+const roleEnd = moduleScript.indexOf('const CARD_VERIFY_CACHE', roleStart);
+assert.ok(roleStart >= 0 && roleEnd > roleStart, 'the card category functions must be present');
+const roleDom = new JSDOM('<!doctype html><html><body></body></html>',
+  { url: 'https://prayerdome.net/membership', runScripts: 'outside-only' });
+roleDom.window.eval(moduleScript.slice(roleStart, roleEnd));
+const roleLabel = roleDom.window.__cardRoleLabel;
+const department = roleDom.window.__cardDepartment;
+assert.equal(roleLabel({ role: 'member', category: 'Member' }), 'MEMBER');
+assert.equal(roleLabel({ role: 'pastor' }), 'PASTOR');
+assert.equal(roleLabel({ role: 'admin' }), 'TEAM MANAGEMENT');
+assert.equal(roleLabel({ role: 'finance' }), 'TEAM MANAGEMENT');
+assert.equal(roleLabel({ role: 'worship' }), 'TEAM MANAGEMENT');
+assert.equal(roleLabel({ role: 'usher' }), 'TEAM MANAGEMENT');
+assert.equal(roleLabel({ role: 'staff' }), 'TEAM MANAGEMENT');
+assert.equal(roleLabel({}), 'MEMBER');
+assert.equal(roleLabel({ role: 'member', category: 'Ordinary Member' }), 'MEMBER');
+assert.equal(department({ role: 'admin', department: 'admin' }), 'Church administration');
+assert.equal(department({ role: 'member' }), 'Membership');
+
+const statusStart = moduleScript.indexOf('function statusForCard');
+const statusEnd = moduleScript.indexOf('function applyVerificationToCard', statusStart);
+assert.ok(statusStart >= 0 && statusEnd > statusStart, 'the card status function must be present');
+roleDom.window.eval(moduleScript.slice(statusStart, statusEnd));
+const statusForCard = roleDom.window.statusForCard;
+const issued = { status: 'approved', state: 'active' };
+assert.equal(statusForCard(issued, 'approved', 'AbCdEfGhIjKlMnOp').label, 'VERIFIED & ACTIVE');
+assert.equal(statusForCard(null, 'approved', '').label, 'CARD RECORD NOT ISSUED');
+assert.equal(statusForCard({ status: 'pending' }, 'pending', '').label, 'PENDING APPROVAL');
+assert.equal(statusForCard({ status: 'approved', expiresAt: new Date('2020-01-01T00:00:00Z') }, 'approved', 'AbCdEfGhIjKlMnOp').label, 'EXPIRED');
+assert.equal(statusForCard({ status: 'suspended' }, 'approved', 'AbCdEfGhIjKlMnOp').label, 'SUSPENDED');
+assert.equal(statusForCard({ status: 'revoked' }, 'approved', 'AbCdEfGhIjKlMnOp').label, 'REVOKED');
+assert.ok(!/VERIFICATION UNAVAILABLE/.test(moduleScript), 'a valid or missing record must never be mislabelled unavailable');
+
 const dom = new JSDOM('<!doctype html><html><body><div id="idQr"></div></body></html>',
   { url: 'https://prayerdome.net/membership', runScripts: 'outside-only' });
 const w = dom.window;
 w.eval(encoder);
-w.eval(qrFunctions + '\nwindow.__renderCardQr = renderCardQr;');
+w.eval('let cardVerificationPending = false; let cardVerificationFailed = false; let cardVerificationCached = false;\n' + qrFunctions + '\nwindow.__renderCardQr = renderCardQr;');
 w.__renderCardQr('PD20260001', true, { verificationRef: shortToken });
 const host = w.document.getElementById('idQr');
 const rendered = host.querySelector('svg');

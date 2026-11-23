@@ -330,11 +330,11 @@ async function deleteDailyChallenge(id) {
 
 /* ----------------------------------------------------------- membership cards */
 /* The founder's identity is fixed: the documents use the authorised form
-   S.K. MASUKU. An administrator may replace the signature image only with one
+   S. K. MASUKU. An administrator may replace the signature image only with one
    the founder has authorised; the name and designation are never editable. */
 const CARD_IDENTITY = {
   churchName: 'PRAYER DOME',
-  signatoryName: 'S.K. MASUKU',
+  signatoryName: 'S. K. MASUKU',
   signatoryRole: 'Founder and President — Prayer Dome',
   organization: 'PRAYER DOME'
 };
@@ -370,10 +370,29 @@ function verificationStatusForMember(status) {
   return 'pending';
 }
 
+function cardCategory(row) {
+  const values = [row.cardRole, row.membershipCategory, row.category, row.membershipType,
+    row.role, row.position, row.office, row.teamRole]
+    .filter((value) => value != null && String(value).trim() !== '')
+    .map((value) => String(value).toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim());
+  if (values.some((value) => /\b(pastor|pastoral|reverend|rev|bishop|apostle|evangelist|clergy)\b/.test(value))) return 'PASTOR';
+  if (values.some((value) => /\b(admin|administrator|management|team|staff|worker|finance|worship|usher|secretary|coordinator|leader|leadership|media|sound|choir|department|committee|elder|deacon|volunteer)\b/.test(value))) return 'TEAM MANAGEMENT';
+  return 'MEMBER';
+}
+
 function cardDepartment(row) {
-  const value = row.department || row.ministry || row.role || 'Membership';
-  if (String(value).toLowerCase() === 'admin') return 'TEAM MANAGEMENT';
-  return String(value).toUpperCase();
+  const value = String(row.department || row.ministry || '').trim();
+  if (value) {
+    const key = value.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (['admin', 'administrator', 'management', 'team', 'team management'].includes(key)) return 'Church administration';
+    if (['member', 'membership'].includes(key)) return 'Membership';
+    if (['pastor', 'pastoral'].includes(key)) return 'Pastoral ministry';
+    return value.toUpperCase();
+  }
+  const category = cardCategory(row);
+  if (category === 'PASTOR') return 'Pastoral ministry';
+  if (category === 'TEAM MANAGEMENT') return 'Church administration';
+  return 'Membership';
 }
 
 function applyTemplateToForm(template) {
@@ -580,7 +599,20 @@ async function issueCardVerification(uid, reissue, silent) {
     const existingSnap = await store.getDoc(mainRef);
     const existing = existingSnap.exists() ? existingSnap.data() : null;
     const validity = Number((($('mcardValidityMonths') || {}).value) || cardValidityMonths || 12);
-    const reference = existing && existing.verificationRef && !reissue ? existing.verificationRef : newVerificationRef();
+    let reference = existing && existing.verificationRef && !reissue ? existing.verificationRef : '';
+    if (!reference) {
+      // Never let two card records share a QR token. A collision would send a
+      // scan to the wrong member, so check the pointer collection first.
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const candidate = newVerificationRef();
+        const pointerSnap = await store.getDoc(store.doc(bridge.db, 'membershipVerificationRefs', candidate));
+        if (!pointerSnap.exists() || String((pointerSnap.data() || {}).membershipId || '').toUpperCase() === number) {
+          reference = candidate;
+          break;
+        }
+      }
+      if (!reference) throw new Error('A secure verification code could not be generated. Please try again.');
+    }
     const status = verificationStatusForMember(row.status);
     const issuedAt = store.Timestamp.fromDate(new Date());
     const expiresAt = store.Timestamp.fromDate(cardAddMonths(new Date(), validity));
@@ -588,7 +620,7 @@ async function issueCardVerification(uid, reissue, silent) {
       membershipId: number,
       userId: uid,
       displayName: row.fullName || row.name || 'Prayer Dome member',
-      category: row.category || row.membershipType || row.role || 'Member',
+      category: cardCategory(row),
       department: cardDepartment(row),
       branch: /freedom/i.test(String(row.branch || '')) ? 'PRAYER DOME' : (row.branch || 'PRAYER DOME'),
       organization: CARD_IDENTITY.organization,

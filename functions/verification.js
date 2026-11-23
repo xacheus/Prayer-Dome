@@ -77,21 +77,45 @@ function branchName(value) {
   return !branch || /freedom/i.test(branch) ? ORGANISATION : branch;
 }
 
+/**
+ * The printed category is a membership category, not a job title. A pastor is
+ * PASTOR; any church administrative or working-team role is TEAM MANAGEMENT;
+ * everyone else is MEMBER. "admin" is never printed as ADMIN.
+ */
+function categoryLabel() {
+  const values = Array.prototype.slice.call(arguments)
+    .filter((value) => value != null && String(value).trim() !== '')
+    .map((value) => String(value).toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim());
+  if (values.some((value) => /\b(pastor|pastoral|reverend|rev|bishop|apostle|evangelist|clergy)\b/.test(value))) return 'PASTOR';
+  if (values.some((value) => /\b(admin|administrator|management|team|staff|worker|finance|worship|usher|secretary|coordinator|leader|leadership|media|sound|choir|department|committee|elder|deacon|volunteer)\b/.test(value))) return 'TEAM MANAGEMENT';
+  return 'MEMBER';
+}
+
+function departmentLabel(value) {
+  const direct = text(value, 100);
+  if (!direct) return '';
+  const key = direct.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (['admin', 'administrator', 'management', 'team', 'team management'].includes(key)) return 'Church administration';
+  if (['member', 'membership'].includes(key)) return 'Membership';
+  if (['pastor', 'pastoral'].includes(key)) return 'Pastoral ministry';
+  return direct;
+}
+
 function publicRecord(card, member, state) {
   const photo = text((card && card.photoUrl) || (member && (member.photoUrl || member.photoURL)) || '', 1000);
   const photoIsSafe = /^(https:\/\/|\/)/i.test(photo);
   return {
     membershipId: normaliseId((card && card.membershipId) || (member && member.membershipId)),
     displayName: text((card && card.displayName) || (member && member.fullName) || '', 120),
-    category: text((card && card.category) || (member && (member.category || member.membershipType)) || 'Member', 80),
-    department: text((card && card.department) || (member && (member.department || member.ministry)) || '', 100),
+    category: categoryLabel(card && card.category, member && member.category, member && member.membershipType, member && member.role),
+    department: departmentLabel((card && card.department) || (member && (member.department || member.ministry))),
     branch: branchName((card && card.branch) || (member && member.branch)),
     organization: ORGANISATION,
     photoUrl: photoIsSafe && (!card || card.photoAllowed !== false) ? photo : '',
     photoAllowed: !card || card.photoAllowed !== false,
     membershipStatus: text((card && card.membershipStatus) || (member && member.status) || '', 40).toLowerCase(),
     status: state,
-    issuedAt: iso(card && (card.issuedAt || card.updatedAt)) || iso(member && member.approvedAt),
+    issuedAt: state === 'not_issued' ? '' : (iso(card && (card.issuedAt || card.updatedAt)) || iso(member && member.approvedAt)),
     expiresAt: iso(card && (card.expiresAt || card.validUntil)),
     verifyUrl: SITE_URL + '/verify'
   };
@@ -118,14 +142,13 @@ function resolveState(card, member, now) {
     // member record has since been removed) is active.
     return 'active';
   }
-  if (!card && memberStatus === 'approved' && normaliseId(member.membershipId)) {
-    // Legacy approved member whose card projection was never written. This is
-    // a real, approved membership, so the manual check can succeed; the QR is
-    // still issued by ensureMyCard before a card is printed or downloaded.
-    return 'active';
-  }
   if (member && !normaliseId(member.membershipId)) return 'not_issued';
-  if (member) return 'pending';
+  if (member) {
+    // An approved membership number is not, by itself, a verified card. Until
+    // the issued projection and its QR token exist, /verify must say "not yet
+    // issued" rather than claim the card is verified.
+    return memberStatus === 'approved' ? 'not_issued' : 'pending';
+  }
   return 'invalid';
 }
 
@@ -250,9 +273,19 @@ async function ensureMyCardHandler(data, context) {
   // 16 base64url characters = 96 bits. Keeping the token short leaves the
   // printed QR at version 3 (29 modules) instead of version 4, so the code in
   // the 68 px card back has visibly larger modules and scans reliably.
-  const token = existing && validToken(String(existing.verificationRef || ''))
+  let token = existing && validToken(String(existing.verificationRef || ''))
     ? String(existing.verificationRef)
-    : crypto.randomBytes(12).toString('base64url');
+    : '';
+  if (!token) {
+    // 96 bits, checked against the pointer collection so a token can never be
+    // reused by two members and send a scan to the wrong record.
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const candidate = crypto.randomBytes(12).toString('base64url');
+      const clash = await db.collection('membershipVerificationRefs').doc(candidate).get();
+      if (!clash.exists) { token = candidate; break; }
+    }
+    if (!token) fail('resource-exhausted', 'A secure verification code could not be generated. Please try again.');
+  }
 
   // A card status is derived from the live membership, except that an explicit
   // revoke/suspend/expiry (or a rejection) is preserved until an administrator
@@ -288,8 +321,8 @@ async function ensureMyCardHandler(data, context) {
     membershipId: id,
     userId: uid,
     displayName: text((existing && existing.displayName) || member.fullName || 'Prayer Dome member', 120),
-    category: text((existing && existing.category) || member.category || member.membershipType || member.role || 'Member', 80),
-    department: text((existing && existing.department) || member.department || member.ministry || '', 100),
+    category: categoryLabel(existing && existing.category, member.category, member.membershipType, member.role),
+    department: departmentLabel((existing && existing.department) || member.department || member.ministry),
     branch: branchName((existing && existing.branch) || member.branch),
     organization: ORGANISATION,
     photoUrl: text((existing && existing.photoUrl) || member.photoUrl || member.photoURL || '', 1000),
@@ -322,15 +355,85 @@ async function ensureMyCardHandler(data, context) {
   return { state, record: publicRecord(record, member, state), verificationRef: token };
 }
 
+/**
+ * Atomically reserve the next membership number. Two administrators approving
+ * at the same moment must never receive the same number. The counter document
+ * is advanced inside a transaction and every candidate is checked against the
+ * memberships collection before it is returned.
+ */
+async function reserveMembershipNumberHandler(data, context) {
+  if (!context || !context.auth || !context.auth.uid) {
+    fail('unauthenticated', 'Sign in to reserve a membership number.');
+  }
+  const db = admin.firestore();
+  const requestedYear = Number(data && data.year);
+  const year = Number.isInteger(requestedYear) && requestedYear >= 2020 && requestedYear <= 2100
+    ? requestedYear
+    : new Date().getFullYear();
+  const prefix = 'PD' + year;
+  const counterRef = db.collection('membershipCounters').doc(String(year));
+
+  try {
+    const membershipId = await db.runTransaction(async (transaction) => {
+      const counterSnap = await transaction.get(counterRef);
+      let sequence = counterSnap.exists ? Number(counterSnap.data().lastNumber) || 0 : 0;
+      if (!sequence) {
+        const lastSnap = await transaction.get(
+          db.collection('memberships')
+            .where('membershipId', '>=', prefix)
+            .where('membershipId', '<', prefix + '\uf8ff')
+            .orderBy('membershipId', 'desc')
+            .limit(1)
+        );
+        if (!lastSnap.empty) {
+          const parsed = parseInt(String(lastSnap.docs[0].data().membershipId || '').slice(prefix.length), 10);
+          if (Number.isFinite(parsed)) sequence = parsed;
+        }
+      }
+      let candidate = '';
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        sequence += 1;
+        candidate = prefix + String(sequence).padStart(4, '0');
+        const clash = await transaction.get(
+          db.collection('memberships').where('membershipId', '==', candidate).limit(1)
+        );
+        if (clash.empty) break;
+        candidate = '';
+      }
+      if (!candidate) fail('resource-exhausted', 'A unique membership number could not be reserved. Please try again.');
+      transaction.set(counterRef, {
+        year,
+        lastNumber: sequence,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      return candidate;
+    });
+    try {
+      await db.collection('membershipNumberReservations').doc(membershipId).set({
+        membershipId,
+        reservedBy: context.auth.uid,
+        reservedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } catch (error) { /* the counter is authoritative; the audit row is best effort */ }
+    return { membershipId };
+  } catch (error) {
+    if (error && error.code === 'resource-exhausted') throw error;
+    console.error('Membership number reservation failed:', error);
+    fail('unavailable', 'A membership number could not be reserved right now. Please try again.');
+  }
+}
+
 const region = functions.region(REGION);
 
 module.exports = {
   verifyMembership: region.https.onCall(verifyMembershipHandler),
   ensureMyCard: region.https.onCall(ensureMyCardHandler),
+  reserveMembershipNumber: region.https.onCall(reserveMembershipNumberHandler),
   // Exported for unit-style checks. These are pure helpers or accept an
   // injected Firestore handle, so the public projection and the QR-pointer
   // path can be exercised without deploying or touching live data.
   _normaliseId: normaliseId,
+  _categoryLabel: categoryLabel,
   _resolveState: resolveState,
   _publicRecord: publicRecord,
   _resolveRequest: resolveRequest

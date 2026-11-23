@@ -143,13 +143,20 @@ const assert = require('node:assert/strict');
     await assertFails(getDocs(collection(guest, 'membershipVerificationRefs')));
     await assertFails(setDoc(doc(member, 'membershipVerificationHistory/entry'), { action: 'issued' }));
 
-    // The fixed founder identity is public; only an administrator can replace
-    // the stored signature images.
+    // Signed-in pages may read the founder identity; only an administrator can
+    // replace the stored signature images.
     await assertSucceeds(setDoc(doc(admin, 'settings/founder'), {
-      founderName: 'S.K. MASUKU', founderTitle: 'Founder and President'
+      founderName: 'S. K. MASUKU', founderTitle: 'Founder and President'
     }));
-    await assertSucceeds(getDoc(doc(guest, 'settings/founder')));
+    await assertSucceeds(getDoc(doc(member, 'settings/founder')));
+    await assertFails(getDoc(doc(guest, 'settings/founder')));
     await assertFails(setDoc(doc(member, 'settings/founder'), { founderName: 'Someone else' }));
+
+    // Membership-number counters and reservations are callable-only.
+    await assertFails(getDoc(doc(member, 'membershipCounters/2026')));
+    await assertFails(setDoc(doc(member, 'membershipCounters/2026'), { lastNumber: 99 }));
+    await assertFails(setDoc(doc(admin, 'membershipCounters/2026'), { lastNumber: 99 }));
+    await assertFails(setDoc(doc(admin, 'membershipNumberReservations/PD20260001'), { membershipId: 'PD20260001' }));
 
     console.log('Firestore authorization regression checks passed.');
   } finally { await env.cleanup(); }

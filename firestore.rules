@@ -656,11 +656,12 @@ service cloud.firestore {
     // ==========================================
     // Official identity settings
     // ==========================================
-    // The founder signature is printed on public certificates and membership
-    // cards. Everyone may read that one document; every other setting stays
-    // administrator-only, and only an administrator may replace the image.
+    // The founder identity is fixed and its default artwork is a public asset.
+    // This document may hold an uploaded signature data URL, so only signed-in
+    // accounts may read it; signed-out certificate previews use the bundled
+    // official artwork. Only an administrator may replace either signature.
     match /settings/founder {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
     }
     match /settings/{docId} {
@@ -731,6 +732,16 @@ service cloud.firestore {
     match /membershipVerificationHistory/{id} {
       allow read, create: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // Atomic membership-number allocation. Only the reserveMembershipNumber
+    // callable (Admin SDK) may advance a counter or inspect reservations, so
+    // two simultaneous approvals cannot receive the same number.
+    match /membershipCounters/{year} {
+      allow read, write: if false;
+    }
+    match /membershipNumberReservations/{membershipId} {
+      allow read, write: if false;
     }
 
     // Registration email codes. Only the callable (Admin SDK) reads or writes

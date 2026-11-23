@@ -24,7 +24,7 @@ function makeCtx(log) {
     moveTo(x, y) { this.ops.push(['moveTo', x, y]); }, lineTo(x, y) { this.ops.push(['lineTo', x, y]); },
     quadraticCurveTo(a, b, c, d) { this.ops.push(['quad', a, b, c, d]); },
     arc(x, y, r) { this.ops.push(['arc', x, y, r]); }, ellipse(x, y, rx, ry) { this.ops.push(['ellipse', x, y, rx, ry]); },
-    save() {}, restore() {}, translate(x, y) { this.ops.push(['translate', x, y]); }
+    save() {}, restore() {}, translate(x, y) { this.ops.push(['translate', x, y]); }, scale(x, y) { this.ops.push(['scale', x, y]); }
   };
   return ctx;
 }

@@ -138,13 +138,13 @@ test('the public verification page uses the server, never the register', () => {
 
 test('membership cards and certificates print the fixed identity', () => {
   const membership = read('membership.html');
-  assert.match(membership, /S\.K\. MASUKU/);
+  assert.match(membership, /S\. K\. MASUKU/);
   assert.match(membership, /Founder and President/);
   assert.match(membership, /PRAYER DOME/);
   assert.match(membership, /downloadID\('front'\)|downloadID\("front"\)/);
   assert.match(membership, /downloadID\('back'\)|downloadID\("back"\)/);
   const certificate = read('assets/pd-certificate.js');
-  assert.match(certificate, /S\.K\. MASUKU/);
+  assert.match(certificate, /S\. K\. MASUKU/);
   assert.match(certificate, /Founder and President/);
   assert.match(certificate, /administratorSignatureUrl/);
 });

@@ -25,7 +25,7 @@
   };
 
   var FOUNDER = {
-    name: 'S.K. MASUKU',
+    name: 'S. K. MASUKU',
     title: 'Founder and President',
     organization: 'PRAYER DOME'
   };

@@ -960,6 +960,7 @@ exports.expireSupportSubscriptions = billingModule.expireJob;
 // outbox row before calling Brevo so a retry can never duplicate a message.
 exports.verifyMembership = verificationModule.verifyMembership;
 exports.ensureMyCard = verificationModule.ensureMyCard;
+exports.reserveMembershipNumber = verificationModule.reserveMembershipNumber;
 exports.emailAdmin = notificationModule.emailAdmin;
 exports.membershipNotifications = notificationModule.membershipNotifications;
 exports.paymentNotifications = notificationModule.paymentNotifications;
