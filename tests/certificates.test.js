@@ -68,63 +68,41 @@ function sliceBalanced(code, marker) {
   throw new Error('unbalanced block: ' + marker);
 }
 
-// ---------------------------------------------------------------- account
-(function accountTest() {
-  const code = moduleScript('account.html');
-  const page = allScripts('account.html');
-  const escapeMatch = page.match(/window\.escapeHtml = [^\n]*/);
-  const helpers =
-    (escapeMatch ? escapeMatch[0] : code.match(/window\.escapeHtml = [^\n]*/)[0]) + '\n' +
-    sliceBalanced(page, 'window.showToast = (msg, type) => {') + '\n';
-  const start = code.indexOf('// ==================== MY CERTIFICATES ====================');
-  const end = code.indexOf('function updateVerificationStatus');
-  const certCode = code.slice(start, end) +
-    '\nwindow._loadMyCerts = loadMyCertificates;';
-
-  const html = fs.readFileSync(path.join(ROOT, 'account.html'), 'utf8');
-  const dom = new JSDOM(html, { url: 'https://prayerdome.net/account', runScripts: 'outside-only' });
+// ------------------------------------------------------------ certificates
+(function certificatesPageTest() {
+  const html = fs.readFileSync(path.join(ROOT, 'certificates.html'), 'utf8');
+  const code = moduleScript('certificates.html');
+  const dom = new JSDOM(html, { url: 'https://prayerdome.net/certificates', runScripts: 'outside-only' });
   const w = dom.window;
+
+  t('certificates page has loading, signed-out and signed-in states',
+    ['certAuthLoading', 'certSignedOut', 'certContent'].every((id) => w.document.getElementById(id)));
+  t('certificates page queries only the signed-in member',
+    /where\(\s*['"]userId['"]\s*,\s*['"]==['"]\s*,\s*user\.uid\s*\)/.test(code) &&
+    !/where\(\s*['"]userId['"]\s*,\s*['"]==['"]\s*,\s*['"]/.test(code));
+  t('cloud results are filtered again by the signed-in uid',
+    /filter\(\(cert\) => cert\.userId === user\.uid\)/.test(code));
+  t('certificate cards expose preview, download and print',
+    ['cert-preview-btn', 'cert-download-btn', 'cert-print-btn'].every((cls) => code.includes(cls)));
+  t('certificate cards show title, issue date, reference number and status',
+    ['cert.title', 'displayDate(cert.parsed)', 'cert.id', "cert.status"].every((field) => code.includes(field)));
+  t('profile does not collect certificates inline',
+    !fs.readFileSync(path.join(ROOT, 'account.html'), 'utf8').includes('myCertificatesList'));
+  t('navigation points at the dedicated certificates page',
+    fs.readFileSync(path.join(ROOT, 'assets/pd-nav.js'), 'utf8').includes("href: '/certificates'"));
+
+  // Local awards are claimed once by the signed-in member and never shown to
+  // a different account on the same device.
+  const localFn = sliceBalanced(code, 'function localCertificates(uid) {');
   w.localStorage.setItem('pd_academy_progress', JSON.stringify({
     certificates: [{ id: 'PD-LOCAL-1', title: 'Foundations of Prayer', score: 90, date: '2026-07-01T00:00:00Z', name: 'Jane Doe' }]
   }));
-  w.localStorage.setItem('pd_certificate_name', 'Jane Doe');
-  w.auth = { currentUser: { uid: 'user-1' } };
-  w.PDCertificate = {
-    bindButton(btn, opts) { btn.__opts = opts; },
-    preview: async () => 'data:image/png;base64,AAAA'
-  };
-  w.getDocs = async () => ({
-    empty: false,
-    forEach(fn) {
-      [
-        { id: 'PD-CLOUD-1', data: () => ({ id: 'PD-CLOUD-1', userId: 'user-1', course: 'The Power of Prayer', score: 88, date: '2026-07-15T00:00:00Z', name: 'Jane Doe' }) },
-        { id: 'PD-CLOUD-2', data: () => ({ id: 'PD-CLOUD-2', userId: 'user-1', course: 'Intercession 101', score: 95, date: '2026-08-01T00:00:00Z', name: 'Jane Doe' }) }
-      ].forEach(fn);
-    }
-  });
-  w.query = () => ({}); w.collection = () => ({}); w.where = () => ({}); w.orderBy = () => ({}); w.limit = () => ({});
-  w.db = {};
-  w.doc = () => ({}); w.updateDoc = async () => {}; w.increment = n => n;
-
-  try {
-    w.eval(helpers);
-    w.eval(certCode);
-    w._loadMyCerts().then(() => {
-      const d = w.document;
-      const list = d.getElementById('myCertificatesList');
-      t('account: certificate cards render (local + Firestore)',
-        d.querySelectorAll('.cert-card').length === 3, d.querySelectorAll('.cert-card').length + ' cards');
-      t('account: course titles shown',
-        list.textContent.includes('Foundations of Prayer') && list.textContent.includes('The Power of Prayer'));
-      t('account: scores and IDs shown',
-        list.textContent.includes('90%') && list.textContent.includes('PD-CLOUD-2'));
-      t('account: empty state not shown', !list.textContent.includes('No certificates yet'));
-      const btns = [...d.querySelectorAll('.cert-download-btn')];
-      t('account: download buttons bound to PDCertificate',
-        btns.length === 3 && btns.every(b => b.__opts && b.__opts.id && typeof b.__opts.onDownload === 'function'));
-      t('account: print buttons present', d.querySelectorAll('.cert-print-btn').length === 3);
-    }).catch(e => { fail++; console.log('FAIL  account exception: ' + e.stack); });
-  } catch (e) { fail++; console.log('FAIL  account exception: ' + e.stack); }
+  w.eval(localFn);
+  t('first signed-in member claims legacy local certificates',
+    w.localCertificates('user-a').length === 1 &&
+    JSON.parse(w.localStorage.getItem('pd_academy_progress')).ownerUid === 'user-a');
+  t('a different signed-in member cannot see the first member\'s local certificates',
+    w.localCertificates('user-b').length === 0);
 })();
 
 // ---------------------------------------------------------------- admin

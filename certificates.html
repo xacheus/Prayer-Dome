@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <!-- PD-SEO:START -->
+    <!-- Managed by seo/apply-seo.py from seo/pages.json. Do not hand-edit this block. -->
+    <title>My Certificates | Prayer Dome</title>
+    <meta name="description" content="Your Prayer Dome Academy certificates: preview, download and print the awards issued to your own account.">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+    <link rel="canonical" href="https://prayerdome.net/certificates">
+    <meta name="author" content="Prayer Dome">
+    <meta name="theme-color" content="#104F91">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Prayer Dome">
+    <link rel="apple-touch-icon" href="/assets/logo.png">
+    <link rel="icon" type="image/png" href="https://prayerdome.net/assets/logo.png">
+    <!-- PD-SEO:END -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/pd-brand.css">
+    <link rel="stylesheet" href="/assets/pd-icons.css">
+    <script src="/assets/pd-icons.js"></script>
+    <style>
+        :root { --cert-blue: #104F91; --cert-gold: #c9a227; }
+        * { box-sizing: border-box; }
+        html { -webkit-text-size-adjust: 100%; }
+        body {
+            margin: 0; min-height: 100vh; font-family: 'Inter', sans-serif;
+            background: var(--bg-primary); color: var(--text-main);
+            padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+            overflow-x: hidden;
+        }
+        .pd-topbar { min-height: 58px; }
+        .cert-wrap {
+            width: min(1080px, 100%); margin: 0 auto;
+            padding: clamp(14px, 3.4vw, 30px) clamp(12px, 3.2vw, 26px);
+        }
+        .cert-hero {
+            position: relative; overflow: hidden; border-radius: clamp(18px, 4vw, 28px);
+            padding: clamp(20px, 5vw, 38px);
+            color: #fff; background:
+                radial-gradient(circle at 88% 16%, rgba(201,162,39,.3), transparent 42%),
+                linear-gradient(135deg, #07366d, #104F91 58%, #1d5fa6);
+            box-shadow: 0 14px 36px rgba(7,54,109,.22);
+            margin-bottom: 20px;
+        }
+        .cert-hero::after {
+            content: ''; position: absolute; right: -34px; bottom: -54px;
+            width: 180px; height: 180px; border-radius: 50%;
+            border: 22px solid rgba(255,255,255,.08);
+        }
+        .cert-eyebrow {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: .63rem; font-weight: 900; letter-spacing: .14em;
+            text-transform: uppercase; color: #f6df8a;
+            border: 1px solid rgba(246,223,138,.42); border-radius: 999px;
+            padding: 7px 12px; margin-bottom: 12px; max-width: 100%;
+        }
+        .cert-hero h1 {
+            position: relative; z-index: 1; margin: 0 0 8px;
+            font-family: 'Poppins', sans-serif; font-weight: 800;
+            font-size: clamp(1.45rem, 5.4vw, 2.35rem); line-height: 1.16;
+            overflow-wrap: break-word;
+        }
+        .cert-hero p { position: relative; z-index: 1; margin: 0; max-width: 60ch; color: rgba(255,255,255,.86); font-size: clamp(.82rem, 2.5vw, .95rem); line-height: 1.65; }
+        .cert-state {
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: 22px;
+            padding: clamp(24px, 6vw, 46px) clamp(16px, 5vw, 34px);
+            text-align: center; box-shadow: var(--shadow);
+        }
+        .cert-state[hidden] { display: none !important; }
+        .cert-state .pd-spinner {
+            width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 16px;
+            border: 4px solid rgba(16,79,145,.16); border-top-color: var(--cert-blue);
+            animation: cert-spin 1s linear infinite;
+        }
+        @keyframes cert-spin { to { transform: rotate(360deg); } }
+        .cert-state h2 { margin: 0 0 8px; font-family: 'Poppins', sans-serif; font-size: clamp(1.08rem, 3.6vw, 1.35rem); }
+        .cert-state p { margin: 0 auto 18px; max-width: 52ch; color: var(--text-sub); font-size: .88rem; line-height: 1.65; }
+        .cert-state .btn { width: auto; }
+        .cert-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; flex-wrap: wrap; margin: 0 2px 14px;
+        }
+        .cert-count { font-size: .78rem; font-weight: 800; color: var(--text-sub); letter-spacing: .02em; }
+        .cert-toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .cert-toolbar .btn { width: auto; padding: 9px 14px; font-size: .76rem; }
+        .cert-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+        .cert-card {
+            position: relative; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr);
+            gap: 14px; padding: clamp(14px, 4vw, 20px);
+            background: linear-gradient(180deg, #fffdf6, #fbf7ec);
+            border: 1px solid rgba(201,162,39,.45); border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(7,36,77,.06);
+        }
+        .cert-card::before {
+            content: ''; position: absolute; inset: 6px; border-radius: 13px;
+            border: 1px solid rgba(201,162,39,.25); pointer-events: none;
+        }
+        body.dark-mode .cert-card { background: linear-gradient(180deg, #0f1c30, #0b1626); }
+        .cert-card-head { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .cert-card-logo { width: 42px; height: 42px; flex: 0 0 42px; border-radius: 10px; background: #fff; border: 1px solid rgba(201,162,39,.4); padding: 3px; }
+        .cert-card-logo img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        .cert-card-titles { min-width: 0; }
+        .cert-card-eyebrow { font-size: .56rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #8f7410; }
+        body.dark-mode .cert-card-eyebrow { color: #f6df8a; }
+        .cert-card-org { font-family: 'Poppins', sans-serif; font-size: .95rem; font-weight: 800; color: #1d2a6b; line-height: 1.25; overflow-wrap: break-word; }
+        body.dark-mode .cert-card-org { color: #e8eefc; }
+        .cert-card-seal { margin-left: auto; width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; display: grid; place-items: center; color: #5b4600; font-size: 1rem; background: radial-gradient(circle at 35% 30%, #f6df8a, #c9a227 70%); border: 2px solid rgba(143,116,16,.35); }
+        .cert-card-body { min-width: 0; padding: 2px 4px; }
+        .cert-card-recipient { margin: 0 0 4px; font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.18rem, 4.2vw, 1.55rem); line-height: 1.25; color: #1d2a6b; overflow-wrap: break-word; }
+        body.dark-mode .cert-card-recipient { color: #f6df8a; }
+        .cert-card-line { margin: 0; color: var(--text-sub); font-size: .78rem; line-height: 1.55; }
+        .cert-card-course { font-weight: 800; color: var(--text-main); overflow-wrap: anywhere; }
+        .cert-card-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; font-size: .68rem; color: var(--text-sub); overflow-wrap: break-word; }
+        .cert-card-meta b { color: var(--text-main); font-weight: 800; }
+        .cert-status { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 999px; font-size: .58rem; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; background: rgba(22,101,52,.1); color: #166534; }
+        .cert-status.revoked { background: rgba(185,28,28,.1); color: #b91c1c; }
+        #certStatus { display: inline-flex; margin-top: 14px; max-width: 100%; padding: 7px 11px; border-radius: 10px; font-size: .72rem; font-weight: 700; letter-spacing: 0; text-transform: none; text-align: left; white-space: normal; overflow-wrap: anywhere; background: rgba(16,79,145,.08); color: var(--text-main); }
+        body.dark-mode .cert-status { background: rgba(74,222,128,.14); color: #86efac; }
+        body.dark-mode .cert-status.revoked { background: rgba(248,113,113,.14); color: #fca5a5; }
+        .cert-card-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid rgba(201,162,39,.25); padding-top: 12px; }
+        .cert-signature { min-width: 120px; flex: 1 1 140px; }
+        .cert-signature-name { font-family: 'Playfair Display', Georgia, serif; font-size: 1.12rem; color: #1d2a6b; line-height: 1.2; }
+        body.dark-mode .cert-signature-name { color: #f6df8a; }
+        .cert-signature-rule { height: 1px; background: rgba(107,103,92,.45); margin: 3px 0 4px; }
+        .cert-signature-label { font-size: .54rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .cert-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .cert-actions .btn { width: auto; padding: 9px 13px; font-size: .75rem; line-height: 1.25; white-space: normal; text-align: center; }
+        .cert-empty {
+            background: var(--bg-card); border: 1px dashed var(--border); border-radius: 22px;
+            padding: clamp(26px, 7vw, 50px) clamp(16px, 5vw, 34px); text-align: center;
+        }
+        .cert-empty[hidden] { display: none !important; }
+        .cert-empty-icon { width: 64px; height: 64px; border-radius: 20px; margin: 0 auto 14px; display: grid; place-items: center; font-size: 1.6rem; color: var(--cert-gold); background: rgba(201,162,39,.12); border: 1px solid rgba(201,162,39,.28); }
+        .cert-empty h2 { margin: 0 0 8px; font-family: 'Poppins', sans-serif; font-size: clamp(1.05rem, 3.4vw, 1.3rem); }
+        .cert-empty p { margin: 0 auto 16px; max-width: 50ch; color: var(--text-sub); font-size: .86rem; line-height: 1.65; }
+        .cert-empty .btn { width: auto; }
+        @media (min-width: 780px) {
+            .cert-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .cert-card-foot { align-items: center; }
+        }
+        @media (max-width: 520px) {
+            .cert-card-foot { align-items: stretch; }
+            .cert-actions { width: 100%; }
+            .cert-actions .btn { flex: 1 1 130px; }
+            .cert-toolbar-actions { width: 100%; }
+            .cert-toolbar-actions .btn { flex: 1 1 auto; }
+        }
+    </style>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
+</head>
+<body>
+<aside class="pd-drawer" id="pdDrawer" aria-label="Main menu">
+    <div class="pd-drawer-head"><img src="/assets/logo.png" alt="Prayer Dome"><div class="pd-drawer-brand"><div class="pd-drawer-title">Prayer Dome</div><small>A House of Prayer for All Nations</small></div><button class="pd-drawer-close" type="button" aria-label="Close menu"><i class="pd-i pd-i-x" aria-hidden="true"></i></button></div><nav class="pd-drawer-nav" aria-label="Sections of Prayer Dome">
+      <div class="pd-drawer-group" data-pd-nav-group="main">
+        <p class="pd-drawer-group-title" id="pdNavGroup-main">Main</p>
+        <a class="pd-drawer-link" href="/" data-pd-nav="/"><i class="pd-i pd-i-house" aria-hidden="true"></i><span data-pd-t="nav.home">Home</span></a>
+        <a class="pd-drawer-link" href="/bible" data-pd-nav="/bible"><i class="pd-i pd-i-book-open" aria-hidden="true"></i><span data-pd-t="nav.bible">Bible</span></a>
+        <a class="pd-drawer-link" href="/lessons" data-pd-nav="/lessons"><i class="pd-i pd-i-graduation-cap" aria-hidden="true"></i><span data-pd-t="nav.teaching">Teachings</span></a>
+        <a class="pd-drawer-link" href="/prayer" data-pd-nav="/prayer"><i class="pd-i pd-i-hands-praying" aria-hidden="true"></i><span data-pd-t="nav.pray">Prayer Wall</span></a>
+      </div>
+      <div class="pd-drawer-group" data-pd-nav-group="learn">
+        <p class="pd-drawer-group-title" id="pdNavGroup-learn">Learn &amp; Play</p>
+        <a class="pd-drawer-link" href="/game" data-pd-nav="/game"><i class="pd-i pd-i-gamepad-2" aria-hidden="true"></i><span>Play with Domey</span></a>
+        <a class="pd-drawer-link" href="/quiz" data-pd-nav="/quiz"><i class="pd-i pd-i-star" aria-hidden="true"></i><span data-pd-t="nav.quizzes">Bible Quizzes</span></a>
+        <a class="pd-drawer-link" href="/stories" data-pd-nav="/stories"><i class="pd-i pd-i-book-open-text" aria-hidden="true"></i><span data-pd-t="nav.stories">Bible Stories</span></a>
+        <a class="pd-drawer-link" href="/resources" data-pd-nav="/resources"><i class="pd-i pd-i-folder-open" aria-hidden="true"></i><span data-pd-t="nav.resources">Study Resources</span></a>
+      </div>
+      <div class="pd-drawer-group" data-pd-nav-group="community">
+        <p class="pd-drawer-group-title" id="pdNavGroup-community">Community</p>
+        <a class="pd-drawer-link" href="/chat" data-pd-nav="/chat"><i class="pd-i pd-i-messages-square" aria-hidden="true"></i><span data-pd-t="nav.chat">Community Hub</span></a>
+        <a class="pd-drawer-link" href="/testimony" data-pd-nav="/testimony"><i class="pd-i pd-i-sparkles" aria-hidden="true"></i><span data-pd-t="nav.testimony">Testimonies</span></a>
+        <a class="pd-drawer-link" href="/events" data-pd-nav="/events"><i class="pd-i pd-i-calendar-days" aria-hidden="true"></i><span data-pd-t="nav.events">Events</span></a>
+        <a class="pd-drawer-link" href="/gallery" data-pd-nav="/gallery"><i class="pd-i pd-i-images" aria-hidden="true"></i><span data-pd-t="nav.gallery">Gallery</span></a>
+        <a class="pd-drawer-link" href="/locations" data-pd-nav="/locations"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i><span>Locations</span></a>
+        <a class="pd-drawer-link" href="/news" data-pd-nav="/news"><i class="pd-i pd-i-newspaper" aria-hidden="true"></i><span data-pd-t="nav.news">Christian News</span></a>
+      </div>
+      <div class="pd-drawer-group" data-pd-nav-group="media">
+        <p class="pd-drawer-group-title" id="pdNavGroup-media">Media</p>
+        <a class="pd-drawer-link pd-drawer-live" href="/live" data-pd-nav="/live"><i class="pd-i pd-i-radio" aria-hidden="true"></i><span data-pd-t="nav.live">Live Service</span></a>
+        <a class="pd-drawer-link" href="/sermons" data-pd-nav="/sermons"><i class="pd-i pd-i-mic" aria-hidden="true"></i><span data-pd-t="nav.sermons">Sermons</span></a>
+        <a class="pd-drawer-link" href="/video" data-pd-nav="/video"><i class="pd-i pd-i-circle-play" aria-hidden="true"></i><span data-pd-t="nav.media">Gospel Media</span></a>
+        <a class="pd-drawer-link" href="/radio" data-pd-nav="/radio"><i class="pd-i pd-i-radio-tower" aria-hidden="true"></i><span>Radio &amp; Podcasts</span></a>
+      </div>
+      <div class="pd-drawer-group" data-pd-nav-group="personal">
+        <p class="pd-drawer-group-title" id="pdNavGroup-personal">Personal</p>
+        <a class="pd-drawer-link" href="/account" data-pd-nav="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i><span data-pd-t="nav.account">My Profile</span></a>
+        <a class="pd-drawer-link active" href="/certificates" data-pd-nav="/certificates" aria-current="page"><i class="pd-i pd-i-award" aria-hidden="true"></i><span>Certificates</span></a>
+        <a class="pd-drawer-link" href="/widgets" data-pd-nav="/widgets"><i class="pd-i pd-i-smartphone" aria-hidden="true"></i><span>Verse Widget</span></a>
+        <a class="pd-drawer-link" href="/membership" data-pd-nav="/membership"><i class="pd-i pd-i-id-card" aria-hidden="true"></i><span>Membership</span></a>
+        <a class="pd-drawer-link" href="/give" data-pd-nav="/give"><i class="pd-i pd-i-heart" aria-hidden="true"></i><span data-pd-t="nav.give">Give</span></a>
+        <a class="pd-drawer-link" href="/support" data-pd-nav="/support"><i class="pd-i pd-i-hand-heart" aria-hidden="true"></i><span data-pd-t="nav.support">Support</span></a>
+      </div>
+    </nav><div class="pd-drawer-foot"><div class="pd-drawer-sub">
+      <a class="pd-drawer-sub-link" href="/about" data-pd-nav="/about"><i class="pd-i pd-i-church" aria-hidden="true"></i><span data-pd-t="nav.about">About</span></a>
+      <a class="pd-drawer-sub-link" href="/contact" data-pd-nav="/contact"><i class="pd-i pd-i-mail" aria-hidden="true"></i><span data-pd-t="nav.contact">Contact</span></a>
+      <a class="pd-drawer-sub-link" href="/team" data-pd-nav="/team"><i class="pd-i pd-i-users" aria-hidden="true"></i><span data-pd-t="nav.team">Team</span></a>
+      <a class="pd-drawer-sub-link" href="/verify" data-pd-nav="/verify"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i><span>Verify a card</span></a>
+      <a class="pd-drawer-sub-link" href="/privacy" data-pd-nav="/privacy"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i><span>Privacy</span></a>
+    </div><p class="pd-drawer-verse"><i class="pd-i pd-i-book" aria-hidden="true"></i> “He does everything blamelessly.” — Mark 7:37</p><small>© Prayer Dome Ministry · Zambia · Eswatini · South Africa · Malawi · Ireland</small></div>
+</aside>
+<header class="pd-topbar">
+  <button class="pd-menu-btn" id="pdMenuBtn" aria-label="Open menu"><i class="pd-i pd-i-menu"></i></button>
+  <a href="/" class="pd-topbar-center">
+    <div class="pd-topbar-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
+    <div class="pd-topbar-word">PRAYER DOME</div>
+  </a>
+  <div class="pd-topbar-right">
+    <button class="pd-bell-btn" id="pdNotifBell" aria-label="Notifications"><i class="pd-i pd-i-bell"></i><span class="pd-bell-badge" id="pdNotifBadge" style="display:none;">0</span></button>
+    <button class="theme-toggle-btn" onclick="toggleDarkMode && toggleDarkMode()" aria-label="Toggle dark mode"><i class="pd-i pd-i-moon"></i></button>
+  </div>
+</header>
+
+<main class="cert-wrap" data-page="certificates">
+    <section class="cert-hero" aria-labelledby="certPageTitle">
+        <span class="cert-eyebrow"><i class="pd-i pd-i-award" aria-hidden="true"></i> Prayer Dome Academy</span>
+        <h1 id="certPageTitle">My certificates</h1>
+        <p>Every certificate issued to your own Prayer Dome account. Preview the award, download the PDF, or print a copy for your wall.</p>
+    </section>
+
+    <section id="certAuthLoading" class="cert-state" role="status" aria-live="polite">
+        <div class="pd-spinner" aria-hidden="true"></div>
+        <h2>Checking your account…</h2>
+        <p>We are confirming your Prayer Dome session before showing any certificate.</p>
+    </section>
+
+    <section id="certSignedOut" class="cert-state" hidden>
+        <h2>Sign in to see your certificates</h2>
+        <p>Certificates belong to the account that earned them. Sign in with your Prayer Dome account and this page will show only your awards.</p>
+        <a class="btn btn-primary" href="/account">Sign in or create an account</a>
+    </section>
+
+    <section id="certContent" hidden>
+        <div class="cert-toolbar">
+            <span class="cert-count" id="certCount">0 certificates</span>
+            <div class="cert-toolbar-actions">
+                <button type="button" class="btn btn-outline" id="certRefreshBtn"><i class="pd-i pd-i-refresh-cw" aria-hidden="true"></i> Refresh</button>
+                <a class="btn btn-outline" href="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i> My profile</a>
+            </div>
+        </div>
+        <div id="certGrid" class="cert-grid" aria-live="polite"></div>
+        <div id="certEmpty" class="cert-empty" hidden>
+            <div class="cert-empty-icon" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
+            <h2>No certificates yet</h2>
+            <p>Pass an Academy quiz with 80% or higher and your first certificate will appear here automatically, ready to download or print.</p>
+            <a class="btn btn-primary" href="/quiz">Go to the Quiz Centre <i class="pd-i pd-i-arrow-right" aria-hidden="true"></i></a>
+        </div>
+        <p id="certStatus" class="cert-status" style="display:none;" role="status" aria-live="polite"></p>
+    </section>
+</main>
+
+<script src="/assets/pd-app.js" defer></script>
+<script src="/assets/pd-nav.js" defer></script>
+<script src="/assets/pd-certificate.js" defer></script>
+<script>
+    // The shared theme toggle used by every Prayer Dome page.
+    window.toggleDarkMode = function () {
+        var dark = (window.PDApp && PDApp.theme ? PDApp.theme.isDark() : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+        document.body.classList.toggle('dark-mode', dark);
+        document.documentElement.classList.toggle('dark-mode', dark);
+        try {
+            var icon = document.querySelector('[data-pd-theme-toggle] .pd-i') || document.querySelector('.theme-toggle-btn .pd-i');
+            if (icon) icon.className = dark ? 'pd-i pd-i-sun' : 'pd-i pd-i-moon';
+        } catch (error) {}
+    };
+</script>
+<script type="module" onerror="if (window.pdMarkAuthUnavailable) window.pdMarkAuthUnavailable('The sign-in service could not be reached from this device.');">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, collection, query, where, orderBy, limit, getDocs, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo",
+        authDomain: "prayer-dome.firebaseapp.com",
+        projectId: "prayer-dome",
+        storageBucket: "prayer-dome.firebasestorage.app",
+        messagingSenderId: "198295153196",
+        appId: "1:198295153196:web:1222b31948d7974ba3bf89"
+    };
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const grid = document.getElementById('certGrid');
+    const empty = document.getElementById('certEmpty');
+    const count = document.getElementById('certCount');
+    const statusLine = document.getElementById('certStatus');
+    let certificates = [];
+    let renderToken = 0;
+
+    const escapeHtml = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (ch) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[ch]));
+
+    function setView(view) {
+        document.getElementById('certAuthLoading').hidden = view !== 'loading';
+        document.getElementById('certSignedOut').hidden = view !== 'signed-out';
+        document.getElementById('certContent').hidden = view !== 'signed-in';
+    }
+
+    function setStatus(message, kind) {
+        statusLine.textContent = message || '';
+        statusLine.style.display = message ? 'inline-flex' : 'none';
+        statusLine.classList.toggle('revoked', kind === 'error');
+    }
+
+    function localCertificates(uid) {
+        try {
+            const progress = JSON.parse(localStorage.getItem('pd_academy_progress')) || {};
+            // Records made before ownership was stored are claimed once by the
+            // signed-in member, so a shared device cannot surface another
+            // account's local awards afterwards.
+            if (uid && !progress.ownerUid) {
+                progress.ownerUid = uid;
+                localStorage.setItem('pd_academy_progress', JSON.stringify(progress));
+            }
+            if (uid && progress.ownerUid && progress.ownerUid !== uid) return [];
+            const list = Array.isArray(progress.certificates) ? progress.certificates : [];
+            return list.filter((cert) => !cert.userId || cert.userId === uid);
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function normaliseDate(value) {
+        const raw = value && typeof value.toDate === 'function' ? value.toDate() : value;
+        const parsed = raw ? new Date(raw) : null;
+        return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+    }
+
+    function displayDate(parsed) {
+        return parsed ? parsed.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'Date not recorded';
+    }
+
+    function certificateOptions(cert) {
+        return {
+            id: cert.id || '',
+            course: cert.course || cert.title || 'Prayer Dome Academy',
+            title: cert.title || cert.course || 'Prayer Dome Academy',
+            score: Math.round(Number(cert.score) || 0),
+            date: cert.isoDate || '',
+            name: cert.name || 'Prayer Dome Member',
+            status: cert.status || 'Issued'
+        };
+    }
+
+    async function loadCertificates(user) {
+        const token = ++renderToken;
+        setStatus('');
+        count.textContent = 'Loading your certificates…';
+        let cloud = [];
+        const withTimeout = (promise, ms) => Promise.race([
+            promise,
+            new Promise((resolve, reject) => setTimeout(() => reject(new Error('Certificate sync timed out')), ms))
+        ]);
+        try {
+            const snapshot = await withTimeout(getDocs(query(
+                collection(db, 'certificates'),
+                where('userId', '==', user.uid),
+                orderBy('date', 'desc'),
+                limit(100)
+            )), 8000);
+            cloud = snapshot.docs.map((entry) => ({ id: entry.id, ...entry.data() })).filter((cert) => cert.userId === user.uid);
+        } catch (error) {
+            // A missing composite index or a flat connection must not hide the
+            // member's own awards. Query without the sort and sort locally.
+            try {
+                const fallback = await withTimeout(getDocs(query(
+                    collection(db, 'certificates'),
+                    where('userId', '==', user.uid),
+                    limit(100)
+                )), 6000);
+                cloud = fallback.docs.map((entry) => ({ id: entry.id, ...entry.data() })).filter((cert) => cert.userId === user.uid);
+            } catch (fallbackError) {
+                console.warn('Certificate sync unavailable:', fallbackError && fallbackError.message);
+                setStatus('Showing certificates saved on this device. Cloud sync will retry on refresh.', 'error');
+            }
+        }
+        if (token !== renderToken) return;
+
+        const seen = new Set();
+        const merged = [];
+        for (const cert of cloud.concat(localCertificates(user.uid))) {
+            const id = String(cert.id || cert.lessonId || '');
+            if (!id || seen.has(id)) continue;
+            const parsed = normaliseDate(cert.date || cert.issuedAt || cert.completedAt);
+            seen.add(id);
+            merged.push({
+                id,
+                title: cert.title || cert.course || 'Prayer Dome Academy',
+                course: cert.course || cert.title || 'Prayer Dome Academy',
+                score: cert.score,
+                name: cert.name,
+                status: cert.status || (cert.revoked ? 'Revoked' : 'Issued'),
+                parsed,
+                isoDate: parsed ? parsed.toISOString() : ''
+            });
+        }
+        merged.sort((a, b) => (b.parsed ? b.parsed.getTime() : 0) - (a.parsed ? a.parsed.getTime() : 0));
+        certificates = merged;
+        render(user);
+    }
+
+    function render(user) {
+        const fallbackName = user.displayName || (user.email ? user.email.split('@')[0] : '') || 'Prayer Dome Member';
+        const issued = certificates.filter((cert) => String(cert.status).toLowerCase() !== 'revoked');
+        count.textContent = certificates.length === 1 ? '1 certificate' : certificates.length + ' certificates';
+        empty.hidden = certificates.length !== 0;
+        grid.innerHTML = certificates.map((cert) => {
+            const name = cert.name && cert.name !== 'Prayer Dome Member' ? cert.name : fallbackName;
+            const revoked = String(cert.status).toLowerCase() === 'revoked';
+            return `<article class="cert-card" data-cert-id="${escapeHtml(cert.id)}">
+                <div class="cert-card-head">
+                    <div class="cert-card-logo"><img src="/assets/logo.png" alt="" aria-hidden="true"></div>
+                    <div class="cert-card-titles">
+                        <div class="cert-card-eyebrow">Prayer Dome Academy</div>
+                        <div class="cert-card-org">Certificate of Completion</div>
+                    </div>
+                    <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
+                </div>
+                <div class="cert-card-body">
+                    <h2 class="cert-card-recipient">${escapeHtml(name)}</h2>
+                    <p class="cert-card-line">has successfully completed <span class="cert-card-course">${escapeHtml(cert.title)}</span>.</p>
+                    <div class="cert-card-meta">
+                        <span>Score <b>${Math.round(Number(cert.score) || 0)}%</b></span>
+                        <span>Issued <b>${escapeHtml(displayDate(cert.parsed))}</b></span>
+                        <span>Reference <b style="font-family:monospace;overflow-wrap:anywhere;">${escapeHtml(cert.id)}</b></span>
+                        <span class="cert-status${revoked ? ' revoked' : ''}">${revoked ? 'Revoked' : 'Issued'}</span>
+                    </div>
+                </div>
+                <div class="cert-card-foot">
+                    <div class="cert-signature">
+                        <div class="cert-signature-name">Prayer Dome</div>
+                        <div class="cert-signature-rule"></div>
+                        <div class="cert-signature-label">Founder and President</div>
+                    </div>
+                    <div class="cert-actions">
+                        <button type="button" class="btn btn-primary cert-preview-btn" data-cert-index="${certificates.indexOf(cert)}"><i class="pd-i pd-i-eye" aria-hidden="true"></i> Preview</button>
+                        <button type="button" class="btn btn-outline cert-download-btn" data-cert-index="${certificates.indexOf(cert)}"><i class="pd-i pd-i-download" aria-hidden="true"></i> Download PDF</button>
+                        <button type="button" class="btn btn-outline cert-print-btn" data-cert-index="${certificates.indexOf(cert)}"><i class="pd-i pd-i-printer" aria-hidden="true"></i> Print</button>
+                    </div>
+                </div>
+            </article>`;
+        }).join('');
+
+        grid.querySelectorAll('.cert-preview-btn').forEach((button) => {
+            button.addEventListener('click', () => previewCertificate(Number(button.dataset.certIndex)));
+        });
+        grid.querySelectorAll('.cert-download-btn').forEach((button) => {
+            button.addEventListener('click', () => downloadCertificate(Number(button.dataset.certIndex)));
+        });
+        grid.querySelectorAll('.cert-print-btn').forEach((button) => {
+            button.addEventListener('click', () => printCertificate(Number(button.dataset.certIndex)));
+        });
+        if (issued.length === 0 && certificates.length > 0) {
+            setStatus('No active certificates. A revoked award stays listed for your records.', 'error');
+        }
+    }
+
+    function certificateAt(index) {
+        return Number.isInteger(index) ? certificates[index] : null;
+    }
+
+    function generatorReady() {
+        if (window.PDCertificate) return true;
+        setStatus('The certificate generator is still loading. Please try again in a moment.', 'error');
+        return false;
+    }
+
+    async function openCertificateWindow(title) {
+        const win = window.open('', '_blank');
+        if (!win) {
+            setStatus('Your browser blocked the preview window. Allow popups for Prayer Dome, then try again.', 'error');
+            return null;
+        }
+        win.document.write('<!DOCTYPE html><html><head><title>' + escapeHtml(title || 'Prayer Dome certificate') + '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f0e6;font-family:Arial,sans-serif;color:#1d2a6b}</style></head><body><p>Preparing your certificate…</p></body></html>');
+        win.document.close();
+        return win;
+    }
+
+    async function previewCertificate(index) {
+        const cert = certificateAt(index);
+        if (!cert || !generatorReady()) return;
+        const win = await openCertificateWindow(cert.title);
+        if (!win) return;
+        try {
+            const dataUrl = await window.PDCertificate.preview(certificateOptions(cert));
+            win.document.open();
+            win.document.write('<!DOCTYPE html><html><head><title>' + escapeHtml(cert.title) + '</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f0e6}img{width:100%;max-width:1000px;height:auto;display:block}</style></head><body><img src="' + dataUrl + '" alt="Prayer Dome certificate for ' + escapeHtml(cert.title) + '"></body></html>');
+            win.document.close();
+        } catch (error) {
+            console.error(error);
+            win.close();
+            setStatus('The certificate preview could not be prepared. Try Download PDF instead.', 'error');
+        }
+    }
+
+    async function downloadCertificate(index) {
+        const cert = certificateAt(index);
+        if (!cert || !generatorReady()) return;
+        const button = grid.querySelector('.cert-download-btn[data-cert-index="' + index + '"]');
+        if (button) button.disabled = true;
+        try {
+            await window.PDCertificate.download(certificateOptions(cert));
+            setStatus('Downloaded ' + cert.title + '.');
+            // Preserve the existing admin download counter when this award
+            // exists in Firestore; a purely local award simply skips it.
+            updateDoc(doc(db, 'certificates', cert.id), {
+                downloads: increment(1),
+                lastDownloadedAt: new Date().toISOString()
+            }).catch(() => {});
+        } catch (error) {
+            console.error(error);
+            setStatus('The PDF could not be downloaded in this browser. Try Print instead.', 'error');
+        } finally {
+            if (button) button.disabled = false;
+        }
+    }
+
+    async function printCertificate(index) {
+        const cert = certificateAt(index);
+        if (!cert || !generatorReady()) return;
+        const win = await openCertificateWindow(cert.title);
+        if (!win) return;
+        try {
+            const dataUrl = await window.PDCertificate.preview(certificateOptions(cert));
+            win.document.open();
+            win.document.write('<!DOCTYPE html><html><head><title>Certificate ' + escapeHtml(cert.id) + '</title><style>body{margin:0;display:flex;justify-content:center;background:#f3f0e6}img{width:100%;max-width:1000px;height:auto;display:block}</style></head><body><img src="' + dataUrl + '" alt="Prayer Dome certificate" onload="setTimeout(function(){window.print()},150)"></body></html>');
+            win.document.close();
+        } catch (error) {
+            console.error(error);
+            win.close();
+            setStatus('The certificate could not be printed. Try Download PDF instead.', 'error');
+        }
+    }
+
+    document.getElementById('certRefreshBtn').addEventListener('click', () => {
+        if (auth.currentUser) loadCertificates(auth.currentUser);
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            certificates = [];
+            renderToken += 1;
+            setView('signed-out');
+            return;
+        }
+        setView('loading');
+        await loadCertificates(user);
+        setView('signed-in');
+    });
+</script>
+</body>
+</html>

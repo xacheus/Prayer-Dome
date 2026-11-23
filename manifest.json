@@ -1,19 +1,17 @@
 {
-  "name": "Prayer Dome — Daily Prayer, Bible & Christian Community",
+  "name": "Prayer Dome",
   "short_name": "Prayer Dome",
   "description": "Pray, study the Bible, join daily devotionals, watch live services and grow with the Prayer Dome community.",
   "id": "/",
-  "start_url": "/?source=pwa",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "display_override": [
-    "standalone",
-    "minimal-ui",
-    "fullscreen"
+    "standalone"
   ],
-  "orientation": "any",
-  "background_color": "#0A4D9B",
-  "theme_color": "#0A4D9B",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#104F91",
   "lang": "en",
   "dir": "ltr",
   "categories": [
@@ -36,14 +34,14 @@
       "purpose": "any"
     },
     {
-      "src": "/assets/logo.png",
-      "sizes": "512x512",
+      "src": "/assets/logo-maskable-192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/assets/logo-192.png",
-      "sizes": "192x192",
+      "src": "/assets/logo-maskable-512.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
     }
@@ -107,7 +105,7 @@
       "name": "My Certificates",
       "short_name": "Certificates",
       "description": "Your Academy certificates",
-      "url": "/account?source=shortcut"
+      "url": "/certificates"
     }
   ],
   "screenshots": [

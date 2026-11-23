@@ -4,9 +4,9 @@
      previews at /widgets.html is the card the phone renders. -->
 <resources>
     <color name="colorPrimary">#0A4D9B</color>
-    <color name="colorPrimaryDark">#07366D</color>
+    <color name="colorPrimaryDark">#104F91</color>
     <color name="colorAccent">#D4AF37</color>
-    <color name="ic_launcher_background">#0A4D9B</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
 
     <color name="pd_navy">#0A4D9B</color>
     <color name="pd_navy_deep">#0A3D7A</color>

@@ -89,6 +89,7 @@
       label: 'Personal',
       items: [
         { href: '/account', icon: 'circle-user', label: 'My Profile', key: 'nav.account' },
+        { href: '/certificates', icon: 'award', label: 'Certificates' },
         { href: '/widgets', icon: 'smartphone', label: 'Verse Widget' },
         { href: '/membership', icon: 'id-card', label: 'Membership' },
         { href: '/give', icon: 'heart', label: 'Give', key: 'nav.give' },

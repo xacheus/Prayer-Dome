@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <!-- PD-SEO:START -->
     <!-- Managed by seo/apply-seo.py from seo/pages.json. Do not hand-edit this block. -->
     <title>Bible Quiz | Test Your Bible Knowledge Free | Prayer Dome</title>
@@ -12,7 +12,7 @@
     <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
     <link rel="canonical" href="https://prayerdome.net/quiz">
     <meta name="author" content="Prayer Dome">
-    <meta name="theme-color" content="#0A4D9B">
+    <meta name="theme-color" content="#104F91">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prayer Dome">
@@ -1524,7 +1524,7 @@
                 if(!p.passedQuizzes[q.id]) p.passedQuizzes[q.id]={score:percent,date:new Date().toISOString(),lessonId:q.lessonId};
                 const lesson=PD_ACADEMY.getLesson(q.lessonId); if(lesson && !p.completedLessons.includes(lesson.id)) p.completedLessons.push(lesson.id);
                 const certId='PD-'+q.lessonId.toUpperCase()+'-'+Date.now().toString(36).toUpperCase();
-                p.certificates=p.certificates||[]; p.certificates.push({id:certId,lessonId:q.lessonId,title:q.title,score:percent,date:new Date().toISOString(),name:academyName()});
+                p.certificates=p.certificates||[]; p.certificates.push({id:certId,lessonId:q.lessonId,title:q.title,score:percent,date:new Date().toISOString(),name:academyName(),userId:(auth&&auth.currentUser?auth.currentUser.uid:'')}); p.ownerUid=p.ownerUid||(auth&&auth.currentUser?auth.currentUser.uid:'');
                 saveAcademyProgress(p);
                 // Record the certificate in Firestore so it appears in the member's
                 // account page and in the admin Certificates tracker.

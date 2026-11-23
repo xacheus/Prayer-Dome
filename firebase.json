@@ -171,6 +171,10 @@
         "destination": "/account.html"
       },
       {
+        "source": "/certificates",
+        "destination": "/certificates.html"
+      },
+      {
         "source": "/admin",
         "destination": "/admin.html"
       },
