@@ -59,10 +59,10 @@
       const result = await callable(Object.assign({ action }, payload || {}));
       return result.data || {};
     } catch (error) {
-      const raw = error && error.message ? error.message : 'The billing service could not be reached.';
-      throw new Error(/not found|unavailable|internal/i.test(raw)
-        ? 'Billing is temporarily unavailable. Deploy the functions and try again.'
-        : raw.replace(/^FirebaseError:\s*/i, ''));
+      console.error('Billing admin ' + action + ' failed:', error && error.code, error && error.message);
+      throw new Error(Billing && Billing.billingErrorCopy
+        ? Billing.billingErrorCopy(error, { staff: true })
+        : (error && error.message ? error.message.replace(/^FirebaseError:\s*/i, '') : 'The billing service could not be reached.'));
     }
   }
 

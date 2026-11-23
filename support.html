@@ -986,17 +986,41 @@
             esc(Billing.statusLabel(status)) + '</span>';
         const planFor = (id) => billingPlans.filter(plan => plan.id === id)[0] || (Billing.planById ? Billing.planById(id) : null);
 
+        const RETRYABLE_BILLING_ACTIONS = ['plans.list', 'payment.settings.public', 'checkout.create', 'withdrawal.request', 'evidence.signedUrl'];
+
         async function callBilling(action, payload) {
-            try {
-                const result = await billingCall(Object.assign({ action }, payload || {}));
-                return result.data || {};
-            } catch (error) {
-                const raw = error && error.message ? error.message : 'The billing service could not be reached.';
-                const friendly = /not found|unavailable|internal/i.test(raw)
-                    ? 'Billing is temporarily unavailable. Please try again in a moment. If it continues, contact info@prayerdome.net.'
-                    : raw.replace(/^FirebaseError:\s*/i, '');
-                throw new Error(friendly);
+            const request = Object.assign({ action }, payload || {});
+            let lastError = null;
+            // One retry for a transient failure on a read or an idempotent
+            // write (cold start, dropped connection, busy service). Checkout
+            // and withdrawal requests carry an idempotency key, so a repeat
+            // returns the same reference instead of creating a second one.
+            // Cancellations and approvals are deliberately not retried: a
+            // repeat there would add a second audit entry.
+            for (let attempt = 0; attempt < 2; attempt += 1) {
+                try {
+                    const result = await billingCall(request);
+                    return result.data || {};
+                } catch (error) {
+                    lastError = error;
+                    const code = Billing && Billing.billingErrorCode ? Billing.billingErrorCode(error) : '';
+                    const safeToRepeat = RETRYABLE_BILLING_ACTIONS.includes(action);
+                    if (attempt === 0 && safeToRepeat && Billing && Billing.billingRetryable && Billing.billingRetryable(error)) {
+                        console.warn('Billing ' + action + ' failed (' + code + '); retrying once.');
+                        await new Promise(resolve => setTimeout(resolve, 900));
+                        continue;
+                    }
+                    break;
+                }
             }
+            const copy = Billing && Billing.billingErrorCopy
+                ? Billing.billingErrorCopy(lastError)
+                : ((lastError && lastError.message) || 'Billing could not complete this request.');
+            console.error('Billing ' + action + ' failed:', lastError && lastError.code, lastError && lastError.message);
+            const wrapped = new Error(copy);
+            wrapped.code = Billing && Billing.billingErrorCode ? Billing.billingErrorCode(lastError) : (lastError && lastError.code) || 'unknown';
+            wrapped.action = action;
+            throw wrapped;
         }
 
         /* ---------------------------------------------------------------- auth */
@@ -1052,9 +1076,12 @@
             if (!box) return;
             const item = document.createElement('div');
             item.className = `toast ${type === 'error' ? 'error' : ''}`;
+            item.setAttribute('role', type === 'error' ? 'alert' : 'status');
             item.innerHTML = `<i class="pd-i ${type === 'error' ? 'pd-i-circle-alert' : 'pd-i-circle-check'}"></i> <span>${esc(msg)}</span>`;
             box.appendChild(item);
-            setTimeout(() => { item.style.animation = 'slideIn 0.3s ease reverse forwards'; setTimeout(() => item.remove(), 300); }, 4200);
+            // Error copy now names the actual cause and the next step, so it
+            // needs longer on screen than a one-line success notice.
+            setTimeout(() => { item.style.animation = 'slideIn 0.3s ease reverse forwards'; setTimeout(() => item.remove(), 300); }, type === 'error' ? 8000 : 4200);
         };
         window.closeModal = (id) => {
             const modal = document.getElementById(id);

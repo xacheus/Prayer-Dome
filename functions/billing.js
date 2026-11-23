@@ -30,8 +30,12 @@ const MAX_AMOUNT = 1000000;
 const ALLOWED_METHODS = ['mobile-money', 'bank-transfer', 'cash-office'];
 const { HttpsError } = functions.https;
 
-function fail(code, message) {
-  throw new HttpsError(code, message);
+function fail(code, message, details) {
+  // The marker lets the browser tell a real server decision ("that payment
+  // belongs to another member") from a transport/deployment failure with the
+  // same gRPC code. Without it every not-found or permission-denied would look
+  // like a missing function.
+  throw new HttpsError(code, message, Object.assign({ billing: true }, details || {}));
 }
 
 function requireAuth(context) {
@@ -218,7 +222,10 @@ async function listPlans() {
   return fresh.docs
     .map((entry) => catalog.normalizePlan(entry.data(), entry.id))
     .filter((plan) => plan.active !== false)
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+    // A legacy or hand-edited plan row must never turn the catalogue into an
+    // internal error just because its name is not a string.
+    .sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0) ||
+      String(a.name || '').localeCompare(String(b.name || '')))
     .map(publicPlan);
 }
 
@@ -1282,7 +1289,7 @@ async function signedEvidenceUrl(data, context) {
   }
 }
 
-async function handler(data, context) {
+async function routeBilling(data, context) {
   const payload = data && typeof data === 'object' ? data : {};
   const action = text(payload.action, 60) || 'plans.list';
   switch (action) {
@@ -1337,6 +1344,22 @@ async function handler(data, context) {
     }
     default:
       fail('invalid-argument', 'Unknown billing action.');
+  }
+}
+
+async function handler(data, context) {
+  const payload = data && typeof data === 'object' ? data : {};
+  const action = text(payload.action, 60) || 'plans.list';
+  try {
+    return await routeBilling(payload, context);
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    // Firestore/Storage failures used to reach the caller as a bare
+    // "internal", which the page could only show as one catch-all notice.
+    // Keep the code internal, but make the failed action and the real cause
+    // visible in the function log with one searchable line.
+    console.error('Billing action ' + action + ' failed:', error && (error.stack || error.message) || error);
+    fail('internal', 'Billing could not complete this request. The server did not confirm it; please retry.');
   }
 }
 

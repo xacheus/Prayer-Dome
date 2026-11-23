@@ -42,6 +42,63 @@ const EXPECTED_PRICES = {
   'compassion-premium': 50
 };
 
+test('billing failures are reported by cause, not one catch-all notice', () => {
+  assert.equal(browser.billingErrorCode({ code: 'functions/not-found' }), 'not-found');
+  assert.equal(browser.billingErrorCode({ code: 'firebase/functions/unauthenticated' }), 'unauthenticated');
+  assert.equal(browser.billingErrorCode({ message: 'FirebaseError: internal' }), 'internal');
+
+  const missing = browser.billingErrorCopy({ code: 'functions/not-found', message: 'not found' });
+  assert.match(missing, /not available on this site yet/);
+  assert.doesNotMatch(missing, /temporarily unavailable/i);
+
+  const expired = browser.billingErrorCopy({ code: 'functions/unauthenticated', message: 'Sign in to continue.' });
+  assert.match(expired, /sign-in has expired/i);
+
+  // A server decision can share a gRPC code with a deployment failure. The
+  // `details.billing` marker keeps the real reason instead of calling every
+  // not-found a missing function.
+  const serverMissing = 'That payment reference was not found.';
+  assert.equal(
+    browser.billingErrorCopy({ code: 'functions/not-found', message: serverMissing, details: { billing: true } }),
+    serverMissing
+  );
+  const foreignPayment = 'This payment belongs to another member.';
+  assert.equal(
+    browser.billingErrorCopy({ code: 'functions/permission-denied', message: foreignPayment, details: { billing: true } }),
+    foreignPayment
+  );
+  const rule = 'Your membership must be approved before you start a support plan.';
+  assert.equal(
+    browser.billingErrorCopy({ code: 'functions/failed-precondition', message: rule }),
+    rule,
+    'a real business rule must not be replaced by a network-style notice'
+  );
+
+  assert.equal(browser.billingRetryable({ code: 'functions/unavailable' }), true);
+  assert.equal(browser.billingRetryable({ code: 'functions/internal' }), true);
+  assert.equal(browser.billingRetryable({ code: 'functions/not-found' }), false);
+  assert.match(
+    browser.billingErrorCopy({ code: 'functions/not-found' }, { staff: true }),
+    /firebase deploy --only functions:billing --project prayer-dome/
+  );
+  assert.match(
+    read('functions/billing.js'),
+    /new HttpsError\(code, message, Object\.assign\(\{ billing: true \}/,
+    'server business errors must carry the marker the page uses to preserve their message'
+  );
+});
+
+test('the member and admin pages keep the error code and retry transient calls', () => {
+  const page = read('support.html');
+  const admin = read('assets/pd-billing-admin.js');
+  assert.doesNotMatch(page, /Billing is temporarily unavailable/);
+  assert.doesNotMatch(admin, /Billing is temporarily unavailable/);
+  assert.match(page, /Billing\.billingErrorCopy\(lastError\)/);
+  assert.match(page, /Billing\.billingRetryable\(error\)/);
+  assert.match(page, /wrapped\.code =/);
+  assert.match(admin, /billingErrorCopy\(error, \{ staff: true \}\)/);
+});
+
 test('browser and server catalogues contain the same 11 plans', () => {
   const browserIds = Array.from(browser.PLANS, (plan) => plan.id).sort();
   const serverIds = Array.from(server.PLANS, (plan) => plan.id).sort();
