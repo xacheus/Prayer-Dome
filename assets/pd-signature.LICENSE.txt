@@ -1,0 +1,15 @@
+Prayer Dome official signature mark (S.K. Masuku)
+=================================================
+
+The letterforms in pd-signature.svg / pd-signature.png were converted to
+outlines from the "Great Vibes" typeface by TypeSETit / the Great Vibes Pro
+Project Authors (https://github.com/googlefonts/great-vibes).
+
+Great Vibes is licensed under the SIL Open Font License, Version 1.1.
+The full licence is available at:
+  https://openfontlicense.org/
+  https://github.com/googlefonts/great-vibes/blob/main/OFL.txt
+
+The resulting vector artwork is the signing mark used on Prayer Dome
+certificates and membership cards. It is not a substitute for a handwritten
+signature on a legal instrument.

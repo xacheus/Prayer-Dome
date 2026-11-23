@@ -2159,7 +2159,7 @@
                             <h4 style="margin:0 0 10px;font-size:.9rem;color:var(--pd-navy);">Founder and President</h4>
                             <div class="form-group">
                                 <label>Founder name (fixed)</label>
-                                <input type="text" id="founderNameInput" class="form-control" value="SEEDWELL K. KHAYALETHU MASUKU" readonly>
+                                <input type="text" id="founderNameInput" class="form-control" value="S.K. MASUKU" readonly>
                             </div>
                             <div class="form-group">
                                 <label>Position (fixed)</label>
@@ -2167,7 +2167,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Founder signature image</label>
-                                <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;">No signature saved yet — upload or draw one below.</div>
+                                <div id="founderSigDisplay" style="background: var(--bg-input); border: 1px dashed var(--border); border-radius: 12px; padding: 14px; min-height: 72px; display:flex; align-items:center; justify-content:center; margin-bottom: 10px;"><img src="/assets/pd-signature.png" alt="Official signature of S.K. Masuku" style="max-height:90px;max-width:100%;"></div>
                                 <canvas id="founderSignatureCanvas" aria-label="Draw founder signature" style="display:block;width:100%;height:120px;touch-action:none;background:#fff;border:1px solid var(--border);border-radius:10px;margin:10px 0"></canvas>
                                 <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
                                     <button class="btn btn-outline btn-sm" type="button" onclick="uploadFounderSignature()"><i class="pd-i pd-i-cloud-upload"></i> Upload founder signature</button>
@@ -2476,7 +2476,7 @@
                         <div style="padding:18px;">
                             <div class="admin-field-grid">
                                 <div class="form-group"><label>Church name on card</label><input type="text" id="mcardChurch" class="form-control" value="PRAYER DOME" readonly></div>
-                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="SEEDWELL K. KHAYALETHU MASUKU" readonly></div>
+                                <div class="form-group"><label>Authorised signatory</label><input type="text" id="mcardSignatory" class="form-control" value="S.K. MASUKU" readonly></div>
                                 <div class="form-group"><label>Designation</label><input type="text" id="mcardRole" class="form-control" value="Founder and President — Prayer Dome" readonly></div>
                                 <div class="form-group"><label>Contact phone</label><input type="text" id="mcardPhone" class="form-control" maxlength="40" value="+268 7658 1804"></div>
                                 <div class="form-group"><label>Contact email</label><input type="email" id="mcardEmail" class="form-control" maxlength="160" value="info@prayerdome.net"></div>
@@ -3500,17 +3500,15 @@ window.toggleDarkMode = function() {
                     if (stored) { PDApp.founder.setLocal(stored); f = PDApp.founder.get(); }
                 }
             } catch (e) { console.warn('Founder settings refresh:', e); }
-            document.getElementById('founderNameInput').value = 'SEEDWELL K. KHAYALETHU MASUKU';
+            document.getElementById('founderNameInput').value = 'S.K. MASUKU';
             document.getElementById('founderTitleInput').value = 'Founder and President';
             document.getElementById('administratorNameInput').value = f.administratorName || '';
             document.getElementById('administratorTitleInput').value = f.administratorTitle || '';
-            founderSigDataUrl = f.signatureUrl || '';
+            founderSigDataUrl = f.signatureUrl || '/assets/pd-signature.png';
             administratorSigDataUrl = f.administratorSignatureUrl || '';
             const disp = document.getElementById('founderSigDisplay');
             if (disp) {
-                disp.innerHTML = founderSigDataUrl
-                    ? `<img src="${escapeHTML(founderSigDataUrl)}" alt="Founder signature" style="max-height:90px; max-width:100%;">`
-                    : 'No signature saved yet — upload or draw one below.';
+                disp.innerHTML = `<img src="${escapeHTML(founderSigDataUrl)}" alt="Signature of S.K. Masuku" style="max-height:90px; max-width:100%;">`;
             }
             const adminDisp = document.getElementById('administratorSigDisplay');
             if (adminDisp) {
@@ -3572,7 +3570,7 @@ window.toggleDarkMode = function() {
             showLoading();
             try {
                 const data = {
-                    founderName: 'SEEDWELL K. KHAYALETHU MASUKU',
+                    founderName: 'S.K. MASUKU',
                     founderTitle: 'Founder and President',
                     organization: 'PRAYER DOME',
                     signatureUrl: founderSigDataUrl,

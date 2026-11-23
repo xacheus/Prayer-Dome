@@ -60,6 +60,10 @@ if (iframe) {
 }
 
 t('the fallback page link to Domey is present', page.includes('https://three.ws/w/wdgt_fRRTp6-HRgOh'));
+t('an unavailable widget still offers the local Domey quiz', page.includes('href="/game"'));
+t('the embed sandbox does not trap widget popups or downloads',
+  ['allow-popups-to-escape-sandbox', 'allow-modals', 'allow-downloads']
+    .every(token => (iframe ? iframe[0] : '').includes(token)));
 
 /* ------------------------------------------------------- 2. responsiveness */
 const stageCss = (page.match(/\.domey-widget-stage\s*\{([^}]*)\}/) || [, ''])[1];

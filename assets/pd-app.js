@@ -2745,7 +2745,7 @@
     get: function () {
       var local = founder.getLocal();
       if (local && (local.signatureUrl || local.founderName || local.administratorSignatureUrl)) {
-        local.founderName = 'SEEDWELL K. KHAYALETHU MASUKU';
+        local.founderName = 'S.K. MASUKU';
         local.founderTitle = 'Founder and President';
         local.url = local.signatureUrl || local.url || '';
         return local;
@@ -2754,7 +2754,7 @@
       if (inj && (inj.signatureUrl || inj.founderName)) return inj;
       return {
         signatureUrl: '',
-        founderName: 'SEEDWELL K. KHAYALETHU MASUKU',
+        founderName: 'S.K. MASUKU',
         founderTitle: 'Founder and President',
         administratorName: '',
         administratorTitle: 'Authorised Administrator',
@@ -2782,7 +2782,7 @@
         try {
           var ref = fb.doc(fb.db, 'settings', 'founder');
           fb.setDoc(ref, {
-            founderName: data.founderName || 'SEEDWELL K. KHAYALETHU MASUKU',
+            founderName: data.founderName || 'S.K. MASUKU',
             founderTitle: data.founderTitle || 'Founder and President',
             signatureUrl: data.signatureUrl || '',
             administratorName: data.administratorName || '',

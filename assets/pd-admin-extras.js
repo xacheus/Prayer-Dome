@@ -329,12 +329,12 @@ async function deleteDailyChallenge(id) {
 }
 
 /* ----------------------------------------------------------- membership cards */
-/* The founder's identity is fixed. An administrator may replace the signature
-   image only with one the founder has authorised; the name and designation are
-   never editable to a variant or abbreviation. */
+/* The founder's identity is fixed: the documents use the authorised form
+   S.K. MASUKU. An administrator may replace the signature image only with one
+   the founder has authorised; the name and designation are never editable. */
 const CARD_IDENTITY = {
   churchName: 'PRAYER DOME',
-  signatoryName: 'SEEDWELL K. KHAYALETHU MASUKU',
+  signatoryName: 'S.K. MASUKU',
   signatoryRole: 'Founder and President — Prayer Dome',
   organization: 'PRAYER DOME'
 };
@@ -352,10 +352,15 @@ function cardAddMonths(value, months) {
 }
 
 function newVerificationRef() {
-  const bytes = new Uint8Array(10);
+  // PDV- plus 12 base64url characters (72 bits) = 16 characters total. That
+  // keeps the QR URL inside version 3 so the code prints with larger modules.
+  const bytes = new Uint8Array(9);
   try { window.crypto.getRandomValues(bytes); }
   catch (error) { for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256); }
-  return 'PDV-' + Array.prototype.slice.call(bytes).map((byte) => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += 1) binary += String.fromCharCode(bytes[i]);
+  const encoded = window.btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return 'PDV-' + encoded;
 }
 
 function verificationStatusForMember(status) {
@@ -381,7 +386,7 @@ function applyTemplateToForm(template) {
   set('mcardEmail', data.email || 'info@prayerdome.net');
   cardValidityMonths = Number(data.validityMonths) || 12;
   set('mcardValidityMonths', cardValidityMonths);
-  cardTemplateSignature = data.signature || '';
+  cardTemplateSignature = data.signature || '/assets/pd-signature.png';
   const preview = $('mcardSignaturePreview');
   const empty = $('mcardSignatureEmpty');
   if (preview) {
@@ -498,7 +503,10 @@ async function loadMembershipCardAdmin() {
           if (verification.status !== 'revoked') {
             actions.push('<button class="btn btn-danger btn-sm" type="button" onclick="revokeCardVerification(\'' + escapeHtml(number) + '\')"><i class="pd-i pd-i-shield-x"></i> Revoke</button>');
           }
-          actions.push('<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="/verify?ref=' + encodeURIComponent(verification.verificationRef || number) + '"><i class="pd-i pd-i-external-link"></i> Verify</a>');
+          const verifyHref = verification.verificationRef
+            ? '/verify?ref=' + encodeURIComponent(verification.verificationRef)
+            : '/verify?id=' + encodeURIComponent(number);
+          actions.push('<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="' + verifyHref + '"><i class="pd-i pd-i-external-link"></i> Verify</a>');
         }
       }
       return '<tr>' +
