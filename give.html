@@ -703,8 +703,8 @@
                         </div>
                         <div class="info-row">
                             <span class="info-label">WhatsApp Number</span>
-                            <span class="info-value">+268 7658 1804</span>
-                            <button class="btn-copy" type="button" onclick="copy('+26876581804')">COPY</button>
+                            <span class="info-value" id="waPaymentNumber">Loading…</span>
+                            <button class="btn-copy" type="button" onclick="copyOfficialPaymentNumber()">COPY</button>
                         </div>
                     </div>
                     
@@ -737,12 +737,12 @@
                     <div class="info-box">
                         <div class="info-row">
                             <span class="info-label">MoMo Number</span>
-                            <span class="info-value">+268 7658 1804</span>
-                            <button class="btn-copy" onclick="copy('+26876581804')">COPY</button>
+                            <span class="info-value" id="momoPaymentNumber">Loading…</span>
+                            <button class="btn-copy" type="button" onclick="copyOfficialPaymentNumber()">COPY</button>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Account Name</span>
-                            <span class="info-value">PRAYER DOME</span>
+                            <span class="info-value" id="momoAccountName">PRAYER DOME</span>
                         </div>
                         <div class="info-row">
                             <span class="info-label">Recipient</span>
@@ -833,6 +833,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", 
@@ -845,8 +846,10 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
+        const functions = getFunctions(app);
 
         let currentUser = null;
+        let officialPayment = { number: '', accountName: 'PRAYER DOME', network: 'Mobile Money', configured: false };
         let uploadedReceiptUrl = null;
         let exchangeRates = {};
         let lastFetchTime = null;
@@ -969,6 +972,42 @@
 
         onAuthStateChanged(auth, user => { currentUser = user; });
 
+        /* The giving page shows the same number finance configured for the
+           wallet and checkout. It is never typed into this file, so a changed
+           ministry number cannot leave a stale copy on the giving page. */
+        window.copyOfficialPaymentNumber = () => {
+            if (!officialPayment.configured) return toast('The official payment number is not configured yet. Please contact info@prayerdome.net.', 'error');
+            copy(officialPayment.number);
+        };
+        async function loadOfficialPaymentDetails() {
+            try {
+                const call = httpsCallable(functions, 'billing');
+                const result = await call({ action: 'payment.settings.public' });
+                const settings = (result && result.data && result.data.settings) || {};
+                officialPayment = {
+                    number: String(settings.number || '').trim(),
+                    accountName: String(settings.accountName || 'PRAYER DOME').trim(),
+                    network: String(settings.network || 'Mobile Money').trim(),
+                    configured: Boolean(settings.configured && settings.number)
+                };
+            } catch (error) {
+                console.warn('Official payment details could not be loaded:', error && error.message);
+                officialPayment = { number: '', accountName: 'PRAYER DOME', network: 'Mobile Money', configured: false };
+            }
+            const label = officialPayment.configured ? officialPayment.number : 'Not configured — contact info@prayerdome.net';
+            ['waPaymentNumber', 'momoPaymentNumber'].forEach((id) => {
+                const node = document.getElementById(id);
+                if (node) node.textContent = label;
+            });
+            const account = document.getElementById('momoAccountName');
+            if (account) account.textContent = officialPayment.accountName || 'PRAYER DOME';
+            document.querySelectorAll('[onclick="copyOfficialPaymentNumber()"]').forEach((button) => {
+                button.disabled = !officialPayment.configured;
+                if (!officialPayment.configured) button.style.opacity = '.55';
+            });
+        }
+        loadOfficialPaymentDetails();
+
         /* A payment reference belongs to PRAYER DOME, not to a person. It is
            written to the private offering record so finance can reconcile the
            transaction and the donor can quote it on a receipt. */
@@ -1047,7 +1086,11 @@
                 return;
             }
             
-            const phone = "26876581804";
+            if (!officialPayment.configured) {
+                toast("The official payment number is not configured yet. Please contact info@prayerdome.net before sending money.", "error");
+                return;
+            }
+            const phone = officialPayment.number.replace(/\D/g, "");
             const purpose = givingPurpose();
             const message = `Hello PRAYER DOME, I have made a ${purpose.toLowerCase()} gift of E${amount}. Reference: ${paymentReference}. ` +
                 (uploadedReceiptUrl ? `Payment proof: ${uploadedReceiptUrl}. ` : 'I will attach my payment proof. ') +
@@ -1062,6 +1105,10 @@
             const proof = document.getElementById('receiptUrl').value;
             const purpose = givingPurpose();
 
+            if (!officialPayment.configured) {
+                toast("The official payment number is not configured yet. Please contact info@prayerdome.net before sending money.", "error");
+                return;
+            }
             if (!amount || amount <= 0) {
                 toast("Enter valid amount", "error");
                 return;

@@ -21,7 +21,7 @@
     tagline: 'House of Prayer for All Nations',
     website: 'prayerdome.net',
     email: 'info@prayerdome.net',
-    phone: '+268 7658 1804'
+    phone: ''
   };
 
   var FOUNDER = {
@@ -45,8 +45,11 @@
     { id: 'mobile-money', label: 'Mobile Money', hint: 'MTN Mobile Money · PRAYER DOME GROUP' }
   ];
 
-  var PAYMENT_INSTRUCTIONS = 'Send the exact amount by MTN Mobile Money to +268 7658 1804 ' +
-    '(PRAYER DOME GROUP). Put the payment reference in the mobile-money reference field, then ' +
+  /* The official number is configuration, never source code. Checkout receives
+     it from settings/payments through the billing callable, and the support
+     page shows the same value from the authorised finance settings. */
+  var PAYMENT_INSTRUCTIONS = 'Send the exact amount by Mobile Money to the official PRAYER DOME ' +
+    'number shown at checkout. Put the payment reference in the mobile-money reference field, then ' +
     'upload a clear receipt. A plan is activated only after the finance team checks the payment ' +
     'against the ministry account.';
 
@@ -263,6 +266,9 @@
     draft: 'Draft',
     pending_payment: 'Awaiting payment',
     pending_verification: 'Pending verification',
+    pending_review: 'Pending review',
+    processing: 'Processing',
+    paid: 'Paid',
     approved: 'Approved',
     active: 'Active',
     rejected: 'Rejected',
@@ -344,8 +350,8 @@
   }
 
   function statusTone(status) {
-    if (status === 'active' || status === 'approved') return 'ok';
-    if (status === 'rejected' || status === 'revoked' || status === 'expired' || status === 'suspended' || status === 'cancelled') return 'bad';
+    if (status === 'active' || status === 'approved' || status === 'paid') return 'ok';
+    if (status === 'rejected' || status === 'revoked' || status === 'expired' || status === 'suspended' || status === 'cancelled' || status === 'failed') return 'bad';
     return 'warn';
   }
 

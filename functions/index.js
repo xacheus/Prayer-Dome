@@ -971,5 +971,6 @@ exports.testimonyNotifications = notificationModule.testimonyNotifications;
 exports.certificateNotifications = notificationModule.certificateNotifications;
 exports.examNotifications = notificationModule.examNotifications;
 exports.claimNotifications = notificationModule.claimNotifications;
+exports.withdrawalNotifications = notificationModule.withdrawalNotifications;
 exports.expiringSubscriptionJob = notificationModule.expiringSubscriptionJob;
 exports.retryEmailJob = notificationModule.retryEmailJob;

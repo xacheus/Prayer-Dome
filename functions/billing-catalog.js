@@ -10,8 +10,13 @@
  * the support programme itself matures after 12 months.
  */
 
-const PAYMENT_INSTRUCTIONS = 'Send the exact amount by MTN Mobile Money to +268 7658 1804 ' +
-  '(PRAYER DOME GROUP). Put the payment reference in the mobile-money reference field, then ' +
+// The official Mobile Money number is NEVER stored in code. The finance team
+// keeps it in settings/payments, and the billing callable writes the exact
+// number it used onto every payment request. This text is only a fallback for
+// catalogue display; checkout refuses to open until finance has configured the
+// number (see functions/billing.js → loadPaymentSettings()).
+const PAYMENT_INSTRUCTIONS = 'Send the exact amount by Mobile Money to the official PRAYER DOME ' +
+  'number shown at checkout. Put the payment reference in the mobile-money reference field, then ' +
   'upload a clear receipt. A plan is activated only after the finance team checks the payment ' +
   'against the ministry account.';
 

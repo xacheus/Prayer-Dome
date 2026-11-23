@@ -273,6 +273,9 @@
         .tab {
             flex: 1;
             padding: 14px;
+            border: 0;
+            background: transparent;
+            font-family: inherit;
             text-align: center;
             cursor: pointer;
             border-radius: 50px;
@@ -282,6 +285,7 @@
             opacity: 0.6;
             font-size: 1rem;
         }
+        .tab:focus-visible { outline: 3px solid rgba(10,77,155,.45); outline-offset: 2px; }
         .tab.active {
             background: linear-gradient(135deg, var(--accent-green), var(--accent-green-light));
             box-shadow: 0 4px 15px rgba(59,130,246,0.3);
@@ -1091,9 +1095,9 @@
             <p>Please wait while we confirm whether you are signed in.</p>
         </div>
 
-        <div id="authTabs" class="tabs" style="display:none">
-            <div class="tab active" onclick="switchTab('login')">SIGN IN</div>
-            <div class="tab" onclick="switchTab('register')">CREATE ACCOUNT</div>
+        <div id="authTabs" class="tabs" role="tablist" aria-label="Account access" style="display:none">
+            <button class="tab active" type="button" role="tab" aria-selected="true" aria-controls="loginForm" onclick="switchTab('login')">SIGN IN</button>
+            <button class="tab" type="button" role="tab" aria-selected="false" aria-controls="registerForm" onclick="switchTab('register')">CREATE ACCOUNT</button>
         </div>
 
         <!-- LOGIN SCREEN -->
