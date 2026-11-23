@@ -223,7 +223,7 @@
         '<td><strong>' + esc(row.userName || 'Member') + '</strong><br><span style="font-size:.7rem;color:var(--text-sub);">' + esc(row.userEmail || '') + '</span></td>' +
         '<td>' + esc(row.planName || (row.kind === 'wallet_deposit' ? 'Wallet deposit' : 'Support plan')) + '</td>' +
         '<td><strong>' + money(row.amount, row.currency) + '</strong></td>' +
-        '<td>' + esc(row.method || 'mobile-money') + '</td>' +
+        '<td>' + esc(row.payToLabel || row.method || 'mobile-money') + '</td>' +
         '<td>' + chip(row.status) + '</td>' +
         '<td>' + evidence + '</td>' +
         '<td><button class="btn btn-primary btn-sm" type="button" onclick="openPaymentReview(\'' + esc(row.reference) + '\')"><i class="pd-i pd-i-shield-check"></i> Review</button></td>' +
@@ -286,7 +286,7 @@
       ['Plan / deposit', row.planName || (row.kind === 'wallet_deposit' ? 'Savings / wallet contribution' : 'Support plan')],
       ['Amount', money(row.amount, row.currency)],
       ['Expected plan price', expectedPrice ? money(expectedPrice, row.currency) : ''],
-      ['Method', row.method || 'mobile-money'],
+      ['Method', row.payToLabel || row.method || 'mobile-money'],
       ['Status', statusLabel(row.status)],
       ['Created', date(row.createdAt)],
       ['Submitted', date(row.submittedAt)],
@@ -785,49 +785,188 @@
   };
 
 
-  /* ----------------------------------------------------- official payment details */
+  /* ----------------------------------------------------- payment methods */
+  const PAYMENT_METHOD_DEFAULT = {
+    id: '', type: 'mobile-money', label: '', enabled: false, scope: 'both',
+    number: '', accountNumber: '', accountName: 'PRAYER DOME', network: '',
+    bankName: '', branchCode: '', swift: '', currency: 'SZL', instructions: ''
+  };
+
+  function methodFieldLabel(value) {
+    return '<label style="display:block;font-size:.63rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;">' + value + '</label>';
+  }
+
+  function methodInput(name, label, value, attrs) {
+    return '<div>' + methodFieldLabel(label) +
+      '<input data-field="' + name + '" class="form-control" value="' + esc(value) + '" ' + (attrs || '') + '>' +
+      '</div>';
+  }
+
+  function paymentMethodRowHtml(method, index, total) {
+    const row = Object.assign({}, PAYMENT_METHOD_DEFAULT, method || {});
+    const typeOptions = Object.keys(Billing.PAYMENT_METHOD_TYPE_LABELS).map(function (type) {
+      return '<option value="' + esc(type) + '"' + (row.type === type ? ' selected' : '') + '>' +
+        esc(Billing.PAYMENT_METHOD_TYPE_LABELS[type]) + '</option>';
+    }).join('');
+    const paymentMethodCount = total || 1;
+    const scopeOptions = [
+      ['both', 'Give page and member support'],
+      ['give', 'Give page only'],
+      ['support', 'Member support only']
+    ].map(function (pair) {
+      return '<option value="' + pair[0] + '"' + (row.scope === pair[0] ? ' selected' : '') + '>' + pair[1] + '</option>';
+    }).join('');
+    return '<div class="payment-method-row" data-id="' + esc(row.id) + '" style="border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--bg-card);">' +
+      '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px;">' +
+        '<strong style="font-size:.82rem;color:var(--text-main);">Method ' + (index + 1) + ' · ' + esc(row.label || Billing.PAYMENT_METHOD_TYPE_LABELS[row.type] || 'Payment method') + '</strong>' +
+        '<span style="display:flex;gap:6px;flex-wrap:wrap;">' +
+          '<button type="button" class="btn btn-outline" style="padding:6px 10px;" onclick="movePaymentMethodRow(' + index + ', -1)" title="Move this method up" aria-label="Move method ' + (index + 1) + ' up"' + (index === 0 ? ' disabled' : '') + '><i class="pd-i pd-i-arrow-up"></i></button>' +
+          '<button type="button" class="btn btn-outline" style="padding:6px 10px;" onclick="movePaymentMethodRow(' + index + ', 1)" title="Move this method down" aria-label="Move method ' + (index + 1) + ' down"' + (index === paymentMethodCount - 1 ? ' disabled' : '') + '><i class="pd-i pd-i-arrow-down"></i></button>' +
+          '<button type="button" class="btn btn-outline" style="color:var(--danger,#b42318);border-color:var(--border);padding:6px 10px;" onclick="removePaymentMethodRow(' + index + ')" title="Remove this method"><i class="pd-i pd-i-trash"></i> Remove</button>' +
+        '</span>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:10px;">' +
+        methodInput('label', 'Label shown to donors', row.label, 'placeholder="MTN Mobile Money"') +
+        '<div>' + methodFieldLabel('Type') + '<select data-field="type" class="form-control" onchange="changePaymentMethodType(this)">' + typeOptions + '</select></div>' +
+        '<div>' + methodFieldLabel('Show on') + '<select data-field="scope" class="form-control">' + scopeOptions + '</select></div>' +
+        '<div style="display:flex;align-items:flex-end;padding-bottom:9px;"><label style="display:flex;gap:8px;align-items:center;font-size:.78rem;color:var(--text-main);font-weight:700;"><input data-field="enabled" type="checkbox"' + (row.enabled ? ' checked' : '') + '> Enabled and visible</label></div>' +
+        methodInput('number', 'Mobile money / WhatsApp number', row.number, 'inputmode="tel" placeholder="+268 ..."') +
+        methodInput('network', 'Network (mobile money)', row.network, 'placeholder="MTN Mobile Money"') +
+        methodInput('accountName', 'Account name', row.accountName, 'placeholder="PRAYER DOME"') +
+        methodInput('bankName', 'Bank name (bank transfers)', row.bankName, 'placeholder="Standard Bank"') +
+        methodInput('accountNumber', 'Bank account number', row.accountNumber, 'inputmode="numeric" placeholder="Account number"') +
+        methodInput('branchCode', 'Branch code', row.branchCode, 'placeholder="Optional"') +
+        methodInput('swift', 'SWIFT / BIC', row.swift, 'placeholder="Optional"') +
+        methodInput('currency', 'Currency label', row.currency, 'maxlength="8" placeholder="SZL"') +
+        '<div style="grid-column:1/-1;">' + methodFieldLabel('Payment instructions for this method') +
+          '<textarea data-field="instructions" class="form-control" rows="2" placeholder="Leave blank to use the standard wording for this method">' + esc(row.instructions) + '</textarea>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function collectedPaymentMethods() {
+    return Array.prototype.map.call(document.querySelectorAll('#paymentMethodRows .payment-method-row'), function (row, index) {
+      const value = function (name) {
+        const field = row.querySelector('[data-field="' + name + '"]');
+        return field ? String(field.value || '').trim() : '';
+      };
+      const checked = row.querySelector('[data-field="enabled"]');
+      return {
+        id: row.getAttribute('data-id') || '',
+        type: value('type'),
+        label: value('label'),
+        enabled: checked ? checked.checked : false,
+        scope: value('scope'),
+        order: index + 1,
+        number: value('number'),
+        network: value('network'),
+        accountName: value('accountName'),
+        bankName: value('bankName'),
+        accountNumber: value('accountNumber'),
+        branchCode: value('branchCode'),
+        swift: value('swift'),
+        currency: value('currency') || 'SZL',
+        instructions: value('instructions')
+      };
+    });
+  }
+
+  function renderPaymentMethods(methods) {
+    const host = document.getElementById('paymentMethodRows');
+    if (!host) return;
+    const rows = methods && methods.length ? methods : [Object.assign({}, PAYMENT_METHOD_DEFAULT)];
+    host.innerHTML = rows.map(function (method, index) { return paymentMethodRowHtml(method, index, rows.length); }).join('');
+  }
+
+  function paymentMethodStatus(methods) {
+    const usable = (methods || []).filter(function (method) {
+      return Billing.usablePaymentMethod(method);
+    });
+    if (!usable.length) return 'Not configured. The give page and checkout will refuse to show a payment target until one complete method is enabled.';
+    const names = usable.map(function (method) { return method.label || Billing.PAYMENT_METHOD_TYPE_LABELS[method.type]; });
+    return 'Ready · ' + usable.length + ' method' + (usable.length === 1 ? '' : 's') + ' (' + names.join(', ') + ')';
+  }
+
+  window.addPaymentMethodRow = function () {
+    const rows = collectedPaymentMethods();
+    rows.push(Object.assign({}, PAYMENT_METHOD_DEFAULT));
+    renderPaymentMethods(rows);
+  };
+
+  window.removePaymentMethodRow = function (index) {
+    const rows = collectedPaymentMethods();
+    if (rows.length <= 1) return window.toast('Keep at least one payment method. Disable it instead if you are still checking it.', 'error');
+    rows.splice(index, 1);
+    renderPaymentMethods(rows);
+  };
+
+  window.movePaymentMethodRow = function (index, delta) {
+    const rows = collectedPaymentMethods();
+    const target = index + delta;
+    if (target < 0 || target >= rows.length) return;
+    const moved = rows.splice(index, 1)[0];
+    rows.splice(target, 0, moved);
+    renderPaymentMethods(rows);
+  };
+
+  window.changePaymentMethodType = function (select) {
+    // Re-render only the heading so the label stays in step with the type.
+    const row = select && select.closest ? select.closest('.payment-method-row') : null;
+    if (!row) return;
+    const rows = collectedPaymentMethods();
+    renderPaymentMethods(rows);
+  };
+
   window.loadPaymentSettings = async function () {
     const status = document.getElementById('paySettingsStatus');
     try {
       const snap = await getDoc(doc(bridge.db, 'settings', 'payments'));
       const row = snap.exists ? snap.data() : {};
       paymentSettings = row;
-      if (document.getElementById('paySettingsNumber')) document.getElementById('paySettingsNumber').value = row.mobileMoneyNumber || '';
-      if (document.getElementById('paySettingsName')) document.getElementById('paySettingsName').value = row.accountName || 'PRAYER DOME';
-      if (document.getElementById('paySettingsNetwork')) document.getElementById('paySettingsNetwork').value = row.network || 'MTN Mobile Money';
-      if (document.getElementById('paySettingsInstructions')) document.getElementById('paySettingsInstructions').value = row.instructions || '';
-      if (status) status.textContent = row.mobileMoneyNumber
-        ? 'Configured · number ending ' + String(row.mobileMoneyNumber).replace(/\D/g, '').slice(-4)
-        : 'Not configured. Checkout will refuse to create a payment request until this is saved.';
+      const methods = Billing.paymentMethodsFromSettings(row);
+      if (row.instructions && methods.length && !methods[0].instructions) {
+        // Preserve the old single-method custom wording when it is migrated
+        // into the first method row.
+        methods[0].instructions = String(row.instructions);
+      }
+      renderPaymentMethods(methods);
+      if (status) status.textContent = paymentMethodStatus(methods);
     } catch (error) {
       if (status) status.textContent = 'Could not read payment settings: ' + error.message;
     }
   };
 
   window.savePaymentSettings = async function () {
-    const number = String((document.getElementById('paySettingsNumber') || {}).value || '').trim();
-    const accountName = String((document.getElementById('paySettingsName') || {}).value || '').trim();
-    const network = String((document.getElementById('paySettingsNetwork') || {}).value || '').trim();
-    const instructions = String((document.getElementById('paySettingsInstructions') || {}).value || '').trim();
-    if (number.replace(/\D/g, '').length < 9) return window.toast('Enter the official Mobile Money number with its country code.', 'error');
-    if (!accountName) return window.toast('Enter the official account name.', 'error');
+    const methods = collectedPaymentMethods();
+    const enabled = methods.filter(function (method) { return method.enabled; });
+    if (!enabled.length) return window.toast('Enable at least one complete payment method before saving.', 'error');
+    for (let index = 0; index < enabled.length; index += 1) {
+      const method = enabled[index];
+      const label = method.label || Billing.PAYMENT_METHOD_TYPE_LABELS[method.type] || ('Method ' + (index + 1));
+      if (method.type === 'bank-transfer') {
+        if (!method.bankName || !method.accountNumber) return window.toast('Add a bank name and account number for “' + label + '”.', 'error');
+      } else if (method.type === 'cash-office') {
+        if (!method.instructions) return window.toast('Add office instructions for “' + label + '”.', 'error');
+      } else if (String(method.number).replace(/\D/g, '').length < 9) {
+        return window.toast('Add a number with its country code for “' + label + '”.', 'error');
+      }
+    }
     window.showLoading();
     try {
-      const result = await callBilling('payment.settings.save', {
-        mobileMoneyNumber: number,
-        accountName,
-        network: network || 'Mobile Money',
-        instructions
-      });
+      const result = await callBilling('payment.settings.save', { methods: methods });
       paymentSettings = result.settings || null;
       window.hideLoading();
-      window.toast('Official payment details saved. New checkouts will use this number.');
-      await window.loadPaymentSettings();
+      renderPaymentMethods(Billing.paymentMethodsFromSettings(result.settings || {}));
+      const status = document.getElementById('paySettingsStatus');
+      if (status) status.textContent = paymentMethodStatus(Billing.paymentMethodsFromSettings(result.settings || {}));
+      window.toast('Payment methods saved. Give page and checkout now use them.');
     } catch (error) {
       window.hideLoading();
       window.toast(error.message, 'error');
     }
   };
+
 
   /* ------------------------------------------------------------- withdrawals */
   window.loadWithdrawals = async function () {

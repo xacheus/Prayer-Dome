@@ -693,6 +693,13 @@
                     <h2 id="programmeHeading">Choose the programme that fits your household</h2>
                     <p>Every card below is an approved Prayer Dome programme. The plans and prices are read from the live support catalogue and enforced again by the billing server. Selecting a plan creates a payment request only — nothing becomes active until finance verifies your receipt.</p>
                 </div>
+                <div class="support-method-picker" style="display:grid;gap:5px;margin:0 0 18px;padding:14px 16px;border:1px solid var(--border);border-radius:16px;background:var(--bg-card);">
+                    <label for="supportMethodPlan" style="font-size:.68rem;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--text-sub);">Payment method</label>
+                    <select id="supportMethodPlan" data-support-method onchange="selectSupportPaymentMethod(this.value)" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-main);font:inherit;font-weight:700;">
+                        <option value="">Loading official payment methods…</option>
+                    </select>
+                    <p data-support-method-note style="margin:0;font-size:.74rem;color:var(--text-sub);line-height:1.5;">The method you choose is stored with the payment reference so finance can match your receipt.</p>
+                </div>
                 <div id="planCatalog" class="programme-grid" aria-live="polite">
                     <div class="plan-loading"><div class="spinner" style="width:34px;height:34px;border-width:3px;"></div><span>Loading the approved programmes…</span></div>
                 </div>
@@ -880,17 +887,17 @@
             <div class="secret-reveal" id="momoRevealSection">
                 <i class="pd-i pd-i-lock-open" style="font-size: 1.6rem; color: var(--pd-gold); margin-bottom: 8px;" aria-hidden="true"></i>
                 <h3 style="font-weight:900;">Official payment channel</h3>
-                <p style="font-size: 0.82rem; color: var(--text-sub); margin-top: 4px;">Verify your PIN to reveal the Mobile Money details configured by the finance team.</p>
+                <p style="font-size: 0.82rem; color: var(--text-sub); margin-top: 4px;">Verify your PIN to reveal the payment details configured by the finance team.</p>
 
                 <div id="revealTarget" class="blur-text" style="margin-top: 18px;">
                     <div class="pay-channel">
                         <p class="pay-channel-network" id="payNetworkLabel"><i class="pd-i pd-i-smartphone" aria-hidden="true"></i> Mobile Money</p>
                         <p class="pay-channel-number" id="payNumberValue">Configured by finance</p>
                         <p class="pay-channel-name">Account name: <span id="payAccountName">PRAYER DOME</span></p>
-                        <button class="btn-main btn-green" id="payCopyBtn" type="button" onclick="copyOfficialNumber()"><i class="pd-i pd-i-copy"></i> Copy number</button>
+                        <button class="btn-main btn-green" id="payCopyBtn" type="button" onclick="copyOfficialNumber()"><i class="pd-i pd-i-copy"></i> Copy details</button>
                     </div>
                 </div>
-                <p id="paySettingsNote" style="font-size:.76rem;color:var(--text-sub);line-height:1.55;margin:12px 0 0;">If finance has not yet configured the official number, please contact the ministry office and do not send money to any other number.</p>
+                <p id="paySettingsNote" style="font-size:.76rem;color:var(--text-sub);line-height:1.55;margin:12px 0 0;">If finance has not yet configured an official payment method, please contact the ministry office and do not send money to any other number.</p>
                 <button class="btn-main btn-gold" id="btnReveal" type="button" style="width: auto; padding: 13px 30px; margin: 18px auto 0; border-radius:12px;" onclick="pinChallenge('reveal')"><i class="pd-i pd-i-eye"></i> Reveal details</button>
             </div>
 
@@ -982,6 +989,14 @@
                     <button class="money-chip" type="button" onclick="setMoneyAmount('depAmount', 100)">$100</button>
                 </div>
                 <p class="money-hint" id="depAmountHint">Minimum $5.00. Send the exact amount shown on the next screen — a different amount delays verification.</p>
+            </div>
+
+            <div class="money-field">
+                <label for="supportMethodDeposit">Payment method</label>
+                <select id="supportMethodDeposit" data-support-method onchange="selectSupportPaymentMethod(this.value)" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:var(--input-bg);color:var(--text-main);font:inherit;font-weight:700;">
+                    <option value="">Loading official payment methods…</option>
+                </select>
+                <p class="money-hint" data-support-method-note>The verified details appear on the next screen. Finance never uses a number typed into this page.</p>
             </div>
 
             <div class="money-note">
@@ -1083,7 +1098,9 @@
         let checkoutInFlight = false;
         let checkoutEvidence = null;
         let currentSubscriptionId = null;
-        let paymentSettings = { mobileMoneyNumber: '', accountName: '', network: 'Mobile Money', instructions: '', configured: false };
+        let paymentSettings = { mobileMoneyNumber: '', accountName: '', network: 'Mobile Money', instructions: '', configured: false, methods: [] };
+        let supportPaymentMethods = [];
+        let selectedSupportMethodId = '';
         let walletLedger = [];
         let walletLedgerMeta = { balance: 0, held: 0, pendingDeposits: 0, pendingWithdrawals: 0, currency: 'USD' };
         let claimDocs = {};
@@ -1256,44 +1273,112 @@
             try {
                 const snap = await getDoc(doc(db, 'settings', 'payments'));
                 const row = snap.exists ? snap.data() : {};
-                const number = String(row.mobileMoneyNumber || '').trim();
+                const methods = Billing.paymentMethodsFor(row, 'support');
+                const primary = methods.find(method => method.id === row.primaryMethodId) || methods[0] || null;
+                const number = primary
+                    ? String(primary.type === 'bank-transfer' ? primary.accountNumber : primary.number || '').trim()
+                    : '';
+                supportPaymentMethods = methods;
+                selectedSupportMethodId = primary ? primary.id : '';
                 paymentSettings = {
                     mobileMoneyNumber: number,
-                    accountName: String(row.accountName || 'PRAYER DOME').trim(),
-                    network: String(row.network || 'Mobile Money').trim(),
-                    instructions: String(row.instructions || '').trim(),
-                    configured: Boolean(number)
+                    accountName: String((primary && primary.accountName) || 'PRAYER DOME').trim(),
+                    network: String((primary && (primary.type === 'bank-transfer' ? primary.bankName : (primary.network || primary.label))) || 'Mobile Money').trim(),
+                    instructions: String(row.instructions || (primary && primary.instructions) || '').trim(),
+                    configured: methods.length > 0,
+                    methods: methods
                 };
             } catch (error) {
                 console.warn('Official payment settings could not be read:', error && error.message);
-                paymentSettings = { mobileMoneyNumber: '', accountName: 'PRAYER DOME', network: 'Mobile Money', instructions: '', configured: false };
+                supportPaymentMethods = [];
+                selectedSupportMethodId = '';
+                paymentSettings = { mobileMoneyNumber: '', accountName: 'PRAYER DOME', network: 'Mobile Money', instructions: '', configured: false, methods: [] };
             }
+            populateSupportPaymentMethods();
             renderPaymentChannels();
         }
 
+        function selectedSupportMethod() {
+            return supportPaymentMethods.find(method => method.id === selectedSupportMethodId) || null;
+        }
+
+        function populateSupportPaymentMethods() {
+            const selects = Array.from(document.querySelectorAll('[data-support-method]'));
+            if (!selects.length) return;
+            if (!supportPaymentMethods.length) {
+                selects.forEach(function (select) {
+                    select.disabled = true;
+                    select.innerHTML = '<option value="">No payment method configured</option>';
+                });
+                document.querySelectorAll('[data-support-method-note]').forEach(function (note) {
+                    note.textContent = 'Finance has not configured a payment method yet. Please contact the ministry office and do not send money to any other number.';
+                });
+                return;
+            }
+            if (!selectedSupportMethod()) selectedSupportMethodId = supportPaymentMethods[0].id;
+            selects.forEach(function (select) {
+                select.disabled = false;
+                select.innerHTML = supportPaymentMethods.map(function (method) {
+                    return '<option value="' + esc(method.id) + '">' + esc(method.label) + '</option>';
+                }).join('');
+                select.value = selectedSupportMethodId;
+            });
+            const method = selectedSupportMethod();
+            document.querySelectorAll('[data-support-method-note]').forEach(function (note) {
+                note.textContent = 'Paying by ' + method.label + '. The verified details and your unique reference appear on the next screen.';
+            });
+        }
+
+        window.selectSupportPaymentMethod = function (id) {
+            if (!supportPaymentMethods.some(function (method) { return method.id === id; })) return;
+            selectedSupportMethodId = id;
+            populateSupportPaymentMethods();
+            renderPaymentChannels();
+        };
+
+        function supportPaymentTarget() {
+            const method = selectedSupportMethod();
+            if (method) {
+                return {
+                    number: String(method.type === 'bank-transfer' ? method.accountNumber : method.number || '').trim(),
+                    accountName: method.accountName || 'PRAYER DOME',
+                    network: method.type === 'bank-transfer' ? (method.bankName || method.label) : (method.network || method.label),
+                    label: method.label
+                };
+            }
+            return {
+                number: paymentSettings.mobileMoneyNumber,
+                accountName: paymentSettings.accountName,
+                network: paymentSettings.network,
+                label: paymentSettings.network
+            };
+        }
+
         function renderPaymentChannels() {
-            const number = paymentSettings.mobileMoneyNumber;
+            const target = supportPaymentTarget();
+            const number = target.number;
             const numberEl = document.getElementById('payNumberValue');
             const networkEl = document.getElementById('payNetworkLabel');
             const nameEl = document.getElementById('payAccountName');
             const copyBtn = document.getElementById('payCopyBtn');
             const note = document.getElementById('paySettingsNote');
-            if (networkEl) networkEl.innerHTML = '<i class="pd-i pd-i-smartphone" aria-hidden="true"></i> ' + esc(paymentSettings.network || 'Mobile Money');
+            if (networkEl) networkEl.innerHTML = '<i class="pd-i pd-i-shield-check" aria-hidden="true"></i> ' + esc(target.network || 'Mobile Money');
             if (numberEl) numberEl.textContent = number || 'Not configured';
-            if (nameEl) nameEl.textContent = paymentSettings.accountName || 'PRAYER DOME';
+            if (nameEl) nameEl.textContent = target.accountName || 'PRAYER DOME';
             if (copyBtn) {
                 copyBtn.hidden = !number;
                 copyBtn.disabled = !number;
             }
             if (note) {
                 note.hidden = Boolean(number);
-                if (!number) note.textContent = 'Finance has not configured the official payment number. Please contact the ministry office and do not send money to any other number.';
+                if (!number) note.textContent = 'Finance has not configured an official payment method. Please contact the ministry office and do not send money to any other number.';
             }
         }
 
         window.copyOfficialNumber = async () => {
-            if (!paymentSettings.mobileMoneyNumber) return toast('The official payment number is not configured yet. Please contact the ministry office.', 'error');
-            await copyToClipboard(paymentSettings.mobileMoneyNumber);
+            const target = supportPaymentTarget();
+            if (!target.number) return toast('The official payment details are not configured yet. Please contact the ministry office.', 'error');
+            await copyToClipboard(target.number);
         };
 
         /* ------------------------------------------------------------ catalogue */
@@ -1517,7 +1602,7 @@
                 const result = await callBilling('checkout.create', {
                     kind: 'subscription',
                     planId: plan.id,
-                    method: 'mobile-money',
+                    methodId: selectedSupportMethodId,
                     idempotencyKey: Billing.idempotencyKey()
                 });
                 checkoutEvidence = null;
@@ -1545,7 +1630,7 @@
                 const result = await callBilling('checkout.create', {
                     kind: 'wallet_deposit',
                     amount: Math.round(value * 100) / 100,
-                    method: 'mobile-money',
+                    methodId: selectedSupportMethodId,
                     idempotencyKey: Billing.idempotencyKey()
                 });
                 checkoutEvidence = null;
@@ -1578,7 +1663,12 @@
             const instructions = currentCheckout.paymentInstructions || paymentSettings.instructions || Billing.PAYMENT_INSTRUCTIONS;
             const paymentNumber = String(currentCheckout.payToNumber || paymentSettings.mobileMoneyNumber || '').trim();
             const payToName = String(currentCheckout.payToName || paymentSettings.accountName || 'PRAYER DOME').trim();
-            const payToNetwork = String(currentCheckout.payToNetwork || paymentSettings.network || 'Mobile Money').trim();
+            const payToNetwork = String(currentCheckout.payToLabel || currentCheckout.payToNetwork || paymentSettings.network || 'Mobile Money').trim();
+            const payToDetail = String(currentCheckout.payToNetwork || paymentSettings.network || '').trim();
+            const copyNumber = currentCheckout.payToType === 'bank-transfer'
+                ? paymentNumber
+                : paymentNumber.replace(/[^+\d]/g, '');
+            const copyNumberAttr = esc(copyNumber).replace(/'/g, '&#39;');
             const checkoutPlan = planFor(currentCheckout.planId) || {};
             const isPlan = currentCheckout.kind !== 'wallet_deposit';
             const frequency = isPlan ? planFrequencyLabel({
@@ -1599,7 +1689,7 @@
                     ? '<p class="checkout-note" style="color:#b91c1c;"><strong>Rejected:</strong> ' + esc(currentCheckout.rejectionReason) + '</p>'
                     : '') +
                 (status === 'pending_payment' && paymentNumber
-                    ? '<div class="checkout-paybox"><div><span>Pay by ' + esc(payToNetwork) + '</span><strong>' + esc(paymentNumber) + '</strong><small>Account: ' + esc(payToName) + '</small></div><button type="button" class="btn-main btn-gold" style="width:auto;padding:11px 16px;font-size:.74rem;" onclick="copyToClipboard(\'' + esc(paymentNumber.replace(/[^+\d]/g, '')) + '\')"><i class="pd-i pd-i-copy"></i> Copy number</button></div>'
+                    ? '<div class="checkout-paybox"><div><span>Pay by ' + esc(payToNetwork) + (payToDetail && payToDetail !== payToNetwork ? ' · ' + esc(payToDetail) : '') + '</span><strong>' + esc(paymentNumber) + '</strong><small>Account: ' + esc(payToName) + '</small></div><button type="button" class="btn-main btn-gold" style="width:auto;padding:11px 16px;font-size:.74rem;" onclick="copyToClipboard(\'' + copyNumberAttr + '\')"><i class="pd-i pd-i-copy"></i> Copy details</button></div>'
                     : status === 'pending_payment'
                       ? '<p class="checkout-note" style="color:#b45309;"><strong>Payment details are not configured.</strong> Please contact the ministry office before sending money. Your reference is saved and will remain valid.</p>'
                       : '') +

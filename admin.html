@@ -2564,13 +2564,15 @@
                     </div>
                 </div>
                 <div class="panel-card" style="margin-bottom:16px;">
-                    <div class="panel-header"><h3><i class="pd-i pd-i-smartphone"></i> Official payment details</h3><span style="font-size:.7rem;color:var(--text-sub);">The number every checkout uses. It is read from finance settings, never hardcoded.</span></div>
-                    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;">
-                        <div><label for="paySettingsNumber" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Mobile Money number</label><input id="paySettingsNumber" class="form-control" inputmode="tel" placeholder="+268 ..."></div>
-                        <div><label for="paySettingsName" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Account name</label><input id="paySettingsName" class="form-control" placeholder="PRAYER DOME"></div>
-                        <div><label for="paySettingsNetwork" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Network</label><input id="paySettingsNetwork" class="form-control" placeholder="MTN Mobile Money"></div>
-                        <div style="grid-column:1/-1;"><label for="paySettingsInstructions" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Optional custom instructions</label><input id="paySettingsInstructions" class="form-control" placeholder="Leave blank to use the standard payment instructions"></div>
-                        <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><button class="btn btn-primary" type="button" onclick="savePaymentSettings()"><i class="pd-i pd-i-save"></i> Save payment details</button><span id="paySettingsStatus" style="font-size:.74rem;color:var(--text-sub);"></span></div>
+                    <div class="panel-header"><h3><i class="pd-i pd-i-hand-heart"></i> Payment methods</h3><span style="font-size:.7rem;color:var(--text-sub);">These are the channels donors see on the give page and members see at checkout. Numbers are read from Finance settings, never hardcoded in a page.</span></div>
+                    <div style="padding:16px;">
+                        <div id="paymentMethodRows" style="display:grid;gap:12px;"></div>
+                        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+                            <button class="btn btn-outline" type="button" onclick="addPaymentMethodRow()"><i class="pd-i pd-i-plus"></i> Add payment method</button>
+                            <button class="btn btn-primary" type="button" onclick="savePaymentSettings()"><i class="pd-i pd-i-save"></i> Save payment methods</button>
+                            <span id="paySettingsStatus" style="font-size:.74rem;color:var(--text-sub);"></span>
+                        </div>
+                        <p style="margin:12px 0 0;font-size:.72rem;color:var(--text-sub);line-height:1.55;">Leave a method disabled while you are still checking it. Only complete, enabled methods reach the give page. The first enabled method is the default shown to members. Mobile-money and WhatsApp numbers need a country code; bank transfers need a bank name and account number; office payments need instructions.</p>
                     </div>
                 </div>
                 <div class="panel-card">

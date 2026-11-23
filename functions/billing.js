@@ -27,7 +27,6 @@ const MIN_WALLET_DEPOSIT = 5;
 const MIN_WITHDRAWAL = 10;
 const PAYMENT_SETTINGS_DOC = 'settings/payments';
 const MAX_AMOUNT = 1000000;
-const ALLOWED_METHODS = ['mobile-money', 'bank-transfer', 'cash-office'];
 const { HttpsError } = functions.https;
 
 function fail(code, message, details) {
@@ -98,10 +97,141 @@ function amount(value) {
 
 /*
  * Official payment details live in settings/payments and are managed by the
- * finance team through the billing callable. No Mobile Money number is stored
- * in this repository: if finance has not configured one, checkout stops
- * instead of showing a number nobody verified.
+ * finance team through the billing callable. The document keeps a methods[]
+ * list so the give page and member support page can offer every channel the
+ * ministry actually owns. No number is ever stored in this repository: if
+ * finance has not configured a usable method, checkout stops instead of
+ * showing a number nobody verified.
+ *
+ * Legacy documents with only mobileMoneyNumber/accountName/network still work:
+ * they are read as one mobile-money method and every save writes the new shape.
  */
+const PAYMENT_METHOD_TYPES = ['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp'];
+const PAYMENT_METHOD_SCOPES = ['both', 'give', 'support'];
+const PAYMENT_METHOD_LABELS = {
+  'mobile-money': 'Mobile Money',
+  'bank-transfer': 'Bank transfer',
+  'cash-office': 'Cash at the ministry office',
+  whatsapp: 'WhatsApp'
+};
+
+function paymentMethodType(value) {
+  const type = text(value, 40).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return PAYMENT_METHOD_TYPES.includes(type) ? type : 'mobile-money';
+}
+
+function paymentMethodScope(value) {
+  const scope = text(value, 20).toLowerCase();
+  return PAYMENT_METHOD_SCOPES.includes(scope) ? scope : 'both';
+}
+
+function paymentMethodId(value, index) {
+  const base = text(value, 60).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  return base || 'method-' + (Number(index) + 1);
+}
+
+function normalizePaymentMethod(value, index) {
+  if (!value || typeof value !== 'object') return null;
+  const type = paymentMethodType(value.type);
+  const number = text(value.number, 40);
+  const accountNumber = text(value.accountNumber, 60);
+  const bankName = text(value.bankName, 120);
+  const network = text(value.network, 80);
+  const accountName = text(value.accountName, 120);
+  const label = text(value.label, 80) || PAYMENT_METHOD_LABELS[type] || 'Payment method';
+  const instructions = text(value.instructions, 1000);
+  return {
+    id: paymentMethodId(value.id, index),
+    type,
+    label,
+    enabled: value.enabled !== false,
+    scope: paymentMethodScope(value.scope),
+    order: Number.isFinite(Number(value.order)) ? Math.max(0, Math.round(Number(value.order))) : Number(index) + 1,
+    number,
+    accountNumber,
+    accountName,
+    network,
+    bankName,
+    branchCode: text(value.branchCode, 40),
+    swift: text(value.swift, 20),
+    currency: text(value.currency, 8).toUpperCase() || 'SZL',
+    instructions
+  };
+}
+
+function usablePaymentMethod(method) {
+  if (!method || method.enabled === false) return false;
+  if (method.type === 'bank-transfer') {
+    return Boolean(method.bankName && method.accountNumber);
+  }
+  if (method.type === 'cash-office') {
+    return Boolean(method.instructions || method.accountName);
+  }
+  return String(method.number || '').replace(/\D/g, '').length >= 9;
+}
+
+function paymentMethodLabel(method) {
+  if (!method) return 'Payment method';
+  return method.label || PAYMENT_METHOD_LABELS[method.type] || 'Payment method';
+}
+
+function paymentMethodPayTo(method) {
+  if (!method) return {};
+  const isBank = method.type === 'bank-transfer';
+  return {
+    payToNumber: isBank ? method.accountNumber : method.number,
+    payToName: method.accountName,
+    payToNetwork: isBank ? method.bankName : (method.network || paymentMethodLabel(method)),
+    payToType: method.type,
+    payToMethodId: method.id,
+    payToLabel: paymentMethodLabel(method),
+    payToBankName: isBank ? method.bankName : '',
+    payToBranchCode: isBank ? method.branchCode : '',
+    payToSwift: isBank ? method.swift : ''
+  };
+}
+
+function paymentMethodInstructions(method) {
+  if (method && method.instructions) return method.instructions;
+  if (!method) return catalog.PAYMENT_INSTRUCTIONS;
+  if (method.type === 'bank-transfer') {
+    return 'Transfer the exact amount to ' + (method.bankName || 'the ministry bank account') +
+      (method.accountNumber ? ' (' + method.accountNumber + ')' : '') +
+      (method.accountName ? ' in the name of ' + method.accountName : '') +
+      '. Use the payment reference as the transfer reference, then upload a clear receipt. ' +
+      'A plan is activated only after the finance team checks the payment against the ministry account.';
+  }
+  if (method.type === 'cash-office') {
+    return 'Take the exact amount to the ministry office. Give the finance team the payment reference, then upload a photo of the receipt. ' +
+      'A plan is activated only after the finance team checks the receipt.';
+  }
+  if (method.type === 'whatsapp') {
+    return 'Message the finance team on WhatsApp to arrange payment. Quote the payment reference and upload a clear receipt here. ' +
+      'A plan is activated only after the finance team checks the payment.';
+  }
+  return 'Send the exact amount by ' + (method.network || 'Mobile Money') + ' to ' + (method.number || 'the official number') +
+    (method.accountName ? ' (' + method.accountName + ')' : '') +
+    '. Put the payment reference in the mobile-money reference field, then upload a clear receipt. ' +
+    'A plan is activated only after the finance team checks the payment against the ministry account.';
+}
+
+function legacyPaymentMethod(data) {
+  const number = text(data.mobileMoneyNumber, 40);
+  if (!number) return null;
+  return normalizePaymentMethod({
+    id: 'official-mobile-money',
+    type: 'mobile-money',
+    label: text(data.network, 80) || PAYMENT_METHOD_LABELS['mobile-money'],
+    enabled: true,
+    scope: 'both',
+    order: 1,
+    number,
+    accountName: text(data.accountName, 120),
+    network: text(data.network, 80),
+    instructions: text(data.instructions, 1000)
+  }, 0);
+}
+
 async function loadPaymentSettings() {
   const db = admin.firestore();
   let data = {};
@@ -112,25 +242,65 @@ async function loadPaymentSettings() {
     console.error('Payment settings read failed:', error.message);
     data = {};
   }
-  const number = text(data.mobileMoneyNumber, 40);
-  const accountName = text(data.accountName, 120);
-  const network = text(data.network, 80);
-  const custom = text(data.instructions, 1000);
-  const instructions = custom || (number
-    ? 'Send the exact amount by ' + (network || 'Mobile Money') + ' to ' + number +
-      (accountName ? ' (' + accountName + ')' : '') +
-      '. Put the payment reference in the mobile-money reference field, then upload a clear receipt. ' +
-      'A plan is activated only after the finance team checks the payment against the ministry account.'
-    : catalog.PAYMENT_INSTRUCTIONS);
-  return { number, accountName, network, instructions, configured: Boolean(number) };
+  const stored = Array.isArray(data.methods)
+    ? data.methods.map(normalizePaymentMethod).filter(Boolean)
+    : [];
+  const legacy = legacyPaymentMethod(data);
+  const methods = (stored.length ? stored : (legacy ? [legacy] : []))
+    .sort((a, b) => (a.order - b.order) || a.label.localeCompare(b.label));
+  const active = methods.filter(usablePaymentMethod);
+  // The first enabled method is the default; finance controls it with the
+  // move-up / move-down controls in the admin console.
+  const primary = active[0] || methods[0] || {};
+  const instructions = text(data.instructions, 1000) ||
+    paymentMethodInstructions(primary.type ? primary : null);
+  return {
+    number: primary.number || '',
+    accountName: primary.accountName || 'PRAYER DOME',
+    network: primary.network || primary.bankName || paymentMethodLabel(primary),
+    instructions,
+    methods,
+    primaryMethodId: primary.id || '',
+    configured: active.length > 0
+  };
 }
 
-function requirePaymentSettings(settings) {
-  if (!settings || !settings.number) {
+function publicPaymentSettings(settings, scope) {
+  if (!settings) return settings;
+  const methods = (settings.methods || [])
+    .filter(usablePaymentMethod)
+    .filter(method => !scope || method.scope === 'both' || method.scope === scope);
+  const primary = methods[0] || null;
+  return Object.assign({}, settings, {
+    // Never leak the top-level fallback fields for a method that was disabled
+    // or is still incomplete. The public page gets only active methods.
+    number: primary ? (primary.type === 'bank-transfer' ? primary.accountNumber : primary.number) : '',
+    accountName: primary ? (primary.accountName || 'PRAYER DOME') : '',
+    network: primary ? (primary.type === 'bank-transfer' ? primary.bankName : (primary.network || primary.label)) : '',
+    instructions: primary ? paymentMethodInstructions(primary) : catalog.PAYMENT_INSTRUCTIONS,
+    primaryMethodId: primary ? primary.id : '',
+    configured: methods.length > 0,
+    methods: methods.map(method => Object.assign({}, method, {
+      instructions: paymentMethodInstructions(method)
+    }))
+  });
+}
+
+function requirePaymentSettings(settings, methodId, scope) {
+  const methods = (settings && Array.isArray(settings.methods) ? settings.methods : [])
+    .filter(usablePaymentMethod)
+    .filter(method => !scope || method.scope === 'both' || method.scope === scope);
+  if (!methods.length) {
     fail('failed-precondition',
-      'The official Mobile Money number has not been configured in Finance settings yet. Please contact the ministry office before sending any money.');
+      'No payment method has been configured in Finance settings yet. Please contact the ministry office before sending any money.');
   }
-  return settings;
+  const requested = text(methodId, 60);
+  const selected = requested ? methods.find(method => method.id === requested) : null;
+  if (requested && !selected) {
+    fail('failed-precondition',
+      'That payment method is no longer available. Refresh the page and choose another method before sending money.');
+  }
+  return selected || methods[0];
 }
 
 function addMonths(value, months) {
@@ -264,6 +434,12 @@ function paymentView(data) {
     payToNumber: data.payToNumber || '',
     payToName: data.payToName || '',
     payToNetwork: data.payToNetwork || '',
+    payToType: data.payToType || '',
+    payToMethodId: data.payToMethodId || '',
+    payToLabel: data.payToLabel || '',
+    payToBankName: data.payToBankName || '',
+    payToBranchCode: data.payToBranchCode || '',
+    payToSwift: data.payToSwift || '',
     evidenceUrl: data.evidenceUrl || '',
     evidencePath: data.evidencePath || '',
     evidenceName: data.evidenceName || '',
@@ -279,7 +455,6 @@ async function createCheckout(data, context) {
   const token = (context.auth && context.auth.token) || {};
   const db = admin.firestore();
   const kind = data.kind === 'wallet_deposit' ? 'wallet_deposit' : 'subscription';
-  const method = ALLOWED_METHODS.includes(data.method) ? data.method : 'mobile-money';
   const key = text(data.idempotencyKey, 80) || crypto.randomBytes(12).toString('hex');
   const idemRef = db.collection('billingIdempotency').doc(uid + '_' + key.replace(/[^A-Za-z0-9_.-]/g, ''));
 
@@ -304,7 +479,7 @@ async function createCheckout(data, context) {
   // The browser may choose a plan or a deposit amount, but it never supplies
   // the price of a plan and never supplies the number to pay. Both come from
   // the server-owned catalogue and the finance settings document.
-  const paySettings = requirePaymentSettings(await loadPaymentSettings());
+  const paymentSettings = await loadPaymentSettings();
 
   const existingIdem = await idemRef.get();
   if (existingIdem.exists) {
@@ -346,6 +521,14 @@ async function createCheckout(data, context) {
     }
   }
 
+  // Resolve the chosen channel only after the idempotency and open-checkout
+  // checks: a retry of an existing request must still return that request even
+  // if finance has since disabled the method.
+  const payMethod = requirePaymentSettings(paymentSettings, data.methodId, 'support');
+  const method = payMethod.type === 'whatsapp' ? 'mobile-money' : payMethod.type;
+  const payTo = paymentMethodPayTo(payMethod);
+  const paymentInstructions = paymentMethodInstructions(payMethod);
+
   await db.runTransaction(async (transaction) => {
     const currentIdem = await transaction.get(idemRef);
     if (currentIdem.exists) {
@@ -373,10 +556,8 @@ async function createCheckout(data, context) {
       durationMonths: plan ? plan.durationMonths : 0,
       programMonths: plan ? plan.programMonths : 0,
       planSnapshot: plan ? publicPlan(plan) : null,
-      paymentInstructions: paySettings.instructions,
-      payToNumber: paySettings.number,
-      payToName: paySettings.accountName || 'PRAYER DOME',
-      payToNetwork: paySettings.network || 'Mobile Money',
+      paymentInstructions,
+      ...payTo,
       subscriptionId: subId || '',
       walletTransactionId: walletTxId || '',
       evidenceUrl: '',
@@ -480,10 +661,8 @@ async function createCheckout(data, context) {
       durationMonths: plan ? plan.durationMonths : 0,
       programMonths: plan ? plan.programMonths : 0,
       planSnapshot: plan ? publicPlan(plan) : null,
-      paymentInstructions: paySettings.instructions,
-      payToNumber: paySettings.number,
-      payToName: paySettings.accountName || 'PRAYER DOME',
-      payToNetwork: paySettings.network || 'Mobile Money'
+      paymentInstructions,
+      ...payTo
     }
   };
 }
@@ -1248,22 +1427,76 @@ async function settleWithdrawal(data, context) {
 
 async function savePaymentSettings(data, context) {
   const adminUid = await requireAdmin(context);
-  const number = text(data.mobileMoneyNumber, 40);
-  const accountName = text(data.accountName, 120);
-  const network = text(data.network, 80);
-  const instructions = text(data.instructions, 1000);
-  const digits = number.replace(/\D/g, '');
-  if (!number || digits.length < 9 || digits.length > 20) {
-    fail('invalid-argument', 'Enter the official Mobile Money number, including the country code.');
+  const rawMethods = Array.isArray(data.methods) ? data.methods : [];
+  const legacyNumberProvided = Object.prototype.hasOwnProperty.call(data, 'mobileMoneyNumber');
+  if (rawMethods.length > 12) {
+    fail('invalid-argument', 'Keep the number of payment methods to 12 or fewer.');
   }
-  if (!accountName) fail('invalid-argument', 'Enter the official account name for the number.');
+  const incoming = rawMethods.length ? rawMethods : (legacyNumberProvided ? [{
+    id: 'official-mobile-money',
+    type: 'mobile-money',
+    label: text(data.network, 80) || PAYMENT_METHOD_LABELS['mobile-money'],
+    enabled: true,
+    scope: 'both',
+    number: data.mobileMoneyNumber,
+    accountName: data.accountName,
+    network: data.network,
+    instructions: data.instructions
+  }] : []);
+  if (!incoming.length) {
+    fail('invalid-argument', 'Add at least one payment method donors can use.');
+  }
+
+  const usedIds = new Set();
+  const methods = incoming.map((value, index) => {
+    const method = normalizePaymentMethod(value, index);
+    if (!method) return null;
+    let id = method.id;
+    let suffix = 2;
+    while (usedIds.has(id)) {
+      id = method.id + '-' + suffix;
+      suffix += 1;
+    }
+    usedIds.add(id);
+    method.id = id;
+    method.order = index + 1;
+    method.accountName = method.accountName || 'PRAYER DOME';
+    const digits = method.number.replace(/\D/g, '');
+    // Disabled rows are drafts: finance may save a half-typed method while
+    // still checking it. Only a method that is about to go live is validated.
+    if (!method.enabled) return method;
+    if (method.type === 'bank-transfer') {
+      if (!method.bankName || !method.accountNumber || method.accountNumber.length < 4) {
+        fail('invalid-argument', 'A bank transfer method needs a bank name and account number before it can be enabled.');
+      }
+    } else if (method.type === 'cash-office') {
+      if (!method.instructions) {
+        fail('invalid-argument', 'Add office payment instructions before enabling “' + method.label + '”.');
+      }
+    } else if (digits.length < 9 || digits.length > 20) {
+      fail('invalid-argument', 'The mobile-money or WhatsApp number for “' + method.label + '” must include the country code (9 to 20 digits).');
+    }
+    return method;
+  }).filter(Boolean);
+
+  if (!methods.some(usablePaymentMethod)) {
+    fail('invalid-argument', 'Add at least one complete, enabled payment method. Donors must never be shown an unverified number.');
+  }
+
+  const primary = methods.find(usablePaymentMethod) || methods[0];
+  const primaryNumber = primary ? (primary.type === 'bank-transfer' ? primary.accountNumber : primary.number) : '';
+  const primaryDigits = String(primaryNumber || '').replace(/\D/g, '');
   const db = admin.firestore();
   const now = new Date();
   await db.doc(PAYMENT_SETTINGS_DOC).set({
-    mobileMoneyNumber: number,
-    accountName,
-    network: network || 'Mobile Money',
-    instructions,
+    // Keep the legacy single-method fields in step for older clients that read
+    // settings/payments directly. New clients always use methods[].
+    mobileMoneyNumber: primary && primary.type !== 'bank-transfer' && primary.type !== 'cash-office' ? primary.number : '',
+    accountName: primary ? primary.accountName : 'PRAYER DOME',
+    network: primary ? (primary.network || primary.bankName || paymentMethodLabel(primary)) : 'Mobile Money',
+    instructions: text(data.instructions, 1000) || (primary ? paymentMethodInstructions(primary) : ''),
+    methods,
+    primaryMethodId: primary ? primary.id : '',
     updatedAt: now,
     updatedBy: actor(context).email || adminUid
   }, { merge: true });
@@ -1276,7 +1509,8 @@ async function savePaymentSettings(data, context) {
     actorUid: adminUid,
     actorEmail: actor(context).email || '',
     actorRole: 'admin',
-    note: 'Official payment details updated. Number ending ' + digits.slice(-4),
+    note: 'Payment methods updated (' + methods.length + ' configured; primary ending ' + (primaryDigits.slice(-4) || 'n/a') + ').',
+    methodCount: methods.length,
     createdAt: now
   });
   return { settings: await loadPaymentSettings() };
@@ -1339,10 +1573,9 @@ async function routeBilling(data, context) {
       return { settings: await loadPaymentSettings() };
     }
     case 'payment.settings.public':
-      // The public giving page must show the same official number the wallet
-      // and checkout use. It never receives anything else, and no write path
-      // is exposed without an administrator.
-      return { settings: await loadPaymentSettings() };
+      // The public giving page must show the same official methods the wallet
+      // and checkout use, but never a disabled or incomplete one.
+      return { settings: publicPaymentSettings(await loadPaymentSettings(), 'give') };
     case 'payment.settings.save':
       return savePaymentSettings(payload, context);
     case 'withdrawal.request':
