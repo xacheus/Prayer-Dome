@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <!-- PD-SEO:START -->
     <!-- Managed by seo/apply-seo.py from seo/pages.json. Do not hand-edit this block. -->
     <title>My Account | Sign In or Create Your Prayer Dome Profile</title>
@@ -12,7 +12,7 @@
     <meta name="googlebot" content="noindex, nofollow">
     <link rel="canonical" href="https://prayerdome.net/account">
     <meta name="author" content="Prayer Dome">
-    <meta name="theme-color" content="#0A4D9B">
+    <meta name="theme-color" content="#104F91">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prayer Dome">
@@ -149,44 +149,44 @@
         }
 
         body.dark-mode {
-            --bg-primary: #020617; 
-            --bg-card: #0f172a; 
-            --text-main: #f8fafc; 
+            --bg-primary: #020617;
+            --bg-card: #0f172a;
+            --text-main: #f8fafc;
             --text-sub: #94a3b8;
             --border: #1e293b;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Inter', sans-serif; 
-            background: var(--bg-primary); 
-            color: var(--text-main); 
-            transition: 0.3s; 
-            padding-bottom: 50px;
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-main);
+            transition: 0.3s;
+            padding-bottom: calc(50px + env(safe-area-inset-bottom, 0px));
             overflow-x: hidden;
         }
 
         /* Luxury Font */
-        .luxury-font, h1, h2, h3, .tab, .btn, .membership-badge, .stat-number { 
-            font-family: 'Poppins', serif; 
+        .luxury-font, h1, h2, h3, .tab, .btn, .membership-badge, .stat-number {
+            font-family: 'Poppins', serif;
         }
 
         /* Header with Logo */
-        .auth-header { 
-            background: var(--bg-card); 
-            padding: 12px 25px; 
-            border-bottom: 1px solid var(--border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            position: sticky; 
-            top: 0; 
+        .auth-header {
+            background: var(--bg-card);
+            padding: calc(12px + env(safe-area-inset-top, 0px)) max(25px, env(safe-area-inset-right, 0px)) 12px max(25px, env(safe-area-inset-left, 0px));
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
             z-index: 1000;
             backdrop-filter: blur(10px);
             background: rgba(255,255,255,0.9);
         }
         body.dark-mode .auth-header { background: rgba(15,23,42,0.95); }
-    
+
         .logo-area {
             display: flex;
             align-items: center;
@@ -194,13 +194,13 @@
             text-decoration: none;
             color: var(--text-main);
         }
-        .logo-ring { 
-            width: 45px; 
-            height: 45px; 
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold)); 
-            border-radius: 12px; 
-            display: flex; 
-            align-items: center; 
+        .logo-ring {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-gold));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
             justify-content: center;
             box-shadow: 0 4px 15px rgba(11,61,145,0.3);
         }
@@ -212,15 +212,15 @@
             background: white;
             padding: 5px;
         }
-        .brand-text h1 { 
-            font-size: 1.2rem; 
-            font-weight: 900; 
+        .brand-text h1 {
+            font-size: 1.2rem;
+            font-weight: 900;
             letter-spacing: 1px;
             font-family: 'Poppins', serif;
         }
-        .brand-text p { 
-            font-size: 0.6rem; 
-            opacity: 0.7; 
+        .brand-text p {
+            font-size: 0.6rem;
+            opacity: 0.7;
             letter-spacing: 1px;
         }
 
@@ -250,11 +250,11 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .auth-card { 
-            background: var(--bg-card); 
-            border-radius: clamp(20px, 5vw, 32px); 
-            padding: clamp(16px, 5vw, 40px); 
-            border: 1px solid var(--border); 
+        .auth-card {
+            background: var(--bg-card);
+            border-radius: clamp(20px, 5vw, 32px);
+            padding: clamp(16px, 5vw, 40px);
+            border: 1px solid var(--border);
             box-shadow: var(--shadow);
             transition: transform 0.3s, box-shadow 0.3s;
             width: 100%;
@@ -262,45 +262,87 @@
         }
         .auth-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 
-        .tabs { 
-            display: flex; 
-            background: var(--bg-primary); 
-            padding: 6px; 
-            border-radius: 60px; 
+        .tabs {
+            display: flex;
+            background: var(--bg-primary);
+            padding: 6px;
+            border-radius: 60px;
             margin-bottom: 35px;
             gap: 5px;
         }
-        .tab { 
-            flex: 1; 
-            padding: 14px; 
-            text-align: center; 
-            cursor: pointer; 
-            border-radius: 50px; 
-            font-weight: 700; 
-            transition: 0.3s; 
-            color: var(--text-main); 
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 50px;
+            font-weight: 700;
+            transition: 0.3s;
+            color: var(--text-main);
             opacity: 0.6;
             font-size: 1rem;
         }
-        .tab.active { 
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-green-light)); 
-            box-shadow: 0 4px 15px rgba(59,130,246,0.3); 
-            opacity: 1; 
+        .tab.active {
+            background: linear-gradient(135deg, var(--accent-green), var(--accent-green-light));
+            box-shadow: 0 4px 15px rgba(59,130,246,0.3);
+            opacity: 1;
             color: white;
+        }
+
+        /* Session gate: never show the sign-in forms until Firebase says the
+           visitor is genuinely signed out. */
+        .auth-loading { text-align: center; }
+        .auth-loading-spinner {
+            width: 46px; height: 46px; margin: 2px auto 18px;
+            border: 4px solid rgba(16,79,145,.16); border-top-color: #104F91;
+            border-radius: 50%; animation: spin 1s linear infinite;
+        }
+        .auth-loading h2 { font-size: clamp(1.05rem, 4vw, 1.35rem); margin-bottom: 8px; }
+        .auth-loading p { color: var(--text-sub); font-size: .88rem; line-height: 1.6; }
+        .verify-registration { text-align: left; }
+        .verify-registration h2 { text-align: center; font-size: clamp(1.2rem, 4.5vw, 1.55rem); margin-bottom: 8px; }
+        .verify-lede { text-align: center; color: var(--text-sub); line-height: 1.6; margin-bottom: 24px; overflow-wrap: break-word; }
+        .verify-icon {
+            width: 58px; height: 58px; margin: 0 auto 14px; border-radius: 18px;
+            display: grid; place-items: center; font-size: 1.45rem; color: #104F91;
+            background: rgba(16,79,145,.1); border: 1px solid rgba(16,79,145,.16);
+        }
+        .verify-code-input {
+            text-align: center; font-family: 'SFMono-Regular', Consolas, monospace;
+            font-size: clamp(1.45rem, 7vw, 2rem) !important; font-weight: 800;
+            letter-spacing: .38em; padding-left: .38em !important;
+        }
+        .verify-status {
+            min-height: 20px; margin: -8px 0 16px; font-size: .8rem; line-height: 1.5;
+            color: var(--text-sub); text-align: center; overflow-wrap: break-word;
+        }
+        .verify-status[data-kind="error"] { color: #b91c1c; }
+        .verify-status[data-kind="ok"] { color: #166534; }
+        .verify-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+        .verify-actions .btn { flex: 1 1 150px; width: auto; }
+        .verify-countdown { text-align: center; margin-top: 10px; font-size: .74rem; color: var(--text-sub); }
+        .verify-note { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); font-size: .72rem; line-height: 1.55; color: var(--text-sub); text-align: center; }
+        .certificate-link-card {
+            background: var(--bg-primary); border-radius: 20px; padding: 18px;
+            margin: 15px 0; border: 1px solid rgba(212,175,55,.35);
+        }
+        @media (max-width: 520px) {
+            .verify-actions .btn { flex: 1 1 100%; }
+            .verify-code-input { letter-spacing: .24em; padding-left: .24em !important; }
         }
 
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .form-group { margin-bottom: 22px; position: relative; }
         .form-group label { display: block; margin-bottom: 8px; font-weight: 700; font-size: 0.85rem; color: var(--text-main); }
         .form-group label i { margin-right: 6px; color: var(--accent-gold); }
-        input, select, textarea { 
-            width: 100%; 
-            padding: 14px 18px; 
-            border-radius: 16px; 
-            border: 2px solid var(--border); 
-            background: var(--bg-primary); 
-            color: var(--text-main); 
-            outline: none; 
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 16px;
+            border: 2px solid var(--border);
+            background: var(--bg-primary);
+            color: var(--text-main);
+            outline: none;
             font-size: 0.95rem;
             transition: all 0.3s;
         }
@@ -325,17 +367,17 @@
         .country-code { width: 100px; flex-shrink: 0; }
         .phone-number { flex: 1; }
 
-        .btn { 
-            padding: 15px clamp(16px, 4vw, 28px); 
-            border-radius: 50px; 
-            border: none; 
-            font-weight: 800; 
-            cursor: pointer; 
-            transition: 0.3s; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 10px; 
-            justify-content: center; 
+        .btn {
+            padding: 15px clamp(16px, 4vw, 28px);
+            border-radius: 50px;
+            border: none;
+            font-weight: 800;
+            cursor: pointer;
+            transition: 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
             width: 100%;
             min-width: 0;
             min-height: 48px;
@@ -432,45 +474,45 @@
 
         /* Profile Section */
         .profile-hero { text-align: center; margin-bottom: 30px; }
-        .avatar-frame { 
-            width: 140px; 
-            height: 140px; 
-            border-radius: 50%; 
-            border: 4px solid var(--accent-gold); 
-            margin: 0 auto 15px; 
-            position: relative; 
-            cursor: pointer; 
-            overflow: hidden; 
+        .avatar-frame {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 4px solid var(--accent-gold);
+            margin: 0 auto 15px;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
             background: var(--bg-primary);
             transition: transform 0.3s;
         }
         .avatar-frame:hover { transform: scale(1.02); }
         .avatar-frame img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-        .camera-overlay { 
-            position: absolute; 
-            bottom: 10px; 
-            right: 10px; 
-            background: var(--accent-green); 
-            width: 36px; 
-            height: 36px; 
-            border-radius: 50%; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer; 
-            border: 2px solid white; 
+        .camera-overlay {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: var(--accent-green);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid white;
             color: white;
             transition: 0.2s;
         }
         .camera-overlay:hover { transform: scale(1.1); }
-    
-        .membership-badge { 
-            background: linear-gradient(135deg, var(--accent-green), #0a3d7a); 
-            color: white; 
-            padding: 12px 24px; 
-            border-radius: 40px; 
-            margin: 15px auto; 
-            font-weight: 800; 
+
+        .membership-badge {
+            background: linear-gradient(135deg, var(--accent-green), #0a3d7a);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            margin: 15px auto;
+            font-weight: 800;
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -592,17 +634,17 @@
             .cert-card .btn { flex: 1 1 auto; }
         }
         #pNameDisplay { overflow-wrap: break-word; line-height: 1.25; }
-        .profile-stat-grid { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 12px; 
-            margin: 25px 0; 
+        .profile-stat-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin: 25px 0;
         }
-        .stat-item { 
-            background: var(--bg-primary); 
-            padding: 15px 10px; 
-            border-radius: 20px; 
-            text-align: center; 
+        .stat-item {
+            background: var(--bg-primary);
+            padding: 15px 10px;
+            border-radius: 20px;
+            text-align: center;
             border: 1px solid var(--border);
             transition: 0.3s;
         }
@@ -612,14 +654,14 @@
         .spiritual-card { background: var(--bg-primary); border-radius: 24px; padding: 20px; margin: 20px 0; border: 1px solid var(--border); }
         .progress-bar { height: 8px; background: var(--border); border-radius: 10px; overflow: hidden; margin: 10px 0; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-green), var(--accent-gold)); border-radius: 10px; transition: width 0.5s ease; }
-        .ministry-tag { 
-            display: inline-block; 
+        .ministry-tag {
+            display: inline-block;
             background: rgba(37,99,235,0.1);
-            color: var(--accent-green); 
-            padding: 6px 12px; 
-            border-radius: 20px; 
-            font-size: 0.7rem; 
-            font-weight: 600; 
+            color: var(--accent-green);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
             margin: 4px;
         }
 
@@ -1013,7 +1055,6 @@
 <script src="/assets/pd-widget.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
-    <script src="/assets/pd-certificate.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
 </head>
@@ -1035,13 +1076,22 @@
     </header>
 
     <div class="container">
-        <div id="authTabs" class="tabs">
+        <!-- Authentication is resolved before either form is allowed on
+             screen. A signed-in member must never see "Sign In" flash while
+             Firebase restores the session. -->
+        <div id="authLoading" class="auth-card auth-loading" role="status" aria-live="polite">
+            <div class="auth-loading-spinner" aria-hidden="true"></div>
+            <h2>Checking your Prayer Dome session…</h2>
+            <p>Please wait while we confirm whether you are signed in.</p>
+        </div>
+
+        <div id="authTabs" class="tabs" style="display:none">
             <div class="tab active" onclick="switchTab('login')">SIGN IN</div>
             <div class="tab" onclick="switchTab('register')">CREATE ACCOUNT</div>
         </div>
 
         <!-- LOGIN SCREEN -->
-        <div id="loginForm" class="auth-card">
+        <div id="loginForm" class="auth-card" style="display:none">
             <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-log-in"></i> Sign In</h2>
             <p style="text-align: center; color: var(--text-sub); margin-bottom: 30px;">Sign in to continue your spiritual journey</p>
             <form onsubmit="handleLogin(event)">
@@ -1070,7 +1120,7 @@
         <div id="registerForm" class="auth-card" style="display: none;">
             <h2 style="margin-bottom: 10px; text-align: center; font-family: 'Poppins', serif;"><i class="pd-i pd-i-user-plus"></i> Register</h2>
             <p style="text-align: center; color: var(--text-sub); margin-bottom: 25px;">Create your account to access all features</p>
-        
+
             <div style="text-align: center; margin-bottom: 20px;">
                 <div class="avatar-frame"><img id="regPreview" src="/assets/avatar-default.svg"></div>
                 <button type="button" onclick="uploadPhoto('register')" class="btn btn-outline" style="width: auto; padding: 8px 20px; margin-top: 10px;"><i class="pd-i pd-i-camera"></i> Upload Photo</button>
@@ -1112,6 +1162,28 @@
             <button class="btn btn-google" onclick="handleGoogle()"><i class="pd-i pd-i-brand-google"></i> Continue with Google</button>
         </div>
 
+        <!-- EMAIL VERIFICATION CODE -->
+        <div id="verifyRegistrationForm" class="auth-card verify-registration" style="display:none">
+            <div class="verify-icon"><i class="pd-i pd-i-mail" aria-hidden="true"></i></div>
+            <h2>Verify your email</h2>
+            <p class="verify-lede">Enter the six-digit code we sent to <strong id="regVerifyEmail">your email address</strong>.</p>
+            <form onsubmit="handleVerifyRegistration(event)">
+                <div class="form-group">
+                    <label for="regVerifyCode"><i class="pd-i pd-i-shield-check"></i> Verification code</label>
+                    <input id="regVerifyCode" name="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+                           pattern="[0-9]{6}" maxlength="6" required placeholder="000000" class="verify-code-input">
+                </div>
+                <p id="regVerifyStatus" class="verify-status" role="status" aria-live="polite">Enter the code from your inbox.</p>
+                <button type="submit" id="regVerifyBtn" class="btn btn-primary">Verify email <i class="pd-i pd-i-circle-check"></i></button>
+            </form>
+            <div class="verify-actions">
+                <button type="button" id="regResendBtn" class="btn btn-outline" onclick="resendRegistrationCode()">Resend code</button>
+                <button type="button" class="btn btn-outline" onclick="changeRegistrationEmail()">Use a different email</button>
+            </div>
+            <p id="regResendCountdown" class="verify-countdown" aria-live="polite">Didn’t receive it? Check spam, then resend.</p>
+            <p class="verify-note">The code expires after 10 minutes. Prayer Dome will never ask you for it by phone or WhatsApp.</p>
+        </div>
+
         <!-- PROFILE SECTION -->
         <div id="profileSection" class="auth-card" style="display: none;">
             <div id="profileView">
@@ -1134,6 +1206,7 @@
                     </div>
                     <div class="profile-actions">
                         <a class="btn btn-outline btn-sm" href="/membership#card"><i class="pd-i pd-i-id-card"></i> My membership card</a>
+                        <a class="btn btn-outline btn-sm" href="/certificates"><i class="pd-i pd-i-award"></i> My certificates</a>
                     </div>
                 </div>
                 <div class="profile-stat-grid">
@@ -1168,23 +1241,14 @@
                 <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0;"><p id="pBioDisplay">No bio added yet.</p></div>
                 <div style="background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0;"><div id="pMinistriesDisplay">Not specified</div></div>
 
-                <!-- MY CERTIFICATES -->
-                <div id="certificates" class="certificates-block" style="scroll-margin-top:90px;background: var(--bg-primary); border-radius: 20px; padding: 20px; margin: 15px 0; border: 1px solid rgba(212,175,55,.35);">
-                    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 4px;">
-                        <h3 style="margin: 0; font-family: 'Poppins', serif; color: var(--accent-gold);"><i class="pd-i pd-i-award"></i> My Certificates</h3>
-                        <span style="font-size: .72rem; color: var(--text-sub);">Earn them by passing Academy quizzes with 80% or higher.</span>
-                    </div>
-                    <p style="font-size: .78rem; color: var(--text-sub); margin: 2px 0 14px;">Download a signed PDF or print your certificates anytime — the ministry team can verify every one.</p>
-                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; background: var(--bg-card); border: 1px solid var(--border-color, var(--border)); border-radius: 14px; padding: 12px 14px;">
-                        <i class="pd-i pd-i-id-card" style="color: var(--accent-gold);"></i>
-                        <div style="flex:1; min-width: 180px;">
-                            <div style="font-size: .8rem; font-weight: 700; color: var(--text-main);">Certificates are issued to <span id="certProfileName" style="color: var(--accent-gold);">your profile name</span></div>
-                            <div style="font-size: .72rem; color: var(--text-sub); margin-top: 2px;">Your name comes straight from your profile — update it below and future certificates use it automatically.</div>
+                <div class="certificate-link-card">
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                        <i class="pd-i pd-i-award" style="font-size:1.4rem;color:var(--accent-gold);" aria-hidden="true"></i>
+                        <div style="flex:1;min-width:180px;">
+                            <strong style="display:block;color:var(--text-main);">Certificates have their own page</strong>
+                            <span style="font-size:.78rem;color:var(--text-sub);">Preview, download or print every certificate issued to your account.</span>
                         </div>
-                        <button class="btn btn-outline" style="width: auto;" onclick="openEditProfile()"><i class="pd-i pd-i-user-pen"></i> Edit Name</button>
-                    </div>
-                    <div id="myCertificatesList" class="certificates-list">
-                        <div class="certificates-empty" style="text-align:center; padding: 18px; color: var(--text-sub);"><i class="pd-i pd-i-loader-circle pd-i-spin"></i> Loading your certificates…</div>
+                        <a class="btn btn-primary btn-sm" href="/certificates" style="width:auto;">Open Certificates <i class="pd-i pd-i-arrow-right"></i></a>
                     </div>
                 </div>
 
@@ -1582,6 +1646,72 @@
             });
         };
 
+        /* ------------------------------------------------- session view gate
+           `loading` is a real state, not a synonym for signed out. The page
+           renders nothing that looks like a login prompt until Firebase has
+           delivered its first auth state. */
+        window.pdSetAuthView = (view, options) => {
+            const opts = options || {};
+            const el = (id) => document.getElementById(id);
+            const show = (id, visible, display) => {
+                const node = el(id);
+                if (!node) return;
+                node.style.display = visible ? (display || 'block') : 'none';
+            };
+            const loading = el('authLoading');
+            if (loading) loading.setAttribute('aria-busy', view === 'loading' ? 'true' : 'false');
+            show('authLoading', view === 'loading');
+            show('authTabs', view === 'signed-out', 'flex');
+            show('loginForm', view === 'signed-out' && (opts.tab || 'login') === 'login');
+            show('registerForm', view === 'signed-out' && opts.tab === 'register');
+            show('verifyRegistrationForm', view === 'verification');
+            show('profileSection', view === 'signed-in');
+            if (view === 'signed-out') window.switchTab(opts.tab === 'register' ? 'register' : 'login');
+            document.body.classList.toggle('pd-auth-pending', view === 'loading');
+            document.body.classList.toggle('pd-auth-resolved', view !== 'loading');
+        };
+
+        window.pdSetVerifyStatus = (message, kind) => {
+            const node = document.getElementById('regVerifyStatus');
+            if (!node) return;
+            node.textContent = message || '';
+            if (kind) node.dataset.kind = kind;
+            else delete node.dataset.kind;
+        };
+
+        let pdResendTimer = null;
+        window.pdStartResendCountdown = (seconds) => {
+            const button = document.getElementById('regResendBtn');
+            const label = document.getElementById('regResendCountdown');
+            if (!button) return;
+            let left = Math.max(0, Math.ceil(Number(seconds) || 0));
+            if (pdResendTimer) clearInterval(pdResendTimer);
+            const paint = () => {
+                if (left > 0) {
+                    button.disabled = true;
+                    if (label) label.textContent = 'You can request another code in ' + left + 's.';
+                    left -= 1;
+                } else {
+                    button.disabled = false;
+                    if (label) label.textContent = 'Didn’t receive it? Check spam, then resend.';
+                    clearInterval(pdResendTimer);
+                    pdResendTimer = null;
+                }
+            };
+            paint();
+            if (left >= 0) pdResendTimer = setInterval(paint, 1000);
+        };
+
+        window.pdShowVerification = (email, message) => {
+            const target = document.getElementById('regVerifyEmail');
+            if (target) target.textContent = email || 'your email address';
+            const input = document.getElementById('regVerifyCode');
+            if (input) input.value = '';
+            window.pdSetVerifyStatus(message || 'Enter the six-digit code from your inbox.');
+            window.pdSetAuthView('verification');
+            setTimeout(() => { if (input) input.focus(); }, 80);
+        };
+
         window.toggleEdit = (show) => {
             const view = document.getElementById('profileView');
             const edit = document.getElementById('profileEdit');
@@ -1602,7 +1732,7 @@
              what is unavailable, and every button explains itself instead
              of failing silently.
              ================================================================== */
-        window.PD_ACCOUNT_AUTH = { ready: false, unavailable: false, waiters: [] };
+        window.PD_ACCOUNT_AUTH = { ready: false, unavailable: false, settled: false, waiters: [] };
 
         window.pdWhenAuthReady = (timeout) => {
             const state = window.PD_ACCOUNT_AUTH;
@@ -1638,6 +1768,7 @@
                answers immediately instead of waiting out the full timeout. */
             state.unavailable = true;
             state.waiters.splice(0).forEach((fn) => fn(false));
+            if (!state.settled) window.pdSetAuthView('signed-out');
             let notice = document.getElementById('pdAuthNotice');
             if (!notice) {
                 notice = document.createElement('div');
@@ -1682,6 +1813,9 @@
         window.sendEmailVerificationCode = needsAuth('__pdSendEmailVerificationCode', 'Email verification is temporarily unavailable. Please check your connection and try again.');
         window.handleLogout = needsAuth('__pdHandleLogout', 'Sign-out is temporarily unavailable. Please check your connection and try again.');
         window.changeProfilePhoto = needsAuth('__pdChangeProfilePhoto', 'Photo upload is temporarily unavailable. Please check your connection and try again.');
+        window.handleVerifyRegistration = needsAuth('__pdHandleVerifyRegistration', 'Email verification is temporarily unavailable. Please check your connection and try again.');
+        window.resendRegistrationCode = needsAuth('__pdResendRegistrationCode', 'Verification email is temporarily unavailable. Please check your connection and try again.');
+        window.changeRegistrationEmail = needsAuth('__pdChangeRegistrationEmail', 'Please wait for the sign-in service before changing the email.');
 
         /* The photo picker itself is plain browser work — it must work even
            when the sign-in service cannot be reached. */
@@ -1698,67 +1832,25 @@
         /* If the module has not reported back by now, say so instead of
            leaving the member tapping a button that will never answer. */
         setTimeout(() => {
+            // Only a module that never loaded is a service outage. A loaded
+            // module whose first auth event is slow keeps the loading state —
+            // it must never become a false "Sign In" screen.
             if (!window.PD_ACCOUNT_AUTH.ready) window.pdMarkAuthUnavailable();
-        }, 6000);
+        }, 15000);
 
-        /* The certificate list starts with a "Loading your certificates…"
-           line. The real list is written by the module, which needs the
-           sign-in service — so when that service never arrives the member
-           would stare at a permanent loading line. This fallback reads the
-           certificates saved on the device and shows them, so the section is
-           never left hanging. The module overwrites it when it can. */
-        window.pdRenderLocalCertificates = () => {
-            const list = document.getElementById('myCertificatesList');
-            if (!list) return;
-            let certs = [];
-            try {
-                const progress = JSON.parse(localStorage.getItem('pd_academy_progress')) || {};
-                certs = Array.isArray(progress.certificates) ? progress.certificates : [];
-            } catch (e) { certs = []; }
-            if (!certs.length) {
-                list.innerHTML = '<div class="certificates-empty" style="text-align:center; padding: 18px; color: var(--text-sub);"><i class="pd-i pd-i-award"></i> No certificates yet. Pass an Academy quiz with 80% or higher to earn your first one — visit the <a href="/quiz.html" style="color: var(--accent-gold);">Quiz Centre</a>.</div>';
-                return;
-            }
-            const profile = window.PD_PROFILE || {};
-            list.innerHTML = certs.map((c) => {
-                const name = c.name || profile.fullName || 'Prayer Dome Member';
-                const raw = c.date && typeof c.date.toDate === 'function' ? c.date.toDate() : c.date;
-                const parsed = raw ? new Date(raw) : null;
-                const date = parsed && !Number.isNaN(parsed.getTime())
-                    ? parsed.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
-                const course = c.course || c.title || 'Prayer Dome Academy';
-                return `<article class="cert-card">
-                    <div class="cert-card-head">
-                        <div class="cert-card-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
-                        <div style="min-width:0;">
-                            <div class="cert-card-eyebrow">Prayer Dome Academy</div>
-                            <div class="cert-card-org">Certificate of Completion</div>
-                        </div>
-                        <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
-                    </div>
-                    <div class="cert-card-body">
-                        <h4 class="cert-card-recipient">${window.escapeHtml(name)}</h4>
-                        <p class="cert-card-line">has successfully completed <span class="cert-card-course">${window.escapeHtml(course)}</span>.</p>
-                        <div class="cert-card-meta">
-                            <span>Score <b>${Math.round(c.score || 0)}%</b></span>
-                            <span>Issued <b>${date}</b></span>
-                            <span>ID <b style="font-family:monospace;">${window.escapeHtml(c.id || '')}</b></span>
-                        </div>
-                    </div>
-                    <div class="cert-card-foot">
-                        <div class="cert-signature">
-                            <div class="cert-signature-name">Prayer Dome</div>
-                            <div class="cert-signature-rule"></div>
-                            <div class="cert-signature-label">Founder and President</div>
-                        </div>
-                    </div>
-                </article>`;
-            }).join('');
-        };
+        // Paint the loading state immediately. The markup already hides the
+        // forms, so this also covers the few milliseconds before this script.
+        window.pdSetAuthView('loading');
         setTimeout(() => {
-            const list = document.getElementById('myCertificatesList');
-            if (list && list.textContent.includes('Loading your certificates')) window.pdRenderLocalCertificates();
-        }, 4000);
+            if (window.PD_ACCOUNT_AUTH.settled) return;
+            const card = document.getElementById('authLoading');
+            if (!card) return;
+            const heading = card.querySelector('h2');
+            const copy = card.querySelector('p');
+            if (heading) heading.textContent = 'Still checking your session…';
+            if (copy) copy.textContent = 'This is taking longer than usual. Check your connection; the page will open as soon as Prayer Dome confirms your account.';
+        }, 12000);
+
     </script>
 
     <script type="module" onerror="if (window.pdMarkAuthUnavailable) window.pdMarkAuthUnavailable('The sign-in service could not be reached from this device.');">
@@ -1785,9 +1877,20 @@
         const cloudFunctions = getFunctions(app);
         const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
+        const sendRegistrationCodeCall = httpsCallable(cloudFunctions, 'sendRegistrationVerificationCode');
+        const verifyRegistrationCodeCall = httpsCallable(cloudFunctions, 'verifyRegistrationCode');
 
         let currentUserData = null;
         let currentPhotoUrl = "";
+        // True from the instant sign-up starts until the server confirms the
+        // code. It closes the race where Firebase emits the new user before
+        // the pending-profile document exists.
+        let registrationInProgress = false;
+        const REG_PENDING_KEY = 'pd_registration_pending_uid';
+        // Session cache: a member who opens Profile again does not trigger a
+        // second pair of Firestore reads. saveProfile() and photo uploads
+        // explicitly refresh it.
+        const profileCache = { uid: '', data: null, member: null };
         // The interface layer above reads the photo from the window so that
         // the profile editor works even before this module has loaded.
         window.currentPhotoUrl = currentPhotoUrl;
@@ -1806,9 +1909,10 @@
         async function ensureUserProfile(user) {
             const userRef = doc(db, 'users', user.uid);
             const snapshot = await getDoc(userRef);
-            if (!snapshot.exists()) {
-                await setDoc(userRef, defaultProfile(user));
-            }
+            if (snapshot.exists()) return snapshot.data() || {};
+            const created = defaultProfile(user);
+            await setDoc(userRef, created);
+            return created;
         }
 
         /* ------------------------------------------------ sign-in and account
@@ -1827,7 +1931,7 @@
                 showToast("Please use a valid email address (gmail.com, outlook.com, etc.)", "error");
                 return;
             }
-        
+
             showLoading();
             try {
                 await sendPasswordResetEmail(auth, email);
@@ -1852,12 +1956,12 @@
                 showToast('Please type DELETE to confirm account deletion', 'error');
                 return;
             }
-        
+
             if (!auth.currentUser) {
                 showToast('No user logged in', 'error');
                 return;
             }
-        
+
             showLoading();
             try {
                 await deleteDoc(doc(db, "users", auth.currentUser.uid));
@@ -1905,16 +2009,103 @@
             return 'firebase';
         }
 
+        /* ------------------------------------------- registration code flow
+           The server generates a random six-digit code, stores only its salted
+           hash, and emails it through Brevo. Nothing here can invent a code or
+           mark the account verified locally. */
+        let registrationEmail = '';
+        async function requestRegistrationCode(options) {
+            const opts = options || {};
+            const user = auth.currentUser;
+            if (!user || !user.email) throw new Error('Sign in to request a verification code.');
+            registrationEmail = user.email;
+            window.pdShowVerification(registrationEmail, opts.quiet ? 'Sending your verification code…' : 'Requesting a new code…');
+            const response = await sendRegistrationCodeCall({ name: user.displayName || '' });
+            const data = (response && response.data) || {};
+            if (!data.sent) {
+                if (data.reason === 'already-verified') {
+                    await auth.currentUser.reload();
+                    try { localStorage.removeItem(REG_PENDING_KEY); } catch (error) {}
+                    profileCache.uid = '';
+                    window.pdSetAuthView('signed-in');
+                    await loadProfileData(auth.currentUser, { force: true });
+                    await checkEmailVerification();
+                    return true;
+                }
+                throw new Error('The verification email could not be sent. Please try again.');
+            }
+            const resend = Number(data.resendAfterSeconds) || 60;
+            window.pdSetVerifyStatus('Code sent to ' + registrationEmail + '. It expires in 10 minutes.', 'ok');
+            window.pdStartResendCountdown(resend);
+            return true;
+        }
+
+        window.__pdResendRegistrationCode = async () => {
+            try {
+                await requestRegistrationCode();
+            } catch (error) {
+                const wait = error && error.details && Number(error.details.retryAfterSeconds);
+                if (wait > 0) window.pdStartResendCountdown(wait);
+                window.pdSetVerifyStatus(error && error.message ? error.message : 'The code could not be resent.', 'error');
+            }
+        };
+
+        window.__pdHandleVerifyRegistration = async (event) => {
+            if (event && typeof event.preventDefault === 'function') event.preventDefault();
+            const input = document.getElementById('regVerifyCode');
+            const button = document.getElementById('regVerifyBtn');
+            const code = String(input && input.value || '').replace(/\s+/g, '');
+            if (!/^\d{6}$/.test(code)) {
+                window.pdSetVerifyStatus('Enter the six-digit code from your email.', 'error');
+                if (input) input.focus();
+                return;
+            }
+            if (button) button.disabled = true;
+            window.pdSetVerifyStatus('Checking your code…');
+            try {
+                await verifyRegistrationCodeCall({ code });
+                await auth.currentUser.reload();
+                registrationInProgress = false;
+                try { localStorage.removeItem(REG_PENDING_KEY); } catch (error) {}
+                profileCache.uid = '';
+                window.pdSetVerifyStatus('Email verified. Opening your profile…', 'ok');
+                window.pdSetAuthView('signed-in');
+                await loadProfileData(auth.currentUser, { force: true });
+                await checkEmailVerification();
+                showToast('Email verified. Welcome to Prayer Dome!', 'success');
+                pdConfetti({ particleCount: 130, spread: 75 });
+                await continueToAdminConsoleIfRequested();
+            } catch (error) {
+                const message = error && error.message ? error.message : 'That code could not be verified.';
+                window.pdSetVerifyStatus(message, 'error');
+                if (input) { input.value = ''; input.focus(); }
+            } finally {
+                if (button) button.disabled = false;
+            }
+        };
+
+        window.__pdChangeRegistrationEmail = async () => {
+            if (!window.confirm('Sign out and create the account again with a different email? The unverified account will not be usable until it is verified.')) return;
+            registrationInProgress = false;
+            try { localStorage.removeItem(REG_PENDING_KEY); } catch (error) {}
+            try { await signOut(auth); } catch (error) { /* the view still resets */ }
+            profileCache.uid = '';
+            const field = document.getElementById('rEmail');
+            if (field) { field.value = ''; field.focus(); }
+            window.pdSetAuthView('signed-out', { tab: 'register' });
+            showToast('Choose the correct email address and create the account again.', 'info');
+        };
+
         window.__pdVerifyEmail = async () => {
             if (!auth.currentUser) return showToast("Please login first", "error");
-        
+
             await auth.currentUser.reload();
             if (auth.currentUser.emailVerified) {
                 showToast("Your email is already verified!", "success");
                 updateVerificationStatus();
                 return;
             }
-        
+
             try {
                 await sendVerificationEmailForCurrentUser();
                 document.getElementById('verifyEmailAddress').innerText = auth.currentUser.email;
@@ -1938,18 +2129,12 @@
             if (auth.currentUser) {
                 await auth.currentUser.reload();
                 const isVerified = auth.currentUser.emailVerified;
-                if (isVerified) {
-                    await updateDoc(doc(db, "users", auth.currentUser.uid), { 
-                        emailVerified: true,
-                        emailVerifiedAt: serverTimestamp()
-                    }).catch(() => {});
-                }
                 updateVerificationStatus();
                 return isVerified;
             }
             return false;
         }
-    
+
         async function handleEmailVerificationLink() {
             const urlParams = new URLSearchParams(window.location.search);
             const mode = urlParams.get('mode');
@@ -1958,10 +2143,6 @@
                 try {
                     await auth.currentUser?.reload();
                     if (auth.currentUser?.emailVerified) {
-                        await updateDoc(doc(db, "users", auth.currentUser.uid), { 
-                            emailVerified: true,
-                            emailVerifiedAt: serverTimestamp()
-                        });
                         showToast("Email verified successfully!", "success");
                         pdConfetti({ particleCount: 150, spread: 100 });
                         updateVerificationStatus();
@@ -1992,7 +2173,7 @@
                 hideLoading();
             }
         };
-    
+
         window.__pdHandleRegister = async (e) => {
             e.preventDefault();
             const name = document.getElementById('rName').value.trim();
@@ -2003,19 +2184,26 @@
             const phoneNum = document.getElementById('rPhone').value.trim();
             const fullPhone = `${countryCode}${phoneNum}`;
             const photoUrl = document.getElementById('uploadedPhoto').value || "/assets/avatar-default.svg";
-        
+
             if (!name || !isValidEmail(email)) {
                 showToast('Enter your full name and a valid email address.', 'error');
                 return;
             }
-        
+
             if (!phoneNum) return showToast('Please enter your phone number.', 'error');
             if(pass !== confirm) return showToast("Passwords don't match", "error");
             if(pass.length < 6) return showToast("Password must be at least 6 characters", "error");
-        
+
             showLoading();
+            registrationInProgress = true;
+            let createdAccount = false;
             try {
                 const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                createdAccount = true;
+                // Remembered locally as well as in Firestore, so an offline
+                // reload of a brand-new account still lands on the code screen
+                // instead of the profile.
+                try { localStorage.setItem(REG_PENDING_KEY, cred.user.uid); } catch (error) {}
                 await updateProfile(cred.user, { displayName: name, photoURL: photoUrl });
                 await setDoc(doc(db, "users", cred.user.uid), {
                     fullName: name,
@@ -2028,34 +2216,53 @@
                     referral: document.getElementById('rReferral').value,
                     dateOfBirth: document.getElementById('rDob').value,
                     emailVerified: false,
+                    registrationPending: true,
+                    registrationComplete: false,
                     prayerCount: 0,
                     walletBalance: 0,
                     quizLevel: 1,
                     createdAt: serverTimestamp()
                 });
-                // Email verification is helpful but must not turn a successful
-                // registration into a failed one when the mail service is delayed.
-                sendVerificationEmailForCurrentUser().catch((error) => console.warn('Verification email error:', error));
-                showToast('Registration successful! Please verify your email from your inbox.', 'success');
+                // The account exists, but it is deliberately not complete yet.
+                // Only the six-digit code from the server can mark it verified.
+                window.pdShowVerification(email, 'Account created. Sending your verification code…');
+                try {
+                    await requestRegistrationCode({ quiet: true });
+                } catch (codeError) {
+                    console.warn('Registration code delivery failed:', codeError && codeError.message);
+                    window.pdSetVerifyStatus(codeError && codeError.message
+                        ? codeError.message
+                        : 'Your account was created, but the code could not be sent. Use Resend code.', 'error');
+                }
                 pdConfetti({ particleCount: 150, spread: 70 });
             } catch (error) {
                 console.error('Registration error:', error);
-                showToast(authMessage(error, 'We could not create your account. Please try again.'), 'error');
+                if (createdAccount) {
+                    // The password account exists. Do not send the member back
+                    // to a form that will only answer "email already in use" —
+                    // keep them on the code screen so Resend can recover.
+                    try { localStorage.setItem(REG_PENDING_KEY, auth.currentUser ? auth.currentUser.uid : ''); } catch (e) {}
+                    window.pdShowVerification(email, 'Account created, but the verification email could not be sent yet. Tap Resend code.');
+                    showToast('Your account was created. Request a new verification code to finish.', 'info');
+                } else {
+                    registrationInProgress = false;
+                    showToast(authMessage(error, 'We could not create your account. Please try again.'), 'error');
+                }
             } finally {
                 hideLoading();
             }
         };
-    
+
         window.__pdHandleLogin = async (e) => {
             e.preventDefault();
             const email = document.getElementById('lEmail').value.trim().toLowerCase();
             const password = document.getElementById('lPass').value;
-        
+
             if (!isValidEmail(email)) {
                 showToast('Enter a valid email address.', 'error');
                 return;
             }
-        
+
             showLoading();
             try {
                 await signInWithEmailAndPassword(auth, email, password);
@@ -2074,10 +2281,10 @@
             const phoneNum = document.getElementById('ePhone').value;
             const fullPhone = `${countryCode}${phoneNum}`;
             const ministries = Array.from(document.querySelectorAll('#ministryCheckboxes input:checked')).map(cb => cb.value);
-        
+
             const currentPhoto = document.getElementById('pPhoto').src;
             const finalPhotoUrl = currentPhotoUrl || currentPhoto;
-        
+
             const updates = {
                 fullName: document.getElementById('eName').value,
                 phone: fullPhone,
@@ -2089,48 +2296,64 @@
                 photoURL: finalPhotoUrl,
                 updatedAt: serverTimestamp()
             };
-        
+
             showLoading();
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), updates);
-                await updateProfile(auth.currentUser, { 
+                await updateProfile(auth.currentUser, {
                     displayName: updates.fullName,
                     photoURL: finalPhotoUrl
                 });
-            
+
                 showToast("Profile updated successfully!", "success");
                 toggleEdit(false);
-                await loadProfileData(auth.currentUser);
+                await loadProfileData(auth.currentUser, { force: true });
                 pdConfetti({ particleCount: 80, spread: 60 });
-            } catch (e) { 
+            } catch (e) {
                 console.error("Save error:", e);
-                showToast(e.message, "error"); 
+                showToast(e.message, "error");
             } finally {
                 hideLoading();
             }
         };
 
-        async function loadProfileData(user) {
-            // Read the profile and membership in parallel. Either read may fail
-            // on a weak connection; the view must still paint the signed-in
-            // member instead of showing a blank card or an endless placeholder.
-            let data = {};
-            let member = {};
-            try {
-                const [userRes, memberRes] = await Promise.allSettled([
-                    getDoc(doc(db, "users", user.uid)),
-                    getDoc(doc(db, "memberships", user.uid))
-                ]);
-                if (userRes.status === 'fulfilled' && userRes.value.exists()) {
-                    data = userRes.value.data() || {};
-                } else if (userRes.status === 'rejected') {
-                    console.warn('Profile read failed:', userRes.reason?.message || userRes.reason);
+        async function loadProfileData(user, options) {
+            const opts = options || {};
+            const cached = !opts.force && profileCache.uid === user.uid && profileCache.data;
+            let data = cached ? profileCache.data : {};
+            let member = cached ? profileCache.member : {};
+            if (!cached) {
+                // Read the profile and membership in parallel. Either read may
+                // fail on a weak connection; the view must still paint the
+                // signed-in member instead of a blank card.
+                try {
+                    const memberRequest = getDoc(doc(db, "memberships", user.uid));
+                    if (opts.userData) {
+                        data = opts.userData;
+                        const memberRes = await Promise.allSettled([memberRequest]);
+                        if (memberRes[0].status === 'fulfilled' && memberRes[0].value.exists()) {
+                            member = memberRes[0].value.data() || {};
+                        }
+                    } else {
+                        const [userRes, memberRes] = await Promise.allSettled([
+                            getDoc(doc(db, "users", user.uid)),
+                            memberRequest
+                        ]);
+                        if (userRes.status === 'fulfilled' && userRes.value.exists()) {
+                            data = userRes.value.data() || {};
+                        } else if (userRes.status === 'rejected') {
+                            console.warn('Profile read failed:', userRes.reason?.message || userRes.reason);
+                        }
+                        if (memberRes.status === 'fulfilled' && memberRes.value.exists()) {
+                            member = memberRes.value.data() || {};
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Profile loading failed:', e);
                 }
-                if (memberRes.status === 'fulfilled' && memberRes.value.exists()) {
-                    member = memberRes.value.data() || {};
-                }
-            } catch (e) {
-                console.warn('Profile loading failed:', e);
+                profileCache.uid = user.uid;
+                profileCache.data = data;
+                profileCache.member = member;
             }
 
             const email = data.email || user.email || '';
@@ -2319,15 +2542,6 @@
                 : '<span style="font-size:.78rem;color:var(--text-sub);">Play a Bible challenge or pass an Academy quiz to earn your first achievement.</span>';
         }
 
-        // ==================== MY CERTIFICATES ====================
-
-        // Certificates now always follow the profile name (single source of
-        // truth). saveCertName remains as a compatibility no-op for older
-        // entry points; it simply points the member to their profile.
-        window.saveCertName = function () {
-            showToast('Certificates use your profile name — edit it in Profile Details.');
-            loadMyCertificates();
-        };
         window.openEditProfile = function () {
             const btn = document.getElementById('btnEditProfile') || document.querySelector('[data-profile-edit]');
             if (btn) { btn.click(); return; }
@@ -2336,137 +2550,15 @@
             showToast('Open Profile Details to update your name.');
         };
 
-        function certLocalList() {
-            try {
-                const p = JSON.parse(localStorage.getItem('pd_academy_progress')) || { certificates: [] };
-                return Array.isArray(p.certificates) ? p.certificates : [];
-            } catch (e) { return []; }
-        }
-
-        function renderMyCertificateCards(listEl, certs) {
-            if (!certs.length) {
-                listEl.innerHTML = '<div class="certificates-empty" style="text-align:center; padding: 18px; color: var(--text-sub);"><i class="pd-i pd-i-award"></i> No certificates yet. Pass an Academy quiz with 80% or higher to earn your first one — visit the <a href="/quiz.html" style="color: var(--accent-gold);">Quiz Centre</a>.</div>';
-                return;
-            }
-            const certName = (window.PD_PROFILE && window.PD_PROFILE.fullName) || (auth.currentUser && (auth.currentUser.displayName || (auth.currentUser.email || '').split('@')[0])) || 'Prayer Dome Member';
-            listEl.innerHTML = certs.map(c => {
-                const name = c.name && c.name !== 'Prayer Dome Member' ? c.name : certName;
-                const rawDate = c.date && typeof c.date.toDate === 'function' ? c.date.toDate() : c.date;
-                const parsedDate = rawDate ? new Date(rawDate) : null;
-                const date = parsedDate && !Number.isNaN(parsedDate.getTime())
-                    ? parsedDate.toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
-                const certDate = parsedDate && !Number.isNaN(parsedDate.getTime()) ? parsedDate.toISOString() : '';
-                return `<article class="cert-card">
-                    <div class="cert-card-head">
-                        <div class="cert-card-logo"><img src="/assets/logo.png" alt="Prayer Dome logo"></div>
-                        <div style="min-width:0;">
-                            <div class="cert-card-eyebrow">Prayer Dome Academy</div>
-                            <div class="cert-card-org">Certificate of Completion</div>
-                        </div>
-                        <div class="cert-card-seal" aria-hidden="true"><i class="pd-i pd-i-award"></i></div>
-                    </div>
-                    <div class="cert-card-body">
-                        <h4 class="cert-card-recipient">${escapeHtml(name)}</h4>
-                        <p class="cert-card-line">has successfully completed <span class="cert-card-course">${escapeHtml(c.course || c.title || 'Prayer Dome Academy')}</span>.</p>
-                        <div class="cert-card-meta">
-                            <span>Score <b>${Math.round(c.score || 0)}%</b></span>
-                            <span>Issued <b>${date}</b></span>
-                            <span>ID <b style="font-family:monospace;">${escapeHtml(c.id || '')}</b></span>
-                        </div>
-                    </div>
-                    <div class="cert-card-foot">
-                        <div class="cert-signature">
-                            <div class="cert-signature-name">Prayer Dome</div>
-                            <div class="cert-signature-rule"></div>
-                            <div class="cert-signature-label">Founder and President</div>
-                        </div>
-                        <div class="cert-card-actions">
-                            <button class="btn btn-primary btn-sm cert-download-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-download"></i> Download PDF</button>
-                            <button class="btn btn-outline btn-sm cert-print-btn" data-cert-id="${escapeHtml(c.id || '')}" data-cert-course="${escapeHtml(c.course || c.title || 'Prayer Dome Academy Lesson')}" data-cert-score="${Math.round(c.score || 0)}" data-cert-date="${escapeHtml(certDate)}" data-cert-name="${escapeHtml(name)}"><i class="pd-i pd-i-printer"></i> Print</button>
-                        </div>
-                    </div>
-                </article>`;
-            }).join('');
-
-            listEl.querySelectorAll('.cert-download-btn').forEach(btn => {
-                if (!window.PDCertificate) return;
-                const opts = {
-                    id: btn.dataset.certId, course: btn.dataset.certCourse, score: btn.dataset.certScore,
-                    date: btn.dataset.certDate, name: btn.dataset.certName,
-                    onDownload: function (o) {
-                        if (auth.currentUser && o && o.id) {
-                            updateDoc(doc(db, "certificates", o.id), { downloads: increment(1), lastDownloadedAt: new Date().toISOString() }).catch(() => {});
-                        }
-                    }
-                };
-                PDCertificate.bindButton(btn, opts);
-            });
-            listEl.querySelectorAll('.cert-print-btn').forEach(btn => {
-                btn.addEventListener('click', () => printCertificate(
-                    btn.dataset.certId, btn.dataset.certCourse, Number(btn.dataset.certScore),
-                    btn.dataset.certDate, btn.dataset.certName
-                ));
-            });
-        }
-
-        async function loadMyCertificates() {
-            const listEl = document.getElementById('myCertificatesList');
-            if (!listEl) return;
-            let certs = certLocalList().map(c => ({ ...c, course: c.course || c.title || 'Prayer Dome Academy Lesson' }));
-
-            // Show saved certificates immediately. A slow connection must never
-            // leave this section on an endless “Loading” state.
-            renderMyCertificateCards(listEl, certs);
-            if (!auth.currentUser) return certs;
-
-            try {
-                const request = getDocs(query(collection(db, "certificates"), where("userId", "==", auth.currentUser.uid), orderBy("date", "desc"), limit(100)));
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Certificate sync timed out')), 6000));
-                const snap = await Promise.race([request, timeout]);
-                snap.forEach(d => {
-                    const c = d.data();
-                    if (c && c.id && !certs.some(x => x.id === c.id)) {
-                        certs.push({ id: c.id, lessonId: c.lessonId, title: c.course || c.title, course: c.course || c.title, score: c.score, date: c.date, name: c.name, downloads: c.downloads || 0 });
-                    }
-                });
-                renderMyCertificateCards(listEl, certs);
-            } catch (e) {
-                // The local certificate library remains fully usable offline.
-                console.warn('Certificate sync unavailable:', e.message || e);
-            }
-            return certs;
-        }
-
-        window.printCertificate = async function (id, course, score, date, name) {
-            if (!window.PDCertificate) return showToast('Printing is not available in this browser — use Download instead.', 'error');
-            // Open synchronously so popup blockers do not discard the print window
-            // while the certificate canvas is being prepared.
-            const win = window.open('', '_blank');
-            if (!win) return showToast('Popup blocked — allow popups or use Download instead.', 'error');
-            win.document.write('<!DOCTYPE html><html><head><title>Preparing certificate…</title><style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f3f0e6;font-family:Arial;color:#1d2a6b}</style></head><body><p>Preparing your certificate…</p></body></html>');
-            win.document.close();
-            try {
-                const dataUrl = await PDCertificate.preview({ id, course, score, date, name });
-                win.document.open();
-                win.document.write(`<!DOCTYPE html><html><head><title>Certificate ${escapeHtml(id)}</title><style>body{margin:0;display:flex;justify-content:center;background:#f3f0e6}img{width:100%;max-width:1000px;height:auto}</style></head><body><img src="${dataUrl}" onload="setTimeout(function(){window.print()},150)" alt="Prayer Dome certificate"></body></html>`);
-                win.document.close();
-            } catch (e) {
-                console.error(e);
-                win.close();
-                showToast('Could not print — use Download instead.', 'error');
-            }
-        };
-
         function updateVerificationStatus() {
             if (!auth.currentUser) return;
-        
+
             const emailBadge = document.getElementById('emailVerifiedBadge');
             const emailStatus = document.getElementById('emailStatusText');
-        
+
             if (auth.currentUser.emailVerified) {
                 emailBadge.className = 'verification-badge verified';
                 emailStatus.innerText = 'Verified';
-                updateDoc(doc(db, "users", auth.currentUser.uid), { emailVerified: true }).catch(() => {});
             } else {
                 emailBadge.className = 'verification-badge unverified';
                 emailStatus.innerText = 'Verify Email';
@@ -2491,7 +2583,7 @@
                     document.getElementById('regPreview').src = url;
                     showToast("Photo uploaded successfully!", "success");
                 } else if (context === 'profile') {
-                    await updateDoc(doc(db, "users", auth.currentUser.uid), { 
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), {
                         photoURL: url,
                         updatedAt: serverTimestamp()
                     });
@@ -2500,6 +2592,7 @@
                     document.getElementById('editPhotoPreview').src = url;
                     currentPhotoUrl = url;
                     window.currentPhotoUrl = url;
+                    if (profileCache.data && profileCache.uid === auth.currentUser.uid) profileCache.data.photoURL = url;
                     showToast("Profile photo updated!", "success");
                     pdConfetti({ particleCount: 80, spread: 60 });
                 }
@@ -2511,7 +2604,7 @@
                 event.target.value = '';
             }
         };
-    
+
         window.__pdChangeProfilePhoto = () => {
             if (!auth.currentUser) {
                 showToast("Please login first", "error");
@@ -2519,7 +2612,7 @@
             }
             uploadPhoto('profile');
         };
-    
+
         /* The admin console sends members here with ?next=admin. As soon as the
          * signed-in account is confirmed as an administrator we hand them
          * straight over — one Prayer Dome sign-in covers the whole platform, so
@@ -2546,36 +2639,73 @@
         }
 
         onAuthStateChanged(auth, async (user) => {
+            const authView = window.PD_ACCOUNT_AUTH;
             if (user) {
-                // Let the shared app layer write this device's push token, so
-                // ministry announcements pop on the phone even when the app is
-                // closed. It is a no-op until notifications are allowed.
+                authView.settled = true;
+                authView.unavailable = false;
                 window.PD_UID = user.uid;
+                // Keep the loading card up until the first profile/cache paint
+                // decides whether this is a complete account or a pending one.
+                window.pdSetAuthView('loading');
+
                 if (window.PDApp) {
                     PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, auth });
                     PDApp.notifications.registerDevice(user.uid);
                     PDApp.notifications.syncPreferences();
                     PDApp.notifications.syncReminder();
                 }
-                document.getElementById('authTabs').style.display = 'none';
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('registerForm').style.display = 'none';
-                document.getElementById('profileSection').style.display = 'block';
-                const [profileResult] = await Promise.allSettled([
-                    ensureUserProfile(user).catch((e) => console.warn('Profile bootstrap skipped:', e?.message || e)).then(() => loadProfileData(user)),
-                    loadMyCertificates(),
-                    checkEmailVerification()
-                ]);
-                if (profileResult.status === 'rejected') {
-                    console.error('Profile loading error:', profileResult.reason);
-                    showToast('You are signed in, but we could not load your profile yet. Please refresh.', 'error');
+
+                if (registrationInProgress) {
+                    // Keep the message/countdown that requestRegistrationCode
+                    // is already painting; only make sure the code screen is
+                    // the visible state.
+                    window.pdSetAuthView('verification');
+                    return;
                 }
+
+                let profileData = {};
+                try {
+                    profileData = await ensureUserProfile(user);
+                } catch (error) {
+                    console.warn('Profile bootstrap skipped:', error && error.message);
+                }
+
+                // A newly registered email account must not be admitted before
+                // the server has confirmed its six-digit code. Existing
+                // accounts (which have no registrationComplete field) keep
+                // working exactly as before.
+                const locallyPending = (() => {
+                    try { return localStorage.getItem(REG_PENDING_KEY) === user.uid; } catch (error) { return false; }
+                })();
+                const registrationPending = !user.emailVerified &&
+                    (locallyPending || profileData.registrationComplete === false || profileData.registrationPending === true);
+                if (registrationPending) {
+                    window.pdShowVerification(user.email || '',
+                        'Enter the six-digit code we emailed you. If it has expired, request a new one.');
+                    return;
+                }
+
+                if (profileCache.uid === user.uid) window.pdSetAuthView('signed-in');
+                try {
+                    await loadProfileData(user, { userData: profileData });
+                    window.pdSetAuthView('signed-in');
+                } catch (error) {
+                    console.error('Profile loading error:', error);
+                    // The signed-in shell is still correct: the member can see
+                    // their account controls and retry, rather than a false
+                    // Sign In screen.
+                    window.pdSetAuthView('signed-in');
+                    showToast('You are signed in, but we could not refresh your profile yet.', 'info');
+                }
+                await checkEmailVerification().catch(() => {});
                 await handleEmailVerificationLink().catch(error => console.error('Verification link error:', error));
                 await continueToAdminConsoleIfRequested();
             } else {
-                document.getElementById('authTabs').style.display = 'flex';
-                document.getElementById('profileSection').style.display = 'none';
-                switchTab('login');
+                authView.settled = true;
+                profileCache.uid = '';
+                profileCache.data = null;
+                profileCache.member = null;
+                window.pdSetAuthView('signed-out');
             }
         });
 

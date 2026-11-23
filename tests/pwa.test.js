@@ -75,7 +75,7 @@ t('Android app-link package ID matches the assetlinks target', (() => {
 t('manifest start_url stays inside the app scope',
   manifest.start_url.startsWith('/') && manifest.scope === '/', `${manifest.start_url} / ${manifest.scope}`);
 t('manifest keeps the brand colours and language',
-  manifest.theme_color === '#0A4D9B' && manifest.background_color === '#0A4D9B' && manifest.lang === 'en');
+  manifest.theme_color === '#104F91' && manifest.background_color === '#ffffff' && manifest.lang === 'en');
 
 const iconPurposes = new Map();
 for (const icon of manifest.icons || []) {
@@ -141,7 +141,7 @@ t('the shared layer registers /sw.js on every page without the shadowed location
 t('the update bar reloads the real page, not the location module',
   appSource.includes('window.location.reload()'));
 t('the manifest can launch without browser chrome', manifest.display === 'standalone' &&
-  Array.isArray(manifest.display_override) && manifest.display_override.includes('fullscreen'));
+  Array.isArray(manifest.display_override) && manifest.display_override.includes('standalone'));
 
 // FCM payloads are encrypted for the push subscription. The root worker is the
 // registration getToken() receives, so it must contain the Messaging SDK or a

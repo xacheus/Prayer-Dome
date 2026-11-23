@@ -37,8 +37,12 @@ service cloud.firestore {
       // Only a trusted administrator may assign or change roles.
       allow create: if isAdmin() || (isOwner(userId) &&
         request.resource.data.get('role', 'member') == 'member');
+      // A member may edit their own profile, but not the fields that decide
+      // whether the account is verified or allowed into the app. Those are
+      // written by the verification callable (Admin SDK) only.
       allow update: if isAdmin() || (isOwner(userId) &&
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']));
+        !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['role', 'emailVerified', 'registrationPending', 'registrationComplete']));
       allow delete: if isAdmin();
     }
 
@@ -678,6 +682,14 @@ service cloud.firestore {
     match /membershipVerificationHistory/{id} {
       allow read, create: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // Registration email codes. Only the callable (Admin SDK) reads or writes
+    // this collection; a client can never read a code hash or mark itself
+    // verified. Keeping the rules closed means a stolen browser session cannot
+    // enumerate another member's pending code.
+    match /registrationVerification/{uid} {
+      allow read, write: if false;
     }
 
     // ==========================================

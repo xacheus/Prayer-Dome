@@ -555,7 +555,8 @@
         s.passedQuizzes[a.quiz.id] = record;
         if (s.completedLessons.indexOf(a.lesson.id) < 0) s.completedLessons.push(a.lesson.id);
         certificate = 'PD-' + a.lesson.id.toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
-        s.certificates.push({ id: certificate, lessonId: a.lesson.id, title: a.lesson.title, score: percent, date: record.date, name: memberName() });
+        s.certificates.push({ id: certificate, lessonId: a.lesson.id, title: a.lesson.title, score: percent, date: record.date, name: memberName(), userId: (window.PDApp && window.PDApp._fb && window.PDApp._fb.auth && window.PDApp._fb.auth.currentUser || {}).uid || window.PD_UID || '' });
+        s.ownerUid = s.ownerUid || ((window.PDApp && window.PDApp._fb && window.PDApp._fb.auth && window.PDApp._fb.auth.currentUser || {}).uid || window.PD_UID || '');
         saveState(s);
         persistCertificateToFirestore(certificate, a.lesson, percent);
         unlockNextLesson(a.lesson);

@@ -600,7 +600,7 @@
       if (!document.querySelector('meta[name="theme-color"]')) return;
       var themeMeta = document.querySelector('meta[name="theme-color"]');
       if (document.body.classList.contains('dark-mode')) themeMeta.setAttribute('content', '#071a33');
-      else themeMeta.setAttribute('content', '#0A4D9B');
+      else themeMeta.setAttribute('content', '#104F91');
     },
     toggleNotifPanel: function (forceOpen) {
       var panel = notifications.panelEl || notifications.ensurePanel();
@@ -2916,7 +2916,7 @@
         'apple-mobile-web-app-title': 'Prayer Dome',
         'apple-mobile-web-app-status-bar-style': 'black-translucent',
         'format-detection': 'telephone=no',
-        'theme-color': '#0A4D9B'
+        'theme-color': '#104F91'
       };
       Object.keys(metas).forEach(function (name) {
         var el = document.querySelector('meta[name="' + name + '"]');

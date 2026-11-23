@@ -43,7 +43,7 @@ t('public pages no longer download the retired translation payload',
 /* ---------------------------------------------------------------- profile */
 const account = read('account.html');
 t('profile data is declared before it is used (no blank profile crash)',
-  /async function loadProfileData\(user\) \{\s*\/\/[\s\S]{0,600}let data = \{\};/.test(account) &&
+  /async function loadProfileData\(user, options\) \{[\s\S]{0,700}let data =/.test(account) &&
   account.includes('Promise.allSettled'));
 t('profile shows name, photo, email, branch, phone and member-since',
   ['pNameDisplay', 'pPhoto', 'pEmailDisplay', 'pBranchDisplay', 'pPhoneDisplay', 'pJoinedDisplay']
@@ -56,10 +56,10 @@ const cert = read('assets/pd-certificate.js');
 t('certificate download produces a PDF, not only an image',
   cert.includes("fileStem(opts) + '.pdf'") && cert.includes('buildPdf'));
 t('certificate still offers a PNG for sharing', cert.includes('downloadPng') && cert.includes("+ '.png'"));
-t('profile certificate buttons say Download PDF and Print',
-  account.includes('Download PDF</button>') && account.includes('cert-print-btn'));
+t('certificate buttons say Download PDF and Print',
+  read('certificates.html').includes('Download PDF') && read('certificates.html').includes('cert-print-btn'));
 t('printed certificate opens a clean standalone page',
-  account.includes('window.printCertificate') && account.includes('Preparing your certificate'));
+  read('certificates.html').includes('function printCertificate') && read('certificates.html').includes('Preparing your certificate'));
 
 /* ------------------------------------------------------- membership card */
 const membership = read('membership.html');

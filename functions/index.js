@@ -5,6 +5,7 @@ const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const shareHandler = require('./share');
 const brevo = require('./brevo');
+const crypto = require('crypto');
 const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
 const billingModule = require('./billing');
@@ -246,6 +247,217 @@ exports.sendBrevoVerificationEmail = functions.runWith({ secrets: [brevoApiKey] 
     console.error('Brevo verification email failed:', error.code || error.message);
     throw new functions.https.HttpsError('unavailable', 'Email delivery is temporarily unavailable.');
   }
+});
+
+// Registration email verification codes.
+// ---------------------------------------------------------------------------
+// Firebase's client sign-up proves the password, not that the person owns the
+// address. A newly registered account stays `registrationPending` until the
+// owner enters a six-digit code that was generated here and delivered by
+// Brevo. Only a salted hash is stored, codes expire, resends are throttled and
+// a wrong code burns one of five attempts. The code is never returned to the
+// client and never written to a log.
+const REG_CODE_TTL_MS = 10 * 60 * 1000;
+const REG_CODE_RESEND_MS = 60 * 1000;
+const REG_CODE_MAX_SENDS = 5;
+const REG_CODE_MAX_ATTEMPTS = 5;
+const registrationCodeSends = new Map();
+
+function registrationCodeHash(code, salt) {
+  return crypto.createHash('sha256').update(salt + ':' + code).digest('hex');
+}
+
+function registrationCodeRetryAfter(record, now) {
+  const last = record && record.lastSentAt && typeof record.lastSentAt.toMillis === 'function'
+    ? record.lastSentAt.toMillis()
+    : 0;
+  return last ? Math.max(0, Math.ceil((REG_CODE_RESEND_MS - (now - last)) / 1000)) : 0;
+}
+
+function allowRegistrationCodeSend(uid) {
+  const now = Date.now();
+  const last = registrationCodeSends.get(uid) || 0;
+  if (now - last < REG_CODE_RESEND_MS) return false;
+  registrationCodeSends.set(uid, now);
+  if (registrationCodeSends.size > 2000) {
+    for (const [key, at] of registrationCodeSends) {
+      if (now - at > REG_CODE_RESEND_MS * 2) registrationCodeSends.delete(key);
+    }
+  }
+  return true;
+}
+
+exports.sendRegistrationVerificationCode = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.token.email) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in before requesting a registration code.');
+  }
+  if (context.auth.token.email_verified) {
+    return { sent: false, reason: 'already-verified' };
+  }
+  const uid = context.auth.uid;
+  const email = String(context.auth.token.email).trim().toLowerCase();
+  if (!allowRegistrationCodeSend(uid)) {
+    throw new functions.https.HttpsError('resource-exhausted', 'Please wait a minute before requesting another code.', { retryAfterSeconds: 60 });
+  }
+
+  const db = admin.firestore();
+  const now = Date.now();
+  const ref = db.collection('registrationVerification').doc(uid);
+  let previous = {};
+  try {
+    const existing = await ref.get();
+    previous = existing.exists ? existing.data() || {} : {};
+  } catch (error) {
+    registrationCodeSends.delete(uid);
+    throw new functions.https.HttpsError('unavailable', 'The verification record could not be checked.');
+  }
+
+  const retryAfter = registrationCodeRetryAfter(previous, now);
+  if (retryAfter > 0) {
+    registrationCodeSends.delete(uid);
+    throw new functions.https.HttpsError('resource-exhausted',
+      'Please wait ' + retryAfter + ' seconds before requesting another code.', { retryAfterSeconds: retryAfter });
+  }
+
+  const windowStart = previous.windowStartedAt && typeof previous.windowStartedAt.toMillis === 'function'
+    ? previous.windowStartedAt.toMillis()
+    : 0;
+  const sameWindow = windowStart && now - windowStart < 60 * 60 * 1000;
+  const sends = sameWindow ? (Number(previous.sends) || 0) : 0;
+  if (sameWindow && sends >= REG_CODE_MAX_SENDS) {
+    registrationCodeSends.delete(uid);
+    throw new functions.https.HttpsError('resource-exhausted', 'Too many verification emails. Please try again in an hour.', { retryAfterSeconds: 3600 });
+  }
+
+  let name = String((data && data.name) || context.auth.token.name || '').slice(0, 80);
+  try {
+    const profile = await db.collection('users').doc(uid).get();
+    if (profile.exists && profile.data().fullName) name = String(profile.data().fullName).slice(0, 80);
+  } catch (error) { /* the account name is optional */ }
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  const salt = crypto.randomBytes(16).toString('hex');
+  let delivery;
+  try {
+    delivery = await brevo.sendRegistrationCodeEmail({
+      email,
+      name,
+      code,
+      minutes: REG_CODE_TTL_MS / 60000,
+      env: process.env
+    });
+  } catch (error) {
+    registrationCodeSends.delete(uid);
+    console.error('Registration code email failed:', error && (error.code || error.message));
+    throw new functions.https.HttpsError('unavailable', 'The verification email could not be sent. Please try again.');
+  }
+  if (!delivery || delivery.sent !== true) {
+    registrationCodeSends.delete(uid);
+    throw new functions.https.HttpsError('failed-precondition',
+      'Email verification is not configured on this deployment. Please contact info@prayerdome.net.');
+  }
+
+  try {
+    await ref.set({
+      uid,
+      email,
+      codeHash: registrationCodeHash(code, salt),
+      salt,
+      attempts: 0,
+      sends: sends + 1,
+      windowStartedAt: sameWindow && previous.windowStartedAt
+        ? previous.windowStartedAt
+        : admin.firestore.Timestamp.fromMillis(now),
+      lastSentAt: admin.firestore.Timestamp.fromMillis(now),
+      expiresAt: admin.firestore.Timestamp.fromMillis(now + REG_CODE_TTL_MS),
+      consumed: false,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    registrationCodeSends.delete(uid);
+    console.error('Registration code could not be stored:', error.message);
+    throw new functions.https.HttpsError('internal', 'The verification code could not be saved. Please try again.');
+  }
+
+  return {
+    sent: true,
+    expiresInSeconds: REG_CODE_TTL_MS / 1000,
+    resendAfterSeconds: REG_CODE_RESEND_MS / 1000
+  };
+});
+
+exports.verifyRegistrationCode = functions.https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.token.email) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in before verifying your registration.');
+  }
+  if (context.auth.token.email_verified) return { verified: true, alreadyVerified: true };
+  const uid = context.auth.uid;
+  const email = String(context.auth.token.email).trim().toLowerCase();
+  const code = String((data && data.code) || '').replace(/\s+/g, '');
+  if (!/^\d{6}$/.test(code)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Enter the six-digit code from your email.');
+  }
+
+  const db = admin.firestore();
+  const ref = db.collection('registrationVerification').doc(uid);
+  const snapshot = await ref.get();
+  if (!snapshot.exists) {
+    throw new functions.https.HttpsError('failed-precondition', 'Request a new verification code.');
+  }
+  const record = snapshot.data() || {};
+  if (String(record.email || '').toLowerCase() !== email) {
+    throw new functions.https.HttpsError('permission-denied', 'This code was issued to a different email address.');
+  }
+  if (record.consumed === true) {
+    throw new functions.https.HttpsError('failed-precondition', 'This code has already been used. Request a new one.');
+  }
+  const expires = record.expiresAt && typeof record.expiresAt.toMillis === 'function' ? record.expiresAt.toMillis() : 0;
+  if (!expires || Date.now() > expires) {
+    throw new functions.https.HttpsError('deadline-exceeded', 'This code has expired. Request a new one.');
+  }
+  const attempts = Number(record.attempts) || 0;
+  if (attempts >= REG_CODE_MAX_ATTEMPTS) {
+    throw new functions.https.HttpsError('resource-exhausted', 'Too many incorrect attempts. Request a new code.');
+  }
+
+  const supplied = registrationCodeHash(code, String(record.salt || ''));
+  const expected = String(record.codeHash || '');
+  const matches = expected.length === supplied.length &&
+    crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(supplied, 'utf8'));
+  if (!matches) {
+    const remaining = Math.max(0, REG_CODE_MAX_ATTEMPTS - attempts - 1);
+    await ref.set({
+      attempts: attempts + 1,
+      lastAttemptAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+    throw new functions.https.HttpsError('invalid-argument',
+      remaining ? 'That code is incorrect. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left.'
+        : 'Too many incorrect attempts. Request a new code.');
+  }
+
+  try {
+    await admin.auth().updateUser(uid, { emailVerified: true });
+  } catch (error) {
+    console.error('Could not mark the account email verified:', error.message);
+    throw new functions.https.HttpsError('internal', 'The account could not be verified. Please try again.');
+  }
+  await db.collection('users').doc(uid).set({
+    emailVerified: true,
+    emailVerifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+    registrationPending: false,
+    registrationComplete: true,
+    registrationCompletedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+  await ref.set({
+    consumed: true,
+    consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+    codeHash: admin.firestore.FieldValue.delete(),
+    salt: admin.firestore.FieldValue.delete(),
+    attempts: attempts + 1
+  }, { merge: true });
+
+  return { verified: true };
 });
 
 // Newsletter / updates signup used by the support page. The same handler runs

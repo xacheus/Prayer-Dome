@@ -192,6 +192,89 @@ async function sendVerificationEmail(options) {
   return { sent: true, provider: 'brevo' };
 }
 
+function registrationCodeEmailHtml(cfg, name, code, minutes) {
+  const safeName = escapeHtml(cleanName(name) || 'friend');
+  const safeCode = escapeHtml(String(code || ''));
+  const safeSite = escapeHtml(cfg.siteUrl.replace(/^https?:\/\//, ''));
+  const safeMinutes = Math.max(1, Number(minutes) || 10);
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Your Prayer Dome verification code</title></head>
+<body style="margin:0;padding:0;background:#f3f6fb;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
+  <div style="display:none;max-height:0;overflow:hidden;">Your Prayer Dome verification code expires in ${safeMinutes} minutes.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fb;padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbe3ee;">
+        <tr><td style="background:#104F91;padding:22px 26px;">
+          <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#f6df8a;font-weight:800;">Prayer Dome</div>
+          <div style="font-size:19px;font-weight:800;color:#ffffff;margin-top:4px;">A House of Prayer for All Nations</div>
+        </td></tr>
+        <tr><td style="padding:28px 26px 10px;">
+          <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#07244d;">Verify your email address</h1>
+          <p style="margin:0 0 14px;font-size:15px;line-height:1.65;">Hello ${safeName},</p>
+          <p style="margin:0 0 18px;font-size:15px;line-height:1.65;">Enter this six-digit code in Prayer Dome to finish creating your account. It expires in ${safeMinutes} minutes.</p>
+          <p style="margin:0 0 20px;text-align:center;"><span style="display:inline-block;background:#f3f6fb;border:1px solid #dbe3ee;border-radius:12px;padding:16px 24px;font-size:32px;letter-spacing:.28em;font-weight:800;color:#104F91;font-family:Consolas,Menlo,monospace;">${safeCode}</span></p>
+          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">Prayer Dome will never ask you for this code by phone, WhatsApp or social media.</p>
+          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">If you did not create this account, ignore this message and do not share the code.</p>
+        </td></tr>
+        <tr><td style="padding:16px 26px 24px;border-top:1px solid #e6edf6;">
+          <p style="margin:0;font-size:12px;line-height:1.6;color:#5b6b82;">Prayer Dome Ministry · ${safeSite}<br>You received this because an account was created with this address.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+function registrationCodeEmailText(cfg, name, code, minutes) {
+  return [
+    'Prayer Dome — verify your email address',
+    '',
+    'Hello ' + (cleanName(name) || 'friend') + ',',
+    '',
+    'Enter this six-digit code in Prayer Dome to finish creating your account:',
+    String(code || ''),
+    '',
+    'The code expires in ' + (Math.max(1, Number(minutes) || 10)) + ' minutes.',
+    'Prayer Dome will never ask you for this code by phone, WhatsApp or social media.',
+    'If you did not create this account, ignore this message and do not share the code.',
+    '',
+    'Prayer Dome Ministry · ' + cfg.siteUrl.replace(/^https?:\/\//, '')
+  ].join('\n');
+}
+
+/**
+ * Deliver a genuine six-digit registration code through Brevo. The code is
+ * generated and hashed by the caller; this function only transports it.
+ */
+async function sendRegistrationCodeEmail(options) {
+  const cfg = config(options && options.env);
+  const email = cleanEmail(options && options.email);
+  const code = String((options && options.code) || '');
+  const minutes = Math.max(1, Number(options && options.minutes) || 10);
+  if (!email) {
+    const error = new Error('A valid email address is required.');
+    error.code = 'invalid_email';
+    throw error;
+  }
+  if (!/^\d{6}$/.test(code)) {
+    const error = new Error('A six-digit registration code is required.');
+    error.code = 'invalid_code';
+    throw error;
+  }
+  if (!cfg.apiKey) return { sent: false, reason: 'not-configured' };
+  await callBrevo('/smtp/email', {
+    sender: { name: cfg.senderName, email: cfg.senderEmail },
+    to: [{ email, name: cleanName(options && options.name) || undefined }],
+    replyTo: { email: cfg.senderEmail, name: cfg.senderName },
+    subject: 'Your Prayer Dome verification code',
+    htmlContent: registrationCodeEmailHtml(cfg, options && options.name, code, minutes),
+    textContent: registrationCodeEmailText(cfg, options && options.name, code, minutes),
+    tags: ['registration-code']
+  }, cfg);
+  return { sent: true, provider: 'brevo' };
+}
+
 /*
  * Generic transactional delivery. The notification service owns the copy and
  * the event id; this function only talks to Brevo. The sender can be supplied
@@ -398,6 +481,9 @@ module.exports = {
   sendTransactionalEmail,
   subscribe,
   sendVerificationEmail,
+  sendRegistrationCodeEmail,
+  registrationCodeEmailHtml,
+  registrationCodeEmailText,
   newsletterHandler,
   verificationEmailHtml,
   verificationEmailText,

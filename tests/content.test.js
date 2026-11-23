@@ -264,13 +264,32 @@ t('admin certificates tracker exists and is wired in',
   ['view-certificates', 'loadCertificates', 'exportCertificatesCSV',
    'certificateCompletionChart', 'renderCertificateCompletionChart', 'switchView(\'certificates\''].every(s => adminHtml.includes(s)));
 
-// Account page: personal certificate library.
+// Certificates live on their own page; Profile only links to it.
 const accountHtml = fs.readFileSync(path.join(ROOT, 'account.html'), 'utf8');
-t('account page loads the certificate generator',
-  accountHtml.includes('pd-certificate.js'));
-t('account page has a My Certificates section',
-  accountHtml.includes('myCertificatesList') && accountHtml.includes('My Certificates') &&
-  accountHtml.includes('PDCertificate.bindButton'));
+const certificatesHtml = fs.readFileSync(path.join(ROOT, 'certificates.html'), 'utf8');
+t('certificates page loads the certificate generator',
+  certificatesHtml.includes('pd-certificate.js'));
+t('certificates page owns the certificate list',
+  certificatesHtml.includes('id="certGrid"') && certificatesHtml.includes('PDCertificate.download') &&
+  certificatesHtml.includes('PDCertificate.preview'));
+t('profile links to the separate certificates page instead of listing them',
+  accountHtml.includes('href="/certificates"') && !accountHtml.includes('myCertificatesList') &&
+  !accountHtml.includes('PDCertificate.bindButton'));
+
+// Registration verification and the signed-in/signed-out gate.
+t('account waits for the auth state before showing a sign-in form',
+  accountHtml.includes('id="authLoading"') && /id="loginForm"[^>]*style="display:none"/.test(accountHtml) &&
+  accountHtml.includes("window.pdSetAuthView('loading')"));
+t('registration sends and checks a server-generated code',
+  accountHtml.includes("httpsCallable(cloudFunctions, 'sendRegistrationVerificationCode')") &&
+  accountHtml.includes("httpsCallable(cloudFunctions, 'verifyRegistrationCode')"));
+t('the client cannot mark itself verified',
+  !/updateDoc\([^\n]*\{[^}]*emailVerified:\s*true/.test(accountHtml) &&
+  fs.readFileSync(path.join(ROOT, 'firestore.rules'), 'utf8').includes('registrationVerification'));
+t('registration is not completed before the code succeeds',
+  accountHtml.includes('registrationPending: true') &&
+  accountHtml.includes('registrationComplete: false') &&
+  accountHtml.includes('await verifyRegistrationCodeCall'));
 
 // Live page: reactions, follow, device streams, upcoming streams.
 ['sendReaction', 'followStream', 'deviceLiveState', 'upcomingGrid',

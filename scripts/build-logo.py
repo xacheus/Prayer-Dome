@@ -11,8 +11,10 @@ repository root (3264 px, transparent) and derives the canonical asset set:
     assets/logo-256.png    256 px  (guide PDF cover banner)
     assets/logo-badge-256.png 256 px (PDF banner badge)
     assets/logo-source.png 1024 px (square trimmed source)
+    assets/logo-maskable-192.png / -512.png (PWA maskable, padded on white)
     mobile/app-icon.png   1024 px  (Capacitor)
-    android/app/src/main/res/mipmap-*/ic_launcher*.png  (all densities)
+    android/app/src/main/res/mipmap-*/ic_launcher*.png  (legacy densities)
+    android/app/src/main/res/mipmap-*/ic_launcher_foreground.png (adaptive 108dp)
 
 The source artwork is *never* procedurally redrawn; it is cropped to its
 non-transparent bounds, padded to a square, and scaled with high-quality
@@ -50,6 +52,25 @@ ANDROID = {
     "mipmap-xxxhdpi": 192,
 }
 
+# Android adaptive icons are 108dp canvases. Only the middle ~66dp is guaranteed
+# to be visible after an OEM mask (circle, squircle, teardrop …), so the mark is
+# drawn at 58% and kept away from the edges.
+ADAPTIVE = {
+    "mipmap-mdpi": 108,
+    "mipmap-hdpi": 162,
+    "mipmap-xhdpi": 216,
+    "mipmap-xxhdpi": 324,
+    "mipmap-xxxhdpi": 432,
+}
+
+
+def padded_mark(square, size, ratio, background):
+    canvas = Image.new("RGBA", (size, size), background)
+    inner = max(1, int(size * ratio))
+    mark = square.resize((inner, inner), Image.LANCZOS)
+    canvas.paste(mark, ((size - inner) // 2, (size - inner) // 2), mark)
+    return canvas
+
 
 def load_square():
     im = Image.open(SRC).convert("RGBA")
@@ -79,14 +100,30 @@ def main():
         resized.save(out, optimize=True)
         print(f"wrote {out.relative_to(ROOT)} {resized.size} ({out.stat().st_size} bytes)")
 
+    # PWA maskable icons: a transparent logo would lose its edge labels under
+    # Android's mask, so the real mark sits on the white brand field with a
+    # safe 16% margin on every side.
+    for px in (192, 512):
+        out = ROOT / "assets" / f"logo-maskable-{px}.png"
+        padded_mark(square, px, 0.68, (255, 255, 255, 255)).convert("RGB").save(out, optimize=True)
+        print(f"wrote {out.relative_to(ROOT)} {px}")
+
     for folder, dim in ANDROID.items():
         base = ROOT / "android" / "app" / "src" / "main" / "res" / folder
         base.mkdir(parents=True, exist_ok=True)
         icon = square.resize((dim, dim), Image.LANCZOS)
-        for name in ("ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"):
+        for name in ("ic_launcher.png", "ic_launcher_round.png"):
             out = base / name
             icon.save(out, optimize=True)
             print(f"wrote {out.relative_to(ROOT)} {dim}")
+
+    for folder, dim in ADAPTIVE.items():
+        base = ROOT / "android" / "app" / "src" / "main" / "res" / folder
+        base.mkdir(parents=True, exist_ok=True)
+        foreground = padded_mark(square, dim, 0.58, (0, 0, 0, 0))
+        out = base / "ic_launcher_foreground.png"
+        foreground.save(out, optimize=True)
+        print(f"wrote {out.relative_to(ROOT)} {dim} (adaptive)")
 
     # The share card (og-image) is built separately — it composes the same
     # square onto a branded 1200×630 canvas — so we leave it untouched here.
