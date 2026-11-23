@@ -211,6 +211,30 @@ Clients must submit the returned `folder`, `upload_preset`, `timestamp`, `apiKey
 (as `api_key`) and `signature` unchanged. Test a real upload with your preset;
 verify its allowed formats, size limits and moderation in Cloudinary.
 
+### Live relay (optional, strongly recommended for mobile viewers)
+
+The browser broadcaster uses WebRTC for the media itself and Firestore only for
+signaling metadata. Direct WebRTC works on many home networks, but viewers on
+mobile carrier NAT often need a TURN relay.
+
+Do **not** put TURN credentials in `assets/pd-live-webrtc.js`. Instead configure
+a server-side secret; `/api/live-ice` mints a short-lived credential and the page
+consumes it:
+
+```sh
+vercel env add METERED_TURN_API_KEY production
+vercel env add METERED_TURN_SUBDOMAIN production  # optional, default prayerdome
+# OR a provider that returns an ICE-server array:
+vercel env add TURN_CREDENTIALS_URL production
+vercel env add TURN_API_KEY production            # sent as a Bearer token
+```
+
+`/api/live-ice` is an alias for `/api/system?op=live-ice`, so it stays inside the
+12-function Hobby limit. If no relay is configured it returns public STUN only;
+the player then reports an honest connection problem rather than pretending to
+play. Restart/redeploy after adding variables — existing deployments keep the
+old environment.
+
 ## Required security and service checks before launch
 
 - **Audit existing administrators:** previous rules allowed profile/membership

@@ -47,8 +47,10 @@ t('the Verify workflow runs lint, tests, functions and the Vercel build',
 
 /* -------------------------------------------- 2. Live streaming quality */
 const live = read('assets/pd-live-webrtc.js');
-t('live connections include TURN relays so mobile networks can watch',
-  /turn:/.test(live) && /turns:/.test(live));
+t('live connections fetch short-lived TURN relays without publishing credentials',
+  live.includes("/api/live-ice") && live.includes('loadIceServers') &&
+  !/turn:[^'\"]*metered\.ca/.test(live) &&
+  !/credential:\s*['\"][^'\"]+['\"]/.test(live));
 t('relay configuration can be overridden from PD_LIVE_SERVER.iceServers',
   live.includes('cfg.iceServers'));
 t('the viewer never switches to an HLS playlist that does not exist',

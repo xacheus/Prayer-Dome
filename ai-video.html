@@ -157,7 +157,8 @@
     <p class="hint" style="margin-bottom:0;">
       Type or generate a script, choose the look and the narration, then press <strong>Render</strong>. The video is
       drawn frame by frame in this browser and uploaded straight to <strong>Prayer Dome cloud storage</strong> — nothing is
-      saved to your phone or computer. When it finishes you can publish it into the app library for members to watch.
+      saved to your phone or computer. When it finishes you can submit it for review; an administrator must approve it
+      before it can appear in the member library.
     </p>
   </div>
 
@@ -288,15 +289,15 @@
         <label class="fl" for="outDesc">Description shown in the app and in social previews</label>
         <textarea id="outDesc" rows="3" maxlength="400" placeholder="A short description…"></textarea>
         <div class="btn-row">
-          <button class="btn" type="button" id="btnPublish"><i class="pd-i pd-i-send"></i> Publish to the app library</button>
+          <button class="btn" type="button" id="btnPublish"><i class="pd-i pd-i-send"></i> Submit for admin review</button>
           <button class="btn ghost" type="button" id="btnCopy"><i class="pd-i pd-i-copy"></i> Copy link</button>
         </div>
         <div class="status" id="publishStatus"></div>
       </div>
 
       <div class="card">
-        <h2><i class="pd-i pd-i-film" style="color:#0A4D9B"></i> Published AI videos</h2>
-        <p class="hint" style="margin-bottom:0;">Everything the ministry has published into the app library.</p>
+        <h2><i class="pd-i pd-i-film" style="color:#0A4D9B"></i> Approved AI videos</h2>
+        <p class="hint" style="margin-bottom:0;">Videos an administrator has approved for the member library.</p>
         <div class="lib" id="libGrid"></div>
         <div class="status" id="libStatus">Loading…</div>
       </div>
@@ -330,8 +331,16 @@ try {
 window.PDStudioCloud = {
   async publish(record) {
     if (!db) throw new Error('Cloud database is not available right now.');
+    // A rendered video is a submission, never an automatic publication.
+    // `published:false` keeps it out of the member library (and out of public
+    // Firestore reads) until an administrator reviews and approves it.
     await addDoc(collection(db, 'aiVideos'), Object.assign({
-      published: true, views: 0, createdAt: serverTimestamp(),
+      published: false,
+      status: 'pending-review',
+      reviewed: false,
+      views: 0,
+      createdAt: serverTimestamp(),
+      submittedAt: serverTimestamp(),
       createdBy: (currentUser && currentUser.email) || 'studio'
     }, record));
   },
@@ -872,7 +881,7 @@ window.dispatchEvent(new Event('pd-studio-cloud-ready'));
     if (!result || !result.url) { $('publishStatus').textContent = 'Render a video first.'; return; }
     if (!window.PDStudioCloud) { $('publishStatus').textContent = 'Cloud database still loading — try again in a moment.'; return; }
     $('btnPublish').disabled = true;
-    $('publishStatus').textContent = 'Publishing…';
+    $('publishStatus').textContent = 'Submitting for review…';
     try {
       var tplKey = document.querySelector('#templateChips .chip.on');
       var categoryMap = { sermon: 'sermon', story: 'bible-story', devotional: 'devotional', inspiration: 'inspiration', promo: 'promo' };
@@ -890,10 +899,10 @@ window.dispatchEvent(new Event('pd-studio-cloud-ready'));
         storedOnDevice: false,
         storage: 'cloudinary'
       });
-      $('publishStatus').textContent = 'Published. Members can watch it in the app library.';
+      $('publishStatus').textContent = 'Submitted. An administrator must review and approve it before members can watch it.';
       loadLibrary();
     } catch (e) {
-      $('publishStatus').textContent = 'Could not publish: ' + (e.message || e) + ' — you can still copy the link and add it from the Admin panel.';
+      $('publishStatus').textContent = 'Could not submit: ' + (e.message || e) + ' — you can still copy the link and add it from the Admin panel.';
     } finally {
       $('btnPublish').disabled = false;
     }
@@ -1022,5 +1031,6 @@ window.dispatchEvent(new Event('pd-studio-cloud-ready'));
   logoImg.addEventListener('load', paintIdle);
 })();
 </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

@@ -589,6 +589,21 @@ service cloud.firestore {
     // ==========================================
     // Daily challenges (public read when published)
     // ==========================================
+    // One document per member per Lusaka calendar day. The deterministic id
+    // (`<uid>_<YYYY-MM-DD>`) makes a duplicate same-day check-in impossible.
+    // History is retained: members can create and read their own records;
+    // administrators can read them for reporting; nobody rewrites or deletes.
+    match /dailyPrayerCheckins/{checkinId} {
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.dateKey is string &&
+        request.resource.data.dateKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        (!('timezone' in request.resource.data) || request.resource.data.timezone == 'Africa/Lusaka') &&
+        (!('weekday' in request.resource.data) || request.resource.data.weekday is string);
+      allow update, delete: if false;
+    }
+
     match /dailyChallenges/{id} {
       allow read: if isAdmin() || resource.data.published == true;
       allow create, update: if isAdmin() &&

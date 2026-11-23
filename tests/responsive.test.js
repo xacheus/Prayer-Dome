@@ -84,8 +84,12 @@ assert.match(brand, /body\.pd-bottom-nav-page\s*\{\s*padding-bottom:\s*calc\(100
 assert.match(brand, /\.pd-challenge-days\s*\{[^}]*grid-auto-columns:\s*132px;[^}]*overflow-x:\s*auto/);
 assert.match(brand, /\.pd-challenge-day-tip\s*\{[^}]*display:\s*block;[^}]*overflow:\s*visible/);
 assert.doesNotMatch(brand, /animation:\s*(ribbonSheen|ringFloat)/);
-assert.match(home, /<button type="button" class="pd-challenge-share"/);
-assert.match(home, /id="challengeDays" tabindex="0" role="region"/);
+assert.match(home, /id="dailyPrayer"/);
+assert.match(home, /id="dailyChallenge"/);
+const dailyPrayer = fs.readFileSync(path.join(ROOT, 'assets/pd-daily-challenge.js'), 'utf8');
+assert.match(dailyPrayer, /role="tablist"/);
+assert.match(dailyPrayer, /Africa\/Lusaka/);
+assert.match(dailyPrayer, /dailyPrayerCheckins/);
 assert.equal((home.match(/<footer\b/g) || []).length, 1);
 assert.match(home, /<footer class="pd-footer pd-home-footer">/);
 for (const name of ['index.html', 'ai-prayer.html', 'news.html', 'radio.html']) {

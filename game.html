@@ -202,14 +202,25 @@
     body.game-focus #panel-talk .domey-controls { margin-top: 4px; order: 9; }
     body.game-focus #panel-talk .domey-controls #domeyStartBtn { display: none !important; }
     body.game-focus #panel-talk .domey-controls #domeyExitBtn { display: inline-flex !important; }
-    body.game-focus #domeyStage { flex: 0 0 auto; }
+    body.game-focus #domeyStage { flex: 0 0 auto; display: flex; justify-content: center; }
     body.game-focus .pdm-companion { gap: 8px; }
     body.game-focus .pdm-companion .pdm-topbar { min-height: 34px; gap: 6px; }
+    /* Keep the stage's 11:13 aspect ratio. A fixed height with width:100%
+       turned it into a wide letterbox and the SVG body was cropped. The
+       narrow centred stage shows Domey head-to-feet, and the question and
+       four answers stay in normal flow underneath — never over her. */
     body.game-focus .pdm-companion .pdm-stage {
+      width: clamp(150px, 46vw, 220px) !important;
+      max-width: 100%;
       min-height: 0 !important;
-      height: min(22vh, 150px) !important;
+      height: auto !important;
+      aspect-ratio: 11 / 13;
+      margin-inline: auto;
+      flex: 0 0 auto;
       border-radius: 14px;
     }
+    body.game-focus .pdm-companion .pdm-char-wrap { width: 88%; max-height: calc(100% - 6px); }
+    body.game-focus .pdm-companion .pdm-char { object-fit: contain; max-height: 100%; }
     body.game-focus .pdm-companion .pdm-dialogue-card { padding: 10px 12px; border-radius: 14px; }
     body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .92rem; line-height: 1.42; }
     body.game-focus .pdm-companion .pdm-chips { margin-top: 8px; gap: 7px; }
@@ -226,13 +237,16 @@
     }
     .game-wrap [class*="pd-reveal"] { opacity: 1 !important; transform: none !important; animation: none !important; }
     @media (max-height: 640px) {
-      body.game-focus .pdm-companion .pdm-stage { height: min(15vh, 104px) !important; }
+      body.game-focus .pdm-companion .pdm-stage { width: clamp(126px, 36vw, 176px) !important; }
       body.game-focus .pdm-chip.pdm-chip-big { min-height: 42px; padding: 7px 10px; }
       body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .86rem; }
     }
-    @media (max-width: 380px) {
+    @media (max-width: 480px) {
       body.game-focus .pdm-companion .pdm-chips { grid-template-columns: 1fr; }
-      body.game-focus .pdm-companion .pdm-stage { height: min(14vh, 96px) !important; }
+    }
+    @media (max-width: 380px) {
+      body.game-focus .pdm-companion .pdm-stage { width: clamp(132px, 40vw, 160px) !important; }
+      body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .58rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       .game-hero::before { animation: none; }
@@ -913,5 +927,6 @@
     });
   });
 </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

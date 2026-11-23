@@ -160,6 +160,49 @@ const styleBlocks = (html) =>
     ['sermon', 'story', 'devotional', 'inspiration', 'promo'].every((k) => studio.includes(k + ':')));
   t('members can browse the AI video library', read('video.html').includes('aiVideosGrid'));
 
+  const radioPage = read('radio.html');
+  t('the radio page can show an approved welcome film',
+    radioPage.includes('id="radioWelcomeVideo"') && radioPage.includes('renderRadioWelcomeVideo'));
+  t('the welcome film query asks only for published videos',
+    radioPage.includes("where('published', '==', true)") && radioPage.includes('limit(20)'));
+  t('pending-review films are hidden even if a stale flag says published',
+    radioPage.includes("data.status === 'pending-review'") && radioPage.includes('data.reviewed === false'));
+  t('the welcome film is never described as a live broadcast',
+    radioPage.includes('Recorded welcome film — not a live broadcast.'));
+  t('the studio submits films for review instead of publishing them',
+    studio.includes("status: 'pending-review'") && studio.includes('published: false'));
+  t('the admin console reviews, publishes and hides AI videos',
+    read('admin.html').includes('window.reviewAiVideo') && read('admin.html').includes('window.toggleAiVideo'));
+
+  const livePage = read('live.html');
+  const liveEngine = read('assets/pd-live-webrtc.js');
+  t('the broadcaster previews the camera before going public',
+    read('admin.html').includes('OPEN CAMERA PREVIEW') &&
+    read('admin.html').includes('deviceStream.previewing') &&
+    read('admin.html').includes('Nothing is public until you press Go live'));
+  t('preview mode is labelled PREVIEW, not LIVE',
+    read('admin.html').includes("badge.textContent = 'PREVIEW'") &&
+    read('admin.html').includes(".cr-badge-live.is-preview"));
+  t('a browser broadcast never publishes an ingest stream key',
+    !/streamKey:\s*liveId/.test(liveEngine) && !/rtmpUrl:\s*this\.state\.rtmpUrl/.test(liveEngine));
+  t('the archive only receives a real uploaded recording',
+    liveEngine.includes('recordingAvailable') &&
+    liveEngine.includes('if (summary.recordingAvailable)') &&
+    read('admin.html').includes("currentLiveData.source === 'admin-dashboard'"));
+  t('viewers get an honest offline and reconnect state',
+    livePage.includes('offlineView') && livePage.includes('showPlayerWaiting') &&
+    livePage.includes('retryLive'));
+
+  const voicePageMissing = pages.filter((page) => page !== 'admin.html' &&
+    !read(page).includes('/assets/pd-voice-commands.js'));
+  t('every member page offers the optional voice-command control', voicePageMissing.length === 0,
+    voicePageMissing.join(', '));
+  const voice = read('assets/pd-voice-commands.js');
+  t('voice commands never start the microphone on page load',
+    !/\n\s*startListening\(\);/.test(voice) && voice.includes('startBtn.addEventListener'));
+  t('voice commands show what was heard and can be stopped',
+    voice.includes('setHeard') && voice.includes('stopListening') && voice.includes('stopReading'));
+
   /* ---------------------------------------------------------- 7. layout */
   const wideGrids = [];
   const stickyRisk = [];

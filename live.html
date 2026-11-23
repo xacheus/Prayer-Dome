@@ -1018,13 +1018,25 @@
     function fallbackHlsPlayback() {
         const v = $('liveVideo');
         const url = currentLive.hlsUrl;
-        if (!url) return;
+        const honestFailure = () => showPlayerWaiting('We could not reach the broadcast',
+            'Your internet looks fine, but the stream did not answer. It may have ended or still be starting. Try again, or pray with Domey while you wait.');
+        if (!v || !url) {
+            honestFailure();
+            return;
+        }
         if (v.canPlayType('application/vnd.apple.mpegurl')) {
-            v.src = url; v.play().catch(()=>{});
+            v.src = url;
+            v.addEventListener('error', honestFailure, { once: true });
+            v.play().catch(honestFailure);
         } else if (window.Hls && Hls.isSupported()) {
             const hls = new Hls({ lowLatencyMode: true, liveSyncDurationCount: 3 });
             hls.loadSource(url); hls.attachMedia(v);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(()=>{}));
+            hls.on(Hls.Events.MANIFEST_PARSED, () => v.play().catch(honestFailure));
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+                if (data && data.fatal) honestFailure();
+            });
+        } else {
+            honestFailure();
         }
     }
 
@@ -1663,5 +1675,6 @@
 
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
 </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

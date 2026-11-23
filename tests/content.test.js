@@ -226,15 +226,22 @@ t('every html page loads the shared app layer', missingAppLayer.length === 0,
 
 // Home page premium shell.
 ['pd-topbar', 'pdMenuBtn', 'pdDrawer', 'pdSplash', 'pdLocationCard',
- 'pdAnnouncementBar', 'pdNotifBell', 'data-pd-hero', 'weeklyChallenge',
- 'Mark 7:37'].forEach(id =>
+ 'pdAnnouncementBar', 'pdNotifBell', 'data-pd-hero', 'dailyPrayer',
+ 'dailyChallenge', 'Mark 7:37'].forEach(id =>
   t('index.html contains ' + id, indexHtml.includes(id)));
 t('the public language selector is gone from the home page',
   !indexHtml.includes('pd-lang-select'));
 t('home page no longer shows the community stats strip',
   !indexHtml.includes('data-pd-stat'));
-t('home page weekly challenge is data-driven',
-  indexHtml.includes('PDChallenge.prayToday') && indexHtml.includes('getWeeklyChallenge'));
+t('home page shows Daily Prayer and no weekly challenge card',
+  indexHtml.includes('/assets/pd-daily-challenge.js') &&
+  !indexHtml.includes('id="weeklyChallenge"') &&
+  !indexHtml.includes('class="pd-challenge"') &&
+  indexHtml.includes('id="dailyChallenge"'));
+t('the historical challenge system and records remain available',
+  contentData.includes('WEEKLY_CHALLENGES') && contentData.includes('getWeeklyChallenge'));
+t('Daily Prayer weekday and saved date use Africa/Lusaka',
+  fs.readFileSync(path.join(ROOT, 'assets/pd-daily-challenge.js'), 'utf8').includes("var TZ = 'Africa/Lusaka'"));
 t('index.html loads pd-app.js before its own module',
   indexHtml.indexOf('pd-app.js') < indexHtml.indexOf('firebase-app.js'));
 t('home page shows the featured scripture card',
@@ -251,15 +258,26 @@ t('home page links to the News Center',
 t('admin notification composer supports all content types',
   ['live', 'sermon', 'prayer', 'news', 'scripture'].every(tp =>
     adminHtml.includes('value="' + tp + '"')));
-t('admin live view offers in-app device broadcast',
-  adminHtml.includes('OPEN CAMERA & GO LIVE'));
-t('admin dashboard replaces statistic cards with performance charts',
-  !adminHtml.includes('data-pd-stat') &&
-  ['activityPerformanceChart', 'workflowPerformanceChart', 'loadDashboardPerformance',
-   'renderDashboardPerformance'].every(id => adminHtml.includes(id)));
-t('admin dashboard no longer contains legacy overview statistic cards',
-  ['statTotalMembers', 'statPendingMembers', 'statGalleryItems',
-   'statPendingClaims', 'statActivePrayers'].every(id => !adminHtml.includes(id)));
+t('admin live view offers a private preview before an in-app device broadcast',
+  adminHtml.includes('OPEN CAMERA PREVIEW') && adminHtml.includes('GO LIVE NOW') &&
+  adminHtml.includes("badge.textContent = 'PREVIEW'"));
+t('admin dashboard shows four compact account statistics',
+  ['data-stat-value="registered"', 'data-stat-value="verified"',
+   'data-stat-value="pending"', 'data-stat-value="active"'].every(id => adminHtml.includes(id)));
+t('admin dashboard counts registered accounts, not membership records',
+  adminHtml.includes("dashboardCount(collection(db, 'users'))") &&
+  adminHtml.includes("where('emailVerified', '==', true)") &&
+  adminHtml.includes("where('lastActiveAt', '>=', activeSince)") &&
+  adminHtml.includes('getCountFromServer(reference)'));
+t('admin dashboard keeps financial detail out of the main dashboard',
+  ['id="dashRecentPayments"', 'id="dashRecentSubscriptions"',
+   'id="dashRecentWalletTransactions"', 'Billing snapshot', 'Total Revenue']
+    .every(snippet => !adminHtml.includes(snippet)) &&
+  adminHtml.includes("view-wallet-balances") &&
+  adminHtml.includes("id=\"view-finance\""));
+t('admin dashboard has the management overview and quick shortcuts',
+  ['dashRecentRegistrations', 'dashPendingMembers', 'dashRecentActivityList',
+   'dashSystemAlerts', 'dash-shortcuts'].every(id => adminHtml.includes(id)));
 t('admin certificates tracker exists and is wired in',
   ['view-certificates', 'loadCertificates', 'exportCertificatesCSV',
    'certificateCompletionChart', 'renderCertificateCompletionChart', 'switchView(\'certificates\''].every(s => adminHtml.includes(s)));

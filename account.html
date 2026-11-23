@@ -2317,6 +2317,45 @@
             }
         };
 
+        /* A once-a-day heartbeat keeps the administrator's "Active Users"
+           statistic real, without writing on every page view or storing a
+           location. The date is read in Africa/Lusaka, the ministry zone. */
+        async function recordAccountActivity(user) {
+            if (!user || !user.uid) return;
+            // The shared PDApp heartbeat already writes at most once per Lusaka
+            // day. Delegate when it is present so this page does not send a
+            // second write for the same visit.
+            if (window.PDApp && PDApp.activity && typeof PDApp.activity.heartbeat === 'function') {
+                PDApp.activity.heartbeat(user);
+                return;
+            }
+            let day = '';
+            try {
+                const parts = new Intl.DateTimeFormat('en-GB', {
+                    timeZone: 'Africa/Lusaka', year: 'numeric', month: '2-digit', day: '2-digit'
+                }).formatToParts(new Date()).reduce((acc, part) => {
+                    if (part.type !== 'literal') acc[part.type] = part.value;
+                    return acc;
+                }, {});
+                day = `${parts.year}-${parts.month}-${parts.day}`;
+            } catch (error) {
+                day = new Date().toISOString().slice(0, 10);
+            }
+            const key = 'pd_last_active_day_' + user.uid;
+            try {
+                if (localStorage.getItem(key) === day) return;
+            } catch (error) { /* storage may be unavailable; still record once this visit */ }
+            try {
+                await setDoc(doc(db, 'users', user.uid), {
+                    lastActiveAt: serverTimestamp(),
+                    lastActiveTimezone: 'Africa/Lusaka'
+                }, { merge: true });
+                try { localStorage.setItem(key, day); } catch (error) { /* private mode */ }
+            } catch (error) {
+                console.warn('Active-account heartbeat skipped:', error && error.message);
+            }
+        }
+
         async function loadProfileData(user, options) {
             const opts = options || {};
             const cached = !opts.force && profileCache.uid === user.uid && profileCache.data;
@@ -2686,6 +2725,7 @@
                 }
 
                 if (profileCache.uid === user.uid) window.pdSetAuthView('signed-in');
+                recordAccountActivity(user);
                 try {
                     await loadProfileData(user, { userData: profileData });
                     window.pdSetAuthView('signed-in');
@@ -3086,5 +3126,6 @@ window.toggleDarkMode = function() {
 
         handleEmailVerificationLink();
     </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>
