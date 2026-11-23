@@ -81,6 +81,28 @@ The Firestore rules target is explicitly configured. Firebase Hosting does not
 implement every Vercel-only `/api/*` handler; Vercel remains the recommended
 website target. Confirm feature parity before switching hosting providers.
 
+### Support-plan billing callable
+
+The member support page and the finance console both call one callable named
+`billing` in `us-central1`. Vercel does not deploy it, and the website can be
+newer than the deployed function. If a member sees a billing error, check the
+function before changing the page:
+
+```sh
+firebase functions:list --project <project-id>
+firebase functions:log --only billing --project <project-id>
+firebase deploy --only functions:billing --project <project-id>
+```
+
+`not-found` means the callable is absent, or it was deployed to another project
+or region. `internal` means the function ran but threw; the log now starts with
+`Billing action <action> failed:` and the real cause. The page retries one
+transient failure automatically and shows the error code instead of a single
+generic notice. A rejected business rule (for example an unapproved membership
+or an unconfigured finance number) is shown exactly as written by the server.
+Deploying only `billing` avoids the secret check on unrelated Brevo/Cloudinary
+functions; deploy all functions afterwards if their code also changed.
+
 ### Bible reader (API.Bible)
 
 NIV and The Message (MSG) are read from API.Bible through `/api/bible`. The

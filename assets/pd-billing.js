@@ -392,6 +392,92 @@
     return 'checkout-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
   }
 
+  // A callable failure is not one problem. A missing deployment, an expired
+  // session, a busy service and a rejected business rule all arrive here, so
+  // each needs its own sentence. The raw code is kept (and returned to the
+  // console) instead of being replaced by one catch-all notice.
+  var BILLING_TRANSIENT_CODES = ['unavailable', 'internal', 'deadline-exceeded',
+    'resource-exhausted', 'unknown', 'aborted'];
+
+  function billingErrorCode(error) {
+    var code = String((error && error.code) || '').toLowerCase();
+    while (/^(firebase|functions)\//.test(code)) {
+      code = code.replace(/^(firebase|functions)\//, '');
+    }
+    var raw = String((error && error.message) || '');
+    if (!code) {
+      if (/not found/i.test(raw)) code = 'not-found';
+      else if (/unavailable/i.test(raw)) code = 'unavailable';
+      else if (/internal/i.test(raw)) code = 'internal';
+      else if (/permission/i.test(raw)) code = 'permission-denied';
+      else if (/unauthenticated|sign in/i.test(raw)) code = 'unauthenticated';
+      else if (/deadline|timed out/i.test(raw)) code = 'deadline-exceeded';
+    }
+    return code || 'unknown';
+  }
+
+  function billingRetryable(error) {
+    return BILLING_TRANSIENT_CODES.indexOf(billingErrorCode(error)) !== -1;
+  }
+
+  function billingServerError(error) {
+    var details = error && error.details;
+    return Boolean(details && (details.billing === true || details.billing === 'true'));
+  }
+
+  function billingErrorCopy(error, options) {
+    var code = billingErrorCode(error);
+    var raw = String((error && error.message) || '')
+      .replace(/^FirebaseError:\s*/i, '').trim();
+    var staff = Boolean(options && options.staff);
+    var fromServer = billingServerError(error);
+    var retry = ' Please retry in a moment.';
+    var contact = staff
+      ? ''
+      : ' If it continues, contact info@prayerdome.net and quote code ' + code + '.';
+
+    switch (code) {
+      case 'not-found':
+        // A callable that is missing answers with a bare not-found. A server
+        // decision says which record was missing, and that wording is safer
+        // and more useful than calling the whole service unavailable.
+        if (raw && (fromServer || !/^(not[- ]?found|the requested resource was not found\.?|404.*)$/i.test(raw))) {
+          return raw;
+        }
+        return staff
+          ? 'The billing function is not deployed for this project. Run "firebase deploy --only functions:billing --project prayer-dome", then retry.'
+          : 'Billing is not available on this site yet. Please contact info@prayerdome.net and quote code not-found.';
+      case 'unauthenticated':
+        return fromServer && raw ? raw : 'Your sign-in has expired. Sign in again and retry.';
+      case 'permission-denied':
+        if (raw && (fromServer || !/missing or insufficient permissions|permission[- ]denied/i.test(raw))) {
+          return raw;
+        }
+        return 'This account is not allowed to use billing yet. Ask the ministry office to approve your membership.';
+      case 'unavailable':
+      case 'deadline-exceeded':
+        if (fromServer && raw) return raw;
+        return 'Billing did not respond in time; the request was not completed.' + retry + contact;
+      case 'resource-exhausted':
+        return 'Billing is busy right now. Wait a moment and retry.';
+      case 'internal':
+        if (fromServer && raw) return raw;
+        return 'Billing hit an internal error; the server did not confirm the request.' + retry + contact;
+      case 'cancelled':
+        return 'The billing request was cancelled before it finished. Please retry.';
+      case 'failed-precondition':
+      case 'invalid-argument':
+      case 'already-exists':
+      case 'out-of-range':
+        return raw || ('Billing could not accept that request.' + retry);
+      default:
+        if (raw && !/^(internal|unknown|error)$/i.test(raw)) {
+          return raw;
+        }
+        return 'Billing could not complete this request.' + retry + contact;
+    }
+  }
+
   function planPeriodLabel(plan) {
     var row = plan || {};
     if (row.billingPeriod === 'monthly') return 'per month';
@@ -441,6 +527,10 @@
     departmentLabel: departmentLabel,
     newReference: newReference,
     idempotencyKey: idempotencyKey,
+    billingErrorCode: billingErrorCode,
+    billingErrorCopy: billingErrorCopy,
+    billingServerError: billingServerError,
+    billingRetryable: billingRetryable,
     planPeriodLabel: planPeriodLabel,
     normalizePlan: normalizePlan,
     normalizeProgramme: normalizeProgramme
