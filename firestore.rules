@@ -240,11 +240,12 @@ service cloud.firestore {
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
+    // Withdrawal requests and their holds are created and settled by the
+    // billing callable. A member may read only their own rows; finance reads
+    // all of them. No client can create a withdrawal or move a balance.
     match /withdrawals/{id} {
-      allow read: if isSignedIn() || isAdmin();
-      allow create: if isSignedIn();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
+      allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
     }
     match /wallets/{userId} {
       allow read: if isOwner(userId) || isAdmin();
@@ -664,8 +665,18 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+    // Official payment details are managed by the finance callable. Signed-in
+    // members may read the number so the wallet can show it, but no browser
+    // may change it and the billing function writes the exact number it used
+    // onto every payment request.
+    match /settings/payments {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
     match /settings/{docId} {
-      allow read, write: if isAdmin();
+      // `payments` has its own read-only rule above; keep it out of the
+      // admin wildcard so browser code can never rewrite the official number.
+      allow read, write: if isAdmin() && docId != 'payments';
     }
 
     // ==========================================

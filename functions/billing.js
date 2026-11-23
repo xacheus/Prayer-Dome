@@ -24,6 +24,8 @@ const catalog = require('./billing-catalog');
 const REGION = 'us-central1';
 const CURRENCY = 'USD';
 const MIN_WALLET_DEPOSIT = 5;
+const MIN_WITHDRAWAL = 10;
+const PAYMENT_SETTINGS_DOC = 'settings/payments';
 const MAX_AMOUNT = 1000000;
 const ALLOWED_METHODS = ['mobile-money', 'bank-transfer', 'cash-office'];
 const { HttpsError } = functions.https;
@@ -82,6 +84,43 @@ function amount(value) {
   return Math.round(number * 100) / 100;
 }
 
+/*
+ * Official payment details live in settings/payments and are managed by the
+ * finance team through the billing callable. No Mobile Money number is stored
+ * in this repository: if finance has not configured one, checkout stops
+ * instead of showing a number nobody verified.
+ */
+async function loadPaymentSettings() {
+  const db = admin.firestore();
+  let data = {};
+  try {
+    const snap = await db.doc(PAYMENT_SETTINGS_DOC).get();
+    data = snap.exists ? (snap.data() || {}) : {};
+  } catch (error) {
+    console.error('Payment settings read failed:', error.message);
+    data = {};
+  }
+  const number = text(data.mobileMoneyNumber, 40);
+  const accountName = text(data.accountName, 120);
+  const network = text(data.network, 80);
+  const custom = text(data.instructions, 1000);
+  const instructions = custom || (number
+    ? 'Send the exact amount by ' + (network || 'Mobile Money') + ' to ' + number +
+      (accountName ? ' (' + accountName + ')' : '') +
+      '. Put the payment reference in the mobile-money reference field, then upload a clear receipt. ' +
+      'A plan is activated only after the finance team checks the payment against the ministry account.'
+    : catalog.PAYMENT_INSTRUCTIONS);
+  return { number, accountName, network, instructions, configured: Boolean(number) };
+}
+
+function requirePaymentSettings(settings) {
+  if (!settings || !settings.number) {
+    fail('failed-precondition',
+      'The official Mobile Money number has not been configured in Finance settings yet. Please contact the ministry office before sending any money.');
+  }
+  return settings;
+}
+
 function addMonths(value, months) {
   const date = value instanceof Date ? new Date(value.getTime()) : new Date(value);
   const targetMonth = date.getMonth() + Number(months || 0);
@@ -98,7 +137,9 @@ function newReference(kind) {
   const stamp = String(date.getUTCFullYear()) +
     String(date.getUTCMonth() + 1).padStart(2, '0') +
     String(date.getUTCDate()).padStart(2, '0');
-  const prefix = kind === 'wallet_deposit' ? 'PD-WAL' : 'PD-SUB';
+  const prefix = kind === 'wallet_deposit' ? 'PD-WAL'
+    : kind === 'withdrawal' ? 'PD-WD'
+      : 'PD-SUB';
   return prefix + '-' + stamp + '-' + crypto.randomBytes(5).toString('hex').toUpperCase();
 }
 
@@ -194,7 +235,13 @@ function paymentView(data) {
     tier: data.tier || '',
     method: data.method || 'mobile-money',
     paymentInstructions: data.paymentInstructions || '',
+    payToNumber: data.payToNumber || '',
+    payToName: data.payToName || '',
+    payToNetwork: data.payToNetwork || '',
     evidenceUrl: data.evidenceUrl || '',
+    evidencePath: data.evidencePath || '',
+    evidenceName: data.evidenceName || '',
+    evidenceType: data.evidenceType || '',
     createdAt: data.createdAt || null
   };
 }
@@ -224,6 +271,11 @@ async function createCheckout(data, context) {
     charge = amount(data.amount);
     if (charge < MIN_WALLET_DEPOSIT) fail('invalid-argument', 'The minimum wallet deposit is $5.00.');
   }
+
+  // The browser may choose a plan or a deposit amount, but it never supplies
+  // the price of a plan and never supplies the number to pay. Both come from
+  // the server-owned catalogue and the finance settings document.
+  const paySettings = requirePaymentSettings(await loadPaymentSettings());
 
   const existingIdem = await idemRef.get();
   if (existingIdem.exists) {
@@ -271,6 +323,8 @@ async function createCheckout(data, context) {
       const duplicate = await transaction.get(db.collection('paymentRequests').doc(currentIdem.data().reference));
       if (duplicate.exists) return;
     }
+    // Firestore requires every read to happen before the first write.
+    const subscriptionSnap = subRef ? await transaction.get(subRef) : null;
     const snapshot = {
       reference,
       kind,
@@ -290,7 +344,10 @@ async function createCheckout(data, context) {
       durationMonths: plan ? plan.durationMonths : 0,
       programMonths: plan ? plan.programMonths : 0,
       planSnapshot: plan ? publicPlan(plan) : null,
-      paymentInstructions: plan ? plan.paymentInstructions : catalog.PAYMENT_INSTRUCTIONS,
+      paymentInstructions: paySettings.instructions,
+      payToNumber: paySettings.number,
+      payToName: paySettings.accountName || 'PRAYER DOME',
+      payToNetwork: paySettings.network || 'Mobile Money',
       subscriptionId: subId || '',
       walletTransactionId: walletTxId || '',
       evidenceUrl: '',
@@ -303,8 +360,7 @@ async function createCheckout(data, context) {
     transaction.create(paymentRef, snapshot);
 
     if (subRef) {
-      const subscriptionSnap = await transaction.get(subRef);
-      const previous = subscriptionSnap.exists ? subscriptionSnap.data() : null;
+      const previous = subscriptionSnap && subscriptionSnap.exists ? subscriptionSnap.data() : null;
       const keepActive = previous && previous.status === 'active';
       transaction.set(subRef, {
         userId: uid,
@@ -351,13 +407,13 @@ async function createCheckout(data, context) {
       });
     }
 
-    transaction.create(idemRef, {
+    transaction.set(idemRef, {
       userId: uid,
       reference,
       kind,
       idempotencyKey: key,
       createdAt: now
-    });
+    }, { merge: true });
 
     transaction.create(auditRef, {
       action: 'payment_created',
@@ -391,7 +447,10 @@ async function createCheckout(data, context) {
       program: plan ? plan.program : 'Wallet',
       tier: plan ? plan.tier : '',
       method,
-      paymentInstructions: plan ? plan.paymentInstructions : catalog.PAYMENT_INSTRUCTIONS
+      paymentInstructions: paySettings.instructions,
+      payToNumber: paySettings.number,
+      payToName: paySettings.accountName || 'PRAYER DOME',
+      payToNetwork: paySettings.network || 'Mobile Money'
     }
   };
 }
@@ -425,6 +484,9 @@ async function submitEvidence(data, context) {
       fail('failed-precondition', 'This payment has already been reviewed.');
     }
     if (payment.status === 'cancelled') fail('failed-precondition', 'This checkout was cancelled.');
+    const subSnap = payment.subscriptionId
+      ? await transaction.get(db.collection('subscriptions').doc(payment.subscriptionId))
+      : null;
     transaction.update(paymentRef, {
       status: 'pending_verification',
       evidenceUrl: evidencePath ? '' : evidenceUrl,
@@ -437,8 +499,7 @@ async function submitEvidence(data, context) {
     });
     if (payment.subscriptionId) {
       const subRef = db.collection('subscriptions').doc(payment.subscriptionId);
-      const subSnap = await transaction.get(subRef);
-      const active = subSnap.exists && subSnap.data().status === 'active';
+      const active = subSnap && subSnap.exists && subSnap.data().status === 'active';
       transaction.set(subRef, active ? {
         lastPaymentStatus: 'pending_verification',
         pendingPaymentRef: reference,
@@ -625,6 +686,9 @@ async function rejectPayment(data, context) {
     if (payment.status !== 'pending_verification' && payment.status !== 'pending_payment') {
       fail('failed-precondition', 'Only an open payment can be rejected.');
     }
+    const subSnap = payment.subscriptionId
+      ? await transaction.get(db.collection('subscriptions').doc(payment.subscriptionId))
+      : null;
 
     transaction.update(paymentRef, {
       status: 'rejected',
@@ -636,8 +700,7 @@ async function rejectPayment(data, context) {
 
     if (payment.subscriptionId) {
       const subRef = db.collection('subscriptions').doc(payment.subscriptionId);
-      const subSnap = await transaction.get(subRef);
-      if (subSnap.exists) {
+      if (subSnap && subSnap.exists) {
         const subscription = subSnap.data();
         const stillActive = subscription.status === 'active' && subscription.paymentRef !== reference;
         transaction.update(subRef, {
@@ -692,11 +755,13 @@ async function cancelCheckout(data, context) {
     if (payment.status !== 'pending_payment') {
       fail('failed-precondition', 'This checkout can no longer be cancelled from the member page.');
     }
+    const subSnap = payment.subscriptionId
+      ? await transaction.get(db.collection('subscriptions').doc(payment.subscriptionId))
+      : null;
     transaction.update(paymentRef, { status: 'cancelled', cancelledAt: now, updatedAt: now });
     if (payment.subscriptionId) {
       const subRef = db.collection('subscriptions').doc(payment.subscriptionId);
-      const subSnap = await transaction.get(subRef);
-      if (subSnap.exists && subSnap.data().status === 'pending_payment') {
+      if (subSnap && subSnap.exists && subSnap.data().status === 'pending_payment') {
         transaction.update(subRef, { status: 'cancelled', updatedAt: now });
       }
     }
@@ -810,6 +875,370 @@ async function resumeSubscription(data, context) {
   return { subscriptionId: subscriptionIdValue, status: 'active', cancelAtPeriodEnd: false };
 }
 
+
+/* ------------------------------------------------------------------ withdrawals
+ * A withdrawal is a request, never a payment. The requested amount is placed
+ * on hold so two open requests cannot spend the same money, but the verified
+ * wallet balance is untouched. Only a finance administrator who has actually
+ * sent the money may mark it paid, and that single transaction deducts the
+ * balance exactly once. A rejection releases the hold and never deducts.
+ */
+function withdrawalReferenceId(value) {
+  return text(value, 80).toUpperCase();
+}
+
+function publicWithdrawal(row) {
+  return {
+    reference: row.reference || '',
+    userId: row.userId || '',
+    userName: row.userName || '',
+    userEmail: row.userEmail || '',
+    amount: row.amount,
+    currency: row.currency || CURRENCY,
+    receivePhone: row.receivePhone || '',
+    status: row.status || 'pending_review',
+    requestedAt: row.requestedAt || null,
+    reviewedAt: row.reviewedAt || null,
+    paidAt: row.paidAt || null,
+    paidReference: row.paidReference || '',
+    rejectionReason: row.rejectionReason || ''
+  };
+}
+
+async function requestWithdrawal(data, context) {
+  const uid = requireAuth(context);
+  const db = admin.firestore();
+  const value = amount(data.amount);
+  if (value < MIN_WITHDRAWAL) fail('invalid-argument', 'The minimum withdrawal is $10.00.');
+  const phone = text(data.phone, 40);
+  const digits = phone.replace(/\D/g, '');
+  if (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9) {
+    fail('invalid-argument', 'Enter a valid Mobile Money number, including the country code.');
+  }
+  const key = text(data.idempotencyKey, 80) || crypto.randomBytes(12).toString('hex');
+  const idemRef = db.collection('billingIdempotency').doc(uid + '_wd_' + key.replace(/[^A-Za-z0-9_.-]/g, ''));
+
+  const memberSnap = await db.collection('memberships').doc(uid).get();
+  const member = memberSnap.exists ? memberSnap.data() : {};
+  if (member.status && member.status !== 'approved') {
+    fail('failed-precondition', 'Your membership must be approved before you can withdraw.');
+  }
+  const userSnap = await db.collection('users').doc(uid).get();
+  const user = userSnap.exists ? userSnap.data() : {};
+  const reference = newReference('withdrawal');
+  const withdrawalRef = db.collection('withdrawals').doc(reference);
+  const walletRef = db.collection('wallets').doc(uid);
+  const walletTxRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const auditRef = db.collection('billingAudit').doc();
+  const now = new Date();
+  let result = null;
+
+  await db.runTransaction(async (transaction) => {
+    const idemSnap = await transaction.get(idemRef);
+    if (idemSnap.exists) {
+      const previousRef = withdrawalReferenceId(idemSnap.data().reference);
+      if (previousRef) {
+        const previous = await transaction.get(db.collection('withdrawals').doc(previousRef));
+        if (previous.exists) {
+          result = { alreadyCreated: true, withdrawal: publicWithdrawal(previous.data()) };
+          return;
+        }
+      }
+    }
+    const walletSnap = await transaction.get(walletRef);
+    if (!walletSnap.exists) fail('failed-precondition', 'Open your wallet before requesting a withdrawal.');
+    const wallet = walletSnap.data() || {};
+    const balance = Math.round((Number(wallet.balance) || 0) * 100) / 100;
+    const held = Math.round((Number(wallet.heldBalance) || 0) * 100) / 100;
+    const available = Math.round((balance - held) * 100) / 100;
+    if (value > available) {
+      fail('failed-precondition', 'The amount is more than your verified available balance of ' + available.toFixed(2) + ' USD.');
+    }
+    const row = {
+      reference,
+      userId: uid,
+      userName: text(user.fullName || member.fullName || context.auth.token.name || user.email || 'Member', 140),
+      userEmail: text(user.email || member.email || context.auth.token.email || '', 180),
+      amount: value,
+      currency: CURRENCY,
+      receivePhone: phone,
+      status: 'pending_review',
+      requestedAt: now,
+      createdAt: now,
+      updatedAt: now
+    };
+    transaction.create(withdrawalRef, row);
+    transaction.update(walletRef, {
+      heldBalance: Math.round((held + value) * 100) / 100,
+      updatedAt: now
+    });
+    transaction.create(walletTxRef, {
+      userId: uid,
+      userName: row.userName,
+      type: 'withdrawal',
+      direction: 'out',
+      amount: value,
+      currency: CURRENCY,
+      status: 'pending_review',
+      reference,
+      withdrawalId: reference,
+      receivePhone: phone,
+      createdAt: now,
+      updatedAt: now
+    });
+    transaction.set(idemRef, {
+      userId: uid,
+      reference,
+      kind: 'withdrawal',
+      idempotencyKey: key,
+      createdAt: now
+    }, { merge: true });
+    transaction.create(auditRef, {
+      action: 'withdrawal_requested',
+      withdrawalId: reference,
+      walletTransactionId: walletTxRef.id,
+      userId: uid,
+      amount: value,
+      currency: CURRENCY,
+      status: 'pending_review',
+      actorUid: uid,
+      actorEmail: row.userEmail,
+      actorRole: 'member',
+      note: 'Withdrawal held for finance review; balance unchanged',
+      createdAt: now
+    });
+    result = { withdrawal: publicWithdrawal(row), availableAfter: Math.round((available - value) * 100) / 100 };
+  });
+
+  return result || { withdrawal: null };
+}
+
+async function reviewWithdrawal(data, context, decision) {
+  const adminUid = await requireAdmin(context);
+  const adminActor = actor(context);
+  const reference = withdrawalReferenceId(data.reference);
+  if (!reference) fail('invalid-argument', 'Choose a withdrawal to review.');
+  const reason = text(data.reason, 500);
+  if (decision === 'reject' && reason.length < 4) {
+    fail('invalid-argument', 'Give the member a reason for rejecting this withdrawal.');
+  }
+  const db = admin.firestore();
+  const withdrawalRef = db.collection('withdrawals').doc(reference);
+  const auditRef = db.collection('billingAudit').doc();
+  const now = new Date();
+  let outcome = null;
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(withdrawalRef);
+    if (!snapshot.exists) fail('not-found', 'That withdrawal was not found.');
+    const row = snapshot.data() || {};
+    if (row.status === 'paid') fail('failed-precondition', 'A paid withdrawal cannot be changed.');
+    if (row.status === 'rejected' && decision === 'reject') {
+      outcome = { reference, status: 'rejected', alreadyRejected: true };
+      return;
+    }
+    if (!['pending_review', 'processing'].includes(row.status)) {
+      fail('failed-precondition', 'Only an open withdrawal can be reviewed.');
+    }
+    if (decision === 'approve') {
+      const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+      const txSnap = await transaction.get(txRef);
+      transaction.update(withdrawalRef, {
+        status: 'processing',
+        reviewedAt: now,
+        reviewedBy: adminActor.email || adminUid,
+        updatedAt: now
+      });
+      if (txSnap.exists) transaction.update(txRef, { status: 'processing', reviewedAt: now, updatedAt: now });
+      transaction.create(auditRef, {
+        action: 'withdrawal_approved',
+        withdrawalId: reference,
+        walletTransactionId: txRef.id,
+        userId: row.userId,
+        amount: row.amount,
+        currency: row.currency || CURRENCY,
+        status: 'processing',
+        actorUid: adminUid,
+        actorEmail: adminActor.email || '',
+        actorRole: 'admin',
+        note: 'Approved for payment. The balance is deducted only after the payment is confirmed.',
+        createdAt: now
+      });
+      outcome = { reference, status: 'processing' };
+      return;
+    }
+
+    // Rejection: release the hold. The verified balance must not move.
+    const walletRef = db.collection('wallets').doc(row.userId);
+    const walletSnap = await transaction.get(walletRef);
+    const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const txSnap = await transaction.get(txRef);
+    if (walletSnap.exists) {
+      const wallet = walletSnap.data() || {};
+      const held = Math.max(0, Math.round(((Number(wallet.heldBalance) || 0) - Number(row.amount || 0)) * 100) / 100);
+      transaction.update(walletRef, { heldBalance: held, updatedAt: now });
+    }
+    transaction.update(withdrawalRef, {
+      status: 'rejected',
+      rejectionReason: reason,
+      rejectedAt: now,
+      reviewedAt: now,
+      reviewedBy: adminActor.email || adminUid,
+      updatedAt: now
+    });
+    if (txSnap.exists) transaction.update(txRef, { status: 'rejected', rejectionReason: reason, updatedAt: now });
+    transaction.create(auditRef, {
+      action: 'withdrawal_rejected',
+      withdrawalId: reference,
+      walletTransactionId: txRef.id,
+      userId: row.userId,
+      amount: row.amount,
+      currency: row.currency || CURRENCY,
+      status: 'rejected',
+      actorUid: adminUid,
+      actorEmail: adminActor.email || '',
+      actorRole: 'admin',
+      note: reason,
+      createdAt: now
+    });
+    outcome = { reference, status: 'rejected' };
+  });
+
+  return outcome || { reference, status: decision === 'approve' ? 'processing' : 'rejected' };
+}
+
+async function settleWithdrawal(data, context) {
+  const adminUid = await requireAdmin(context);
+  const adminActor = actor(context);
+  if (data.confirmed !== true) {
+    fail('failed-precondition', 'Confirm that the Mobile Money payment to the member has actually been made.');
+  }
+  const reference = withdrawalReferenceId(data.reference);
+  const paidReference = text(data.paidReference, 120);
+  if (!reference) fail('invalid-argument', 'Choose a withdrawal to settle.');
+  if (paidReference.length < 4) {
+    fail('invalid-argument', 'Enter the Mobile Money transaction reference from the payment you sent.');
+  }
+  const db = admin.firestore();
+  const withdrawalRef = db.collection('withdrawals').doc(reference);
+  const auditRef = db.collection('billingAudit').doc();
+  const now = new Date();
+  let outcome = null;
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(withdrawalRef);
+    if (!snapshot.exists) fail('not-found', 'That withdrawal was not found.');
+    const row = snapshot.data() || {};
+    if (row.status === 'paid') {
+      outcome = { reference, status: 'paid', alreadyPaid: true, paidReference: row.paidReference || '' };
+      return;
+    }
+    if (row.status !== 'processing') {
+      fail('failed-precondition', 'Approve the withdrawal before confirming its payment.');
+    }
+    const walletRef = db.collection('wallets').doc(row.userId);
+    const walletSnap = await transaction.get(walletRef);
+    if (!walletSnap.exists) fail('failed-precondition', 'The member wallet was not found.');
+    const wallet = walletSnap.data() || {};
+    const balance = Math.round((Number(wallet.balance) || 0) * 100) / 100;
+    const held = Math.round((Number(wallet.heldBalance) || 0) * 100) / 100;
+    const value = Math.round(Number(row.amount) * 100) / 100;
+    if (held + 0.001 < value) {
+      fail('failed-precondition', 'The withdrawal hold is missing. Do not pay until finance reconciles this wallet.');
+    }
+    if (balance + 0.001 < value) {
+      fail('failed-precondition', 'The wallet balance is lower than this withdrawal. Do not pay until finance reconciles this wallet.');
+    }
+    const newBalance = Math.round((balance - value) * 100) / 100;
+    const newHeld = Math.round((held - value) * 100) / 100;
+    // Every read must happen before the first write in a Firestore transaction.
+    const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const txSnap = await transaction.get(txRef);
+    transaction.update(walletRef, {
+      balance: newBalance,
+      heldBalance: newHeld,
+      updatedAt: now,
+      updatedBy: adminActor.email || adminUid
+    });
+    transaction.update(withdrawalRef, {
+      status: 'paid',
+      paidAt: now,
+      paidBy: adminActor.email || adminUid,
+      paidReference,
+      updatedAt: now
+    });
+    if (txSnap.exists) {
+      transaction.update(txRef, {
+        status: 'paid',
+        balanceAfter: newBalance,
+        paidAt: now,
+        paidBy: adminActor.email || adminUid,
+        paidReference,
+        updatedAt: now
+      });
+    }
+    transaction.create(auditRef, {
+      action: 'withdrawal_paid',
+      withdrawalId: reference,
+      walletTransactionId: txRef.id,
+      userId: row.userId,
+      amount: value,
+      currency: row.currency || CURRENCY,
+      status: 'paid',
+      actorUid: adminUid,
+      actorEmail: adminActor.email || '',
+      actorRole: 'admin',
+      note: 'Paid by Mobile Money. Confirmation: ' + paidReference,
+      createdAt: now
+    });
+    outcome = {
+      reference,
+      status: 'paid',
+      balance: newBalance,
+      heldBalance: newHeld,
+      paidReference
+    };
+  });
+
+  return outcome || { reference, status: 'paid' };
+}
+
+async function savePaymentSettings(data, context) {
+  const adminUid = await requireAdmin(context);
+  const number = text(data.mobileMoneyNumber, 40);
+  const accountName = text(data.accountName, 120);
+  const network = text(data.network, 80);
+  const instructions = text(data.instructions, 1000);
+  const digits = number.replace(/\D/g, '');
+  if (!number || digits.length < 9 || digits.length > 20) {
+    fail('invalid-argument', 'Enter the official Mobile Money number, including the country code.');
+  }
+  if (!accountName) fail('invalid-argument', 'Enter the official account name for the number.');
+  const db = admin.firestore();
+  const now = new Date();
+  await db.doc(PAYMENT_SETTINGS_DOC).set({
+    mobileMoneyNumber: number,
+    accountName,
+    network: network || 'Mobile Money',
+    instructions,
+    updatedAt: now,
+    updatedBy: actor(context).email || adminUid
+  }, { merge: true });
+  await db.collection('billingAudit').add({
+    action: 'payment_settings_updated',
+    userId: '',
+    amount: 0,
+    currency: CURRENCY,
+    status: 'configured',
+    actorUid: adminUid,
+    actorEmail: actor(context).email || '',
+    actorRole: 'admin',
+    note: 'Official payment details updated. Number ending ' + digits.slice(-4),
+    createdAt: now
+  });
+  return { settings: await loadPaymentSettings() };
+}
+
 async function signedEvidenceUrl(data, context) {
   const uid = requireAuth(context);
   const path = text(data.path, 320);
@@ -862,6 +1291,25 @@ async function handler(data, context) {
       return approvePayment(payload, context);
     case 'payment.reject':
       return rejectPayment(payload, context);
+    case 'payment.settings.get': {
+      requireAuth(context);
+      return { settings: await loadPaymentSettings() };
+    }
+    case 'payment.settings.public':
+      // The public giving page must show the same official number the wallet
+      // and checkout use. It never receives anything else, and no write path
+      // is exposed without an administrator.
+      return { settings: await loadPaymentSettings() };
+    case 'payment.settings.save':
+      return savePaymentSettings(payload, context);
+    case 'withdrawal.request':
+      return requestWithdrawal(payload, context);
+    case 'withdrawal.approve':
+      return reviewWithdrawal(payload, context, 'approve');
+    case 'withdrawal.reject':
+      return reviewWithdrawal(payload, context, 'reject');
+    case 'withdrawal.paid':
+      return settleWithdrawal(payload, context);
     case 'subscriptions.cancel':
       return cancelSubscription(payload, context);
     case 'subscriptions.resume':

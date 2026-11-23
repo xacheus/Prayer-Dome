@@ -1165,6 +1165,7 @@
                 <div class="nav-item" data-view="payment-verification" onclick="switchView('payment-verification', pdNavFor('payment-verification'))"><i class="pd-i pd-i-shield-check"></i> Payment Verification</div>
                 <div class="nav-item" data-view="subscriptions" onclick="switchView('subscriptions', pdNavFor('subscriptions'))"><i class="pd-i pd-i-refresh-cw"></i> Subscriptions</div>
                 <div class="nav-item" data-view="wallet-transactions" onclick="switchView('wallet-transactions', pdNavFor('wallet-transactions'))"><i class="pd-i pd-i-arrow-left-right"></i> Wallet Transactions</div>
+                <div class="nav-item" data-view="withdrawals" onclick="switchView('withdrawals', pdNavFor('withdrawals'))"><i class="pd-i pd-i-arrow-up"></i> Withdrawals</div>
                 <div class="nav-item" data-view="wallet-balances" onclick="switchView('wallet-balances', pdNavFor('wallet-balances'))"><i class="pd-i pd-i-banknote"></i> Wallet Balances</div>
                 <div class="nav-item" data-view="support-plans" onclick="switchView('support-plans', pdNavFor('support-plans'))"><i class="pd-i pd-i-layers"></i> Support Plans</div>
                 <div class="nav-item" data-view="financial_reports" onclick="switchView('financial_reports', this)"><i class="pd-i pd-i-file-text"></i> Financial Reports</div>
@@ -2562,6 +2563,16 @@
                         <span id="paymentSummary" class="audit-pill">Loading…</span>
                     </div>
                 </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-smartphone"></i> Official payment details</h3><span style="font-size:.7rem;color:var(--text-sub);">The number every checkout uses. It is read from finance settings, never hardcoded.</span></div>
+                    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;">
+                        <div><label for="paySettingsNumber" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Mobile Money number</label><input id="paySettingsNumber" class="form-control" inputmode="tel" placeholder="+268 ..."></div>
+                        <div><label for="paySettingsName" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Account name</label><input id="paySettingsName" class="form-control" placeholder="PRAYER DOME"></div>
+                        <div><label for="paySettingsNetwork" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Network</label><input id="paySettingsNetwork" class="form-control" placeholder="MTN Mobile Money"></div>
+                        <div style="grid-column:1/-1;"><label for="paySettingsInstructions" style="font-size:.65rem;font-weight:800;color:var(--text-sub);text-transform:uppercase;letter-spacing:.6px;">Optional custom instructions</label><input id="paySettingsInstructions" class="form-control" placeholder="Leave blank to use the standard payment instructions"></div>
+                        <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;align-items:center;"><button class="btn btn-primary" type="button" onclick="savePaymentSettings()"><i class="pd-i pd-i-save"></i> Save payment details</button><span id="paySettingsStatus" style="font-size:.74rem;color:var(--text-sub);"></span></div>
+                    </div>
+                </div>
                 <div class="panel-card">
                     <div class="panel-header"><h3><i class="pd-i pd-i-receipt-text"></i> Payment requests</h3><span style="font-size:.7rem;color:var(--text-sub);">Open the receipt and check it against the ministry account before approving.</span></div>
                     <div class="table-responsive">
@@ -2625,6 +2636,35 @@
                     <div class="table-responsive">
                         <table><thead><tr><th>Date</th><th>Member</th><th>Type</th><th>Amount</th><th>Status</th><th>Reference</th><th>Balance after</th><th>Actions</th></tr></thead>
                         <tbody id="walletTxList"><tr><td colspan="8">Loading wallet transactions…</td></tr></tbody></table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WITHDRAWALS VIEW -->
+            <div id="view-withdrawals" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-arrow-up"></i> Withdrawals</span>
+                    <div class="admin-actions-row"><button class="btn btn-outline" type="button" onclick="loadWithdrawals()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+                        <input id="withdrawalSearch" class="form-control" style="max-width:280px;" placeholder="Search member, reference or phone" oninput="filterWithdrawals()">
+                        <select id="withdrawalStatusFilter" class="form-control" style="max-width:210px;" onchange="filterWithdrawals()">
+                            <option value="open">Awaiting review / processing</option>
+                            <option value="pending_review">Pending review</option>
+                            <option value="processing">Processing</option>
+                            <option value="paid">Paid</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="all">All statuses</option>
+                        </select>
+                        <span id="withdrawalSummary" class="audit-pill">Loading…</span>
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-banknote"></i> Member withdrawal requests</h3><span style="font-size:.7rem;color:var(--text-sub);">Approving does not move money. Mark paid only after you have actually sent the Mobile Money payment.</span></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Requested</th><th>Member</th><th>Amount</th><th>Receive on</th><th>Status</th><th>Reference</th><th>Payment reference</th><th>Actions</th></tr></thead>
+                        <tbody id="withdrawalList"><tr><td colspan="8">Loading withdrawals…</td></tr></tbody></table>
                     </div>
                 </div>
             </div>
@@ -4894,8 +4934,21 @@ window.toggleDarkMode = function() {
             } catch(e){ console.error(e); }
         };
 
-        window.approveFinance = async function(type,docId,userId,amount){ if(!confirm("Approve?")) return; try{ if(type==='deposits'){ await updateDoc(doc(db,"deposits",docId),{status:'approved',approvedAt:serverTimestamp(),approvedBy:adminUser?.uid}); await updateDoc(doc(db,"wallets",userId),{balance:increment(amount)}); toast("Deposit approved!"); } else { const wRef=doc(db,"wallets",userId); const wSnap=await getDoc(wRef); if(wSnap.data().balance<amount) return toast("Insufficient funds","error"); await updateDoc(wRef,{balance:increment(-amount)}); await updateDoc(doc(db,"withdrawals",docId),{status:'approved',approvedAt:serverTimestamp(),approvedBy:adminUser?.uid}); toast("Withdrawal approved!"); } await loadFinances(); await loadDashboardPerformance(); } catch(e){ toast(e.message,'error'); } };
-        window.rejectFinance = async function(type,docId){ const reason=prompt("Reason:"); if(!reason) return; await updateDoc(doc(db,type,docId),{status:'rejected',rejectReason:reason,rejectedAt:serverTimestamp(),rejectedBy:adminUser?.uid}); toast("Rejected"); await loadFinances(); await loadDashboardPerformance(); };
+        /* Legacy finance rows are read-only here. Every balance movement goes
+           through the billing callable so it is idempotent, audited and cannot
+           be performed twice from two admin tabs. */
+        window.approveFinance = async function(type){
+            if (type === 'deposits') {
+                switchView('payment-verification', pdNavFor('payment-verification'));
+                return toast('Use Payment Verification: it checks the receipt and credits the wallet exactly once.', 'error');
+            }
+            switchView('withdrawals', pdNavFor('withdrawals'));
+            return toast('Use Withdrawals: approve first, then mark paid only after the Mobile Money payment is confirmed.', 'error');
+        };
+        window.rejectFinance = async function(type){
+            switchView(type === 'deposits' ? 'payment-verification' : 'withdrawals', pdNavFor(type === 'deposits' ? 'payment-verification' : 'withdrawals'));
+            return toast('Choose the record in the finance workspace and give the member a reason there.', 'error');
+        };
 
         window.loadSupport = async function(){ const tbody=document.getElementById('listSupportClaims'); if(tbody) tbody.innerHTML='<td colspan="7"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"supportClaims"),orderBy("createdAt","desc"),limit(30))); let html=''; snap.forEach(d=>{ const data=d.data(); const badge=data.status==='approved'?'<span class="badge badge-success">Approved</span>':data.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'; let docs=''; if(data.documents){ for(const[key,url] of Object.entries(data.documents)) docs+=`<button class="btn btn-sm btn-outline" onclick="viewDoc('${url}','auto')">${key}</button>`; } html+=`<tr><td>${data.createdAt?moment(data.createdAt.toDate()).format('MMM D, YYYY'):'N/A'}</td><td>${escapeHTML(data.userName||data.userEmail)}</td><td>${data.planType}</td><td style="color:var(--accent-green);font-weight:bold;">E${data.requestedAmount}</td><td>${docs||'None'}</td><td>${badge}</td><td>${data.status==='pending'?`<button class="btn btn-sm btn-primary" onclick="approveClaim('${d.id}')">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectClaim('${d.id}')">Reject</button>`:'-'}</td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="7">No claims<\/td>'; } catch(e){ console.error(e); } };
         window.approveClaim = async function(id){ if(!confirm("Approve claim?")) return; await updateDoc(doc(db,"supportClaims",id),{status:'approved',approvedBy:adminUser?.uid,approvedAt:serverTimestamp()}); toast("Claim approved!"); await loadSupport(); await loadDashboardPerformance(); };
@@ -8577,7 +8630,7 @@ window.toggleDarkMode = function() {
             'document-studio': 'Document Studio', 'membership-cards': 'Membership Cards',
             'data-audit': 'Data Audit', 'payment-verification': 'Payment Verification',
             'subscriptions': 'Subscriptions', 'wallet-transactions': 'Wallet Transactions',
-            'wallet-balances': 'Wallet Balances', 'support-plans': 'Support Plans',
+            'withdrawals': 'Withdrawals', 'wallet-balances': 'Wallet Balances', 'support-plans': 'Support Plans',
             'activity': 'Recent Activity'
         };
         let activeAdminView = null;
@@ -8615,9 +8668,10 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'care') await loadCareRequests();
                 else if (viewId === 'gallery') await loadGallery();
                 else if (viewId === 'finance') await loadFinances();
-                else if (viewId === 'payment-verification' && window.loadPayments) await loadPayments();
+                else if (viewId === 'payment-verification') { if (window.loadPayments) await loadPayments(); if (window.loadPaymentSettings) await window.loadPaymentSettings(); }
                 else if (viewId === 'subscriptions' && window.loadSubscriptions) await loadSubscriptions();
                 else if (viewId === 'wallet-transactions' && window.loadWalletTransactions) await loadWalletTransactions();
+                else if (viewId === 'withdrawals' && window.loadWithdrawals) await loadWithdrawals();
                 else if (viewId === 'wallet-balances' && window.loadWalletBalances) await loadWalletBalances();
                 else if (viewId === 'support-plans' && window.loadSupportPlansAdmin) await loadSupportPlansAdmin();
                 else if (viewId === 'media' && window.loadRadioProgrammes) await loadRadioProgrammes();

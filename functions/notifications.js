@@ -261,6 +261,60 @@ const EVENTS = {
     inAppTitle: 'Payment not approved',
     inAppMessage: 'Please review the reason and submit corrected evidence.'
   },
+  payment_finance_alert: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'Prayer Dome Finance: Payment Awaiting Verification',
+    heading: 'Payment awaiting verification',
+    message: 'A member has submitted payment evidence. Open the finance workspace, compare the receipt with the ministry account, and only then approve or reject it.\nNo plan or wallet balance changes until this review is complete.',
+    actionLabel: 'Open payment verification', actionPath: '/admin.html#payment-verification',
+    inAppTitle: 'Payment awaiting verification',
+    inAppMessage: 'A receipt is ready for finance review.'
+  },
+  withdrawal_submitted: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'We Received Your Prayer Dome Withdrawal Request',
+    heading: 'Withdrawal requested',
+    message: 'Your withdrawal request has been recorded and the amount is on hold. It has not left your wallet yet.\nThe finance team will review it and send you another message when it is being processed and again when the Mobile Money payment is confirmed. If it is rejected, the hold is released and your balance does not change.',
+    actionLabel: 'View my wallet', actionPath: '/support.html#wallet',
+    inAppTitle: 'Withdrawal requested',
+    inAppMessage: 'Finance will review your withdrawal. No money has moved yet.'
+  },
+  withdrawal_finance_alert: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'Prayer Dome Finance: Withdrawal Awaiting Review',
+    heading: 'Withdrawal awaiting review',
+    message: 'A member has requested a withdrawal and the amount is held in their wallet. Review the request before sending any money.\nThe balance is deducted only when you confirm the actual Mobile Money payment.',
+    actionLabel: 'Review withdrawals', actionPath: '/admin.html#withdrawals',
+    inAppTitle: 'Withdrawal awaiting review',
+    inAppMessage: 'A member withdrawal needs finance review.'
+  },
+  withdrawal_processing: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome Withdrawal Is Being Processed',
+    heading: 'Withdrawal approved for processing',
+    message: 'The finance team has approved your withdrawal for payment. Your Mobile Money payment is now being processed.\nYour wallet balance will be reduced only when the payment has actually been made. We will send another message when it is paid.',
+    actionLabel: 'View my wallet', actionPath: '/support.html#wallet',
+    inAppTitle: 'Withdrawal processing',
+    inAppMessage: 'Finance approved your withdrawal and is processing the payment.'
+  },
+  withdrawal_rejected: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'Update on Your Prayer Dome Withdrawal Request',
+    heading: 'Withdrawal not approved',
+    message: 'Your withdrawal request could not be approved for the reason shown below. The amount has been released from hold and your verified wallet balance has not changed.\nYou may correct the details and submit a new request from your wallet.',
+    actionLabel: 'Review my wallet', actionPath: '/support.html#wallet',
+    inAppTitle: 'Withdrawal not approved',
+    inAppMessage: 'No money was deducted. Please review the reason and try again.'
+  },
+  withdrawal_paid: {
+    category: 'billing', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome Withdrawal Has Been Paid',
+    heading: 'Withdrawal paid',
+    message: 'The finance team has confirmed your Mobile Money payment. Your wallet has been updated and the transaction is recorded in your ledger.\nThe payment reference and amount are shown below.',
+    actionLabel: 'View my wallet', actionPath: '/support.html#wallet',
+    inAppTitle: 'Withdrawal paid',
+    inAppMessage: 'Your Mobile Money payment has been confirmed.'
+  },
   subscription_activated: {
     category: 'billing', essential: true, kind: 'account',
     subject: 'Your Prayer Dome Subscription Is Active',
@@ -929,6 +983,56 @@ async function notifyMembership(change, context) {
   return deliverEvent(Object.assign(base, { event, eventId: eventId(event, userId, suffix) }));
 }
 
+/*
+ * Alert the finance team without ever blocking the member's own message.
+ * Admin uids come from the server-side role records; the browser supplies
+ * nothing. Each alert has a deterministic outbox id, so a trigger retry cannot
+ * send the same alert twice.
+ */
+async function financeTeamIds() {
+  const db = admin.firestore();
+  const ids = new Set();
+  const queries = [
+    db.collection('users').where('role', '==', 'admin').limit(25).get(),
+    db.collection('memberships').where('role', '==', 'admin').limit(25).get()
+  ];
+  const results = await Promise.allSettled(queries);
+  results.forEach(function (result) {
+    if (result.status !== 'fulfilled') return;
+    result.value.forEach(function (entry) { ids.add(entry.id); });
+  });
+  return Array.from(ids);
+}
+
+async function notifyFinanceTeam(options) {
+  const opts = options || {};
+  try {
+    const ids = await financeTeamIds();
+    if (!ids.length) {
+      console.warn('Finance alert skipped: no administrator role records were found.');
+      return { sent: 0, reason: 'no-finance-recipients' };
+    }
+    let sent = 0;
+    for (const uid of ids) {
+      const result = await deliverEvent({
+        event: opts.event,
+        eventId: eventId(opts.event, uid, (opts.reference || '') + '-' + (opts.suffix || '')),
+        userId: uid,
+        values: opts.values || {},
+        link: opts.link
+      }).catch(function (error) {
+        console.error('Finance alert failed for ' + uid + ':', error && error.message);
+        return null;
+      });
+      if (result && result.sent) sent += 1;
+    }
+    return { sent, recipients: ids.length };
+  } catch (error) {
+    console.error('Finance alert could not be queued:', error && error.message);
+    return { sent: 0, error: error && error.message };
+  }
+}
+
 async function notifyPayment(change, context) {
   if (!change.after.exists) return null;
   const before = change.before.exists ? change.before.data() : null;
@@ -941,7 +1045,7 @@ async function notifyPayment(change, context) {
   else if (current === 'approved') event = 'payment_approved';
   else if (current === 'rejected') event = 'payment_rejected';
   if (!event) return null;
-  return deliverEvent({
+  const result = await deliverEvent({
     event,
     eventId: eventId(event, row.userId, String(context.params.reference) + '-' + eventSuffix(change.after)),
     userId: row.userId,
@@ -956,6 +1060,72 @@ async function notifyPayment(change, context) {
     },
     link: '/support.html#myplans'
   });
+  // Receipt submitted: the member gets the confirmation above, and finance
+  // gets its own alert (in-app + email). A failure here never hides the
+  // member's message or pretends the alert was sent.
+  if (event === 'payment_submitted') {
+    await notifyFinanceTeam({
+      event: 'payment_finance_alert',
+      reference: String(context.params.reference),
+      suffix: eventSuffix(change.after),
+      link: '/admin.html#payment-verification',
+      values: {
+        reference: row.reference || context.params.reference,
+        status: statusLabel(current),
+        plan: row.planName || (row.kind === 'wallet_deposit' ? 'Wallet deposit' : ''),
+        amount: formatAmount(row.amount, row.currency),
+        date: formatDate(new Date())
+      }
+    });
+  }
+  return result;
+}
+
+async function notifyWithdrawal(change, context) {
+  if (!change.after.exists) return null;
+  const before = change.before.exists ? change.before.data() : null;
+  const row = change.after.data() || {};
+  const previous = before ? before.status : '';
+  const current = row.status || '';
+  if (previous === current) return null;
+  let event = '';
+  if (!before && current === 'pending_review') event = 'withdrawal_submitted';
+  else if (current === 'processing' && previous !== 'processing') event = 'withdrawal_processing';
+  else if (current === 'rejected' && previous !== 'rejected') event = 'withdrawal_rejected';
+  else if (current === 'paid' && previous !== 'paid') event = 'withdrawal_paid';
+  if (!event) return null;
+  const reference = row.reference || String(context.params.id);
+  const result = await deliverEvent({
+    event,
+    eventId: eventId(event, row.userId, reference + '-' + eventSuffix(change.after)),
+    userId: row.userId,
+    values: {
+      name: row.userName || '',
+      reference,
+      status: statusLabel(current),
+      plan: 'Savings wallet withdrawal',
+      amount: formatAmount(row.amount, row.currency),
+      reason: row.rejectionReason || '',
+      date: formatDate(new Date())
+    },
+    link: '/support.html#wallet'
+  });
+  if (event === 'withdrawal_submitted') {
+    await notifyFinanceTeam({
+      event: 'withdrawal_finance_alert',
+      reference,
+      suffix: eventSuffix(change.after),
+      link: '/admin.html#withdrawals',
+      values: {
+        reference,
+        status: statusLabel(current),
+        plan: 'Savings wallet withdrawal',
+        amount: formatAmount(row.amount, row.currency),
+        date: formatDate(new Date())
+      }
+    });
+  }
+  return result;
 }
 
 async function notifySubscription(change, context) {
@@ -1193,6 +1363,7 @@ const testimonyNotifications = region.firestore.document('testimonies/{id}').onW
 const certificateNotifications = region.firestore.document('certificates/{id}').onCreate(notifyCertificate);
 const examNotifications = region.firestore.document('finalExamSubmissions/{id}').onWrite(notifyExam);
 const claimNotifications = region.firestore.document('supportClaims/{id}').onWrite(notifyClaim);
+const withdrawalNotifications = region.firestore.document('withdrawals/{id}').onWrite(notifyWithdrawal);
 const expiringSubscriptionJob = region.pubsub.schedule('every day 04:10').timeZone('Africa/Lusaka').onRun(expiringSubscriptionNotifications);
 const retryEmailJob = region.pubsub.schedule('every 30 minutes').timeZone('Africa/Lusaka').onRun(retryFailedEmails);
 
@@ -1212,6 +1383,8 @@ module.exports = {
   certificateNotifications,
   examNotifications,
   claimNotifications,
+  withdrawalNotifications,
+  notifyFinanceTeam,
   expiringSubscriptionJob,
   retryEmailJob
 };

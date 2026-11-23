@@ -27,6 +27,8 @@
   let plans = [];
   let programmes = [];
   let activity = [];
+  let withdrawals = [];
+  let paymentSettings = null;
 
   const esc = (value) => String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -70,7 +72,8 @@
       window.loadPayments ? window.loadPayments() : null,
       window.loadSubscriptions ? window.loadSubscriptions() : null,
       window.loadWalletTransactions ? window.loadWalletTransactions() : null,
-      window.loadWalletBalances ? window.loadWalletBalances() : null
+      window.loadWalletBalances ? window.loadWalletBalances() : null,
+      window.loadWithdrawals ? window.loadWithdrawals() : null
     ]).then(() => {
       if (typeof window.loadDashboardPerformance === 'function') window.loadDashboardPerformance();
     });
@@ -781,6 +784,165 @@
     }
   };
 
+
+  /* ----------------------------------------------------- official payment details */
+  window.loadPaymentSettings = async function () {
+    const status = document.getElementById('paySettingsStatus');
+    try {
+      const snap = await getDoc(doc(bridge.db, 'settings', 'payments'));
+      const row = snap.exists ? snap.data() : {};
+      paymentSettings = row;
+      if (document.getElementById('paySettingsNumber')) document.getElementById('paySettingsNumber').value = row.mobileMoneyNumber || '';
+      if (document.getElementById('paySettingsName')) document.getElementById('paySettingsName').value = row.accountName || 'PRAYER DOME';
+      if (document.getElementById('paySettingsNetwork')) document.getElementById('paySettingsNetwork').value = row.network || 'MTN Mobile Money';
+      if (document.getElementById('paySettingsInstructions')) document.getElementById('paySettingsInstructions').value = row.instructions || '';
+      if (status) status.textContent = row.mobileMoneyNumber
+        ? 'Configured · number ending ' + String(row.mobileMoneyNumber).replace(/\D/g, '').slice(-4)
+        : 'Not configured. Checkout will refuse to create a payment request until this is saved.';
+    } catch (error) {
+      if (status) status.textContent = 'Could not read payment settings: ' + error.message;
+    }
+  };
+
+  window.savePaymentSettings = async function () {
+    const number = String((document.getElementById('paySettingsNumber') || {}).value || '').trim();
+    const accountName = String((document.getElementById('paySettingsName') || {}).value || '').trim();
+    const network = String((document.getElementById('paySettingsNetwork') || {}).value || '').trim();
+    const instructions = String((document.getElementById('paySettingsInstructions') || {}).value || '').trim();
+    if (number.replace(/\D/g, '').length < 9) return window.toast('Enter the official Mobile Money number with its country code.', 'error');
+    if (!accountName) return window.toast('Enter the official account name.', 'error');
+    window.showLoading();
+    try {
+      const result = await callBilling('payment.settings.save', {
+        mobileMoneyNumber: number,
+        accountName,
+        network: network || 'Mobile Money',
+        instructions
+      });
+      paymentSettings = result.settings || null;
+      window.hideLoading();
+      window.toast('Official payment details saved. New checkouts will use this number.');
+      await window.loadPaymentSettings();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
+  /* ------------------------------------------------------------- withdrawals */
+  window.loadWithdrawals = async function () {
+    const body = document.getElementById('withdrawalList');
+    if (!body) return;
+    body.innerHTML = loadingRow(8, 'Loading withdrawals…');
+    try {
+      const snapshot = await getDocs(query(collection(bridge.db, 'withdrawals'), orderBy('createdAt', 'desc'), limit(250)));
+      withdrawals = snapshot.docs.map((entry) => Object.assign({ id: entry.id }, entry.data()));
+      renderWithdrawals();
+    } catch (error) {
+      console.error('Withdrawal load failed:', error);
+      body.innerHTML = emptyRow(8, 'Withdrawals could not be loaded: ' + error.message);
+      const summary = document.getElementById('withdrawalSummary');
+      if (summary) summary.textContent = 'Unavailable';
+    }
+  };
+
+  window.filterWithdrawals = function () { renderWithdrawals(); };
+
+  function renderWithdrawals() {
+    const body = document.getElementById('withdrawalList');
+    if (!body) return;
+    const filter = (document.getElementById('withdrawalStatusFilter') || {}).value || 'open';
+    const search = String((document.getElementById('withdrawalSearch') || {}).value || '').trim().toLowerCase();
+    const rows = withdrawals.filter((row) => {
+      if (filter === 'open' && !['pending_review', 'processing'].includes(row.status)) return false;
+      if (!['all', 'open'].includes(filter) && row.status !== filter) return false;
+      if (!search) return true;
+      return [row.userName, row.userEmail, row.reference, row.receivePhone, row.paidReference, row.status]
+        .join(' ').toLowerCase().includes(search);
+    });
+    const open = withdrawals.filter((row) => ['pending_review', 'processing'].includes(row.status));
+    const summary = document.getElementById('withdrawalSummary');
+    if (summary) {
+      summary.textContent = open.length + ' open · ' +
+        money(open.reduce((sum, row) => sum + Number(row.amount || 0), 0), 'USD') + ' held · ' +
+        withdrawals.length + ' records';
+    }
+    if (!rows.length) {
+      body.innerHTML = emptyRow(8, 'No withdrawals match this filter.');
+      return;
+    }
+    body.innerHTML = rows.map((row) => {
+      const actions = [];
+      if (row.status === 'pending_review') {
+        actions.push('<button class="btn btn-sm btn-primary" type="button" onclick="approveWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-check"></i> Approve</button>');
+        actions.push('<button class="btn btn-sm btn-danger" type="button" onclick="rejectWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-x"></i> Reject</button>');
+      } else if (row.status === 'processing') {
+        actions.push('<button class="btn btn-sm btn-primary" type="button" onclick="markWithdrawalPaid(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-banknote"></i> Mark paid</button>');
+        actions.push('<button class="btn btn-sm btn-danger" type="button" onclick="rejectWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-x"></i> Reject</button>');
+      }
+      if (row.userId) actions.push('<button class="btn btn-sm btn-outline" type="button" onclick="viewFullMemberDetails(\'' + esc(row.userId) + '\')"><i class="pd-i pd-i-user"></i> Member</button>');
+      return '<tr>' +
+        '<td style="white-space:nowrap;">' + esc(date(row.requestedAt || row.createdAt)) + '</td>' +
+        '<td><strong>' + esc(row.userName || memberName(row.userId)) + '</strong><br><span style="font-size:.68rem;color:var(--text-sub);">' + esc(row.userEmail || '') + '</span></td>' +
+        '<td><strong>' + money(row.amount, row.currency) + '</strong></td>' +
+        '<td>' + esc(row.receivePhone || '—') + '</td>' +
+        '<td>' + chip(row.status) + (row.rejectionReason ? '<br><span style="font-size:.68rem;color:#b91c1c;">' + esc(row.rejectionReason) + '</span>' : '') + '</td>' +
+        '<td style="font-family:monospace;font-size:.68rem;word-break:normal;overflow-wrap:break-word;">' + esc(row.reference || row.id) + '</td>' +
+        '<td style="font-family:monospace;font-size:.68rem;word-break:normal;overflow-wrap:break-word;">' + esc(row.paidReference || '—') + '</td>' +
+        '<td><div style="display:flex;gap:5px;flex-wrap:wrap;">' + (actions.join('') || '—') + '</div></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  window.approveWithdrawal = async function (reference) {
+    if (!window.confirm('Approve this withdrawal for payment? No money leaves the wallet yet. You must mark it paid only after the Mobile Money payment is confirmed.')) return;
+    window.showLoading();
+    try {
+      await callBilling('withdrawal.approve', { reference });
+      window.hideLoading();
+      window.toast('Withdrawal approved for processing. Mark it paid after the payment is confirmed.');
+      await window.loadWithdrawals();
+      await window.loadWalletBalances();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
+  window.rejectWithdrawal = async function (reference) {
+    const reason = String(window.prompt('Why is this withdrawal rejected? The member sees this reason and no money is deducted.') || '').trim();
+    if (reason.length < 4) return window.toast('A reason of at least 4 characters is required. Nothing was changed.', 'error');
+    window.showLoading();
+    try {
+      await callBilling('withdrawal.reject', { reference, reason });
+      window.hideLoading();
+      window.toast('Withdrawal rejected. The hold was released and the balance did not change.');
+      await window.loadWithdrawals();
+      await window.loadWalletBalances();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
+  window.markWithdrawalPaid = async function (reference) {
+    const paidReference = String(window.prompt('Enter the Mobile Money transaction reference for the payment you actually sent.') || '').trim();
+    if (paidReference.length < 4) return window.toast('A real payment reference is required. Nothing was changed.', 'error');
+    if (!window.confirm('Confirm that ' + paidReference + ' is a completed Mobile Money payment to the member. This will deduct the wallet balance exactly once.')) return;
+    window.showLoading();
+    try {
+      const result = await callBilling('withdrawal.paid', { reference, paidReference, confirmed: true });
+      window.hideLoading();
+      window.toast(result.alreadyPaid ? 'This withdrawal was already marked paid.' : 'Withdrawal paid and deducted exactly once.');
+      await window.loadWithdrawals();
+      await window.loadWalletBalances();
+      await window.loadWalletTransactions();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
   /* ----------------------------------------------------------------- activity */
   async function fetchActivity(max) {
     const [logs, audits] = await Promise.allSettled([
@@ -883,6 +1045,8 @@
     loadSubscriptions: window.loadSubscriptions,
     loadWalletTransactions: window.loadWalletTransactions,
     loadWalletBalances: window.loadWalletBalances,
+    loadWithdrawals: window.loadWithdrawals,
+    loadPaymentSettings: window.loadPaymentSettings,
     loadSupportPlansAdmin: window.loadSupportPlansAdmin,
     loadRecentActivity: window.loadRecentActivity,
     renderBillingSnapshot: window.renderBillingSnapshot

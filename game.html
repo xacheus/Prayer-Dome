@@ -188,11 +188,13 @@
       margin: 0;
       border: 0;
       border-radius: 0;
-      padding: 8px clamp(8px, 2.4vw, 18px) calc(8px + env(safe-area-inset-bottom));
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      overflow-y: auto;
+      padding: 6px clamp(8px, 2.4vw, 18px) calc(6px + env(safe-area-inset-bottom));
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 6px;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
       overscroll-behavior: contain;
       background: var(--pd-acad-card, #fff);
     }
@@ -202,31 +204,81 @@
     body.game-focus #panel-talk .domey-controls { margin-top: 4px; order: 9; }
     body.game-focus #panel-talk .domey-controls #domeyStartBtn { display: none !important; }
     body.game-focus #panel-talk .domey-controls #domeyExitBtn { display: inline-flex !important; }
-    body.game-focus #domeyStage { flex: 0 0 auto; display: flex; justify-content: center; }
-    body.game-focus .pdm-companion { gap: 8px; }
+    /* #domeyStage is the mascot root, not a wrapper: it must stay a grid.
+       Turning it into a flex row put the stage beside the dialogue and pushed
+       the fourth answer off the phone screen. Three rows keep Domey on top,
+       the question and all four answers underneath, and the exit controls at
+       the bottom — never under a scroll position. */
+    body.game-focus #domeyStage {
+      display: grid !important;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr);
+      align-content: start;
+      align-items: start;
+      justify-items: stretch;
+      width: 100%;
+      max-width: 760px;
+      min-height: 0;
+      margin: 0 auto;
+      overflow: hidden;
+    }
+    body.game-focus .pdm-companion { gap: 6px; }
+    body.game-focus .pdm-companion .pdm-dialog {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 0;
+      width: 100%;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    body.game-focus .pdm-answer,
+    body.game-focus .pdm-hint { display: none !important; }
+    body.game-focus #domeyBestChip,
+    body.game-focus #domeyMicChip { display: none !important; }
     body.game-focus .pdm-companion .pdm-topbar { min-height: 34px; gap: 6px; }
     /* Keep the stage's 11:13 aspect ratio. A fixed height with width:100%
        turned it into a wide letterbox and the SVG body was cropped. The
        narrow centred stage shows Domey head-to-feet, and the question and
        four answers stay in normal flow underneath — never over her. */
     body.game-focus .pdm-companion .pdm-stage {
-      width: clamp(150px, 46vw, 220px) !important;
+      width: min(28vh, 46vw, 190px) !important;
       max-width: 100%;
       min-height: 0 !important;
       height: auto !important;
       aspect-ratio: 11 / 13;
       margin-inline: auto;
-      flex: 0 0 auto;
       border-radius: 14px;
     }
-    body.game-focus .pdm-companion .pdm-char-wrap { width: 88%; max-height: calc(100% - 6px); }
-    body.game-focus .pdm-companion .pdm-char { object-fit: contain; max-height: 100%; }
+    /* The drawing is never stretched or cropped: the wrap is a containing box
+       and the SVG keeps its own aspect ratio inside it. */
+    body.game-focus .pdm-companion .pdm-char-wrap {
+      width: 90%;
+      height: calc(100% - 8px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: visible;
+    }
+    body.game-focus .pdm-companion .pdm-char {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center bottom;
+      max-height: 100%;
+    }
     body.game-focus .pdm-companion .pdm-dialogue-card { padding: 10px 12px; border-radius: 14px; }
     body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .92rem; line-height: 1.42; }
     body.game-focus .pdm-companion .pdm-chips { margin-top: 8px; gap: 7px; }
-    body.game-focus .pdm-chip.pdm-chip-big { min-height: 46px; padding: 9px 11px; font-size: .88rem; border-radius: 11px; }
-    body.game-focus .pdm-chip-letter { width: 26px; height: 26px; font-size: .76rem; }
-    body.game-focus .pdm-chip-continue { min-height: 48px; font-weight: 800; }
+    body.game-focus .pdm-chip.pdm-chip-big { min-height: 44px; padding: 8px 10px; font-size: .85rem; border-radius: 10px; }
+    body.game-focus .pdm-chip-letter { width: 25px; height: 25px; font-size: .74rem; }
+    body.game-focus .pdm-chip-continue { min-height: 46px; font-weight: 800; }
+    body.game-focus .pdm-companion .pdm-dialogue-card { padding: 9px 11px; }
+    body.game-focus .pdm-companion .pdm-bar { margin-top: 7px; padding-top: 7px; gap: 6px; }
+    body.game-focus .pdm-companion .pdm-bar .pdm-mic { min-height: 40px; }
+    body.game-focus .pdm-companion .pdm-bar button { font-size: .7rem; padding: 7px 9px; }
     body.game-focus .pdm-log { display: none; }
     /* No idle motion, no sheen, no scroll-reveal inside the game. */
     body.game-focus .pdm-companion *,
@@ -236,18 +288,31 @@
       transition: none !important;
     }
     .game-wrap [class*="pd-reveal"] { opacity: 1 !important; transform: none !important; animation: none !important; }
-    @media (max-height: 640px) {
-      body.game-focus .pdm-companion .pdm-stage { width: clamp(126px, 36vw, 176px) !important; }
-      body.game-focus .pdm-chip.pdm-chip-big { min-height: 42px; padding: 7px 10px; }
-      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .86rem; }
+    @media (max-height: 700px) {
+      body.game-focus .pdm-companion .pdm-stage { width: min(26vh, 40vw, 170px) !important; }
+      body.game-focus .pdm-chip.pdm-chip-big { min-height: 40px; padding: 6px 9px; font-size: .82rem; }
+      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .84rem; line-height: 1.38; }
+      body.game-focus .pdm-companion .pdm-dialogue-card { padding: 8px 10px; }
+      body.game-focus .pdm-companion .pdm-bar { margin-top: 5px; padding-top: 5px; }
+    }
+    @media (max-height: 580px) {
+      body.game-focus .pdm-companion .pdm-stage { width: min(22vh, 34vw, 140px) !important; }
+      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-bar { display: none !important; }
+      body.game-focus .pdm-chip.pdm-chip-big { min-height: 37px; padding: 5px 8px; font-size: .79rem; }
+      body.game-focus .pdm-chip-letter { width: 22px; height: 22px; font-size: .68rem; }
+      body.game-focus .domey-controls { gap: 6px !important; }
+      body.game-focus .domey-controls .pd-acad-btn { padding: 7px 10px; font-size: .72rem; }
     }
     @media (max-width: 480px) {
-      body.game-focus .pdm-companion .pdm-chips { grid-template-columns: 1fr; }
+      body.game-focus .pdm-companion .pdm-chips { grid-template-columns: 1fr; gap: 6px; }
     }
     @media (max-width: 380px) {
-      body.game-focus .pdm-companion .pdm-stage { width: clamp(132px, 40vw, 160px) !important; }
-      body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .58rem; }
+      body.game-focus .pdm-companion .pdm-stage { width: min(24vh, 40vw, 150px) !important; }
+      body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .56rem; }
+      body.game-focus .pdm-companion .pdm-topbar { min-height: 28px; }
     }
+    body.game-focus .pdm-text,
+    body.game-focus .pdm-chip-label { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
     @media (prefers-reduced-motion: reduce) {
       .game-hero::before { animation: none; }
     }
@@ -345,7 +410,7 @@
       <h2 style="margin:0; font-family:Poppins,sans-serif; color:var(--pd-acad-blue); font-size:1.35rem;"><i class="pd-i pd-i-mic-vocal" style="color:var(--pd-gold);"></i> Talk with Domey</h2>
     </div>
     <p class="domey-intro" style="color:var(--pd-acad-muted); margin:0 0 18px; line-height:1.6;">Domey reads each Bible question out loud, listens to your answer, and explains the scripture behind every answer. Answer by talking, by tapping <strong>A, B, C or D</strong>, or by typing. Ask her to <em>repeat</em>, ask for a <em>hint</em>, or say <em>skip</em>. The whole conversation is written below so you can read along.</p>
-    <div id="domeyStage" aria-hidden="true"></div>
+    <div id="domeyStage"></div>
 
     <div class="domey-controls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;">
       <button class="pd-acad-btn pd-acad-btn-primary" id="domeyStartBtn" type="button"><i class="pd-i pd-i-play"></i> Start the show</button>

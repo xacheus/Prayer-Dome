@@ -1744,17 +1744,34 @@
     // a word, sees it light up and sees the mouth shape that word needs.
     var captions = this._renderCaptions(line, estimate, token);
     var plan = speechPlan(line, rate);
-    if (this.mouthOn) {
-      this.mouth.onWord = function (index) { captions.showWord(index); };
-      this.mouth.start(plan);
-    }
+    var mouthStarted = false;
+    var startMouth = function () {
+      // The lips belong to a speaking turn, not to the caption timer or to an
+      // idle pose. The voice's own start and word boundaries keep the plan
+      // honest, `landed()` stops it, and a muted/captions-only host never
+      // starts it at all.
+      if (!self.mouthOn || mouthStarted || token.cancelled) return;
+      mouthStarted = true;
+      self.mouth.onWord = function (index) { captions.showWord(index); };
+      self.mouth.start(plan);
+    };
+    if (this.mouthOn) this.mouth.onWord = function (index) { captions.showWord(index); };
+    // A muted or captions-only host has no voice, so it gets no moving mouth.
+    // An unmuted speaking turn starts the plan at once; the voice's own
+    // boundaries then keep it honest, and `landed()` rests the mouth when the
+    // line (or a blocked attempt) finishes. Idle, listening and thinking never
+    // carry a viseme.
+    if (this.mouthOn && !this.muted && !this.options.captionsOnly) startMouth();
     if (opts.emote !== 'praying' && this.actionsOn) this._gestureLoop(token);
 
     var speakOpts = {
       rate: rate,
       pitch: opts.pitch || this.options.pitch,
       lang: opts.lang || this.options.lang,
-      onStart: opts.onStart,
+      onStart: function () {
+        startMouth();
+        if (opts.onStart) { try { opts.onStart(); } catch (e) {} }
+      },
       // The engine's word boundaries keep the lips honest; without them the
       // plan simply plays at its own pace.
       onWord: function (index, charIndex, elapsedMs) {
