@@ -99,6 +99,16 @@ test('the member and admin pages keep the error code and retry transient calls',
   assert.match(admin, /billingErrorCopy\(error, \{ staff: true \}\)/);
 });
 
+test('the billing server uses the namespaced Admin SDK it is written for', () => {
+  const pkg = JSON.parse(read('functions/package.json'));
+  assert.match(pkg.dependencies['firebase-admin'], /^\^13\./,
+    'firebase-admin 14 removed admin.firestore(); the billing code is namespaced');
+  const index = read('functions/index.js');
+  assert.match(index, /if \(!admin\.apps\.length\)/);
+  assert.doesNotMatch(index, /admin\.getApps\(/);
+  assert.match(index, /ignoreUndefinedProperties: true/);
+});
+
 test('browser and server catalogues contain the same 11 plans', () => {
   const browserIds = Array.from(browser.PLANS, (plan) => plan.id).sort();
   const serverIds = Array.from(server.PLANS, (plan) => plan.id).sort();

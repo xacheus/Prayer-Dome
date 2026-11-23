@@ -38,6 +38,14 @@ function fail(code, message, details) {
   throw new HttpsError(code, message, Object.assign({ billing: true }, details || {}));
 }
 
+function isHttpsError(error) {
+  // A Firestore transaction can propagate an error across a retry boundary.
+  // Match the class first, then its shape, so a real business rule is never
+  // reported to the member as an opaque internal failure.
+  return error instanceof HttpsError ||
+    (error && (error.name === 'HttpsError' || (error.constructor && error.constructor.name === 'HttpsError')));
+}
+
 function requireAuth(context) {
   if (!context || !context.auth || !context.auth.uid) {
     fail('unauthenticated', 'Sign in to continue.');
@@ -187,11 +195,18 @@ async function loadPlan(id, options) {
     const fallback = catalog.get(wanted);
     if (fallback) {
       const row = catalog.normalizePlan(fallback, wanted);
-      await ref.set(Object.assign({}, row, {
-        source: 'standard-catalogue',
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        updatedAt: admin.firestore.FieldValue.serverTimestamp()
-      }), { merge: true });
+      // Seeding the catalogue is a convenience, not a precondition for taking
+      // a payment. If the write is denied or the row is momentarily locked,
+      // the standard plan is still a valid, server-priced choice.
+      try {
+        await ref.set(Object.assign({}, row, {
+          source: 'standard-catalogue',
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }), { merge: true });
+      } catch (error) {
+        console.warn('Plan catalogue seed skipped for ' + wanted + ':', error && error.message);
+      }
       return row;
     }
   }
@@ -259,6 +274,9 @@ function paymentView(data) {
 
 async function createCheckout(data, context) {
   const uid = requireAuth(context);
+  // Some auth providers omit parts of the token object; never let a missing
+  // display name turn a checkout into a bare internal error.
+  const token = (context.auth && context.auth.token) || {};
   const db = admin.firestore();
   const kind = data.kind === 'wallet_deposit' ? 'wallet_deposit' : 'subscription';
   const method = ALLOWED_METHODS.includes(data.method) ? data.method : 'mobile-money';
@@ -343,8 +361,8 @@ async function createCheckout(data, context) {
       amount: charge,
       currency: CURRENCY,
       userId: uid,
-      userName: text(user.fullName || member.fullName || context.auth.token.name || user.email || 'Member', 140),
-      userEmail: text(user.email || member.email || context.auth.token.email || '', 180),
+      userName: text(user.fullName || member.fullName || token.name || user.email || 'Member', 140),
+      userEmail: text(user.email || member.email || token.email || '', 180),
       method,
       planId: plan ? plan.id : '',
       planName: plan ? plan.name : 'Secure wallet deposit',
@@ -931,6 +949,7 @@ function publicWithdrawal(row) {
 
 async function requestWithdrawal(data, context) {
   const uid = requireAuth(context);
+  const token = (context.auth && context.auth.token) || {};
   const db = admin.firestore();
   const value = amount(data.amount);
   if (value < MIN_WITHDRAWAL) fail('invalid-argument', 'The minimum withdrawal is $10.00.');
@@ -981,8 +1000,8 @@ async function requestWithdrawal(data, context) {
     const row = {
       reference,
       userId: uid,
-      userName: text(user.fullName || member.fullName || context.auth.token.name || user.email || 'Member', 140),
-      userEmail: text(user.email || member.email || context.auth.token.email || '', 180),
+      userName: text(user.fullName || member.fullName || token.name || user.email || 'Member', 140),
+      userEmail: text(user.email || member.email || token.email || '', 180),
       amount: value,
       currency: CURRENCY,
       receivePhone: phone,
@@ -1353,13 +1372,30 @@ async function handler(data, context) {
   try {
     return await routeBilling(payload, context);
   } catch (error) {
-    if (error instanceof HttpsError) throw error;
+    if (isHttpsError(error)) throw error;
     // Firestore/Storage failures used to reach the caller as a bare
     // "internal", which the page could only show as one catch-all notice.
-    // Keep the code internal, but make the failed action and the real cause
-    // visible in the function log with one searchable line.
+    // Keep the failed action and the real cause in the log, and turn the
+    // causes an administrator can actually act on into precise messages.
     console.error('Billing action ' + action + ' failed:', error && (error.stack || error.message) || error);
-    fail('internal', 'Billing could not complete this request. The server did not confirm it; please retry.');
+    const raw = String((error && (error.code || error.status || error.message)) || '').toUpperCase();
+    if (/PERMISSION_DENIED|MISSING OR INSUFFICIENT PERMISSIONS/.test(raw)) {
+      fail('failed-precondition',
+        'Billing cannot access Firestore. Ask the ministry administrator to grant the Cloud Functions service account access to the database, then retry.',
+        { cause: 'PERMISSION_DENIED' });
+    }
+    if (/NOT_FOUND|DATABASE .* NOT FOUND/.test(raw)) {
+      fail('failed-precondition',
+        'The billing database is not reachable. Ask the ministry administrator to confirm the Firestore database and project, then retry.',
+        { cause: 'FIRESTORE_NOT_FOUND' });
+    }
+    if (/UNAVAILABLE|DEADLINE_EXCEEDED|ETIMEDOUT/.test(raw)) {
+      fail('unavailable',
+        'Billing could not reach the database in time. Please retry in a moment.',
+        { cause: 'UNAVAILABLE' });
+    }
+    fail('internal', 'Billing could not complete this request. The server did not confirm it; please retry.',
+      { cause: raw.slice(0, 80) || 'UNKNOWN' });
   }
 }
 

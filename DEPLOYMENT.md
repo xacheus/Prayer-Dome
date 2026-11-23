@@ -103,6 +103,12 @@ or an unconfigured finance number) is shown exactly as written by the server.
 Deploying only `billing` avoids the secret check on unrelated Brevo/Cloudinary
 functions; deploy all functions afterwards if their code also changed.
 
+The functions package is pinned to `firebase-admin` 13.x. Version 14 removed the
+namespaced `admin.firestore()` / `admin.storage()` API used throughout these
+files, so upgrading it turns every billing call into an opaque `internal` error.
+Run `npm run functions:verify` after changing dependencies; it now fails fast if
+the namespace API is missing.
+
 ### Bible reader (API.Bible)
 
 NIV and The Message (MSG) are read from API.Bible through `/api/bible`. The
