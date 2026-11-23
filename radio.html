@@ -196,6 +196,68 @@
         .ticker-bar { background: linear-gradient(90deg, var(--accent-green), #0a3d7a); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: 1px; padding: 7px 10px; text-align: center; white-space: nowrap; overflow: hidden; }
         .ticker-bar .ticker-track { display: inline-block; animation: ticker 30s linear infinite; padding-left: 100%; }
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        /* ---- Radio welcome & player ---- */
+        .radio-hero {
+            margin: 10px 20px 0; padding: clamp(18px, 3.5vw, 30px);
+            border-radius: 16px; color: #fff; position: relative; overflow: hidden;
+            background: linear-gradient(135deg, #0A4D9B 0%, #083b78 58%, #07244d 100%);
+            border: 1px solid rgba(212,175,55,.35); box-shadow: 0 16px 36px rgba(10,77,155,.24);
+            display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .8fr); gap: 24px; align-items: center;
+        }
+        .radio-hero::after { content: ""; position: absolute; right: -80px; top: -120px; width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(212,175,55,.34), transparent 65%); pointer-events: none; }
+        .radio-hero-copy { position: relative; z-index: 1; min-width: 0; }
+        .radio-brandline { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+        .radio-brandline img { width: 42px; height: 42px; object-fit: contain; border-radius: 10px; background: #fff; padding: 4px; }
+        .radio-brandline span { color: #f6df8a; font-size: .64rem; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; }
+        .radio-hero h1 { margin: 0 0 8px; color: #fff; font-size: clamp(1.45rem, 4.3vw, 2.1rem); line-height: 1.18; }
+        .radio-hero p.lead { margin: 0; color: rgba(255,255,255,.88); font-size: .86rem; line-height: 1.6; max-width: 560px; }
+        .radio-status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .radio-status { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.28); color: #fff; font-size: .66rem; font-weight: 850; }
+        .radio-status .dot { width: 7px; height: 7px; border-radius: 50%; background: #f6df8a; }
+        .radio-status.is-playing .dot { background: #4ade80; box-shadow: 0 0 0 3px rgba(74,222,128,.2); }
+        .radio-status.is-error .dot { background: #fca5a5; }
+        .radio-programme { display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,.9); font-size: .72rem; }
+        .radio-programme strong { color: #f6df8a; }
+        .radio-player-card { position: relative; z-index: 1; background: rgba(2,12,27,.35); border: 1px solid rgba(255,255,255,.18); border-radius: 13px; padding: 15px; min-width: 0; }
+        .radio-player-card h2 { margin: 0 0 4px; font-size: .84rem; color: #fff; display: flex; align-items: center; gap: 7px; }
+        .radio-player-card .station { color: rgba(255,255,255,.8); font-size: .7rem; line-height: 1.45; margin: 0 0 12px; }
+        .radio-main-toggle { width: 100%; min-height: 46px; border: 1px solid #f6df8a; border-radius: 10px; background: #d4af37; color: #10233f; font: 900 .82rem 'Inter',sans-serif; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .radio-main-toggle:disabled { opacity: .6; cursor: not-allowed; }
+        .radio-main-toggle:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+        .radio-volume { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; margin-top: 10px; color: rgba(255,255,255,.86); font-size: .66rem; font-weight: 700; }
+        .radio-volume input { width: 100%; accent-color: #d4af37; }
+        .radio-note { margin: 9px 0 0; color: rgba(255,255,255,.66); font-size: .62rem; line-height: 1.45; }
+        .radio-note.is-error { color: #fecaca; }
+        .radio-schedule { margin: 16px 20px 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; }
+        .radio-schedule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
+        .radio-schedule-head h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 7px; }
+        .radio-schedule-head p { margin: 3px 0 0; color: var(--text-sub); font-size: .7rem; line-height: 1.4; }
+        .radio-schedule-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 0; }
+        .radio-programme-row { padding: 11px 16px; border-top: 1px solid var(--border-color); display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+        .radio-programme-row:first-child { border-top: 0; }
+        .radio-programme-row.is-current { background: rgba(212,175,55,.09); }
+        .radio-programme-time { flex: 0 0 auto; font-size: .64rem; font-weight: 850; color: #8a6d1a; min-width: 74px; }
+        .radio-programme-copy { min-width: 0; }
+        .radio-programme-copy strong { display: block; font-size: .76rem; line-height: 1.3; }
+        .radio-programme-copy span { display: block; font-size: .66rem; color: var(--text-sub); margin-top: 1px; }
+        .radio-card .radio-card-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: .64rem; color: rgba(255,255,255,.8); }
+        body.dark-mode .radio-schedule { background: var(--bg-card); }
+        .radio-welcome-video { margin: 16px 20px 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 15px 16px; }
+        .radio-welcome-video h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 7px; }
+        .radio-welcome-video > p { margin: 3px 0 12px; color: var(--text-sub); font-size: .7rem; line-height: 1.45; }
+        .radio-welcome-frame { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(220px, .85fr); gap: 16px; align-items: start; }
+        .radio-welcome-frame video { width: 100%; max-height: 360px; border-radius: 11px; background: #020617; }
+        .radio-welcome-copy strong { display: block; font-size: .9rem; margin-bottom: 4px; }
+        .radio-welcome-copy p { margin: 0 0 8px; font-size: .75rem; line-height: 1.5; color: var(--text-sub); }
+        .radio-welcome-copy .badge { display: inline-flex; }
+        .radio-welcome-empty { padding: 16px; border: 1px dashed var(--border-color); border-radius: 10px; color: var(--text-sub); font-size: .76rem; line-height: 1.5; }
+        @media (max-width: 700px) { .radio-welcome-frame { grid-template-columns: 1fr; } .radio-welcome-video { margin: 14px 12px 0; } }
+        @media (max-width: 860px) { .radio-hero { grid-template-columns: 1fr; } }
+        @media (max-width: 520px) {
+            .radio-hero { margin: 8px 12px 0; padding: 17px 15px; }
+            .radio-player-card { padding: 12px; }
+            .radio-schedule { margin: 14px 12px 0; }
+        }
         /* Dark mode: brand blue (#0A4D9B) is about 2:1 on navy, so headings and icons use the
            light brand tint (#93c5fd) and controls without a colour get readable text. */
         body.dark-mode .nav-link.active { color: #93c5fd; }
@@ -292,9 +354,37 @@
     <div id="pdNotifList"></div>
 </div>
 
-<section class="media-head">
-    <h1><i class="pd-i pd-i-radio-tower"></i> Gospel Radio & Podcasts</h1>
-    <p>Worship around the clock, narrated Bible stories and daily encouragement — streamed inside the Prayer Dome app, no external player needed.</p>
+<section class="radio-hero" aria-labelledby="radioHeroTitle">
+    <div class="radio-hero-copy">
+        <div class="radio-brandline"><img src="/assets/logo.png" alt="Prayer Dome"><span>Prayer Dome Radio</span></div>
+        <h1 id="radioHeroTitle">Worship that stays with you</h1>
+        <p class="lead">A calm, Christ-centred listening room from Prayer Dome Ministries: gospel music, Bible teaching, prayer and encouragement. Play a station, catch a programme from the published schedule, or listen to a podcast at your own pace.</p>
+        <div class="radio-status-row">
+            <span class="radio-status" id="radioStationStatus"><span class="dot" aria-hidden="true"></span><span>Checking station…</span></span>
+            <span class="radio-programme"><i class="pd-i pd-i-calendar-clock" aria-hidden="true"></i> Scheduled now: <strong id="radioProgramme">Loading…</strong></span>
+        </div>
+    </div>
+    <div class="radio-player-card">
+        <h2><i class="pd-i pd-i-radio" aria-hidden="true"></i> Station player</h2>
+        <p class="station" id="radioHeroStation">Finding the configured station…</p>
+        <button type="button" class="radio-main-toggle" id="radioMainToggle" disabled><i class="pd-i pd-i-play" aria-hidden="true"></i> <span>Play station</span></button>
+        <label class="radio-volume" for="radioVolume"><i class="pd-i pd-i-volume-2" aria-hidden="true"></i><input type="range" id="radioVolume" min="0" max="100" value="80" aria-label="Radio volume"><span id="radioVolumeValue">80%</span></label>
+        <p class="radio-note" id="radioStatusNote">Playback begins only when you press play. Nothing is downloaded in the background.</p>
+    </div>
+</section>
+
+<section class="radio-schedule" aria-labelledby="radioScheduleTitle">
+    <div class="radio-schedule-head">
+        <div><h2 id="radioScheduleTitle"><i class="pd-i pd-i-calendar-clock" aria-hidden="true"></i> Programme schedule</h2><p>Published times in Africa/Lusaka (CAT). A programme is scheduled content, not a claim that a live broadcast is running.</p></div>
+        <span class="radio-status" id="radioScheduleClock"><span class="dot" aria-hidden="true"></span><span>—</span></span>
+    </div>
+    <div class="radio-schedule-list" id="radioSchedule"></div>
+</section>
+
+<section class="radio-welcome-video" aria-labelledby="radioWelcomeTitle">
+    <h2 id="radioWelcomeTitle"><i class="pd-i pd-i-clapperboard" aria-hidden="true"></i> Welcome film</h2>
+    <p>An approved Prayer Dome welcome or promotional film. It is recorded media, not a live broadcast; an administrator reviews every AI-assisted video before it appears here.</p>
+    <div id="radioWelcomeVideo"><div class="radio-welcome-empty"><i class="pd-i pd-i-loader-circle pd-i-spin" aria-hidden="true"></i> Looking for an approved welcome film…</div></div>
 </section>
 
 <h2 class="section-label"><i class="pd-i pd-i-radio"></i> Christian Radio</h2>
@@ -339,7 +429,8 @@
                 <div class="radio-icon"><i class="${window.PDIcons ? PDIcons.cls(s.icon, 'pd-i-radio') : 'pd-i pd-i-radio'}" aria-hidden="true"></i></div>
                 <h3>${esc(s.name)}</h3>
                 <p>${esc(s.tagline || 'Worship around the clock')}</p>
-                <button class="play-btn" data-pd-radio="${esc(s.streamUrl)}" data-pd-radio-name="${esc(s.name)}"><i class="pd-i pd-i-play"></i> Listen Live</button>
+                <span class="radio-card-status"><i class="pd-i pd-i-volume-2" aria-hidden="true"></i> ${s.streamUrl ? 'Stream configured' : 'No stream URL'}</span>
+                <button class="play-btn" data-pd-radio="${esc(s.streamUrl)}" data-pd-radio-name="${esc(s.name)}" ${s.streamUrl ? '' : 'disabled'}><i class="pd-i pd-i-play"></i> Play station</button>
             </div>
         `).join('');
         // Rebind the shared radio player.
@@ -371,8 +462,190 @@
     try { var b = document.querySelector('[data-pd-theme-toggle] .pd-i') || document.querySelector('.theme-toggle-btn .pd-i'); if (b) b.className = dark ? 'pd-i pd-i-sun' : 'pd-i pd-i-moon'; } catch (e) {}
 };
 
+    // ==================== STATION PLAYER & SCHEDULE ====================
+    var radioHeroState = { station: null, playing: false, error: '' };
+
+    function radioStations() {
+        return (window.PDApp && PDApp.store.get('radio', 'DEFAULT_RADIO')) || [];
+    }
+
+    function setRadioStatus(text, kind) {
+        var status = document.getElementById('radioStationStatus');
+        if (!status) return;
+        status.classList.toggle('is-playing', kind === 'playing');
+        status.classList.toggle('is-error', kind === 'error');
+        status.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + esc(text) + '</span>';
+    }
+
+    function setRadioNote(text, isError) {
+        var note = document.getElementById('radioStatusNote');
+        if (!note) return;
+        note.textContent = text;
+        note.classList.toggle('is-error', !!isError);
+    }
+
+    function programmeForNow() {
+        if (window.PD_CONTENT && typeof PD_CONTENT.currentRadioProgramme === 'function') {
+            return PD_CONTENT.currentRadioProgramme(new Date());
+        }
+        return { clock: { label: '' }, programme: null };
+    }
+
+    function renderRadioSchedule() {
+        var list = document.getElementById('radioSchedule');
+        if (!list) return;
+        var data = programmeForNow();
+        var current = data.programme;
+        var schedule = (window.PD_CONTENT && PD_CONTENT.RADIO_PROGRAMMES) || [];
+        var clock = document.getElementById('radioScheduleClock');
+        if (clock) clock.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + esc(data.clock.label ? 'Lusaka ' + data.clock.label : 'Africa/Lusaka') + '</span>';
+        var programme = document.getElementById('radioProgramme');
+        if (programme) programme.textContent = current ? current.title : 'Between programmes';
+        if (!schedule.length) {
+            list.innerHTML = '<p class="radio-programme-row">No published programme schedule yet.</p>';
+            return;
+        }
+        list.innerHTML = schedule.map(function(item) {
+            var isCurrent = current && item.title === current.title && item.start === current.start;
+            var days = item.days.length === 7 ? 'Every day' : item.days.map(function(day) { return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][day]; }).join(' · ');
+            var time = PD_CONTENT.radioTimeLabel ? PD_CONTENT.radioTimeLabel(item.start) + '–' + PD_CONTENT.radioTimeLabel(item.end) : '';
+            return '<div class="radio-programme-row' + (isCurrent ? ' is-current' : '') + '">' +
+                '<span class="radio-programme-time">' + esc(time) + '</span>' +
+                '<div class="radio-programme-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(days + ' · ' + (item.kind || 'Programme')) + '</span></div></div>';
+        }).join('');
+    }
+
+    function chooseStation() {
+        var stations = radioStations();
+        radioHeroState.station = stations.find(function(s) { return s && s.streamUrl; }) || null;
+        var stationEl = document.getElementById('radioHeroStation');
+        var toggle = document.getElementById('radioMainToggle');
+        if (!radioHeroState.station) {
+            if (stationEl) stationEl.textContent = 'No radio station is configured yet. An administrator can add one in the admin Media area.';
+            if (toggle) { toggle.disabled = true; toggle.innerHTML = '<i class="pd-i pd-i-play" aria-hidden="true"></i> <span>No station configured</span>'; }
+            setRadioStatus('No station configured', 'idle');
+            setRadioNote('Playback is unavailable until a licensed station stream is added.', true);
+            return;
+        }
+        if (stationEl) stationEl.textContent = radioHeroState.station.name + ' · ' + (radioHeroState.station.tagline || 'Gospel radio');
+        if (toggle) { toggle.disabled = false; toggle.innerHTML = '<i class="pd-i pd-i-play" aria-hidden="true"></i> <span>Play station</span>'; }
+        if (!radioHeroState.playing && !radioHeroState.error) {
+            setRadioStatus('Ready to stream', 'idle');
+            setRadioNote('Playback begins only when you press play. Nothing is downloaded in the background.');
+        }
+    }
+
+    function updateRadioHero() {
+        var toggle = document.getElementById('radioMainToggle');
+        if (radioHeroState.playing) {
+            setRadioStatus('Playing in this app', 'playing');
+            if (toggle) toggle.innerHTML = '<i class="pd-i pd-i-pause" aria-hidden="true"></i> <span>Pause station</span>';
+            setRadioNote('Audio is playing. Pause here or use your device’s media controls.');
+        } else {
+            if (toggle) toggle.innerHTML = '<i class="pd-i pd-i-play" aria-hidden="true"></i> <span>Play station</span>';
+            if (!radioHeroState.error) {
+                setRadioStatus(radioHeroState.station ? 'Ready to stream' : 'No station configured', 'idle');
+                setRadioNote('Playback begins only when you press play. Nothing is downloaded in the background.');
+            }
+        }
+    }
+
+    async function renderRadioWelcomeVideo() {
+        var host = document.getElementById('radioWelcomeVideo');
+        if (!host) return;
+        try {
+            var appMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+            var fsMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+            var config = {
+                apiKey: 'AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo',
+                authDomain: 'prayer-dome.firebaseapp.com',
+                projectId: 'prayer-dome',
+                storageBucket: 'prayer-dome.firebasestorage.app',
+                messagingSenderId: '198295153196',
+                appId: '1:198295153196:web:1222b31948d7974ba3bf89'
+            };
+            var existing = typeof appMod.getApps === 'function' ? appMod.getApps() : [];
+            var app = existing.length ? existing[0] : appMod.initializeApp(config);
+            var db = fsMod.getFirestore(app);
+            var snap = await fsMod.getDocs(fsMod.query(
+                fsMod.collection(db, 'aiVideos'),
+                fsMod.where('published', '==', true),
+                fsMod.limit(20)
+            ));
+            var videos = [];
+            snap.forEach(function(entry) {
+                var data = entry.data() || {};
+                if (data.status === 'pending-review' || data.reviewed === false) return;
+                videos.push(Object.assign({ id: entry.id }, data));
+            });
+            videos.sort(function(a, b) {
+                var at = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+                var bt = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+                return bt - at;
+            });
+            var welcome = videos.find(function(v) { return v.category === 'promo' || v.category === 'welcome'; }) || videos[0];
+            if (!welcome || !welcome.url) {
+                host.innerHTML = '<div class="radio-welcome-empty"><i class="pd-i pd-i-film" aria-hidden="true"></i> No welcome film has been approved yet. Approved films appear here after an administrator reviews them.</div>';
+                return;
+            }
+            host.innerHTML = '<div class="radio-welcome-frame">' +
+                '<video controls preload="metadata" playsinline' + (welcome.thumb ? ' poster="' + esc(welcome.thumb) + '"' : '') + ' src="' + esc(welcome.url) + '"></video>' +
+                '<div class="radio-welcome-copy"><strong>' + esc(welcome.title || 'Welcome to Prayer Dome') + '</strong>' +
+                (welcome.aiAssisted === false ? '' : '<span class="badge badge-info"><i class="pd-i pd-i-bot" aria-hidden="true"></i> AI-assisted</span>') +
+                '<p>' + esc(welcome.desc || welcome.description || 'A welcome from the Prayer Dome family.') + '</p>' +
+                (welcome.scripture ? '<p><i class="pd-i pd-i-book" aria-hidden="true"></i> ' + esc(welcome.scripture) + '</p>' : '') +
+                '<p>Recorded welcome film — not a live broadcast.</p></div></div>';
+        } catch (error) {
+            host.innerHTML = '<div class="radio-welcome-empty"><i class="pd-i pd-i-cloud-off" aria-hidden="true"></i> The approved welcome film could not be loaded right now. The radio stations and podcasts above are still available.</div>';
+        }
+    }
+
+    function initRadioHero() {
+        chooseStation();
+        renderRadioSchedule();
+        updateRadioHero();
+        var toggle = document.getElementById('radioMainToggle');
+        if (toggle) toggle.addEventListener('click', function() {
+            if (!radioHeroState.station || !window.PDApp || !PDApp.radio) return;
+            radioHeroState.error = '';
+            setRadioStatus(radioHeroState.playing ? 'Pausing…' : 'Connecting…', 'idle');
+            setRadioNote('Buffering the station. If it does not start, the stream may be offline.', false);
+            PDApp.radio.toggle(radioHeroState.station.streamUrl, radioHeroState.station.name, null);
+        });
+        var volume = document.getElementById('radioVolume');
+        if (volume && window.PDApp && PDApp.radio) {
+            try { volume.value = String(Math.round((PDApp.radio.audio ? PDApp.radio.audio.volume : 0.8) * 100)); } catch (e) {}
+            var label = document.getElementById('radioVolumeValue');
+            if (label) label.textContent = volume.value + '%';
+            volume.addEventListener('input', function() {
+                PDApp.radio.setVolume(Number(volume.value) / 100);
+                if (label) label.textContent = volume.value + '%';
+            });
+        }
+        if (window.PDApp) {
+            PDApp.on('radio:playing', function(e) {
+                if (!radioHeroState.station || !e.detail || e.detail.name !== radioHeroState.station.name) return;
+                radioHeroState.playing = true;
+                radioHeroState.error = '';
+                updateRadioHero();
+            });
+            PDApp.on('radio:stopped', function() {
+                radioHeroState.playing = false;
+                updateRadioHero();
+            });
+            PDApp.on('radio:error', function(e) {
+                radioHeroState.playing = false;
+                radioHeroState.error = 'stream-error';
+                setRadioStatus('Stream unavailable', 'error');
+                setRadioNote('This station could not be played. It may be offline or its stream URL may need updating. The published schedule is still shown below.', true);
+                updateRadioHero();
+            });
+        }
+        setInterval(renderRadioSchedule, 60000);
+    }
+
     if (window.PDApp) {
-        PDApp.on('store:radio', renderRadio);
+        PDApp.on('store:radio', function () { renderRadio(); chooseStation(); });
         PDApp.on('store:podcasts', renderPodcasts);
         PDApp.on('radio:playing', function(e) {
             // Highlight the active station/episode.
@@ -385,6 +658,8 @@
         renderRadio();
         renderPodcasts();
         renderWorshipSongs();
+        initRadioHero();
+        renderRadioWelcomeVideo();
     }
 
     async function renderWorshipSongs() {
@@ -403,7 +678,8 @@
                 messagingSenderId: '198295153196',
                 appId: '1:198295153196:web:1222b31948d7974ba3bf89'
             };
-            const app = appMod.initializeApp(FCM_CONFIG);
+            const existingApps = typeof appMod.getApps === 'function' ? appMod.getApps() : [];
+            const app = existingApps.length ? existingApps[0] : appMod.initializeApp(FCM_CONFIG);
             const db = fsMod.getFirestore(app);
             
             const snap = await fsMod.getDocs(fsMod.query(fsMod.collection(db, "worshipSongs"), fsMod.orderBy("createdAt", "desc")));
@@ -463,5 +739,6 @@
         }
     }
 </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

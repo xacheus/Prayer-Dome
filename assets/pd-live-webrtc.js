@@ -29,21 +29,31 @@
     // common on mobile carrier networks. A TURN relay is what makes
     // "viewer can actually watch the admin" true in the real world. The relay
     // list below can be overridden by window.PD_LIVE_SERVER.iceServers.
+    // Public STUN is enough to discover a route on most home networks. TURN
+    // credentials are *never* committed to the page: /api/live-ice mints a
+    // short-lived relay credential on the server, and this file only consumes
+    // it. Without a configured relay the sites still try direct WebRTC and
+    // report a connection problem honestly instead of pretending to play.
     var ICE_SERVERS = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        {
-            urls: [
-                'turn:openrelay.metered.ca:80',
-                'turn:openrelay.metered.ca:443',
-                'turn:openrelay.metered.ca:443?transport=tcp',
-                'turns:openrelay.metered.ca:443?transport=tcp'
-            ],
-            username: 'openrelayproject',
-            credential: 'openrelayproject'
-        }
+        { urls: 'stun:stun2.l.google.com:19302' }
     ];
+    var iceServersPromise = null;
+    function loadIceServers() {
+        if (iceServersPromise) return iceServersPromise;
+        iceServersPromise = fetch('/api/live-ice', { cache: 'no-store' })
+            .then(function (res) { return res.ok ? res.json() : null; })
+            .then(function (payload) {
+                var list = payload && Array.isArray(payload.iceServers) ? payload.iceServers : [];
+                list = list.filter(function (server) {
+                    return server && (Array.isArray(server.urls) || typeof server.urls === 'string');
+                });
+                return list.length ? list : ICE_SERVERS;
+            })
+            .catch(function () { return ICE_SERVERS; });
+        return iceServersPromise;
+    }
 
     function uid(prefix) {
         return (prefix || 'id') + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
@@ -236,7 +246,7 @@
         this.mediaPc = null;
         this.mediaSessionUrl = null;
         this.mediaServer = liveServerConfig();
-        this._iceServers = (opts && opts.iceServers) || iceServersFor(this.mediaServer, ICE_SERVERS);
+        this._iceServers = (opts && opts.iceServers) || null;
     }
 
     Broadcaster.prototype.on = function (ev, fn) {
@@ -250,6 +260,13 @@
         if (viewerCount <= 4) return { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30, max: 30 } };
         if (viewerCount <= 8) return { width: { ideal: 854 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } };
         return { width: { ideal: 640 }, height: { ideal: 360 }, frameRate: { ideal: 20, max: 24 } };
+    };
+
+    Broadcaster.prototype.ensureIceServers = async function () {
+        if (!this._iceServers) {
+            this._iceServers = iceServersFor(this.mediaServer, await loadIceServers());
+        }
+        return this._iceServers;
     };
 
     Broadcaster.prototype.publishToMediaServer = async function (liveId) {
@@ -284,6 +301,7 @@
 
     Broadcaster.prototype.createPeer = async function (viewerId, polite) {
         var self = this;
+        await this.ensureIceServers();
         var pc = new RTCPeerConnection({ iceServers: this._iceServers, bundlePolicy: 'max-bundle' });
 
         this.stream.getTracks().forEach(function (track) {
@@ -406,6 +424,7 @@
         opts = opts || {};
         this.state.status = 'starting';
         this.emit('state', this.snapshot());
+        await this.ensureIceServers();
 
         var title = (opts.title || 'Prayer Dome Live').trim();
         var description = (opts.description || 'Join us live at Prayer Dome').trim();
@@ -418,8 +437,8 @@
             video: opts.cameraOn === false ? false : { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } },
             audio: opts.audio === false ? false : true
         });
-        this.state.cameraOn = true;
-        this.state.micOn = !opts.muted;
+        this.state.cameraOn = this.stream.getVideoTracks().length > 0;
+        this.state.micOn = this.stream.getAudioTracks().length > 0 && !opts.muted;
         if (opts.muted) this.stream.getAudioTracks().forEach(function (t) { t.enabled = false; });
         this.state.facingMode = facing;
 
@@ -457,8 +476,9 @@
         this.state.isLive = true;
         this.state.status = 'live';
         this.state.hlsUrl = hlsUrl;
-        this.state.rtmpUrl = 'rtmp://api.cloudinary.com/v2/' + CLOUD_NAME + '/live/' + liveId;
-        this.state.streamKey = liveId;
+        // RTMP ingest details are intentionally not published in liveStatus.
+        // A public stream key would let anyone push to the ingest endpoint; the
+        // in-browser WebRTC path only needs the signaling document.
 
         var status = {
             isLive: true,
@@ -485,8 +505,6 @@
             peakViewers: 0,
             totalViews: 0,
             hlsUrl: hlsUrl,
-            rtmpUrl: this.state.rtmpUrl,
-            streamKey: liveId,
             connectionQuality: 'good',
             status: 'live'
         };
@@ -765,25 +783,32 @@
             totalShares: this.state.totalShares,
             newFollowers: this.state.newFollowers,
             reactions: this.state.reactions,
-            parts: cloud ? cloud.parts : [],
-            playbackUrl: cloud ? cloud.playbackUrl : (this.state.hlsUrl || null),
-            hlsUrl: this.state.hlsUrl,
+            parts: cloud && Array.isArray(cloud.parts) ? cloud.parts : [],
+            // Only a real, uploaded recording gets a playback URL. The HLS
+            // address for a browser broadcast is not a recording, so it must
+            // not be presented as one in the archive.
+            playbackUrl: cloud && cloud.playbackUrl ? cloud.playbackUrl : null,
+            hlsUrl: cloud && cloud.hlsUrl ? cloud.hlsUrl : null,
             thumbnail: cloud ? cloud.thumbnail : null,
             totalBytes: cloud ? cloud.totalBytes : 0,
+            recordingAvailable: !!(cloud && (cloud.playbackUrl || (Array.isArray(cloud.parts) && cloud.parts.length))),
             source: this.state.source || 'webrtc',
             endedAt: new Date().toISOString()
         };
 
-        // Write to liveRecordings archive.
-        try {
-            await this.fb.addDoc(this.fb.collection(this.fb.db, 'liveRecordings'), Object.assign({}, summary, {
-                published: true,
-                featured: false,
-                isPrivate: false,
-                storage: 'cloudinary',
-                createdAt: this.fb.serverTimestamp()
-            }));
-        } catch (e) { warn('recording save error', e); }
+        // Write to liveRecordings archive only when Cloudinary actually
+        // uploaded something. An entry with a dead URL would be a fake archive.
+        if (summary.recordingAvailable) {
+            try {
+                await this.fb.addDoc(this.fb.collection(this.fb.db, 'liveRecordings'), Object.assign({}, summary, {
+                    published: true,
+                    featured: false,
+                    isPrivate: false,
+                    storage: 'cloudinary',
+                    createdAt: this.fb.serverTimestamp()
+                }));
+            } catch (e) { warn('recording save error', e); }
+        }
 
         // Reset live status
         try {
@@ -857,7 +882,7 @@
         this.hls = null;
         this.reconnectAttempts = 0;
         this.mediaServer = liveServerConfig();
-        this._iceServers = (opts && opts.iceServers) || iceServersFor(this.mediaServer, ICE_SERVERS);
+        this._iceServers = (opts && opts.iceServers) || null;
         this.mediaSessionUrl = null;
     }
 
@@ -870,8 +895,16 @@
 
     Viewer.prototype.attach = function (videoEl) { this.videoEl = videoEl; };
 
+    Viewer.prototype.ensureIceServers = async function () {
+        if (!this._iceServers) {
+            this._iceServers = iceServersFor(this.mediaServer, await loadIceServers());
+        }
+        return this._iceServers;
+    };
+
     Viewer.prototype.join = async function () {
         var self = this;
+        await this.ensureIceServers();
         var statusRef = this.fb.doc(this.fb.db, 'liveStatus', 'current');
         var snap = await this.fb.getDoc(statusRef);
         var status = snap.exists ? snap.data() : null;
@@ -1013,6 +1046,7 @@
 
     Viewer.prototype.connectWebRTC = async function () {
         var self = this;
+        await this.ensureIceServers();
         this.state.status = 'connecting';
         this.emit('state', this.state);
         try {
@@ -1085,6 +1119,7 @@
 
     Viewer.prototype.connectWHEP = async function () {
         var self = this;
+        await this.ensureIceServers();
         var cfg = this.mediaServer;
         if (!cfg || !cfg.whepEndpoint) { this.connectHLS(); return; }
         this.state.status = 'connecting';

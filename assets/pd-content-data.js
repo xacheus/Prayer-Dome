@@ -113,6 +113,56 @@ PD_CONTENT.DEFAULT_RADIO = [
   }
 ];
 
+/* --- Published radio programme schedule (Africa/Lusaka) --------------------
+   Times are minutes after midnight in the ministry's own zone. The Radio page
+   uses this schedule to name the current programme honestly; it never presents
+   the schedule itself as a live broadcast. */
+PD_CONTENT.RADIO_PROGRAMMES = [
+  { days: [0,1,2,3,4,5,6], start: 0, end: 360, title: 'Night Watch & Worship', host: 'Prayer Dome Radio', kind: 'Music and prayer' },
+  { days: [1,2,3,4,5], start: 360, end: 540, title: 'Morning Devotion', host: 'Prayer Dome Ministry Team', kind: 'Devotion and prayer' },
+  { days: [1,2,3,4,5], start: 540, end: 720, title: 'Word for the Day', host: 'Teaching Team', kind: 'Bible teaching' },
+  { days: [0,1,2,3,4,5,6], start: 720, end: 900, title: 'Worship Midday', host: 'Prayer Dome Worship', kind: 'Worship music' },
+  { days: [1,2,3,4,5], start: 900, end: 1080, title: 'Afternoon Encouragement', host: 'Pastoral Team', kind: 'Encouragement' },
+  { days: [0,1,2,3,4,5,6], start: 1080, end: 1260, title: 'Evening Praise', host: 'Prayer Dome Worship', kind: 'Worship and testimony' },
+  { days: [0,1,2,3,4,5,6], start: 1260, end: 1440, title: 'Late Night Prayer', host: 'Intercession Team', kind: 'Prayer and quiet worship' }
+];
+
+PD_CONTENT.radioClock = function (date) {
+  var when = date instanceof Date ? date : new Date(date || Date.now());
+  if (isNaN(when.getTime())) when = new Date();
+  try {
+    var parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Africa/Lusaka', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false
+    }).formatToParts(when).reduce(function (acc, part) {
+      if (part.type !== 'literal') acc[part.type] = part.value;
+      return acc;
+    }, {});
+    var days = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+    var hour = Number(parts.hour) % 24;
+    var minute = Number(parts.minute);
+    return { weekday: Object.prototype.hasOwnProperty.call(days, parts.weekday) ? days[parts.weekday] : when.getDay(), minutes: hour * 60 + minute, label: (hour < 10 ? '0' : '') + hour + ':' + (minute < 10 ? '0' : '') + minute };
+  } catch (e) {
+    return { weekday: when.getDay(), minutes: when.getHours() * 60 + when.getMinutes(), label: when.toTimeString().slice(0, 5) };
+  }
+};
+
+PD_CONTENT.currentRadioProgramme = function (date) {
+  var clock = PD_CONTENT.radioClock(date);
+  var list = PD_CONTENT.RADIO_PROGRAMMES || [];
+  var found = null;
+  for (var i = 0; i < list.length; i++) {
+    var item = list[i];
+    if (item.days.indexOf(clock.weekday) >= 0 && clock.minutes >= item.start && clock.minutes < item.end) { found = item; break; }
+  }
+  return { clock: clock, programme: found };
+};
+
+PD_CONTENT.radioTimeLabel = function (minutes) {
+  var h = Math.floor(Number(minutes || 0) / 60) % 24;
+  var m = Number(minutes || 0) % 60;
+  return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+};
+
 /* --- Podcast episodes (admin can replace) ---------------------------------- */
 PD_CONTENT.DEFAULT_PODCASTS = [
   {

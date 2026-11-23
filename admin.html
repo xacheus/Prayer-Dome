@@ -672,6 +672,8 @@
         .cr-overlay-top { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
         .cr-badge-live { background:#dc2626; color:#fff; padding:6px 12px; border-radius:8px; font-size:.72rem; font-weight:900; letter-spacing:1.2px; display:inline-flex; align-items:center; gap:7px; }
         .cr-badge-live::before { content:''; width:7px; height:7px; border-radius:50%; background:#fff; animation:livePulse 1.4s infinite; }
+        .cr-badge-live.is-preview { background:#b45309; }
+        .cr-badge-live.is-preview::before { animation:none; }
         .cr-time-badge { background:rgba(0,0,0,.6); color:#fff; padding:6px 12px; border-radius:8px; font-family:ui-monospace,monospace; font-size:.8rem; font-weight:800; backdrop-filter:blur(6px); }
         .cr-viewers-badge { background:rgba(0,0,0,.6); color:#fff; padding:6px 12px; border-radius:8px; font-size:.78rem; font-weight:800; display:inline-flex; gap:6px; align-items:center; backdrop-filter:blur(6px); }
         .cr-overlay-bottom { display:flex; justify-content:space-between; align-items:flex-end; gap:8px; }
@@ -983,6 +985,100 @@
         .nav-group-label { padding: 4px 16px 2px; }
         .nav-group { margin-bottom: 10px; }
     }
+
+        /* ===================== CLEAN ADMIN DASHBOARD ===================== */
+        .dash-hero {
+            position: relative; overflow: hidden; border-radius: 18px;
+            padding: 24px 26px; margin-bottom: 22px;
+            background: linear-gradient(135deg, #0A4D9B 0%, #0a3d7a 62%, #07244d 100%);
+            color: #fff; box-shadow: 0 14px 34px rgba(10,77,155,.28);
+            display: flex; align-items: flex-end; justify-content: space-between; gap: 22px; flex-wrap: wrap;
+        }
+        .dash-hero::after {
+            content: ""; position: absolute; width: 280px; height: 280px; right: -90px; top: -130px;
+            border-radius: 50%; background: radial-gradient(circle, rgba(212,175,55,.34), transparent 66%);
+            pointer-events: none;
+        }
+        .dash-hero-main { position: relative; z-index: 1; min-width: 0; }
+        .dash-eyebrow { display: flex; align-items: center; gap: 8px; margin: 0 0 7px; color: #f6df8a; font-size: .64rem; font-weight: 900; letter-spacing: 1.8px; text-transform: uppercase; }
+        .dash-hero h1 { margin: 0; color: #fff; font-size: clamp(1.35rem, 3vw, 1.9rem); line-height: 1.2; font-family: 'Poppins', serif; }
+        .dash-date { display: flex; align-items: center; gap: 7px; margin: 8px 0 0; font-size: .8rem; font-weight: 600; color: rgba(255,255,255,.86); }
+        .dash-scripture { margin: 12px 0 0; font-size: .82rem; color: rgba(255,255,255,.9); }
+        .dash-scripture span { color: #f6df8a; font-weight: 800; margin-left: 4px; }
+        .dash-hero-actions { position: relative; z-index: 1; display: flex; gap: 8px; flex-wrap: wrap; }
+        .dash-hero-btn { background: #d4af37 !important; border-color: #d4af37 !important; color: #fff !important; font-weight: 800; }
+        .dash-hero-btn.quiet { background: rgba(255,255,255,.13) !important; border-color: rgba(255,255,255,.32) !important; }
+        .dash-hero-btn.quiet:hover { background: rgba(255,255,255,.22) !important; }
+        .dash-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin: 22px 0 12px; }
+        .dash-section-head h2 { margin: 0; font-family: 'Poppins', serif; font-size: 1.02rem; color: var(--text-main); }
+        .dash-section-head p { margin: 3px 0 0; font-size: .74rem; color: var(--text-sub); line-height: 1.45; }
+        .dash-period { display: inline-flex; align-items: center; gap: 6px; font-size: .68rem; font-weight: 800; color: #8a6d1a; background: rgba(212,175,55,.13); border: 1px solid rgba(212,175,55,.36); border-radius: 999px; padding: 5px 10px; }
+        .dash-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+        .dash-stat {
+            display: flex; align-items: center; gap: 11px; min-width: 0; min-height: 86px;
+            padding: 13px 14px; background: var(--bg-panel); border: 1px solid var(--border);
+            border-radius: 12px; box-shadow: var(--shadow-sm);
+        }
+        .dash-stat-icon { flex: 0 0 auto; width: 38px; height: 38px; border-radius: 10px; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; }
+        .dash-stat-icon.blue { background: rgba(10,77,155,.10); color: #0A4D9B; }
+        .dash-stat-icon.green { background: rgba(22,163,74,.10); color: #15803d; }
+        .dash-stat-icon.gold { background: rgba(212,175,55,.16); color: #8a6d1a; }
+        .dash-stat-icon.navy { background: rgba(7,36,77,.10); color: #07244d; }
+        body.dark-mode .dash-stat-icon.blue, body.dark-mode .dash-stat-icon.navy { color: #93c5fd; }
+        body.dark-mode .dash-stat-icon.green { color: #86efac; }
+        body.dark-mode .dash-stat-icon.gold { color: #f6df8a; }
+        .dash-stat-copy { min-width: 0; display: grid; gap: 1px; }
+        .dash-stat-copy strong { font-family: 'Poppins', serif; font-size: clamp(1.45rem, 2.7vw, 1.9rem); line-height: 1.05; color: var(--text-main); font-weight: 900; overflow-wrap: anywhere; }
+        .dash-stat-copy span { font-size: .7rem; font-weight: 850; color: var(--text-main); letter-spacing: .2px; line-height: 1.25; }
+        .dash-stat-copy small { font-size: .61rem; color: var(--text-sub); line-height: 1.3; }
+        .dash-stat.is-error strong { color: #b91c1c; font-size: 1.2rem; }
+        .dash-stats-note { margin: 8px 0 0; min-height: 16px; font-size: .68rem; color: var(--text-sub); }
+        .dash-stats-note.is-error { color: #b91c1c; font-weight: 650; }
+        .dash-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+        .dash-panel { margin-bottom: 0 !important; border-radius: 14px !important; }
+        .dash-panel .panel-header { padding: 14px 16px; }
+        .dash-panel .panel-header h3 { font-size: .92rem; display: flex; align-items: center; gap: 7px; }
+        .dash-panel .panel-header .btn { min-height: 34px; }
+        .dash-panel .table-responsive { overflow-x: auto; }
+        .dash-table { min-width: 0 !important; width: 100%; }
+        .dash-table th { padding: 9px 14px; font-size: .6rem; letter-spacing: 1px; }
+        .dash-table td { padding: 10px 14px; font-size: .76rem; line-height: 1.4; }
+        .dash-table .user-cell { gap: 8px; }
+        .dash-table .user-img { width: 30px; height: 30px; }
+        .dash-table h4 { margin: 0; font-size: .76rem; line-height: 1.3; }
+        .dash-table p { margin: 1px 0 0; font-size: .64rem; color: var(--text-sub); }
+        .dash-alerts { padding: 12px 14px; display: grid; gap: 8px; }
+        .dash-alert { display: flex; align-items: flex-start; gap: 9px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--bg-main); }
+        .dash-alert > i { flex: 0 0 auto; margin-top: 2px; color: #b45309; }
+        .dash-alert strong { display: block; font-size: .76rem; color: var(--text-main); }
+        .dash-alert span { display: block; margin-top: 2px; font-size: .68rem; color: var(--text-sub); line-height: 1.4; }
+        .dash-alert button { margin-top: 5px; border: 0; background: none; padding: 0; color: #0A4D9B; font-weight: 800; font-size: .68rem; cursor: pointer; font-family: inherit; }
+        body.dark-mode .dash-alert button { color: #93c5fd; }
+        .dash-empty { margin: 0; padding: 16px 8px; text-align: center; color: var(--text-sub); font-size: .74rem; }
+        .dash-shortcuts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+        .dash-shortcut {
+            display: flex; align-items: center; gap: 9px; min-height: 48px; padding: 10px 12px;
+            border: 1px solid var(--border); border-radius: 10px; background: var(--bg-panel);
+            color: var(--text-main); font: 750 .76rem/1.3 'Inter', sans-serif; text-align: left;
+            cursor: pointer; box-shadow: var(--shadow-sm);
+        }
+        .dash-shortcut i { color: #0A4D9B; font-size: 1rem; flex: 0 0 auto; }
+        body.dark-mode .dash-shortcut i { color: #93c5fd; }
+        .dash-shortcut:hover, .dash-shortcut:focus-visible { border-color: #d4af37; background: rgba(212,175,55,.06); }
+        @media (max-width: 1100px) { .dash-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 900px) { .dash-panels { grid-template-columns: 1fr; } .dash-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+        @media (max-width: 640px) {
+            .dash-hero { padding: 18px; border-radius: 14px; }
+            .dash-hero-actions { width: 100%; }
+            .dash-hero-btn { flex: 1 1 140px; justify-content: center; }
+            .dash-stat { min-height: 78px; padding: 11px; gap: 9px; }
+            .dash-stat-icon { width: 34px; height: 34px; border-radius: 9px; font-size: .92rem; }
+            .dash-stat-copy strong { font-size: 1.4rem; }
+            .dash-stat-copy span { font-size: .66rem; }
+            .dash-stat-copy small { display: none; }
+            .dash-section-head { margin-top: 18px; }
+        }
+        @media (max-width: 380px) { .dash-stat-grid { gap: 8px; } .dash-stat-copy strong { font-size: 1.25rem; } }
 </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
@@ -1116,99 +1212,118 @@
 
             <!-- DASHBOARD VIEW -->
             <div id="view-dashboard" class="section-view active">
-                <!-- Welcome area — theme scripture -->
-                <div style="position: relative; overflow: hidden; border-radius: 24px; padding: 26px 28px; margin-bottom: 20px; background: linear-gradient(135deg, #0A4D9B 0%, #0a3d7a 60%, #07244d 100%); color: #fff; box-shadow: 0 18px 44px rgba(10,77,155,.3);">
-                    <div style="position:absolute; top:-30px; right:10px; font-family:'Poppins', serif; font-size:150px; opacity:.12; color:#d4af37;">“</div>
-                    <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-                        <div style="width:54px; height:54px; border-radius:16px; background: rgba(212,175,55,.18); border:1px solid rgba(212,175,55,.5); display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:#f6df8a;"><i class="pd-i pd-i-book"></i></div>
-                        <div style="flex:1; min-width:220px;">
-                            <div style="font-size:.62rem; font-weight:900; letter-spacing:2.4px; text-transform:uppercase; color:#f6df8a;">Theme Scripture</div>
-                            <div style="font-family:'Poppins', serif; font-size:clamp(1.1rem, 3vw, 1.5rem); font-weight:700; margin-top:4px;">“He does everything blamelessly.”</div>
-                            <div style="margin-top:6px; font-size:.8rem; color:rgba(255,255,255,.85);">Mark 7:37 — the primary scripture across the Prayer Dome platform</div>
-                        </div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <button class="btn btn-primary btn-sm" style="background:#d4af37; border-color:#d4af37; color:#fff;" onclick="switchView('live', pdNavFor('live'))"><i class="pd-i pd-i-radio"></i> Go Live</button>
-                            <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,.14); border-color:rgba(255,255,255,.3);" onclick="switchView('news', pdNavFor('news'))"><i class="pd-i pd-i-newspaper"></i> Publish News</button>
-                        </div>
+                <!-- Welcome: identity, date, notifications and the two urgent actions. -->
+                <section class="dash-hero" aria-labelledby="dashWelcomeTitle">
+                    <div class="dash-hero-main">
+                        <p class="dash-eyebrow"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> Prayer Dome Admin Console</p>
+                        <h1 id="dashWelcomeTitle">Welcome back, <span id="dashAdminName">Administrator</span></h1>
+                        <p class="dash-date"><i class="pd-i pd-i-calendar-days" aria-hidden="true"></i> <span id="dashToday">Loading today’s date…</span></p>
+                        <p class="dash-scripture"><i class="pd-i pd-i-book" aria-hidden="true"></i> “He does everything blamelessly.” <span>Mark 7:37</span></p>
+                    </div>
+                    <div class="dash-hero-actions" aria-label="Administrator quick actions">
+                        <button type="button" class="btn btn-sm dash-hero-btn" onclick="switchView('live', pdNavFor('live'))"><i class="pd-i pd-i-radio" aria-hidden="true"></i> Go Live</button>
+                        <button type="button" class="btn btn-sm dash-hero-btn quiet" onclick="switchView('notifications', pdNavFor('notifications'))"><i class="pd-i pd-i-bell" aria-hidden="true"></i> Notifications</button>
+                        <button type="button" class="btn btn-sm dash-hero-btn quiet" onclick="loadDashboardPerformance()"><i class="pd-i pd-i-refresh-cw" aria-hidden="true"></i> Refresh data</button>
+                    </div>
+                </section>
+
+                <!-- Four compact, account-focused statistics. Financial totals stay in Finance. -->
+                <div class="dash-section-head">
+                    <div>
+                        <h2>Account statistics</h2>
+                        <p>Registered accounts, not membership applications. Counts come from the database on every refresh.</p>
+                    </div>
+                    <span class="dash-period"><i class="pd-i pd-i-clock" aria-hidden="true"></i> Active = last 30 days</span>
+                </div>
+                <div class="dash-stat-grid" id="adminOverviewCards" aria-live="polite" aria-busy="true">
+                    <article class="dash-stat" data-stat="registered">
+                        <span class="dash-stat-icon blue" aria-hidden="true"><i class="pd-i pd-i-users"></i></span>
+                        <div class="dash-stat-copy"><strong data-stat-value="registered">—</strong><span>Registered Users</span><small>All registered accounts</small></div>
+                    </article>
+                    <article class="dash-stat" data-stat="verified">
+                        <span class="dash-stat-icon green" aria-hidden="true"><i class="pd-i pd-i-badge-check"></i></span>
+                        <div class="dash-stat-copy"><strong data-stat-value="verified">—</strong><span>Verified Accounts</span><small>Email verified</small></div>
+                    </article>
+                    <article class="dash-stat" data-stat="pending">
+                        <span class="dash-stat-icon gold" aria-hidden="true"><i class="pd-i pd-i-hourglass"></i></span>
+                        <div class="dash-stat-copy"><strong data-stat-value="pending">—</strong><span>Pending Accounts</span><small>Awaiting verification</small></div>
+                    </article>
+                    <article class="dash-stat" data-stat="active">
+                        <span class="dash-stat-icon navy" aria-hidden="true"><i class="pd-i pd-i-activity"></i></span>
+                        <div class="dash-stat-copy"><strong data-stat-value="active">—</strong><span>Active Users</span><small>Active in 30 days</small></div>
+                    </article>
+                </div>
+                <p class="dash-stats-note" id="dashStatsNote" role="status">Loading account statistics…</p>
+
+                <!-- Management overview: registrations, approvals, audit trail, alerts. -->
+                <div class="dash-section-head">
+                    <div>
+                        <h2>Management overview</h2>
+                        <p>The latest account activity and the items that need a decision.</p>
                     </div>
                 </div>
-                <div class="page-title" style="margin-bottom:10px;">
-                    <span><i class="pd-i pd-i-gauge"></i> Live overview</span>
-                    <span style="font-size:.7rem;font-weight:700;color:var(--text-sub);">Counted from the database on every refresh</span>
-                </div>
-                <div class="kpi-grid" id="adminOverviewCards" aria-live="polite" style="margin-bottom:22px;">
-                    <div class="kpi-card"><div class="kpi-icon blue"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></div><div class="kpi-details"><h3>—</h3><p>Loading members</p></div></div>
-                    <div class="kpi-card"><div class="kpi-icon gold"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></div><div class="kpi-details"><h3>—</h3><p>Loading payments</p></div></div>
-                </div>
-                <div class="page-title">
-                    <span><i class="pd-i pd-i-chart-line"></i> Platform Performance</span>
-                    <button class="btn btn-primary btn-sm" onclick="loadDashboardPerformance()"><i class="pd-i pd-i-refresh-cw"></i> Refresh charts</button>
-                </div>
-                <div class="performance-grid">
-                    <section class="performance-card" aria-labelledby="activityChartTitle">
-                        <div class="performance-card-header">
-                            <div>
-                                <h3 id="activityChartTitle"><i class="pd-i pd-i-activity"></i> Community activity</h3>
-                                <p>New membership applications, prayer requests and certificates over time.</p>
-                            </div>
-                            <select id="performanceRange" class="form-control performance-range" onchange="renderDashboardPerformance()" aria-label="Chart date range">
-                                <option value="7">Last 7 days</option>
-                                <option value="30">Last 30 days</option>
-                            </select>
+                <div class="dash-panels">
+                    <section class="panel-card dash-panel" aria-labelledby="dashRecentUsersTitle">
+                        <div class="panel-header">
+                            <h3 id="dashRecentUsersTitle"><i class="pd-i pd-i-user-plus" aria-hidden="true"></i> Recent registrations</h3>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="switchView('members', pdNavFor('members'))">Open Users</button>
                         </div>
-                        <div id="activityPerformanceChart" class="performance-chart" role="img" aria-label="Community activity performance chart">
-                            <span class="performance-loading"><i class="pd-i pd-i-loader-circle pd-i-spin"></i> Loading performance chart…</span>
+                        <div class="table-responsive">
+                            <table class="dash-table"><thead><tr><th>Account</th><th>Registered</th><th>Status</th></tr></thead>
+                            <tbody id="dashRecentRegistrations"><tr><td colspan="3">Loading registrations…</td></tr></tbody></table>
                         </div>
-                        <div id="activityPerformanceLegend" class="performance-legend" aria-label="Chart legend"></div>
                     </section>
-                    <section class="performance-card" aria-labelledby="workflowChartTitle">
-                        <div class="performance-card-header">
-                            <div>
-                                <h3 id="workflowChartTitle"><i class="pd-i pd-i-chart-bar"></i> Workflow performance</h3>
-                                <p>Completion progress for the ministry team’s active workflows.</p>
-                            </div>
+
+                    <section class="panel-card dash-panel" aria-labelledby="dashPendingTitle">
+                        <div class="panel-header">
+                            <h3 id="dashPendingTitle"><i class="pd-i pd-i-clipboard-check" aria-hidden="true"></i> Pending approvals</h3>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="switchView('members', pdNavFor('members'))">View all</button>
                         </div>
-                        <div id="workflowPerformanceChart" class="workflow-chart">
-                            <span class="performance-loading"><i class="pd-i pd-i-loader-circle pd-i-spin"></i> Loading workflow chart…</span>
+                        <div class="table-responsive">
+                            <table class="dash-table"><thead><tr><th>Applicant</th><th>Branch</th><th>Action</th></tr></thead>
+                            <tbody id="dashPendingMembers"><tr><td colspan="3">Loading applications…</td></tr></tbody></table>
                         </div>
-                        <p class="workflow-key"><i class="pd-i pd-i-info"></i> Bars compare completed or approved items with the full workflow.</p>
+                    </section>
+
+                    <section class="panel-card dash-panel" aria-labelledby="dashRecentActivityTitle">
+                        <div class="panel-header">
+                            <h3 id="dashRecentActivityTitle"><i class="pd-i pd-i-activity" aria-hidden="true"></i> Recent administrative activity</h3>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="switchView('activity', pdNavFor('activity'))">Full log</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="dash-table"><thead><tr><th>When</th><th>Action</th><th>Administrator</th></tr></thead>
+                            <tbody id="dashRecentActivityList"><tr><td colspan="3">Loading activity…</td></tr></tbody></table>
+                        </div>
+                    </section>
+
+                    <section class="panel-card dash-panel" aria-labelledby="dashAlertsTitle">
+                        <div class="panel-header">
+                            <h3 id="dashAlertsTitle"><i class="pd-i pd-i-triangle-alert" aria-hidden="true"></i> System alerts</h3>
+                            <button type="button" class="btn btn-outline btn-sm" onclick="loadDashboardPerformance()">Recheck</button>
+                        </div>
+                        <div id="dashSystemAlerts" class="dash-alerts" role="status">
+                            <p class="dash-empty"><i class="pd-i pd-i-loader-circle pd-i-spin" aria-hidden="true"></i> Checking system status…</p>
+                        </div>
                     </section>
                 </div>
-                <div class="panel-card" style="margin-bottom:20px;">
-                    <div class="panel-header">
-                        <h3><i class="pd-i pd-i-receipt-text"></i> Billing snapshot</h3>
-                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="btn btn-outline btn-sm" onclick="switchView('payment-verification', pdNavFor('payment-verification'))"><i class="pd-i pd-i-shield-check"></i> Verify payments</button>
-                            <button class="btn btn-outline btn-sm" onclick="switchView('subscriptions', pdNavFor('subscriptions'))"><i class="pd-i pd-i-refresh-cw"></i> Subscriptions</button>
-                        </div>
-                    </div>
-                    <div class="table-responsive">
-                        <table>
-                            <thead><tr><th>Latest payments</th><th>Member</th><th>Amount</th><th>Status</th><th>Created</th></tr></thead>
-                            <tbody id="dashRecentPayments"><tr><td colspan="5">Loading payments…</td></tr></tbody>
-                        </table>
-                    </div>
-                    <div class="table-responsive" style="margin-top:14px;">
-                        <table>
-                            <thead><tr><th>Recent subscriptions</th><th>Member</th><th>Plan</th><th>Status</th><th>Renews / ends</th></tr></thead>
-                            <tbody id="dashRecentSubscriptions"><tr><td colspan="5">Loading subscriptions…</td></tr></tbody>
-                        </table>
-                    </div>
-                    <div class="table-responsive" style="margin-top:14px;">
-                        <table>
-                            <thead><tr><th>Latest wallet transactions</th><th>Member</th><th>Type</th><th>Amount</th><th>When</th></tr></thead>
-                            <tbody id="dashRecentWalletTransactions"><tr><td colspan="5">Loading wallet transactions…</td></tr></tbody>
-                        </table>
+
+                <!-- Quick shortcuts, every one a labelled, working destination. -->
+                <div class="dash-section-head">
+                    <div>
+                        <h2>Quick shortcuts</h2>
+                        <p>Jump straight to the management area you need.</p>
                     </div>
                 </div>
-                <div class="panel-card">
-                    <div class="panel-header"><h3><i class="pd-i pd-i-user-plus"></i> Recent Membership Applications</h3><button class="btn btn-outline btn-sm" onclick="switchView('members', pdNavFor('members'))">View All</button></div>
-                    <div class="table-responsive"><table><thead> <tr><th>Applicant</th><th>Branch</th><th>Date</th><th>Status</th><th>Action</th> </tr></thead><tbody id="dashPendingMembers"> <tr><td colspan="5" style="text-align: center;"><div class="spinner" style="width:30px;height:30px;"></div></td></tr> </tbody> </table> </div>
-                </div>
-                <div class="panel-card">
-                    <div class="panel-header"><h3><i class="pd-i pd-i-activity"></i> Recent Activity</h3><button class="btn btn-outline btn-sm" onclick="switchView('activity', pdNavFor('activity'))">Full log</button></div>
-                    <div class="table-responsive"><table><thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Record</th><th>Status</th></tr></thead><tbody id="dashRecentActivityList"><tr><td colspan="5">Loading activity…</td></tr></tbody></table></div>
-                </div>
+                <nav class="dash-shortcuts" aria-label="Management shortcuts">
+                    <button type="button" class="dash-shortcut" onclick="switchView('members', pdNavFor('members'))"><i class="pd-i pd-i-users" aria-hidden="true"></i><span>Users</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('team', pdNavFor('team'))"><i class="pd-i pd-i-user-star" aria-hidden="true"></i><span>Team Management</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('certificates', pdNavFor('certificates'))"><i class="pd-i pd-i-award" aria-hidden="true"></i><span>Certificates</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('membership-cards', pdNavFor('membership-cards'))"><i class="pd-i pd-i-id-card" aria-hidden="true"></i><span>Membership Verification</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('payment-verification', pdNavFor('payment-verification'))"><i class="pd-i pd-i-receipt-text" aria-hidden="true"></i><span>Payments &amp; Subscriptions</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('content', pdNavFor('content'))"><i class="pd-i pd-i-hands-praying" aria-hidden="true"></i><span>Prayer Requests</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('financial_reports', pdNavFor('financial_reports'))"><i class="pd-i pd-i-file-text" aria-hidden="true"></i><span>Reports</span></button>
+                    <button type="button" class="dash-shortcut" onclick="switchView('news', pdNavFor('news'))"><i class="pd-i pd-i-newspaper" aria-hidden="true"></i><span>Content Management</span></button>
+                </nav>
             </div>
 
             <!-- LIVE BROADCAST VIEW (UPGRADED CONTROL ROOM) -->
@@ -1236,12 +1351,12 @@
                             <div class="cr-offline" id="crOffline">
                                 <i class="pd-i pd-i-video-off"></i>
                                 <h3>Camera Off</h3>
-                                <p>Press "Open Camera &amp; Go Live" below to start broadcasting your camera and microphone to your members in real time.</p>
+                                <p>Press “Open camera preview” below to check your camera and microphone. Nothing is broadcast or published until you press “Go live”.</p>
                             </div>
                             <video id="deviceCamPreview" autoplay muted playsinline style="display:none;"></video>
                             <div class="cr-overlay" id="crOverlay" style="display:none;">
                                 <div class="cr-overlay-top">
-                                    <span class="cr-badge-live">LIVE</span>
+                                    <span class="cr-badge-live" id="crLiveBadge">LIVE</span>
                                     <span class="cr-time-badge" id="crTimer">00:00</span>
                                     <span class="cr-viewers-badge"><i class="pd-i pd-i-users"></i> <span id="crViewers">0</span></span>
                                 </div>
@@ -1258,7 +1373,7 @@
                                 <button class="cr-ctrl-btn" id="btnCtrlMic" onclick="adminToggleMic()" title="Mute/Unmute"><i class="pd-i pd-i-mic"></i></button>
                                 <button class="cr-ctrl-btn" onclick="adminFlipCamera()" title="Flip Camera"><i class="pd-i pd-i-switch-camera"></i></button>
                                 <button class="cr-ctrl-btn" onclick="adminShareScreen()" title="Share Screen"><i class="pd-i pd-i-monitor"></i></button>
-                                <button class="cr-end-btn" onclick="adminEndLiveSmart()"><i class="pd-i pd-i-circle-stop"></i> END LIVE</button>
+                                <button class="cr-end-btn" id="crEndBtn" onclick="adminEndLiveSmart()"><i class="pd-i pd-i-circle-stop"></i> END LIVE</button>
                             </div>
                         </div>
 
@@ -1325,8 +1440,9 @@
                                         <select id="crMicSelect" class="form-control" style="padding:10px 14px;"><option>Default Microphone</option></select>
                                     </div>
                                     <button class="cr-go-live" id="btnCrGoLive" onclick="adminDeviceGoLive()">
-                                        <i class="pd-i pd-i-circle-fill" style="font-size:.7rem;"></i> OPEN CAMERA &amp; GO LIVE
+                                        <i class="pd-i pd-i-video" style="font-size:.85rem;"></i> OPEN CAMERA PREVIEW
                                     </button>
+                                    <p style="font-size:.72rem; color:var(--text-sub); margin:0; text-align:left;"><i class="pd-i pd-i-shield"></i> Preview is private. Broadcasting starts only after you confirm.</p>
                                     <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:6px;">
                                         <button class="btn btn-outline" onclick="showRTMPanel()"><i class="pd-i pd-i-server"></i> Use External Encoder</button>
                                         <button class="btn btn-outline" onclick="switchView('live-schedule', this); loadScheduledLives()"><i class="pd-i pd-i-calendar-plus"></i> Schedule Live</button>
@@ -1751,7 +1867,7 @@
                         </div>
                         <div style="background:rgba(10,77,155,.08); border:1px solid rgba(10,77,155,.3); border-radius:16px; padding:16px;">
                             <strong><i class="pd-i pd-i-link"></i> Publish from an AI provider</strong>
-                            <p style="font-size:.78rem; color:var(--text-sub); margin:8px 0 12px;">Made a sermon or Bible story with Runway, Pika, HeyGen, Synthesia or Sora? Paste the finished video URL and publish it into the app library with a title, description and thumbnail.</p>
+                            <p style="font-size:.78rem; color:var(--text-sub); margin:8px 0 12px;">Made a sermon or Bible story with Runway, Pika, HeyGen, Synthesia or Sora? Paste the finished video URL and submit it with a title, description and thumbnail. It stays private until an administrator reviews and approves it.</p>
                             <button class="btn btn-outline btn-sm" onclick="openModal('modalAiVideo')"><i class="pd-i pd-i-plus"></i> Add a video</button>
                         </div>
                     </div>
@@ -1759,7 +1875,7 @@
 
                 <div class="panel-card">
                     <div class="panel-header">
-                        <h3><i class="pd-i pd-i-film"></i> Published AI Videos</h3>
+                        <h3><i class="pd-i pd-i-film"></i> Video review &amp; library</h3>
                         <button class="btn btn-outline btn-sm" onclick="loadAiVideos()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
                     </div>
                     <div class="table-responsive">
@@ -3083,7 +3199,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-outline" onclick="closeModal('modalAiVideo')">Cancel</button>
-                <button class="btn btn-primary" onclick="saveAiVideo()"><i class="pd-i pd-i-cloud-upload"></i> PUBLISH VIDEO</button>
+                <button class="btn btn-primary" onclick="saveAiVideo()"><i class="pd-i pd-i-cloud-upload"></i> SUBMIT FOR REVIEW</button>
             </div>
         </div>
     </div>
@@ -3132,7 +3248,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, query, where, orderBy, startAfter, serverTimestamp, increment, addDoc, limit, onSnapshot, Timestamp, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, query, where, orderBy, startAfter, serverTimestamp, increment, addDoc, limit, onSnapshot, Timestamp, writeBatch, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
 
@@ -3278,8 +3394,7 @@
         let allMembersCache = [];
         let allGalleryCache = [];
         let dashboardPerformanceCache = {
-            members: [], prayers: [], certificates: [], claims: [], gallery: [],
-            payments: [], subscriptions: [], walletTransactions: [], wallets: []
+            stats: null, recentUsers: [], pendingMembers: [], recentActivity: [], statsError: false
         };
 
         const VAPID_KEY = "BFo6TSo4Urth0PXWZETz6cuPgRlemsFx7LDn8yDlFqCrIELU16X12O4ObOOlnbP2h7PvKqbC0N6a-_vrSsksrnM";
@@ -3871,153 +3986,243 @@ window.toggleDarkMode = function() {
             return null;
         }
 
-        function chartSeriesForDays(records, fields, days) {
-            const now = new Date();
-            now.setHours(23, 59, 59, 999);
-            const points = Array.from({ length: days }, (_, index) => {
-                const date = new Date(now);
-                date.setDate(now.getDate() - (days - index - 1));
-                return { date, key: date.toISOString().slice(0, 10), value: 0 };
-            });
-            const byDay = Object.fromEntries(points.map(point => [point.key, point]));
-            records.forEach(record => {
-                const date = dashboardRecordDate(record, fields);
-                if (!date) return;
-                const point = byDay[date.toISOString().slice(0, 10)];
-                if (point) point.value += 1;
-            });
-            return points;
+        function dashboardNumber(value) {
+            if (value === null || value === undefined || value === '') return '—';
+            const number = Number(value);
+            if (!Number.isFinite(number)) return '—';
+            try { return number.toLocaleString('en-US'); } catch (e) { return String(number); }
         }
 
-        function renderActivityPerformanceChart(days) {
-            const root = document.getElementById('activityPerformanceChart');
-            const legend = document.getElementById('activityPerformanceLegend');
-            if (!root || !legend) return;
-            const series = [
-                { label: 'Memberships', color: '#0A4D9B', points: chartSeriesForDays(dashboardPerformanceCache.members, ['createdAt', 'joinedAt'], days) },
-                { label: 'Prayer requests', color: '#d4af37', points: chartSeriesForDays(dashboardPerformanceCache.prayers, ['timestamp', 'createdAt', 'date'], days) },
-                { label: 'Certificates', color: '#10b981', points: chartSeriesForDays(dashboardPerformanceCache.certificates, ['date', 'createdAt'], days) }
-            ];
-            const width = 760, height = 310;
-            const pad = { top: 18, right: 18, bottom: 44, left: 44 };
-            const plotW = width - pad.left - pad.right;
-            const plotH = height - pad.top - pad.bottom;
-            const maxValue = Math.max(1, ...series.flatMap(item => item.points.map(point => point.value)));
-            const roundedMax = Math.max(4, Math.ceil(maxValue / 4) * 4);
-            const y = value => pad.top + plotH - (value / roundedMax) * plotH;
-            const x = index => pad.left + (series[0].points.length === 1 ? plotW / 2 : (index / (series[0].points.length - 1)) * plotW);
-            let svg = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-labelledby="activitySvgTitle activitySvgDesc"><title id="activitySvgTitle">Community activity for the last ${days} days</title><desc id="activitySvgDesc">Line chart comparing membership applications, prayer requests and certificates.</desc>`;
-            for (let line = 0; line <= 4; line++) {
-                const value = Math.round((roundedMax / 4) * line);
-                const lineY = y(value);
-                svg += `<line x1="${pad.left}" y1="${lineY}" x2="${width - pad.right}" y2="${lineY}" stroke="var(--border)" stroke-width="1"/><text x="${pad.left - 10}" y="${lineY + 4}" text-anchor="end" fill="var(--text-sub)" font-size="11">${value}</text>`;
-            }
-            const labelEvery = days <= 7 ? 1 : 5;
-            series[0].points.forEach((point, index) => {
-                if (index % labelEvery !== 0 && index !== series[0].points.length - 1) return;
-                const label = point.date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                svg += `<text x="${x(index)}" y="${height - 14}" text-anchor="middle" fill="var(--text-sub)" font-size="10">${label}</text>`;
-            });
-            series.forEach(item => {
-                const path = item.points.map((point, index) => `${index ? 'L' : 'M'} ${x(index).toFixed(2)} ${y(point.value).toFixed(2)}`).join(' ');
-                svg += `<path d="${path}" fill="none" stroke="${item.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
-                item.points.forEach((point, index) => {
-                    svg += `<circle cx="${x(index).toFixed(2)}" cy="${y(point.value).toFixed(2)}" r="${days <= 7 ? 4 : 2.5}" fill="${item.color}"><title>${item.label}: ${point.value} on ${point.date.toLocaleDateString()}</title></circle>`;
-                });
-            });
-            svg += '</svg>';
-            root.innerHTML = svg;
-            legend.innerHTML = series.map(item => `<span><i style="background:${item.color}"></i>${item.label}</span>`).join('');
+        function dashboardActionLabel(action) {
+            return String(action || 'Activity')
+                .replace(/[_-]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .replace(/^./, character => character.toUpperCase()) || 'Activity';
         }
 
-        function renderWorkflowPerformanceChart() {
-            const root = document.getElementById('workflowPerformanceChart');
-            if (!root) return;
-            const rows = [
-                {
-                    label: 'Membership applications',
-                    complete: dashboardPerformanceCache.members.filter(item => item.status === 'approved').length,
-                    total: dashboardPerformanceCache.members.filter(item => item.status !== 'rejected').length
-                },
-                {
-                    label: 'Prayer follow-up',
-                    complete: dashboardPerformanceCache.prayers.filter(item => item.answered === true || item.status === 'answered' || item.status === 'resolved').length,
-                    total: dashboardPerformanceCache.prayers.length
-                },
-                {
-                    label: 'Support requests',
-                    complete: dashboardPerformanceCache.claims.filter(item => ['approved', 'resolved', 'completed'].includes(item.status)).length,
-                    total: dashboardPerformanceCache.claims.length
-                },
-                {
-                    label: 'Gallery review',
-                    complete: dashboardPerformanceCache.gallery.filter(item => item.status === 'approved').length,
-                    total: dashboardPerformanceCache.gallery.length
+        function dashboardDetails(details) {
+            if (!details) return '';
+            if (typeof details === 'string') return details;
+            if (typeof details !== 'object') return String(details);
+            return Object.entries(details)
+                .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                .slice(0, 3)
+                .map(([key, value]) => `${dashboardActionLabel(key)}: ${Array.isArray(value) ? value.join(', ') : (typeof value === 'object' ? '' : value)}`)
+                .filter(Boolean)
+                .join(' • ');
+        }
+
+        function setDashboardIdentity(name) {
+            const nameEl = document.getElementById('dashAdminName');
+            if (nameEl) nameEl.textContent = name || 'Administrator';
+            const dateEl = document.getElementById('dashToday');
+            if (dateEl) {
+                try {
+                    dateEl.textContent = new Intl.DateTimeFormat('en-GB', {
+                        timeZone: 'Africa/Lusaka', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                    }).format(new Date());
+                } catch (e) {
+                    dateEl.textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
                 }
-            ];
-            root.innerHTML = rows.map(row => {
-                const percent = row.total ? Math.round((row.complete / row.total) * 100) : 0;
-                return `<div class="workflow-row"><div class="workflow-label"><span>${row.label}</span><small>${row.complete} of ${row.total} complete</small></div><div class="workflow-track" role="progressbar" aria-label="${row.label}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><div class="workflow-fill" style="width:${percent}%"></div></div></div>`;
+            }
+        }
+
+        function setDashboardStat(key, value, isError) {
+            const output = document.querySelector(`[data-stat-value="${key}"]`);
+            const card = output && output.closest('.dash-stat');
+            if (output) output.textContent = isError ? 'Unavailable' : dashboardNumber(value);
+            if (card) card.classList.toggle('is-error', !!isError);
+        }
+
+        function renderDashboardStats(stats) {
+            const cards = document.getElementById('adminOverviewCards');
+            if (cards) cards.setAttribute('aria-busy', 'false');
+            const failed = ['registered', 'verified', 'active'].filter(key => stats[key] === null || stats[key] === undefined);
+            setDashboardStat('registered', stats.registered, stats.registered === null);
+            setDashboardStat('verified', stats.verified, stats.verified === null);
+            setDashboardStat('pending', stats.pending, stats.pending === null);
+            setDashboardStat('active', stats.active, stats.active === null);
+            const note = document.getElementById('dashStatsNote');
+            if (note) {
+                note.classList.toggle('is-error', failed.length > 0);
+                const time = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                note.textContent = failed.length
+                    ? `Some account statistics could not be loaded (${failed.join(', ')}). The other cards are still live.`
+                    : `Updated ${time}. Registered, verified and pending counts come from user accounts; active means signed-in activity in the last 30 days.`;
+            }
+        }
+
+        function renderDashboardRegistrations(rows) {
+            const body = document.getElementById('dashRecentRegistrations');
+            if (!body) return;
+            if (!rows || !rows.length) {
+                body.innerHTML = '<tr><td colspan="3"><p class="dash-empty">No registered accounts found yet.</p></td></tr>';
+                return;
+            }
+            body.innerHTML = rows.map(row => {
+                const verified = row.emailVerified === true;
+                const date = dashboardRecordDate(row, ['createdAt', 'registrationCompletedAt', 'updatedAt']);
+                const initials = String(row.fullName || row.name || row.email || 'A').trim().charAt(0).toUpperCase();
+                return `<tr>
+                    <td><div class="user-cell"><span class="user-img" aria-hidden="true" style="display:inline-flex;align-items:center;justify-content:center;font-weight:800;background:rgba(10,77,155,.1);color:#0A4D9B;">${escapeHTML(initials)}</span><div><h4>${escapeHTML(row.fullName || row.name || 'Account')}</h4><p>${escapeHTML(row.email || '')}</p></div></div></td>
+                    <td>${date ? moment(date).format('MMM D, YYYY') : '—'}</td>
+                    <td><span class="badge ${verified ? 'badge-success' : 'badge-warning'}">${verified ? 'Verified' : 'Pending'}</span></td>
+                </tr>`;
             }).join('');
         }
 
-        window.renderDashboardPerformance = function () {
-            const days = Number(document.getElementById('performanceRange')?.value) === 30 ? 30 : 7;
-            renderActivityPerformanceChart(days);
-            renderWorkflowPerformanceChart();
+        function renderDashboardPending(rows) {
+            const body = document.getElementById('dashPendingMembers');
+            if (!body) return;
+            if (!rows || !rows.length) {
+                body.innerHTML = '<tr><td colspan="3"><p class="dash-empty">No membership applications are waiting for approval.</p></td></tr>';
+                return;
+            }
+            body.innerHTML = rows.slice(0, 5).map(row => `<tr>
+                <td><div><h4>${escapeHTML(row.fullName || 'Applicant')}</h4><p>${escapeHTML(row.email || '')}</p></div></td>
+                <td>${escapeHTML(row.branch || 'Global')}</td>
+                <td><button type="button" class="btn btn-sm btn-primary" onclick="approveMember('${escapeHTML(row.id)}')">Approve</button></td>
+            </tr>`).join('');
+        }
+
+        function renderDashboardRecentActivity(rows) {
+            const body = document.getElementById('dashRecentActivityList');
+            if (!body) return;
+            if (!rows || !rows.length) {
+                body.innerHTML = '<tr><td colspan="3"><p class="dash-empty">No administrator activity has been recorded yet.</p></td></tr>';
+                return;
+            }
+            body.innerHTML = rows.slice(0, 6).map(row => {
+                const when = dashboardRecordDate(row, ['timestamp', 'createdAt']);
+                const detail = dashboardDetails(row.details);
+                return `<tr>
+                    <td>${when ? moment(when).format('MMM D, HH:mm') : '—'}</td>
+                    <td><strong>${escapeHTML(dashboardActionLabel(row.action))}</strong>${detail ? `<p>${escapeHTML(detail)}</p>` : ''}</td>
+                    <td>${escapeHTML(row.adminEmail || row.adminId || 'Administrator')}</td>
+                </tr>`;
+            }).join('');
+        }
+
+        function renderDashboardAlerts(stats, extras) {
+            const root = document.getElementById('dashSystemAlerts');
+            if (!root) return;
+            const alerts = [];
+            if (extras && extras.statsError) {
+                alerts.push({ icon: 'pd-i-cloud-off', title: 'Account statistics are incomplete', body: 'One or more database counts could not be loaded. The rest of the console still works.', label: 'Try again', action: "loadDashboardPerformance()" });
+            }
+            if (stats.pending && stats.pending > 0) {
+                alerts.push({ icon: 'pd-i-hourglass', title: `${dashboardNumber(stats.pending)} account${stats.pending === 1 ? '' : 's'} awaiting verification`, body: 'These registered accounts have not completed email verification yet.', label: 'Review users', action: "switchView('members', pdNavFor('members'))" });
+            }
+            const pendingMembers = (extras && extras.pendingMembers) || [];
+            if (pendingMembers.length) {
+                alerts.push({ icon: 'pd-i-clipboard-check', title: `${dashboardNumber(pendingMembers.length)} membership application${pendingMembers.length === 1 ? '' : 's'} pending`, body: 'Approve or review the latest applications from the Congregation area.', label: 'Open pending approvals', action: "switchView('members', pdNavFor('members'))" });
+            }
+            if (!alerts.length) {
+                root.innerHTML = '<div class="dash-alert"><i class="pd-i pd-i-circle-check" aria-hidden="true"></i><div><strong>No urgent items</strong><span>Account verification and membership approvals are up to date.</span></div></div>';
+                return;
+            }
+            root.innerHTML = alerts.map(alert => `<div class="dash-alert"><i class="pd-i ${alert.icon}" aria-hidden="true"></i><div><strong>${escapeHTML(alert.title)}</strong><span>${escapeHTML(alert.body)}</span><button type="button" onclick="${alert.action}">${escapeHTML(alert.label)}</button></div></div>`).join('');
+        }
+
+        function resetDashboardLoading() {
+            const cards = document.getElementById('adminOverviewCards');
+            if (cards) cards.setAttribute('aria-busy', 'true');
+            ['registered', 'verified', 'pending', 'active'].forEach(key => setDashboardStat(key, '—', false));
+            const note = document.getElementById('dashStatsNote');
+            if (note) { note.classList.remove('is-error'); note.textContent = 'Loading account statistics…'; }
+            const registrations = document.getElementById('dashRecentRegistrations');
+            if (registrations) registrations.innerHTML = '<tr><td colspan="3">Loading registrations…</td></tr>';
+            const activity = document.getElementById('dashRecentActivityList');
+            if (activity) activity.innerHTML = '<tr><td colspan="3">Loading activity…</td></tr>';
+        }
+
+        /**
+         * The dashboard now answers four account questions and one management
+         * question. It deliberately does NOT scan the financial collections:
+         * money, wallets and membership dues stay in their restricted sections.
+         * Counts use Firestore aggregation, so a growing congregation does not
+         * turn the dashboard into a full-collection download.
+         */
+        // Aggregation is used in production. The guarded fallback keeps older
+        // cached SDK sessions (and the static test harness) working instead of
+        // turning the whole dashboard into an error state.
+        async function dashboardCount(reference) {
+            if (typeof getCountFromServer === 'function') {
+                const snapshot = await getCountFromServer(reference);
+                return snapshot.data().count;
+            }
+            const snapshot = await getDocs(reference);
+            return typeof snapshot.size === 'number' ? snapshot.size : snapshot.docs.length;
+        }
+
+        window.loadDashboardPerformance = async function () {
+            resetDashboardLoading();
+            const activeSince = Timestamp.fromDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+            const settled = await Promise.allSettled([
+                dashboardCount(collection(db, 'users')),
+                dashboardCount(query(collection(db, 'users'), where('emailVerified', '==', true))),
+                dashboardCount(query(collection(db, 'users'), where('lastActiveAt', '>=', activeSince))),
+                getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(6))),
+                getDocs(query(collection(db, 'memberships'), where('status', '==', 'pending'), limit(25))),
+                getDocs(query(collection(db, 'adminLogs'), orderBy('timestamp', 'desc'), limit(6)))
+            ]);
+
+            const valueOf = (entry, fallback) => entry.status === 'fulfilled' ? entry.value : fallback;
+            const countOf = entry => {
+                if (entry.status !== 'fulfilled') return null;
+                const value = entry.value;
+                if (value && typeof value === 'object' && typeof value.data === 'function') {
+                    try { return value.data().count; } catch (e) { return null; }
+                }
+                return typeof value === 'number' ? value : null;
+            };
+            const docsOf = entry => entry.status === 'fulfilled'
+                ? entry.value.docs.map(item => Object.assign({ id: item.id }, item.data()))
+                : [];
+
+            const registered = countOf(settled[0]);
+            const verified = countOf(settled[1]);
+            const active = countOf(settled[2]);
+            const pending = (registered !== null && verified !== null) ? Math.max(0, registered - verified) : null;
+            const stats = { registered, verified, pending, active };
+            const recentUsers = docsOf(settled[3]);
+            const pendingMembers = docsOf(settled[4]);
+            const recentActivity = docsOf(settled[5]);
+            const statsError = [settled[0], settled[1], settled[2]].some(entry => entry.status !== 'fulfilled');
+
+            dashboardPerformanceCache = {
+                stats,
+                recentUsers,
+                pendingMembers,
+                recentActivity,
+                statsError,
+                loadedAt: new Date()
+            };
+            window.dashboardPerformanceCache = dashboardPerformanceCache;
+
+            renderDashboardStats(stats);
+            renderDashboardRegistrations(recentUsers);
+            renderDashboardPending(pendingMembers);
+            renderDashboardRecentActivity(recentActivity);
+            renderDashboardAlerts(stats, { pendingMembers, statsError });
+
+            if (statsError) {
+                const errors = settled.slice(0, 3).filter(entry => entry.status === 'rejected').map(entry => entry.reason && entry.reason.message).filter(Boolean);
+                console.warn('Some dashboard counts could not be loaded:', errors.join(' | '));
+            }
         };
 
-        window.loadDashboardPerformance = async function() {
-            const activity = document.getElementById('activityPerformanceChart');
-            const workflow = document.getElementById('workflowPerformanceChart');
-            if (activity) activity.innerHTML = '<span class="performance-loading"><i class="pd-i pd-i-loader-circle pd-i-spin"></i> Loading performance chart…</span>';
-            if (workflow) workflow.innerHTML = '<span class="performance-loading"><i class="pd-i pd-i-loader-circle pd-i-spin"></i> Loading workflow chart…</span>';
-            try {
-                const results = await Promise.allSettled([
-                    getDocs(query(collection(db, "memberships"), orderBy("createdAt", "desc"))),
-                    getDocs(collection(db, "prayers")),
-                    getDocs(collection(db, "certificates")),
-                    getDocs(collection(db, "supportClaims")),
-                    getDocs(collection(db, "gallery")),
-                    getDocs(query(collection(db, "paymentRequests"), orderBy("createdAt", "desc"), limit(200))),
-                    getDocs(collection(db, "subscriptions")),
-                    getDocs(query(collection(db, "walletTransactions"), orderBy("createdAt", "desc"), limit(100))),
-                    getDocs(collection(db, "wallets"))
-                ]);
-                const docsFrom = result => result.status === 'fulfilled'
-                    ? result.value.docs.map(item => Object.assign({ id: item.id }, item.data()))
-                    : [];
-                dashboardPerformanceCache = {
-                    members: docsFrom(results[0]),
-                    prayers: docsFrom(results[1]),
-                    certificates: docsFrom(results[2]),
-                    claims: docsFrom(results[3]),
-                    gallery: docsFrom(results[4]),
-                    payments: docsFrom(results[5]),
-                    subscriptions: docsFrom(results[6]),
-                    walletTransactions: docsFrom(results[7]),
-                    wallets: docsFrom(results[8])
-                };
-                window.dashboardPerformanceCache = dashboardPerformanceCache;
-                allMembersCache = dashboardPerformanceCache.members.slice();
-                allGalleryCache = dashboardPerformanceCache.gallery.slice();
-
-                const pendingMembers = allMembersCache.filter(item => item.status === 'pending').slice(0, 5);
-                const pendingHtml = pendingMembers.map(data => {
-                    const joined = dashboardRecordDate(data, ['createdAt', 'joinedAt']);
-                    return `<tr><td><div class="user-cell"><img src="${escapeHTML(data.photoUrl || data.photoURL || '/assets/logo.png')}" class="user-img" alt=""><div><h4>${escapeHTML(data.fullName || 'N/A')}</h4><p>${escapeHTML(data.email || '')}</p></div></div></td><td>${escapeHTML(data.branch || 'Global')}</td><td>${joined ? moment(joined).format('MMM D') : 'N/A'}</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-sm btn-primary" onclick="approveMember('${data.id}')">Approve</button></td></tr>`;
-                }).join('');
-                const pendingTable = document.getElementById('dashPendingMembers');
-                if (pendingTable) pendingTable.innerHTML = pendingHtml || '<tr><td colspan="5">No pending applications</td></tr>';
-                renderDashboardPerformance();
-                if (typeof window.renderAdminOverview === 'function') window.renderAdminOverview();
-                if (typeof window.renderBillingSnapshot === 'function') window.renderBillingSnapshot();
-                if (typeof window.loadDashboardRecentActivity === 'function') window.loadDashboardRecentActivity().catch(() => {});
-            } catch(e) {
-                console.error("Dashboard performance error:", e);
-                if (activity) activity.innerHTML = '<p>Performance chart is temporarily unavailable. Please refresh.</p>';
-                if (workflow) workflow.innerHTML = '<p>Workflow chart is temporarily unavailable.</p>';
+        // Kept as a small compatibility hook for older admin sessions that call
+        // it after approving a member; it now refreshes the whole lightweight
+        // dashboard instead of re-downloading the financial collections.
+        window.renderDashboardPerformance = function () {
+            if (window.dashboardPerformanceCache && window.dashboardPerformanceCache.stats) {
+                renderDashboardStats(window.dashboardPerformanceCache.stats);
             }
+        };
+        window.loadDashboardRecentActivity = async function () {
+            return window.loadDashboardPerformance();
         };
 
         window.filterMembers = function() {
@@ -4044,7 +4249,15 @@ window.toggleDarkMode = function() {
             if(!confirm("Approve this membership application?")) return;
             showLoading();
             try {
-                const existing = (allMembersCache || []).find(m => m.id === uid) || {};
+                let existing = (allMembersCache || []).find(m => m.id === uid);
+                // The dashboard no longer downloads every membership, so an
+                // approval can begin from a row that is not in the cache yet.
+                // Read that one record first: an existing membership number is
+                // canonical and must never be replaced.
+                if (!existing) {
+                    const memberSnap = await getDoc(doc(db, 'memberships', uid));
+                    existing = memberSnap.exists() ? Object.assign({ id: uid }, memberSnap.data()) : {};
+                }
                 // Never renumber an existing member. If an ID already exists on
                 // the record it is the canonical ID and must be reused.
                 let newId = String(existing.membershipId || '').trim().toUpperCase();
@@ -5031,9 +5244,15 @@ window.toggleDarkMode = function() {
                 tbody.innerHTML = snap.docs.map(d => {
                     const v = d.data();
                     const when = v.createdAt?.toDate ? moment(v.createdAt.toDate()).format('MMM D, YYYY') : '—';
-                    const status = v.published === false
-                        ? '<span class="badge badge-warning">Hidden</span>'
-                        : '<span class="badge badge-success">Published</span>';
+                    const awaitingReview = v.reviewed === false || v.status === 'pending-review';
+                    const rejected = v.status === 'rejected';
+                    const status = awaitingReview
+                        ? '<span class="badge badge-warning">Pending review</span>'
+                        : rejected
+                            ? '<span class="badge badge-danger">Rejected</span>'
+                            : v.published === false
+                                ? '<span class="badge badge-warning">Hidden</span>'
+                                : '<span class="badge badge-success">Published</span>';
                     const badge = v.aiAssisted !== false ? ' <span class="badge badge-info"><i class="pd-i pd-i-bot"></i> AI</span>' : '';
                     return `<tr>
                         <td>${when}</td>
@@ -5043,7 +5262,10 @@ window.toggleDarkMode = function() {
                         <td>${status}</td>
                         <td>
                             ${v.url ? `<a class="btn btn-sm btn-outline" href="${escapeHTML(v.url)}" target="_blank" rel="noopener" aria-label="Play"><i class="pd-i pd-i-play"></i></a>` : ''}
-                            <button class="btn btn-sm btn-outline" onclick="toggleAiVideo('${d.id}', ${v.published === false})" aria-label="Publish or hide video"><i class="pd-i ${v.published === false ? 'pd-i-eye' : 'pd-i-eye-off'}"></i></button>
+                            ${awaitingReview
+                                ? `<button class="btn btn-sm btn-success" onclick="reviewAiVideo('${d.id}', true)"><i class="pd-i pd-i-check"></i> Approve &amp; publish</button>
+                                   <button class="btn btn-sm btn-danger" onclick="reviewAiVideo('${d.id}', false)"><i class="pd-i pd-i-x"></i> Reject</button>`
+                                : `<button class="btn btn-sm btn-outline" onclick="toggleAiVideo('${d.id}', ${v.published === false})" aria-label="Publish or hide video"><i class="pd-i ${v.published === false ? 'pd-i-eye' : 'pd-i-eye-off'}"></i></button>`}
                             <button class="btn btn-sm btn-danger" onclick="deleteAiVideo('${d.id}')" aria-label="Delete"><i class="pd-i pd-i-trash"></i></button>
                         </td>
                     </tr>`;
@@ -5068,13 +5290,18 @@ window.toggleDarkMode = function() {
                     desc: document.getElementById('aivDesc').value.trim(),
                     scripture: document.getElementById('aivScripture').value.trim(),
                     aiAssisted: document.getElementById('aivDisclosure').checked,
-                    published: true,
+                    // Submitted by the studio, but still unpublished until an
+                    // administrator presses Approve & publish in the list.
+                    published: false,
+                    status: 'pending-review',
+                    reviewed: false,
                     views: 0,
                     createdAt: serverTimestamp(),
+                    submittedAt: serverTimestamp(),
                     createdBy: adminUser?.email || 'admin'
                 });
-                toast('AI video published');
-                await logAdminActivity('ai_video_published', { title });
+                toast('AI video submitted for review. Approve it in the table before it reaches members.');
+                await logAdminActivity('ai_video_submitted', { title });
                 closeModal('modalAiVideo');
                 ['aivTitle','aivUrl','aivThumb','aivDesc','aivScripture'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
                 loadAiVideos();
@@ -5082,8 +5309,23 @@ window.toggleDarkMode = function() {
             finally { hideLoading(); }
         };
 
+        window.reviewAiVideo = async function(id, approve) {
+            try {
+                await updateDoc(doc(db, 'aiVideos', id), {
+                    published: !!approve,
+                    status: approve ? 'published' : 'rejected',
+                    reviewed: true,
+                    reviewedAt: serverTimestamp(),
+                    reviewedBy: adminUser?.email || adminUser?.uid || 'admin'
+                });
+                toast(approve ? 'Video approved and published' : 'Video rejected — it stays private');
+                await logAdminActivity(approve ? 'ai_video_approved' : 'ai_video_rejected', { videoId: id });
+                loadAiVideos();
+            } catch (e) { toast(e.message, 'error'); }
+        };
+
         window.toggleAiVideo = function(id, makePublished) {
-            updateDoc(doc(db, 'aiVideos', id), { published: !!makePublished })
+            updateDoc(doc(db, 'aiVideos', id), { published: !!makePublished, status: makePublished ? 'published' : 'hidden' })
                 .then(() => { toast(makePublished ? 'Video published' : 'Video hidden from members'); loadAiVideos(); })
                 .catch(e => toast(e.message, 'error'));
         };
@@ -5359,15 +5601,23 @@ window.toggleDarkMode = function() {
             const wrap = document.getElementById('adminRadioList');
             if(!wrap || !window.PDApp) return;
             const all = PDApp.store.get('radio', 'DEFAULT_RADIO') || [];
-            wrap.innerHTML = all.map(s => `
-                <div style="display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--border-color); border-radius:14px; margin-bottom:8px; background:var(--bg-card);">
+            if (!all.length) {
+                wrap.innerHTML = '<p style="color:var(--text-sub);">No radio stations configured. Add a licensed stream URL before announcing a station.</p>';
+                return;
+            }
+            wrap.innerHTML = all.map(s => {
+                const ready = !!(s.streamUrl && String(s.streamUrl).trim());
+                return `
+                <div style="display:flex; align-items:center; gap:12px; padding:12px; border:1px solid var(--border-color); border-radius:10px; margin-bottom:8px; background:var(--bg-card);">
                     <i class="${window.PDIcons ? PDIcons.cls(s.icon, 'pd-i-radio') : 'pd-i pd-i-radio'}" aria-hidden="true" style="font-size:1.2rem; color:var(--accent-green);"></i>
                     <div style="flex:1; min-width:0;">
                         <strong>${escapeHTML(s.name)}</strong>
-                        <div style="font-size:.72rem; color:var(--text-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(s.streamUrl)}</div>
+                        <div style="font-size:.72rem; color:var(--text-sub); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${ready ? escapeHTML(s.streamUrl) : 'No stream URL — the public player disables this station.'}</div>
                     </div>
-                    <button class="btn btn-sm btn-outline" onclick="editRadio('${s.id}')" aria-label="Edit"><i class="pd-i pd-i-pen"></i></button>
-                </div>`).join('');
+                    <span style="font-size:.64rem; font-weight:800; letter-spacing:.5px; text-transform:uppercase; padding:4px 7px; border-radius:6px; white-space:nowrap; background:${ready ? 'rgba(16,185,129,.12)' : 'rgba(185,28,28,.1)'}; color:${ready ? '#047857' : '#b91c1c'};">${ready ? 'Stream configured' : 'Needs URL'}</span>
+                    <button class="btn btn-sm btn-outline" onclick="editRadio('${s.id}')" aria-label="Edit ${escapeHTML(s.name)} stream"><i class="pd-i pd-i-pen"></i></button>
+                </div>`;
+            }).join('');
         };
         window.editRadio = function(id) {
             const all = PDApp.store.get('radio', 'DEFAULT_RADIO') || [];
@@ -6277,7 +6527,7 @@ window.toggleDarkMode = function() {
                 if (setupCard) setupCard.style.display = 'block';
                 const liveSettingsCard = $('crLiveSettingsCard');
                 if (liveSettingsCard) liveSettingsCard.style.display = 'none';
-                if (goLiveBtn) { goLiveBtn.style.display = ''; goLiveBtn.disabled = false; goLiveBtn.innerHTML = '<i class="pd-i pd-i-circle-fill" style="font-size:.7rem;"></i> OPEN CAMERA &amp; GO LIVE'; }
+                if (goLiveBtn) { goLiveBtn.style.display = ''; goLiveBtn.disabled = false; goLiveBtn.innerHTML = '<i class="pd-i pd-i-video" style="font-size:.85rem;"></i> OPEN CAMERA PREVIEW'; }
                 // reset KPIs
                 setKPI('kpiDuration', '0:00');
                 updateCRStatusSteps('idle');
@@ -6922,7 +7172,7 @@ window.toggleDarkMode = function() {
 
         /* Device / WebRTC broadcast */
         let deviceStream = {
-            active: false, stream: null, facing: 'user', videoEl: null
+            active: false, previewing: false, stream: null, facing: 'user', videoEl: null
         };
 
         window.adminDeviceGoLive = async function() {
@@ -6957,12 +7207,41 @@ window.toggleDarkMode = function() {
                     ? (selectedMic || true)
                     : false;
 
-                const mediaStream = await navigator.mediaDevices.getUserMedia({
-                    video: videoConstraints,
-                    audio: audioConstraints
-                });
+                const mediaStream = deviceStream.previewing && deviceStream.stream
+                    ? deviceStream.stream
+                    : await navigator.mediaDevices.getUserMedia({
+                        video: videoConstraints,
+                        audio: audioConstraints
+                    });
                 deviceStream.stream = mediaStream;
                 deviceStream.active = true;
+
+                // First press only opens a private preview. The member sees the
+                // picture, checks the microphone, and then presses Go live — no
+                // Firestore status or viewer signal is written before that.
+                if (!deviceStream.previewing) {
+                    const previewEl = $('deviceCamPreview');
+                    if (previewEl) {
+                        previewEl.srcObject = mediaStream;
+                        previewEl.style.display = 'block';
+                        previewEl.classList.toggle('no-mirror', facing !== 'user');
+                        try { await previewEl.play(); } catch (e) {}
+                    }
+                    if ($('crOffline')) $('crOffline').style.display = 'none';
+                    if ($('crOverlay')) $('crOverlay').style.display = 'flex';
+                    if ($('crControls')) $('crControls').style.display = 'flex';
+                    const badge = $('crLiveBadge');
+                    if (badge) { badge.textContent = 'PREVIEW'; badge.classList.add('is-preview'); }
+                    const end = $('crEndBtn');
+                    if (end) end.innerHTML = '<i class="pd-i pd-i-circle-stop"></i> STOP PREVIEW';
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="pd-i pd-i-circle-fill" style="font-size:.7rem;"></i> GO LIVE NOW';
+                    }
+                    deviceStream.previewing = true;
+                    toast('Camera preview ready. Nothing is public until you press Go live.');
+                    return;
+                }
 
                 const preview = $('deviceCamPreview');
                 if (preview) {
@@ -6986,6 +7265,11 @@ window.toggleDarkMode = function() {
                 // Create PDLive broadcaster
                 const fb = { db, doc, getDoc, setDoc, updateDoc, addDoc, deleteDoc, collection, query, orderBy, limit, onSnapshot, serverTimestamp, getDocs, writeBatch };
                 crBroadcaster = PDLive.createBroadcaster(fb, { adminEmail: adminUser.email, adminUid: adminUser.uid });
+                deviceStream.previewing = false;
+                const liveBadge = $('crLiveBadge');
+                if (liveBadge) { liveBadge.textContent = 'LIVE'; liveBadge.classList.remove('is-preview'); }
+                const endBtn = $('crEndBtn');
+                if (endBtn) endBtn.innerHTML = '<i class="pd-i pd-i-circle-stop"></i> END LIVE';
 
                 // Attach recorder events for progress
                 crBroadcaster.on('state', (s) => {
@@ -7070,7 +7354,8 @@ window.toggleDarkMode = function() {
                 if ($('crOffline')) $('crOffline').style.display = 'flex';
                 if ($('crOverlay')) $('crOverlay').style.display = 'none';
                 if ($('crControls')) $('crControls').style.display = 'none';
-                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="pd-i pd-i-circle-fill" style="font-size:.7rem;"></i> OPEN CAMERA &amp; GO LIVE'; }
+                deviceStream.previewing = false;
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="pd-i pd-i-video" style="font-size:.85rem;"></i> OPEN CAMERA PREVIEW'; }
             } finally {
                 hideLoading();
             }
@@ -7089,9 +7374,37 @@ window.toggleDarkMode = function() {
                 // RTMP/external encoder broadcast
                 return adminEndLive();
             }
+            // A private preview is not a broadcast; stopping it only releases
+            // the camera and never writes an ended status document.
+            if (deviceStream.previewing) return adminDeviceStopPreview();
             // Fallback: if the status says live but no crBroadcaster, end RTMP path
             if (currentLiveData.isLive) return adminEndLive();
             toast('No active broadcast to end', 'info');
+        };
+
+        window.adminDeviceStopPreview = function () {
+            if (deviceStream.stream) {
+                deviceStream.stream.getTracks().forEach(function (t) { t.stop(); });
+            }
+            deviceStream.stream = null;
+            deviceStream.active = false;
+            deviceStream.previewing = false;
+            const preview = $('deviceCamPreview');
+            if (preview) { try { preview.pause(); } catch (e) {} preview.srcObject = null; preview.style.display = 'none'; }
+            if ($('crSetupCard')) $('crSetupCard').style.display = 'block';
+            if ($('crOffline')) $('crOffline').style.display = 'flex';
+            if ($('crOverlay')) $('crOverlay').style.display = 'none';
+            if ($('crControls')) $('crControls').style.display = 'none';
+            const badge = $('crLiveBadge');
+            if (badge) { badge.textContent = 'LIVE'; badge.classList.remove('is-preview'); }
+            const goBtn = $('btnCrGoLive');
+            if (goBtn) {
+                goBtn.style.display = '';
+                goBtn.disabled = false;
+                goBtn.innerHTML = '<i class="pd-i pd-i-video" style="font-size:.85rem;"></i> OPEN CAMERA PREVIEW';
+            }
+            updateCRStatusSteps('idle');
+            toast('Preview stopped. You were not broadcasting.');
         };
 
         window.adminDeviceEndLive = async function() {
@@ -7114,8 +7427,11 @@ window.toggleDarkMode = function() {
                 const preview = $('deviceCamPreview');
                 if (preview) { try { preview.pause(); } catch(e){} preview.srcObject = null; preview.style.display = 'none'; }
 
-                // Write recording doc if stop didn't
-                if (!summary && currentLiveData.streamId) {
+                // Write a fallback recording only for an external encoder
+                // broadcast whose own status carries a real stream id. A
+                // browser broadcast with no uploaded recording stays out of
+                // the archive.
+                if (!summary && currentLiveData.streamId && currentLiveData.source === 'admin-dashboard') {
                     await addDoc(collection(db, 'liveRecordings'), {
                         title: currentLiveData.title || 'Live Service',
                         description: currentLiveData.description || '',
@@ -7157,7 +7473,10 @@ window.toggleDarkMode = function() {
                 // Restore setup card + Go Live button so admin can start another broadcast
                 if ($('crSetupCard')) $('crSetupCard').style.display = 'block';
                 const goBtn = $('btnCrGoLive');
-                if (goBtn) { goBtn.style.display = ''; goBtn.disabled = false; goBtn.innerHTML = '<i class="pd-i pd-i-circle-fill" style="font-size:.7rem;"></i> OPEN CAMERA &amp; GO LIVE'; }
+                deviceStream.previewing = false;
+                if (goBtn) { goBtn.style.display = ''; goBtn.disabled = false; goBtn.innerHTML = '<i class="pd-i pd-i-video" style="font-size:.85rem;"></i> OPEN CAMERA PREVIEW'; }
+                const badge = $('crLiveBadge');
+                if (badge) { badge.textContent = 'LIVE'; badge.classList.remove('is-preview'); }
                 if ($('crOffline')) $('crOffline').style.display = 'flex';
                 if ($('crOverlay')) $('crOverlay').style.display = 'none';
                 if ($('crControls')) $('crControls').style.display = 'none';
@@ -7165,7 +7484,9 @@ window.toggleDarkMode = function() {
                 crTimerInterval = null;
                 updateCRStatusSteps('idle');
 
-                toast('Broadcast ended — recording saved to cloud');
+                toast(summary && summary.recordingAvailable
+                    ? 'Broadcast ended — the recording is processing in the cloud'
+                    : 'Broadcast ended. No recording was uploaded, so nothing was added to the archive.');
                 loadLiveRecordings();
             } catch(e) {
                 console.error(e);
@@ -7447,7 +7768,7 @@ window.toggleDarkMode = function() {
                 });
                 // Switch to live view and start
                 switchView('live', pdNavFor('live'));
-                toast('Title pre-filled — press "OPEN CAMERA & GO LIVE" to start', 'info');
+                toast('Title pre-filled — press “Open camera preview”, then “Go live” to start', 'info');
             } catch(e) { toast('Error: ' + e.message, 'error'); }
         };
 
@@ -8182,6 +8503,7 @@ window.toggleDarkMode = function() {
             const avatarEl = document.getElementById('topbarAvatar');
             if (nameEl) nameEl.innerText = name;
             if (avatarEl) avatarEl.innerText = (name || 'A')[0].toUpperCase();
+            setDashboardIdentity(name);
             hideAdminOverlays();
             watchAdminRole(user);
             if (!adminConsoleReady) {

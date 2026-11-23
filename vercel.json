@@ -30,6 +30,10 @@
       "destination": "/api/system?op=newsletter"
     },
     {
+      "source": "/api/live-ice",
+      "destination": "/api/system?op=live-ice"
+    },
+    {
       "source": "/resource-view",
       "destination": "/resource-view.html"
     },

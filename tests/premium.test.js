@@ -41,6 +41,7 @@ const dom = new JSDOM(html, {
 const { window } = dom;
 window.eval(fs.readFileSync(path.join(ROOT, 'assets/pd-content-data.js'), 'utf8'));
 window.eval(fs.readFileSync(path.join(ROOT, 'assets/pd-app.js'), 'utf8'));
+window.eval(fs.readFileSync(path.join(ROOT, 'assets/pd-daily-challenge.js'), 'utf8'));
 
 setTimeout(() => {
   const doc = window.document;
@@ -57,12 +58,16 @@ setTimeout(() => {
       (doc.querySelector('[data-pd-scripture]')?.innerHTML || '').includes('Mark 7:37'));
     t('splash verse renders Mark 7:37',
       (doc.querySelector('#pdSplash .pd-scripture-ref')?.textContent || '').includes('Mark 7:37'));
-    t('weekly prayer challenge card exists on the home page',
-      !!doc.getElementById('weeklyChallenge'));
-    t('weekly challenge data engine returns a challenge for any week',
+    t('Daily Prayer replaces the weekly challenge card on the home page',
+      !!doc.getElementById('dailyChallenge') && !doc.getElementById('weeklyChallenge'));
+    t('the historical weekly challenge engine is still available',
       typeof window.PD_CONTENT.getWeeklyChallenge === 'function' &&
       !!window.PD_CONTENT.getWeeklyChallenge(new Date()) &&
       window.PD_CONTENT.WEEKLY_CHALLENGES.length >= 8);
+    t('Daily Prayer plans follow the Africa/Lusaka weekday',
+      typeof window.PDDaily === 'object' &&
+      ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        .every((day, index) => window.PDDaily.preview(index).challenge.title.startsWith(day)));
     t('PDApp global is available', typeof window.PDApp === 'object' && typeof window.PDApp.init === 'function');
     t('i18n resolves English strings', window.PDApp.i18n.t('nav.home') === 'Home');
     window.PDApp.i18n.set('bem');

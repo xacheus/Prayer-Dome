@@ -2478,21 +2478,41 @@
         radio.toggle(d.url, d.name || 'Prayer Dome Radio', btn);
       });
     },
+    ensureAudio: function () {
+      if (!radio.audio) {
+        radio.audio = new Audio();
+        radio.audio.id = 'radioAudio';
+        radio.audio.preload = 'none';
+        radio.audio.setAttribute('playsinline', '');
+        radio.audio.setAttribute('aria-hidden', 'true');
+        try { radio.audio.volume = Number(lsGet('pd_radio_volume', 0.8)) || 0.8; } catch (e) {}
+        radio.audio.addEventListener('ended', function () { radio.playing = false; broadcast('radio:stopped', { url: radio.audio.src, ended: true }); });
+        radio.audio.addEventListener('error', function () {
+          radio.playing = false;
+          broadcast('radio:error', { url: radio.audio.src, name: radio.currentName || 'Prayer Dome Radio' });
+        });
+        document.body.appendChild(radio.audio);
+      }
+      return radio.audio;
+    },
     toggle: function (url, name, btn) {
-      if (!radio.audio) radio.audio = new Audio();
-      if (radio.playing && radio.audio.src.split('?')[0] === url.split('?')[0]) {
-        radio.audio.pause();
+      if (!url) return;
+      var audio = radio.ensureAudio();
+      if (radio.playing && audio.src.split('?')[0] === url.split('?')[0]) {
+        audio.pause();
         radio.playing = false;
+        radio.currentName = '';
         if (btn) btn.classList.remove('pd-radio-playing');
         var icon = btn && btn.querySelector('i');
         if (icon) icon.className = 'pd-i pd-i-play';
         var indicator = $('#pdRadioNow');
         if (indicator) indicator.style.display = 'none';
-        broadcast('radio:stopped', { url: url });
+        broadcast('radio:stopped', { url: url, name: name });
         return;
       }
-      radio.audio.src = url;
-      radio.audio.play().then(function () {
+      audio.src = url;
+      radio.currentName = name;
+      audio.play().then(function () {
         radio.playing = true;
         $$('[data-pd-radio]').forEach(function (b) {
           b.classList.remove('pd-radio-playing');
@@ -2509,16 +2529,80 @@
           indicator.style.display = 'flex';
           indicator.innerHTML = '<span class="pd-live-dot"></span> Now playing: ' + esc(name);
         }
+        // Lock-screen / notification controls use the same real audio element.
+        try {
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new window.MediaMetadata({
+              title: name || 'Prayer Dome Radio',
+              artist: 'Prayer Dome',
+              album: 'Gospel Radio & Podcasts'
+            });
+            navigator.mediaSession.setActionHandler('pause', function () { radio.toggle(url, name, btn); });
+            navigator.mediaSession.setActionHandler('stop', function () { radio.stop(); });
+          }
+        } catch (e) {}
         broadcast('radio:playing', { url: url, name: name });
       }).catch(function () {
+        radio.playing = false;
+        broadcast('radio:error', { url: url, name: name });
         toast('Unable to play this stream. Check the station URL in the Admin Dashboard.', 'error');
       });
+    },
+    setVolume: function (value) {
+      var volume = Math.max(0, Math.min(1, Number(value)));
+      if (!isFinite(volume)) volume = 0.8;
+      var audio = radio.ensureAudio();
+      audio.volume = volume;
+      try { lsSet('pd_radio_volume', volume); } catch (e) {}
+      return volume;
     },
     stop: function () {
       if (radio.audio) radio.audio.pause();
       radio.playing = false;
+      radio.currentName = '';
       var indicator = $('#pdRadioNow');
       if (indicator) indicator.style.display = 'none';
+      broadcast('radio:stopped', { url: radio.audio ? radio.audio.src : '' });
+    }
+  };
+
+  /* ------------------------------------------------------------- activity
+   * One tiny heartbeat per signed-in member per Lusaka day, used only for the
+   * administrator's "Active Users" count. It records a timestamp, not a
+   * location, page history or device fingerprint. */
+  var activity = {
+    init: function () {
+      var self = activity;
+      if (!fb || !fb.auth) return;
+      var run = function (user) { if (user && user.uid) self.heartbeat(user); };
+      try {
+        if (typeof fb.auth.onAuthStateChanged === 'function') fb.auth.onAuthStateChanged(run);
+        run(fb.auth.currentUser);
+      } catch (e) {}
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) run(fb.auth.currentUser);
+      });
+    },
+    heartbeat: function (user) {
+      if (!user || !user.uid || !fb || !fb.setDoc || !fb.doc || !fb.serverTimestamp) return;
+      var day = '';
+      try {
+        var parts = new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Africa/Lusaka', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).formatToParts(new Date()).reduce(function (acc, part) {
+          if (part.type !== 'literal') acc[part.type] = part.value;
+          return acc;
+        }, {});
+        day = parts.year + '-' + parts.month + '-' + parts.day;
+      } catch (e) { day = new Date().toISOString().slice(0, 10); }
+      var key = 'pd_active_day_' + user.uid;
+      try { if (lsGet(key, '') === day) return; } catch (e) {}
+      fb.setDoc(fb.doc(fb.db, 'users', user.uid), {
+        lastActiveAt: fb.serverTimestamp(),
+        lastActiveTimezone: 'Africa/Lusaka'
+      }, { merge: true }).then(function () {
+        try { lsSet(key, day); } catch (e) {}
+      }).catch(function () { /* a read-only/offline session must not break the page */ });
     }
   };
 
@@ -3305,6 +3389,7 @@
 
   /* ---------------------------------------------------------------- public */
   window.PDApp = {
+    activity: activity,
     version: VERSION,
     setFirestore: setFirestore,
     founder: founder,
@@ -3342,7 +3427,7 @@
         ['ui', ui.init], ['i18n', i18n.init], ['location', location.init],
         ['announcements', announcements.init], ['notifications', notifications.init],
         ['banners', banners.init], ['stats', stats.init], ['live', live.init],
-        ['scripture', scripture.init], ['radio', radio.init], ['academyNav', academyNav.init]
+        ['scripture', scripture.init], ['radio', radio.init], ['activity', activity.init], ['academyNav', academyNav.init]
       ];
       modules.forEach(function (m) {
         try { m[1](); } catch (e) { /* module failed — continue */ }

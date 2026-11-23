@@ -559,9 +559,40 @@
         .dc-total { display: inline-flex; align-items: center; gap: 5px; font-size: .74rem; font-weight: 800; color: #8a6d1a; }
         .dc-tz { margin: 10px 0 0; font-size: .68rem; line-height: 1.5; color: var(--text-sub, #5b6b82); }
         .dc-tz > i { color: var(--accent-gold, #d4af37); }
+        .dc-days-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 9px; }
+        .dc-days-head > span:first-child { font-size: .67rem; font-weight: 850; letter-spacing: .35px; color: var(--text-sub, #5b6b82); text-transform: uppercase; }
+        .dc-streak { display: inline-flex; align-items: center; gap: 5px; font-size: .68rem; font-weight: 850; color: #8a6d1a; background: rgba(212,175,55,.13); border: 1px solid rgba(212,175,55,.34); border-radius: 999px; padding: 4px 9px; }
+        .dc-days {
+            display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain;
+            scroll-snap-type: x proximity; padding: 2px 1px 8px; margin: 0 -2px 5px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .dc-days::-webkit-scrollbar { height: 5px; }
+        .dc-days::-webkit-scrollbar-thumb { background: rgba(10,77,155,.25); border-radius: 99px; }
+        .dc-day {
+            position: relative; flex: 0 0 auto; min-width: 62px; min-height: 48px;
+            display: grid; justify-items: center; align-content: center; gap: 0;
+            padding: 6px 8px; border: 1px solid var(--border-color, #dbe3ee);
+            border-radius: 10px; background: var(--bg-primary, #f8fafc);
+            color: var(--text-main, #0f172a); font-family: inherit; cursor: pointer;
+            scroll-snap-align: center;
+        }
+        .dc-day span { font-size: .74rem; font-weight: 850; line-height: 1.1; }
+        .dc-day small { font-size: .56rem; color: var(--text-sub, #64748b); line-height: 1.25; font-weight: 700; }
+        .dc-day > i { position: absolute; right: 3px; top: 3px; font-size: .55rem; color: #15803d; }
+        .dc-day.is-today { border-color: rgba(212,175,55,.72); box-shadow: inset 0 0 0 1px rgba(212,175,55,.25); }
+        .dc-day.is-selected { background: #0A4D9B; border-color: #0A4D9B; color: #fff; }
+        .dc-day.is-selected small { color: #f6df8a; }
+        .dc-day.is-selected > i { color: #bbf7d0; }
+        .dc-day:focus-visible { outline: 3px solid #d4af37; outline-offset: 2px; }
+        .dc-pray-status { margin: 9px 0 0; font-size: .72rem; line-height: 1.55; color: var(--text-sub, #5b6b82); }
+        .dc-pray-status a { color: #0A4D9B; font-weight: 800; }
+        .dc-history { margin: 6px 0 0; font-size: .68rem; color: var(--text-sub, #5b6b82); }
+        .dc-history > i { color: #8a6d1a; margin-right: 4px; }
         @media (max-width: 380px) {
             .dc-points { margin-left: 0; }
             .dc-done-btn { flex: 1 1 100%; }
+            .dc-day { min-width: 56px; padding: 5px 6px; }
         }
     </style>
     <link rel="stylesheet" href="/assets/pd-brand.css">
@@ -719,39 +750,12 @@
     <!-- Featured Scripture — Mark 7:37 (permanent theme) -->
     <section style="margin: 26px 16px 0;" data-pd-scripture aria-label="Featured scripture"></section>
 
-    <!-- Daily Challenge — weekday and date are read in Africa/Lusaka, never
-         from the visitor's device zone. Filled by assets/pd-daily-challenge.js. -->
-    <div class="dc-wrap">
+    <!-- Daily Prayer — weekday, date and check-in key are read in
+         Africa/Lusaka, never from the visitor's device zone. Filled by
+         assets/pd-daily-challenge.js. -->
+    <div class="dc-wrap" id="dailyPrayer">
         <div id="dailyChallenge" aria-live="polite"></div>
     </div>
-
-    <!-- Weekly Prayer Challenge -->
-    <section class="pd-challenge" id="weeklyChallenge" aria-label="Weekly prayer challenge">
-        <div class="pd-challenge-glow"></div>
-        <div class="pd-challenge-head">
-            <div class="pd-challenge-ribbon"><i class="pd-i pd-i-flame"></i> THIS WEEK'S PRAYER CHALLENGE</div>
-            <div class="pd-challenge-dates" id="challengeDates">Loading…</div>
-        </div>
-        <div class="pd-challenge-body">
-            <div class="pd-challenge-main">
-                <h3 class="pd-challenge-title" id="challengeTitle"><i class="pd-i pd-i-bird"></i> Loading…</h3>
-                <p class="pd-challenge-focus" id="challengeFocus">Loading this week's focus…</p>
-                <p class="pd-challenge-verse" id="challengeVerse">“…” <span id="challengeVerseRef">—</span></p>
-            </div>
-            <div class="pd-challenge-side">
-                <div class="pd-challenge-ring-wrap">
-                    <svg class="pd-challenge-ring" viewBox="0 0 120 120" aria-hidden="true">
-                        <circle class="pd-challenge-ring-bg" cx="60" cy="60" r="52"></circle>
-                        <circle class="pd-challenge-ring-fg" id="challengeRingFg" cx="60" cy="60" r="52"></circle>
-                    </svg>
-                    <div class="pd-challenge-ring-label"><strong id="challengeDoneCount">0</strong><span>/7 days</span></div>
-                </div>
-                <button class="pd-challenge-today" id="challengePrayToday" onclick="PDChallenge.prayToday()"><i class="pd-i pd-i-hands-praying"></i> <span id="challengePrayTodayLabel">I prayed today</span></button>
-                <button type="button" class="pd-challenge-share" onclick="PDChallenge.share()"><i class="pd-i pd-i-share-2"></i> Share challenge</button>
-            </div>
-        </div>
-        <div class="pd-challenge-days" id="challengeDays" tabindex="0" role="region" aria-label="Daily prayer tasks, scroll to explore the week"><!-- 7 day chips rendered by JS --></div>
-    </section>
 
     <!-- Founder Card with Larger Photo -->
     <div class="founder-card glass-card pd-reveal">
@@ -800,7 +804,7 @@
                     <i class="pd-i pd-i-hands-praying"></i>
                     <span>PRAYER FOR THIS TIME</span>
                 </div>
-                <div class="prayer-text" id="dailyPrayer">Loading prayer...</div>
+                <div class="prayer-text" id="dailyPrayerText">Loading prayer...</div>
             </div>
         </div>
         
@@ -1013,7 +1017,7 @@
     // Hand the Firestore bindings to the shared premium layer (pd-app.js)
     // so live status, notifications, banners, news and stats sync in real time.
     if (window.PDApp) {
-        PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp, Timestamp, auth });
+        PDApp.setFirestore({ db, doc, getDoc, setDoc, updateDoc, addDoc, collection, query, where, orderBy, limit, getDocs, serverTimestamp, Timestamp, auth });
     }
 
     // Scheduled Daily Challenges (admin → Daily Challenges). Public reads are
@@ -1062,7 +1066,7 @@
         const scriptureEl = document.getElementById('dailyScripture');
         const refEl = document.getElementById('dailyRef');
         const messageEl = document.getElementById('dailyMessage');
-        const prayerEl = document.getElementById('dailyPrayer');
+        const prayerEl = document.getElementById('dailyPrayerText');
         
         if (scriptureEl) scriptureEl.innerHTML = `"${devotional.text || devotional.verse}"`;
         if (refEl) refEl.innerHTML = `<i class="pd-i pd-i-book"></i> — ${devotional.verse}`;
@@ -1773,6 +1777,7 @@
             // check never delays the rest of the home page.
             checkAndShowAdminTab(user);
             await loadNotifications();
+            if (window.PDDaily && typeof window.PDDaily.refresh === 'function') window.PDDaily.refresh();
             if (window.PDChallenge && PDChallenge.weekKey) PDChallenge.syncFromCloud();
         }
     });
@@ -1822,5 +1827,6 @@
     loadReviews();
     setupRatingStars();
 </script>
+  <script src="/assets/pd-voice-commands.js" defer></script>
 </body>
 </html>

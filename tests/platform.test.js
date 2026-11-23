@@ -194,7 +194,7 @@ t('the drawer links to the branch directory and card verifier',
 t('the service worker pre-caches the new public pages',
   sw.includes("'/locations.html'") && sw.includes("'/verify.html'"));
 t('the service worker cache name moved forward',
-  /prayer-dome-v4[3-9]/.test(sw));
+  /prayer-dome-v(?:4[3-9]|5\d)/.test(sw));
 
 /* -------------------------------------------------------------- security */
 t('card verification records are administrator-only; public checks use the callable',

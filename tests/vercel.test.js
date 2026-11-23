@@ -62,6 +62,9 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
   const newsletterRewrite = (config.rewrites || []).find(rule => rule.source === '/api/newsletter');
   test('/api/newsletter is routed through the consolidated system function',
     newsletterRewrite && newsletterRewrite.destination.startsWith('/api/system?op=newsletter'));
+  const iceRewrite = (config.rewrites || []).find(rule => rule.source === '/api/live-ice');
+  test('/api/live-ice is routed through the consolidated system function',
+    iceRewrite && iceRewrite.destination === '/api/system?op=live-ice');
   test('automatic deployments are enabled for arena branches and main',
     config.git && config.git.deploymentEnabled.main === true &&
     config.git.deploymentEnabled['**'] === false &&
@@ -169,6 +172,18 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
   test('/api/radio returns stations and podcasts',
     radio.status === 200 && radio.json.success === true && radio.json.radio.length > 0 &&
     radio.json.podcasts.length > 0);
+
+  const ice = await invoke('api/system.js', 'GET', null, { op: 'live-ice' });
+  test('/api/live-ice returns STUN servers and no committed TURN secret',
+    ice.status === 200 && ice.json.ok === true && Array.isArray(ice.json.iceServers) &&
+    ice.json.iceServers.length > 0 &&
+    ice.json.iceServers.every(server => (Array.isArray(server.urls) ? server.urls : [server.urls])
+      .every(url => /^(?:stun|stuns|turn|turns):/i.test(url))));
+  test('/api/live-ice refuses write methods',
+    (await invoke('api/system.js', 'POST', null, { op: 'live-ice' })).status === 405);
+  test('the live engine never hardcodes a TURN username or credential',
+    !/credential:\s*['"][^'"]+['"]/.test(fs.readFileSync(path.join(ROOT, 'assets/pd-live-webrtc.js'), 'utf8')) &&
+    !/turn:[^'"]*metered\.ca/.test(fs.readFileSync(path.join(ROOT, 'assets/pd-live-webrtc.js'), 'utf8')));
 
   const rejected = await invoke('api/news.js', 'POST');
   test('read-only APIs reject unsupported methods',
