@@ -247,6 +247,24 @@ async function createCheckout(data, context) {
   const walletTxRef = walletTxId ? db.collection('walletTransactions').doc(walletTxId) : null;
   const auditRef = db.collection('billingAudit').doc();
 
+  // Reuse one open checkout per plan. A double tap, a refresh or a second tab
+  // must not create a second payment request for the same pending plan.
+  if (subRef) {
+    const openSub = await subRef.get();
+    const openRef = openSub.exists ? text(openSub.data().pendingPaymentRef, 80) : '';
+    if (openRef) {
+      const openPayment = await db.collection('paymentRequests').doc(openRef).get();
+      if (openPayment.exists && ['pending_payment', 'pending_verification'].includes(openPayment.data().status)) {
+        return {
+          alreadyCreated: true,
+          payment: paymentView(openPayment.data()),
+          subscriptionId: subId,
+          walletTransactionId: openPayment.data().walletTransactionId || ''
+        };
+      }
+    }
+  }
+
   await db.runTransaction(async (transaction) => {
     const currentIdem = await transaction.get(idemRef);
     if (currentIdem.exists) {
@@ -485,8 +503,8 @@ async function approvePayment(data, context) {
     if (payment.status !== 'pending_verification') {
       fail('failed-precondition', 'A payment can only be approved after its receipt is submitted for verification.');
     }
-    if (!payment.evidenceUrl) {
-      fail('failed-precondition', 'No payment evidence is attached. Never approve a screenshot-free payment.');
+    if (!payment.evidenceUrl && !payment.evidencePath) {
+      fail('failed-precondition', 'No payment evidence is attached. Never approve a receipt-free payment.');
     }
 
     if (payment.kind === 'subscription') {

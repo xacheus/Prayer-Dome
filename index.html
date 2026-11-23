@@ -106,6 +106,7 @@
     </script>
     <!-- PD-SEO:END -->
     
+    <link rel="preload" as="image" href="/assets/hero-prayer.jpg" fetchpriority="high">
     <link rel="stylesheet" href="/assets/pd-icons.css">
     <script src="/assets/pd-icons.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
@@ -329,6 +330,66 @@
             color: #fff;
             border: 1px solid rgba(255,255,255,.28);
             backdrop-filter: blur(8px);
+        }
+
+        /* --- Cinematic prayer hero ---------------------------------------------
+           Real photographs, a slow crossfade and a gentle pan. No controls, no
+           audio and no parallax listener. Height is capped so the page below
+           stays close on a phone and on a large desktop. */
+        .hero {
+            min-height: clamp(430px, 46vw, 600px);
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(34px, 5vw, 58px) 20px clamp(42px, 5.5vw, 66px);
+            border-radius: 0 0 36px 36px;
+            background: #07244d;
+            isolation: isolate;
+        }
+        .hero-cinema { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+        .hero-cinema-layer {
+            position: absolute; inset: -2%;
+            width: 104%; height: 104%;
+            object-fit: cover; object-position: center 42%;
+            will-change: opacity, transform;
+        }
+        .hero-cinema-a { animation: pdHeroPan 34s ease-in-out infinite alternate, pdHeroFadeA 26s ease-in-out infinite; }
+        .hero-cinema-b { opacity: 0; animation: pdHeroPanAlt 38s ease-in-out infinite alternate, pdHeroFadeB 26s ease-in-out infinite; }
+        .hero-cinema-shade {
+            position: absolute; inset: 0;
+            background:
+              linear-gradient(180deg, rgba(5,24,52,.62) 0%, rgba(5,24,52,.38) 30%, rgba(5,24,52,.55) 65%, rgba(5,24,52,.9) 100%),
+              radial-gradient(ellipse 62% 60% at 50% 42%, rgba(212,175,55,.2) 0%, transparent 66%);
+        }
+        .hero-cinema-glow {
+            position: absolute; inset: 0;
+            background: radial-gradient(circle at 50% 18%, rgba(255,240,190,.16), transparent 46%);
+            mix-blend-mode: screen;
+        }
+        @keyframes pdHeroPan { from { transform: scale(1.02) translate3d(0,0,0); } to { transform: scale(1.09) translate3d(-1.2%,-1.4%,0); } }
+        @keyframes pdHeroPanAlt { from { transform: scale(1.08) translate3d(1%,-1%,0); } to { transform: scale(1.02) translate3d(0,0,0); } }
+        @keyframes pdHeroFadeA { 0%, 42% { opacity: 1; } 52%, 90% { opacity: 0; } 100% { opacity: 0; } }
+        @keyframes pdHeroFadeB { 0%, 42% { opacity: 0; } 52%, 90% { opacity: 1; } 100% { opacity: 0; } }
+        .hero .hero-brand, .hero h1, .hero p, .hero .hero-cta { position: relative; z-index: 2; }
+        .hero h1 { min-height: 0; margin-bottom: 10px; text-shadow: 0 4px 28px rgba(0,0,0,.5); }
+        .hero > p { text-shadow: 0 2px 16px rgba(0,0,0,.5); }
+        .hero-brand .hero-logo { background: rgba(255,255,255,.96); }
+        @media (max-width: 640px) {
+            .hero { min-height: 405px; padding: 30px 16px 40px; border-radius: 0 0 26px 26px; }
+            .hero-brand .hero-logo { width: 62px; height: 62px; margin-bottom: 10px; }
+            .hero-brand .hero-wordmark { font-size: 1.45rem; }
+            .hero-brand .hero-rule { margin: 10px auto 8px; }
+            .hero h1 { font-size: clamp(1.12rem, 5.2vw, 1.45rem); }
+            .hero > p { font-size: .9rem; }
+            .hero-cta { margin-top: 16px; gap: 8px; }
+            .hero-cta a { padding: 10px 15px; font-size: .76rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .hero-cinema-a, .hero-cinema-b { animation: none; }
+            .hero-cinema-a { opacity: 1; transform: none; }
+            .hero-cinema-b { opacity: 0; }
         }
 
         .typing-cursor {
@@ -724,8 +785,17 @@
     </div>
 </div>
 
-<!-- Hero — brand mark + typing welcome (managed by admin banners) -->
+<!-- Hero — cinematic prayer animation with the brand mark and typing welcome.
+     Two real photographs crossfade slowly; there are no player controls and no
+     audio. The animation stops for prefers-reduced-motion. A scheduled admin
+     banner can still replace this hero with its own image or muted video. -->
 <div class="hero" data-pd-hero>
+    <div class="hero-cinema" aria-hidden="true">
+        <img class="hero-cinema-layer hero-cinema-a" src="/assets/hero-prayer.jpg" alt="" width="1536" height="864" fetchpriority="high" decoding="async">
+        <img class="hero-cinema-layer hero-cinema-b" src="/assets/hero-worship.jpg" alt="" width="1568" height="882" loading="lazy" decoding="async">
+        <div class="hero-cinema-shade"></div>
+        <div class="hero-cinema-glow"></div>
+    </div>
     <div class="hero-brand">
         <div class="hero-logo"><img src="/assets/logo.png" alt="Prayer Dome logo" onerror="this.parentNode.style.display='none'"></div>
         <p class="hero-wordmark">Prayer Dome</p>
@@ -760,14 +830,14 @@
     <!-- Founder Card with Larger Photo -->
     <div class="founder-card glass-card pd-reveal">
         <div class="founder-img-wrapper">
-            <img src="https://i.ibb.co/RTbNh1hB/founder-2.jpg" alt="Seedwell K. Khayalethu Masuku"
+            <img src="https://i.ibb.co/RTbNh1hB/founder-2.jpg" alt="Seedwell Khayalethu Masuku"
                  loading="lazy" decoding="async"
                  onerror="this.onerror=null;this.src='/assets/logo.png';this.style.objectFit='contain';this.style.padding='18px';this.style.background='#fff';">
         </div>
         <div class="founder-info">
-            <h3 class="founder-name">Seedwell K. Khayalethu Masuku</h3>
+            <h3 class="founder-name">Seedwell Khayalethu Masuku</h3>
             <span class="founder-title"><i class="pd-i pd-i-crown"></i> Founder and President</span>
-            <p class="founder-bio">Called by God to raise an army of intercessors globally. Seedwell K. Khayalethu Masuku leads Prayer Dome with a mandate to demonstrate the raw power of the Holy Spirit, bringing healing, deliverance, and prophetic direction to the nations.</p>
+            <p class="founder-bio">Called by God to raise an army of intercessors globally. Seedwell Khayalethu Masuku leads Prayer Dome with a mandate to demonstrate the raw power of the Holy Spirit, bringing healing, deliverance, and prophetic direction to the nations.</p>
         </div>
     </div>
 
@@ -874,7 +944,7 @@
     <div class="branch-grid">
         <div class="branch-card" id="card-freedom-zambia">
             <div class="branch-info">
-                <h4><i class="pd-i pd-i-church"></i> Freedom Zambia</h4>
+                <h4><i class="pd-i pd-i-church"></i> Prayer Dome Zambia</h4>
                 <p style="font-size: 0.7rem; color: var(--text-sub);">Chama, Zambia · Central Hub</p>
             </div>
             <span class="branch-dist" id="dist-freedom-zambia"><i class="pd-i pd-i-loader-circle pd-i-spin"></i></span>
@@ -1254,7 +1324,7 @@
     // are shared with /locations through assets/pd-locations-data.js.
     // Cork, Ireland keeps its existing entry, coordinates and card unchanged.
     const branches = {
-        'freedom-zambia': { name: "Freedom Zambia", lat: -11.193343, lon: 33.1525404, el: 'dist-freedom-zambia', card: 'card-freedom-zambia' },
+        'freedom-zambia': { name: "Prayer Dome Zambia", lat: -11.193343, lon: 33.1525404, el: 'dist-freedom-zambia', card: 'card-freedom-zambia' },
         'prayer-dome-mahlabane': { name: "Prayer Dome Mahlabane", lat: -26.4889087, lon: 31.5130595, el: 'dist-prayer-dome-mahlabane', card: 'card-prayer-dome-mahlabane' },
         'prayer-dome-hluthi': { name: "Prayer Dome Hluthi", lat: -27.2191875, lon: 31.6147656, el: 'dist-prayer-dome-hluthi', card: 'card-prayer-dome-hluthi' },
         ireland: { name: "Cork, Ireland", lat: 51.898, lon: -8.475, el: 'dist-ireland', card: 'card-ireland' }

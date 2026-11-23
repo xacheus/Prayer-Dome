@@ -1083,6 +1083,7 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
+<script src="/assets/pd-radio-scripts.js" defer></script>
     <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-team-store.js" defer></script>
@@ -1906,13 +1907,36 @@
                 <div class="panel-card">
                     <div class="panel-header"><h3><i class="pd-i pd-i-disc-3"></i> Worship Songs <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">— stream and download on /radio.html</span></h3><button class="btn btn-outline btn-sm" onclick="loadAdminSongs()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button></div>
                     <div class="table-responsive">
-                        <table><thead><tr><th>Title</th><th>Artist</th><th>Category</th><th>Audio URL</th><th>Actions</th></tr></thead>
-                        <tbody id="listAdminSongs"><tr><td colspan="5"><div class="spinner" style="width:30px;height:30px;"></div></td></tr></tbody></table>
+                        <table><thead><tr><th>Title</th><th>Artist</th><th>Playlist</th><th>Duration</th><th>Rights</th><th>Audio URL</th><th>Actions</th></tr></thead>
+                        <tbody id="listAdminSongs"><tr><td colspan="7"><div class="spinner" style="width:30px;height:30px;"></div></td></tr></tbody></table>
                     </div>
                 </div>
                 <div class="panel-card" style="margin-top: 18px;">
                     <div class="panel-header"><h3><i class="pd-i pd-i-radio"></i> Radio Stations <span style="font-weight:400; font-size:.7rem; color:var(--text-sub);">— edit the stream URL to your licensed broadcast</span></h3></div>
                     <div id="adminRadioList" style="padding: 16px;"></div>
+                </div>
+
+                <div class="page-title" style="margin-top: 26px;">
+                    <span><i class="pd-i pd-i-mic"></i> Radio Programming</span>
+                    <div class="admin-actions-row">
+                        <select id="radioProgrammeDay" class="form-control" style="width:auto;min-width:140px;padding:8px 10px;">
+                            <option value="0">Sunday</option><option value="1">Monday</option><option value="2">Tuesday</option>
+                            <option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option>
+                        </select>
+                        <button class="btn btn-outline" type="button" onclick="loadRadioProgrammes()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <button class="btn btn-primary" type="button" onclick="approveAllRadioScripts()"><i class="pd-i pd-i-circle-check"></i> Approve day’s drafts</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;font-size:.8rem;line-height:1.6;color:var(--text-sub);">
+                        The nine daily programmes use AI-assisted scripts. Nothing appears on /radio as a briefing until an administrator reads it and presses <strong>Approve &amp; publish</strong>. “Unpublish” returns a script to draft without deleting its review record. The schedule itself is published content, not a claim of a live broadcast.
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Programme</th><th>Status</th><th>Briefing</th><th>Reviewed by</th><th>Actions</th></tr></thead>
+                        <tbody id="radioProgrammeList"><tr><td colspan="5">Select a day and refresh.</td></tr></tbody></table>
+                    </div>
                 </div>
             </div>
 
@@ -2637,6 +2661,25 @@
                         <tbody id="supportPlanList"><tr><td colspan="8">Loading plans…</td></tr></tbody></table>
                     </div>
                 </div>
+
+                <div class="page-title" style="margin-top:26px;">
+                    <span><i class="pd-i pd-i-layout-dashboard"></i> Programme cards on /support</span>
+                    <div class="admin-actions-row">
+                        <button class="btn btn-outline" type="button" onclick="loadProgrammesAdmin()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <button class="btn btn-outline" type="button" onclick="installProgrammeCards()"><i class="pd-i pd-i-download"></i> Install approved cards</button>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div style="padding:16px;font-size:.8rem;line-height:1.6;color:var(--text-sub);">
+                        These four cards control the heading, image, description, eligibility and availability members see. Plans and prices remain in the table above and are charged by the billing server. The Savings Programme uses the Secure Wallet and its approved contribution list.
+                    </div>
+                </div>
+                <div class="panel-card">
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Order</th><th>Programme</th><th>Type</th><th>Plans / contributions</th><th>Availability</th><th>Visible</th><th>Actions</th></tr></thead>
+                        <tbody id="programmeList"><tr><td colspan="7">Loading programme cards…</td></tr></tbody></table>
+                    </div>
+                </div>
             </div>
 
             <!-- RECENT ACTIVITY VIEW -->
@@ -3046,7 +3089,11 @@
             <div class="modal-body">
                 <div class="form-group" style="margin-bottom:12px;"><label>Song Title *</label><input type="text" id="songTitle" class="form-control" placeholder="e.g. Amazing Grace" required></div>
                 <div class="form-group" style="margin-bottom:12px;"><label>Artist / Minister *</label><input type="text" id="songArtist" class="form-control" placeholder="e.g. Worship Team" required></div>
-                <div class="form-group" style="margin-bottom:12px;"><label>Category</label><select id="songCategory" class="form-control"><option>Worship</option><option>Praise</option><option>Gospel</option><option>Hymn</option></select></div>
+                <div class="form-group" style="margin-bottom:12px;"><label>Category</label><select id="songCategory" class="form-control"><option>Worship</option><option>Praise</option><option>Gospel</option><option>Hymn</option><option>Instrumental</option></select></div>
+                <div class="form-group" style="margin-bottom:12px;"><label>Playlist</label><select id="songPlaylist" class="form-control"><option>Daily Worship</option><option>Morning Praise</option><option>Evening Reflection</option><option>Instrumental Bed</option><option>Sunday Service</option></select></div>
+                <div class="form-group" style="margin-bottom:12px;"><label>Duration</label><input type="text" id="songDuration" class="form-control" placeholder="4:12" maxlength="12"></div>
+                <div class="form-group" style="margin-bottom:12px;"><label>Rights basis *</label><select id="songRights" class="form-control"><option value="">Choose the permission held</option><option>Licensed</option><option>Public domain</option><option>Original Prayer Dome recording</option><option>AI-generated for Prayer Dome</option><option>Written permission</option></select></div>
+                <div class="form-group" style="margin-bottom:12px;"><label>Rights holder / licence reference</label><input type="text" id="songRightsHolder" class="form-control" placeholder="Licence name, composer, or permission reference" maxlength="160"></div>
                 <div class="form-group" style="margin-bottom:12px;"><label>Description</label><textarea id="songDesc" class="form-control" rows="2" placeholder="Tell members about this song..."></textarea></div>
                 <div class="form-group" style="margin-bottom:12px;"><label>Cover Image URL</label><input type="text" id="songCoverUrl" class="form-control" placeholder="https://.../cover.jpg"></div>
                 <div class="form-group" style="margin-bottom:12px;"><label>Audio File URL *</label><input type="text" id="songAudioUrl" class="form-control" placeholder="https://.../audio.mp3" required></div>
@@ -3869,7 +3916,7 @@ window.toggleDarkMode = function() {
             try {
                 const snapshot = await getDocs(query(collection(db, "worshipSongs"), orderBy("createdAt", "desc"), limit(100)));
                 if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="5">No songs uploaded yet.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="7">No songs uploaded yet.</td></tr>';
                     return;
                 }
                 let html = '';
@@ -3878,8 +3925,10 @@ window.toggleDarkMode = function() {
                     html += `<tr>
                         <td><strong>${escapeHTML(song.title)}</strong></td>
                         <td>${escapeHTML(song.artist)}</td>
-                        <td><span class="badge badge-info">${escapeHTML(song.category)}</span></td>
-                        <td style="font-family:monospace; font-size:.75rem; max-width:200px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(song.audioUrl)}</td>
+                        <td><span class="badge badge-info">${escapeHTML(song.playlist || song.category || 'Worship')}</span></td>
+                        <td>${escapeHTML(song.duration || '—')}</td>
+                        <td>${escapeHTML(song.rights || 'Not recorded')}<br><span style="font-size:.68rem;color:var(--text-sub);">${escapeHTML(song.rightsHolder || '')}</span></td>
+                        <td style="font-family:monospace; font-size:.75rem; max-width:180px; overflow:hidden; text-overflow:ellipsis;">${escapeHTML(song.audioUrl)}</td>
                         <td>
                             <button class="btn btn-sm btn-danger" onclick="deleteSong('${doc.id}')"><i class="pd-i pd-i-trash"></i> Delete</button>
                         </td>
@@ -3896,12 +3945,18 @@ window.toggleDarkMode = function() {
             const title = document.getElementById('songTitle').value.trim();
             const artist = document.getElementById('songArtist').value.trim();
             const category = document.getElementById('songCategory').value;
+            const playlist = document.getElementById('songPlaylist').value;
+            const duration = document.getElementById('songDuration').value.trim();
+            const rights = document.getElementById('songRights').value;
+            const rightsHolder = document.getElementById('songRightsHolder').value.trim();
             const description = document.getElementById('songDesc').value.trim();
             const coverUrl = document.getElementById('songCoverUrl').value.trim() || '/assets/hero-worship.jpg';
             const audioUrl = document.getElementById('songAudioUrl').value.trim();
             const allowDownload = document.getElementById('songAllowDownload').checked;
 
             if (!title || !artist || !audioUrl) return toast('Fill out all required fields', 'error');
+            if (!rights) return toast('Choose the rights basis. Unlicensed music cannot be published.', 'error');
+            if (!rightsHolder && /licen|permission/i.test(rights)) return toast('Record the licence or permission reference.', 'error');
 
             showLoading();
             try {
@@ -3909,10 +3964,14 @@ window.toggleDarkMode = function() {
                     title,
                     artist,
                     category,
+                    playlist,
+                    duration,
+                    rights,
+                    rightsHolder,
                     description,
                     coverUrl,
                     audioUrl,
-                    allowDownload,
+                    allowDownload: allowDownload && !/^\s*$/i.test(rights),
                     createdAt: serverTimestamp()
                 });
                 toast('Worship song uploaded successfully!');
@@ -8371,6 +8430,7 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'wallet-transactions' && window.loadWalletTransactions) await loadWalletTransactions();
                 else if (viewId === 'wallet-balances' && window.loadWalletBalances) await loadWalletBalances();
                 else if (viewId === 'support-plans' && window.loadSupportPlansAdmin) await loadSupportPlansAdmin();
+                else if (viewId === 'media' && window.loadRadioProgrammes) await loadRadioProgrammes();
                 else if (viewId === 'activity' && window.loadRecentActivity) await loadRecentActivity();
                 else if (viewId === 'support') await loadSupport();
                 else if (viewId === 'events') await loadEvents();
@@ -8721,6 +8781,60 @@ window.toggleDarkMode = function() {
         </div>
     </div>
 
+    <!-- RADIO SCRIPT REVIEW MODAL -->
+    <div id="modalRadioScript" class="modal-overlay">
+        <div class="modal-card" style="max-width:720px;">
+            <div class="modal-header"><h2><i class="pd-i pd-i-mic"></i> Review radio briefing</h2><button class="modal-close" onclick="closeModal('modalRadioScript')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body" style="max-height:70vh;overflow:auto;">
+                <input type="hidden" id="radioScriptProgrammeId">
+                <input type="hidden" id="radioScriptDay">
+                <h3 id="radioScriptTitle" style="margin:0 0 6px;font-size:1rem;"></h3>
+                <p id="radioScriptNote" style="font-size:.75rem;line-height:1.55;color:var(--text-sub);margin:0 0 14px;"></p>
+                <div class="form-group"><label for="radioScriptText">Briefing script</label><textarea id="radioScriptText" class="form-control" rows="14" maxlength="6000" style="line-height:1.65;"></textarea></div>
+                <p style="font-size:.72rem;color:var(--text-sub);line-height:1.55;"><i class="pd-i pd-i-info"></i> Check every claim. Do not add a live presenter, a phone number, a promise of money or a broadcast time that the ministry has not approved.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalRadioScript')">Cancel</button>
+                <button class="btn btn-outline" onclick="saveRadioScript(false)"><i class="pd-i pd-i-save"></i> Save draft</button>
+                <button class="btn btn-primary" onclick="saveRadioScript(true)"><i class="pd-i pd-i-circle-check"></i> Approve &amp; publish</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PROGRAMME CARD EDITOR MODAL -->
+    <div id="modalProgrammeEditor" class="modal-overlay">
+        <div class="modal-card" style="max-width:720px;">
+            <div class="modal-header"><h2><i class="pd-i pd-i-layout-dashboard"></i> Programme card</h2><button class="modal-close" onclick="closeModal('modalProgrammeEditor')" aria-label="Close"><i class="pd-i pd-i-x"></i></button></div>
+            <div class="modal-body" style="max-height:70vh;overflow:auto;">
+                <input type="hidden" id="programmeId">
+                <div class="admin-field-grid">
+                    <div class="form-group"><label>Programme name</label><input id="programmeName" class="form-control" maxlength="120" placeholder="Business Education"></div>
+                    <div class="form-group"><label>Small eyebrow</label><input id="programmeEyebrow" class="form-control" maxlength="60" placeholder="Enterprise &amp; skills"></div>
+                    <div class="form-group"><label>Card type</label><select id="programmeKind" class="form-control" onchange="toggleProgrammeKind()"><option value="plans">Plans from the catalogue</option><option value="savings">Savings contributions (Secure Wallet)</option></select></div>
+                    <div class="form-group"><label>Availability</label><input id="programmeAvailability" class="form-control" maxlength="40" placeholder="Open"></div>
+                    <div class="form-group"><label>Display order</label><input id="programmeOrder" class="form-control" type="number" min="0" step="10" value="100"></div>
+                    <div class="form-group"><label>Visible</label><label style="display:flex;align-items:center;gap:8px;min-height:42px;"><input id="programmeActive" type="checkbox" checked style="width:18px;height:18px;"> Show this card to members</label></div>
+                </div>
+                <div class="form-group"><label>Description</label><textarea id="programmeDescription" class="form-control" rows="4" maxlength="700"></textarea></div>
+                <div class="form-group"><label>Image URL</label><input id="programmeImage" class="form-control" maxlength="300" placeholder="/assets/support/support-business.jpg"></div>
+                <div class="form-group"><label>Image alt text</label><input id="programmeImageAlt" class="form-control" maxlength="160"></div>
+                <div class="form-group"><label>Eligibility</label><textarea id="programmeEligibility" class="form-control" rows="3" maxlength="600"></textarea></div>
+                <div class="form-group"><label>Important note / limitation</label><textarea id="programmeNote" class="form-control" rows="3" maxlength="500"></textarea></div>
+                <div class="form-group" id="programmePlansGroup"><label>Plan programmes included</label>
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><input type="checkbox" class="programme-plan-program" value="Business" style="width:18px;height:18px;"> Business plans</label>
+                    <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><input type="checkbox" class="programme-plan-program" value="Compassion" style="width:18px;height:18px;"> Compassion plans</label>
+                    <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" class="programme-plan-program" value="Education" style="width:18px;height:18px;"> Education plans</label>
+                </div>
+                <div class="form-group" id="programmeSavingsGroup"><label>Savings contribution options (USD, comma separated)</label><input id="programmeContributions" class="form-control" placeholder="5, 10, 25, 50, 100, 250"></div>
+                <p style="font-size:.72rem;color:var(--text-sub);line-height:1.55;">Saving this card changes presentation only. It cannot invent a price or activate a member. Approve payments in Payment Verification before a plan becomes active.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal('modalProgrammeEditor')">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProgrammeCard()"><i class="pd-i pd-i-save"></i> Save card</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SUPPORT PLAN EDITOR MODAL -->
     <div id="modalPlanEditor" class="modal-overlay">
         <div class="modal-card" style="max-width:680px;">
@@ -8750,5 +8864,6 @@ window.toggleDarkMode = function() {
 <script type="module" src="/assets/pd-email-admin.js"></script>
 <script type="module" src="/assets/pd-admin-extras.js"></script>
 <script type="module" src="/assets/pd-billing-admin.js"></script>
+<script type="module" src="/assets/pd-radio-admin.js"></script>
 </body>
 </html>

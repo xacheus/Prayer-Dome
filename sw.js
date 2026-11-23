@@ -87,7 +87,7 @@ try {
 // v44 — the support page gained information sections and the Brevo update
 // form. The form script is precached so the page's markup and behaviour stay
 // in step after an upgrade.
-const CACHE_NAME = 'prayer-dome-v51';
+const CACHE_NAME = 'prayer-dome-v52';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -192,7 +192,10 @@ const PRECACHE = [
     '/widgets.html',
     '/assets/pd-widget.js',
     '/assets/pd-content-data.js',
+    '/assets/pd-radio-scripts.js',
+    '/assets/pd-radio-admin.js',
     '/assets/hero-worship.jpg',
+    '/assets/hero-prayer.jpg',
     '/assets/testimonies/hero-praise.jpg',
     '/assets/avatar-default.svg',
     '/assets/og-image.png'

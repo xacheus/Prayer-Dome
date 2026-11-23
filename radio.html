@@ -242,6 +242,25 @@
         .radio-programme-copy span { display: block; font-size: .66rem; color: var(--text-sub); margin-top: 1px; }
         .radio-card .radio-card-status { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; font-size: .64rem; color: rgba(255,255,255,.8); }
         body.dark-mode .radio-schedule { background: var(--bg-card); }
+        .radio-briefing { margin: 16px 20px 0; padding: clamp(16px, 3vw, 24px); border: 1px solid var(--border-color); border-radius: 22px; background: var(--bg-card); box-shadow: var(--shadow); }
+        .radio-briefing-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+        .radio-briefing-head h2 { margin: 0; font-size: clamp(1.05rem, 3vw, 1.3rem); }
+        .radio-briefing-head h2 i { color: var(--accent-gold); margin-right: 7px; }
+        .radio-briefing-head p { margin: 4px 0 0; max-width: 580px; font-size: .78rem; line-height: 1.5; color: var(--text-sub); }
+        .radio-welcome-script, .radio-closing { padding: 12px 14px; border-radius: 14px; background: rgba(10,77,155,.06); border: 1px solid rgba(10,77,155,.14); }
+        .radio-closing { margin-top: 12px; background: rgba(212,175,55,.1); border-color: rgba(212,175,55,.32); }
+        .radio-script-label { display: inline-flex; align-items: center; gap: 6px; font-size: .58rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-green); }
+        .radio-welcome-script p, .radio-closing p { margin: 5px 0 0; font-size: .82rem; line-height: 1.6; color: var(--text-main); }
+        .radio-briefing-card { margin-top: 12px; border: 1px solid var(--border-color); border-radius: 16px; padding: 16px; background: linear-gradient(150deg, rgba(10,77,155,.08), transparent 70%); }
+        .radio-briefing-card h3 { margin: 0 0 3px; font-size: 1.1rem; }
+        .radio-briefing-meta { font-size: .68rem; color: var(--text-sub); margin-bottom: 10px; }
+        .radio-briefing-card p { margin: 0 0 8px; font-size: .84rem; line-height: 1.65; white-space: pre-line; }
+        .radio-briefing-card p:last-child { margin-bottom: 0; }
+        .radio-briefing-empty { display: flex; align-items: flex-start; gap: 9px; color: var(--text-sub); font-size: .8rem; line-height: 1.55; }
+        .radio-briefing-empty i { color: var(--accent-gold); margin-top: 2px; }
+        .radio-briefing-reviewed { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--border-color); font-size: .66rem; color: var(--text-sub); }
+        @media (max-width: 640px) { .radio-briefing { margin: 14px 12px 0; padding: 15px; } }
+
         .radio-welcome-video { margin: 16px 20px 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; padding: 15px 16px; }
         .radio-welcome-video h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 7px; }
         .radio-welcome-video > p { margin: 3px 0 12px; color: var(--text-sub); font-size: .7rem; line-height: 1.45; }
@@ -265,6 +284,7 @@
     <link rel="stylesheet" href="/assets/pd-brand.css">
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
+    <script src="/assets/pd-radio-scripts.js" defer></script>
 <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
@@ -381,6 +401,27 @@
     <div class="radio-schedule-list" id="radioSchedule"></div>
 </section>
 
+<section class="radio-briefing" aria-labelledby="radioBriefingTitle">
+    <div class="radio-briefing-head">
+        <div>
+            <h2 id="radioBriefingTitle"><i class="pd-i pd-i-mic" aria-hidden="true"></i> Programme briefing</h2>
+            <p>A reviewed introduction for the scheduled programme, written for Prayer Dome Radio. No briefing is shown until the ministry has approved it.</p>
+        </div>
+        <span class="radio-status" id="briefingStatus"><span class="dot" aria-hidden="true"></span><span>Checking…</span></span>
+    </div>
+    <div class="radio-welcome-script" id="radioWelcomeScript">
+        <span class="radio-script-label"><i class="pd-i pd-i-hand-heart" aria-hidden="true"></i> Warm welcome</span>
+        <p>Loading the welcome…</p>
+    </div>
+    <article class="radio-briefing-card" id="radioProgrammeBriefing" aria-live="polite">
+        <div class="radio-briefing-empty"><i class="pd-i pd-i-loader-circle pd-i-spin" aria-hidden="true"></i> Finding the current programme…</div>
+    </article>
+    <div class="radio-closing" id="radioClosing">
+        <span class="radio-script-label"><i class="pd-i pd-i-sunrise" aria-hidden="true"></i> Closing announcement</span>
+        <p>Loading the closing announcement…</p>
+    </div>
+</section>
+
 <section class="radio-welcome-video" aria-labelledby="radioWelcomeTitle">
     <h2 id="radioWelcomeTitle"><i class="pd-i pd-i-clapperboard" aria-hidden="true"></i> Welcome film</h2>
     <p>An approved Prayer Dome welcome or promotional film. It is recorded media, not a live broadcast; an administrator reviews every AI-assisted video before it appears here.</p>
@@ -463,7 +504,7 @@
 };
 
     // ==================== STATION PLAYER & SCHEDULE ====================
-    var radioHeroState = { station: null, playing: false, error: '' };
+    var radioHeroState = { station: null, playing: false, error: '', retries: 0 };
 
     function radioStations() {
         return (window.PDApp && PDApp.store.get('radio', 'DEFAULT_RADIO')) || [];
@@ -513,6 +554,87 @@
                 '<span class="radio-programme-time">' + esc(time) + '</span>' +
                 '<div class="radio-programme-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(days + ' · ' + (item.kind || 'Programme')) + '</span></div></div>';
         }).join('');
+        renderProgrammeBriefing(current);
+    }
+
+    /* ---------------------------------------------------- programme briefing
+     * The schedule is published, but the daily spoken introduction is only
+     * readable after an administrator approves it in Radio Programming. The
+     * approved copy lives in `radioScripts/{programmeId}-{weekday}`. A missing
+     * record is shown honestly; an AI draft is never rendered as approved. */
+    var briefingCache = {};
+    var briefingSequence = 0;
+
+    function briefingWeekday() {
+        return (PD_CONTENT.radioClock ? PD_CONTENT.radioClock(new Date()).weekday : new Date().getDay());
+    }
+
+    async function loadApprovedBriefing(programme) {
+        var weekday = briefingWeekday();
+        var key = programme.id + '-' + weekday;
+        if (Object.prototype.hasOwnProperty.call(briefingCache, key)) return briefingCache[key];
+        var appMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+        var fsMod = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js");
+        var config = {
+            apiKey: 'AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo',
+            authDomain: 'prayer-dome.firebaseapp.com',
+            projectId: 'prayer-dome',
+            storageBucket: 'prayer-dome.firebasestorage.app',
+            messagingSenderId: '198295153196',
+            appId: '1:198295153196:web:1222b31948d7974ba3bf89'
+        };
+        var existing = typeof appMod.getApps === 'function' ? appMod.getApps() : [];
+        var app = existing.length ? existing[0] : appMod.initializeApp(config);
+        var db = fsMod.getFirestore(app);
+        var snap = await fsMod.getDoc(fsMod.doc(db, 'radioScripts', key));
+        var row = snap.exists() ? snap.data() : null;
+        if (row && row.status !== 'approved') row = null;
+        // Cache an approved briefing only. A pending script must be re-checked on
+        // the next schedule tick so an approval appears without a hard reload.
+        if (row) briefingCache[key] = row;
+        return row;
+    }
+
+    function renderProgrammeBriefing(programme) {
+        var host = document.getElementById('radioProgrammeBriefing');
+        var status = document.getElementById('briefingStatus');
+        if (!host) return;
+        var sequence = ++briefingSequence;
+        if (!programme) {
+            host.innerHTML = '<div class="radio-briefing-empty"><i class="pd-i pd-i-clock" aria-hidden="true"></i> <span>No programme is scheduled at this minute. The next published programme will appear here.</span></div>';
+            if (status) status.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Between programmes</span>';
+            return;
+        }
+        var time = PD_CONTENT.radioTimeLabel ? PD_CONTENT.radioTimeLabel(programme.start) + '–' + PD_CONTENT.radioTimeLabel(programme.end) : '';
+        host.innerHTML = '<div class="radio-briefing-empty"><i class="pd-i pd-i-loader-circle pd-i-spin" aria-hidden="true"></i> <span>Checking whether the briefing for ' + esc(programme.title) + ' has been approved…</span></div>';
+        loadApprovedBriefing(programme).then(function(row) {
+            if (sequence !== briefingSequence) return;
+            if (!row || !row.script) {
+                host.innerHTML = '<h3>' + esc(programme.title) + '</h3>' +
+                    '<div class="radio-briefing-meta">' + esc(time) + ' · ' + esc(programme.host || 'Prayer Dome Radio') + '</div>' +
+                    '<div class="radio-briefing-empty"><i class="pd-i pd-i-clock" aria-hidden="true"></i> <span>This programme is part of the published schedule. Its daily briefing is awaiting administrator review, so no script is shown yet.</span></div>';
+                if (status) status.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Briefing awaiting review</span>';
+                return;
+            }
+            host.innerHTML = '<h3>' + esc(programme.title) + '</h3>' +
+                '<div class="radio-briefing-meta">' + esc(time) + ' · ' + esc(programme.host || 'Prayer Dome Radio') + ' · ' + esc(programme.kind || 'Programme') + '</div>' +
+                '<p>' + esc(row.script) + '</p>' +
+                '<div class="radio-briefing-reviewed">Approved by ' + esc(row.reviewedBy || 'the ministry') + (row.reviewedAt ? ' · ' + esc(row.reviewedAt) : '') + '. This is scheduled programming, not a live broadcast claim.</div>';
+            if (status) status.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Briefing reviewed</span>';
+        }).catch(function() {
+            if (sequence !== briefingSequence) return;
+            host.innerHTML = '<h3>' + esc(programme.title) + '</h3>' +
+                '<div class="radio-briefing-meta">' + esc(time) + ' · ' + esc(programme.host || 'Prayer Dome Radio') + '</div>' +
+                '<div class="radio-briefing-empty"><i class="pd-i pd-i-cloud-off" aria-hidden="true"></i> <span>The reviewed briefing could not be loaded right now. The schedule and audio player above are unaffected.</span></div>';
+            if (status) status.innerHTML = '<span class="dot" aria-hidden="true"></span><span>Briefing unavailable</span>';
+        });
+    }
+
+    function renderRadioScriptsCopy() {
+        var welcome = document.getElementById('radioWelcomeScript');
+        if (welcome) welcome.innerHTML = '<span class="radio-script-label"><i class="pd-i pd-i-hand-heart" aria-hidden="true"></i> Warm welcome</span><p>' + esc((window.PD_CONTENT && PD_CONTENT.RADIO_WELCOME) || 'Welcome to Prayer Dome Radio. You are welcome here.') + '</p>';
+        var closing = document.getElementById('radioClosing');
+        if (closing) closing.innerHTML = '<span class="radio-script-label"><i class="pd-i pd-i-sunrise" aria-hidden="true"></i> Closing announcement</span><p>' + esc((window.PD_CONTENT && PD_CONTENT.RADIO_CLOSING) || 'Thank you for listening to Prayer Dome Radio. Go in peace.') + '</p>';
     }
 
     function chooseStation() {
@@ -627,6 +749,7 @@
                 if (!radioHeroState.station || !e.detail || e.detail.name !== radioHeroState.station.name) return;
                 radioHeroState.playing = true;
                 radioHeroState.error = '';
+                radioHeroState.retries = 0;
                 updateRadioHero();
             });
             PDApp.on('radio:stopped', function() {
@@ -635,9 +758,20 @@
             });
             PDApp.on('radio:error', function(e) {
                 radioHeroState.playing = false;
+                var station = radioHeroState.station;
+                if (station && station.streamUrl && radioHeroState.retries < 2) {
+                    radioHeroState.retries += 1;
+                    setRadioStatus('Reconnecting…', 'idle');
+                    setRadioNote('The stream dropped. Reconnection attempt ' + radioHeroState.retries + ' of 2…', false);
+                    setTimeout(function() {
+                        if (!radioHeroState.station || radioHeroState.playing) return;
+                        PDApp.radio.toggle(station.streamUrl, station.name, null);
+                    }, 2500 * radioHeroState.retries);
+                    return;
+                }
                 radioHeroState.error = 'stream-error';
                 setRadioStatus('Stream unavailable', 'error');
-                setRadioNote('This station could not be played. It may be offline or its stream URL may need updating. The published schedule is still shown below.', true);
+                setRadioNote('This station could not be played after two retries. It may be offline or its stream URL may need updating. The schedule and podcasts are still available below.', true);
                 updateRadioHero();
             });
         }
@@ -657,6 +791,7 @@
         });
         renderRadio();
         renderPodcasts();
+        renderRadioScriptsCopy();
         renderWorshipSongs();
         initRadioHero();
         renderRadioWelcomeVideo();
@@ -692,22 +827,34 @@
             snap.forEach(d => {
                 const s = d.data();
                 const cover = s.coverUrl || '/assets/hero-worship.jpg';
-                const dlBtn = s.allowDownload !== false ? `<a href="${esc(s.audioUrl)}" download class="btn btn-sm btn-outline" style="margin-left:10px;"><i class="pd-i pd-i-download"></i> Download</a>` : '';
-                
+                const rights = String(s.rights || s.license || '').trim();
+                const cleared = /^(licensed|public domain|original|ai-generated|written permission)/i.test(rights);
+                const duration = String(s.duration || '').trim();
+                const rightsLine = rights
+                    ? esc(rights) + (s.rightsHolder ? ' · ' + esc(s.rightsHolder) : '')
+                    : 'Rights not recorded — playback withheld until the media team confirms permission.';
+                const dlBtn = cleared && s.allowDownload !== false
+                    ? `<a href="${esc(s.audioUrl)}" download class="btn btn-sm btn-outline" style="margin-left:10px;"><i class="pd-i pd-i-download"></i> Download</a>`
+                    : '';
+                const playBtn = cleared
+                    ? `<button class="pod-play btn btn-primary" data-pd-radio="${esc(s.audioUrl)}" data-pd-radio-name="${esc(s.title)}" style="flex:1;"><i class="pd-i pd-i-play"></i> Play</button>`
+                    : `<button class="btn btn-outline" type="button" disabled style="flex:1;opacity:.65;"><i class="pd-i pd-i-lock"></i> Rights not confirmed</button>`;
+
                 html += `
                     <div class="pod-card" style="display:flex; flex-direction:column; justify-content:space-between; border: 1px solid var(--border); border-radius:18px; padding:16px;">
                         <div>
-                            <img src="${esc(cover)}" style="width:100%; height:140px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
-                            <span class="pod-series"><i class="pd-i pd-i-music"></i> ${esc(s.category || 'Worship')}</span>
+                            <img src="${esc(cover)}" alt="${esc(s.title)} cover" loading="lazy" decoding="async" style="width:100%; height:140px; object-fit:cover; border-radius:12px; margin-bottom:12px;">
+                            <span class="pod-series"><i class="pd-i pd-i-music"></i> ${esc(s.playlist || s.category || 'Worship')}</span>
                             <h3 style="font-size:1.1rem; font-weight:800; margin:6px 0;">${esc(s.title)}</h3>
-                            <p style="font-size:0.85rem; font-weight:700; color:var(--accent-gold); margin-bottom:8px;">Minister: ${esc(s.artist)}</p>
-                            <p style="font-size:0.8rem; color:var(--text-dim); line-height:1.4;">${esc(s.description || '')}</p>
+                            <p style="font-size:0.85rem; font-weight:700; color:var(--accent-gold); margin-bottom:8px;">${esc(s.artist)}${duration ? ' · ' + esc(duration) : ''}</p>
+                            <p style="font-size:0.8rem; color:var(--text-sub); line-height:1.4;">${esc(s.description || '')}</p>
+                            <p style="font-size:0.66rem; color:var(--text-sub); line-height:1.45; margin-top:8px;"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> ${rightsLine}</p>
                         </div>
-                        <div style="margin-top:14px; display:flex; gap:10px; align-items:center;">
-                            <button class="pod-play btn btn-primary" data-pd-radio="${esc(s.audioUrl)}" data-pd-radio-name="${esc(s.title)}" style="flex:1;"><i class="pd-i pd-i-play"></i> Play</button>
+                        <div style="margin-top:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            ${playBtn}
                             ${dlBtn}
                         </div>
-                        <p style="font-size:0.65rem; color:var(--text-dim); margin-top:8px; text-align:center;" class="audio-credit">PrayerDome Team Production</p>
+                        <p style="font-size:0.65rem; color:var(--text-sub); margin-top:8px; text-align:center;" class="audio-credit">PrayerDome Media Team</p>
                     </div>
                 `;
             });

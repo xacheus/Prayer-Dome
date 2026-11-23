@@ -628,7 +628,7 @@
       excerpt: s[3],
       readingTime: 4 + (i % 3),
       date: '2026-0' + ((i % 9) + 1) + '-18',
-      author: i % 2 ? 'Prayer Dome Media Team' : 'Seedwell K. Khayalethu Masuku',
+      author: i % 2 ? 'Prayer Dome Media Team' : 'Seedwell Khayalethu Masuku',
       image: i % 2 ? '/assets/testimonies/hero-praise.jpg' : '/assets/support/hero-support.jpg',
       body: par,
       lessonId: lessons[i % lessons.length].id,

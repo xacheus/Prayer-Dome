@@ -141,3 +141,64 @@ test('the double opt-in return message is shown once and the query string is cle
   assert.equal(status.dataset.state, 'success');
   assert.equal(window.location.search, '');
 });
+
+test('the savings programme shows a real, verified savings summary', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  assert.match(source, /function savingsSummaryHtml\(payments\)/);
+  assert.match(source, /payment\.kind === 'wallet_deposit'/);
+  assert.match(source, /payment\.status === 'approved'/);
+  assert.match(source, /\['pending_payment', 'pending_verification'\]\.includes/);
+  assert.match(source, /Number\(userData && userData\.balance\) \|\| 0/);
+  assert.match(source, /minimum is \$10\.00/);
+  assert.match(source, /Savings are not invested and do not earn interest/);
+  assert.match(source, /onclick="openDepositPanel\(\)"/);
+  assert.match(source, /setView\(\\'wallet\\'/);
+  assert.match(source, /list\.insertAdjacentHTML\('afterbegin', savingsSummaryHtml\(payments\)\)/);
+});
+
+test('the support tabs speak plainly about programmes, savings and wallet', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  assert.match(source, />PROGRAMMES</);
+  assert.match(source, />SAVINGS &amp; WALLET</);
+  assert.doesNotMatch(source, />GLOBAL VISION</);
+  assert.doesNotMatch(source, />SECURE WALLET</);
+});
+
+test('the four programme cards follow the real plan catalogue', () => {
+  const context = { window: {} };
+  context.window.window = context.window;
+  require('node:vm').runInNewContext(fs.readFileSync('assets/pd-billing.js', 'utf8'), context, { filename: 'pd-billing.js' });
+  const billing = context.window.PDBilling;
+  assert.equal(billing.SUPPORT_PROGRAMMES.length, 4);
+  const byId = {};
+  for (const programme of billing.SUPPORT_PROGRAMMES) byId[programme.id] = programme;
+  for (const id of ['business-education', 'financial-cover', 'savings-programme', 'community-family']) {
+    assert.ok(byId[id], `missing programme ${id}`);
+  }
+  assert.equal(byId['savings-programme'].kind, 'savings');
+  assert.equal(JSON.stringify(byId['savings-programme'].planPrograms), '[]');
+  assert.equal(byId['savings-programme'].contributionOptions[0], 5);
+  assert.ok(byId['savings-programme'].contributionOptions.includes(10));
+  assert.ok(byId['business-education'].planPrograms.length > 0);
+  assert.ok(byId['financial-cover'].planPrograms.length > 0);
+  assert.ok(byId['community-family'].planPrograms.length > 0);
+});
+
+test('a programme card cannot invent a price or a plan', () => {
+  const context = { window: {} };
+  context.window.window = context.window;
+  require('node:vm').runInNewContext(fs.readFileSync('assets/pd-billing.js', 'utf8'), context, { filename: 'pd-billing.js' });
+  const billing = context.window.PDBilling;
+  const card = billing.normalizeProgramme({
+    id: 'test-card',
+    name: 'Test',
+    kind: 'savings',
+    contributionOptions: [1, 2, 3],
+    planPrograms: ['Business'],
+    price: 999
+  });
+  assert.equal(JSON.stringify(card.contributionOptions), '[]', 'amounts below the $5 minimum are dropped');
+  assert.equal(card.price, undefined, 'cards never carry a price');
+  assert.equal(card.kind, 'savings');
+  assert.equal(JSON.stringify(card.planPrograms), '[]');
+});

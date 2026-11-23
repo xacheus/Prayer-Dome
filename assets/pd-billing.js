@@ -152,10 +152,117 @@
     Compassion: { color: '#7c2d12', icon: 'pd-i-hand-heart' }
   };
 
+  /* -------------------------------------------------------------------------
+     Public programme layer
+     -------------------------------------------------------------------------
+     Four programme cards are shown on /support. They are a presentation layer
+     over records that already exist:
+
+       Business Education        -> Business Seeding plans
+       Financial Cover           -> Compassion Cover plans
+       Savings Programme         -> the member's Secure Wallet balance
+       Community & Family Support -> Education Support plans
+
+     No price, benefit or eligibility rule is invented here. Plan prices and
+     benefits come from `supportPlans` (or the catalogue above), and savings
+     contributions use the wallet deposit callable. Administrators may override
+     the wording, image, eligibility and availability in `supportProgrammes`;
+     these objects are the fallback when that collection is empty.
+     ---------------------------------------------------------------------- */
+  var SUPPORT_PROGRAMMES = [
+    {
+      id: 'business-education',
+      name: 'Business Education',
+      eyebrow: 'Enterprise & skills',
+      description: 'Practical business learning and enterprise development support for members building a household business. Short lessons in planning, record-keeping and pricing sit alongside the existing Business Seeding plans.',
+      image: '/assets/support/support-business.jpg',
+      imageAlt: 'A business owner recording sales in a fabric shop',
+      planPrograms: ['Business'],
+      kind: 'plans',
+      eligibility: 'Approved Prayer Dome member, 18 or older, with a business idea or an existing micro-enterprise. Complete the Business Basics lesson before a support claim is reviewed.',
+      availability: 'Open',
+      note: 'Business Seeding plans are monthly contributions inside a 12-month programme. Support is released only after the programme matures and a claim is reviewed and approved.',
+      order: 10,
+      active: true
+    },
+    {
+      id: 'financial-cover',
+      name: 'Financial Cover',
+      eyebrow: 'Bereavement & household cover',
+      description: 'A shared funeral and bereavement fund for members and their households, delivered through the existing Compassion Cover plans. It is a community contribution programme, not a commercial insurance policy or an investment.',
+      image: '/assets/support/support-funeral.jpg',
+      imageAlt: 'A family being comforted at a funeral service',
+      planPrograms: ['Compassion'],
+      kind: 'plans',
+      eligibility: 'Approved member with an active Compassion Cover plan. The claim must relate to a named household member, and the documents listed on the claim form are required.',
+      availability: 'Open',
+      note: 'No cash amount is promised before a claim is reviewed and approved. Contributions do not earn interest and do not create a transferable insurance policy.',
+      order: 20,
+      active: true
+    },
+    {
+      id: 'savings-programme',
+      name: 'Savings Programme',
+      eyebrow: 'Save with a clear record',
+      description: 'Set aside what you can in your Prayer Dome Secure Wallet. Every verified contribution is recorded, your balance stays visible, and you can request a withdrawal when you need it. Savings are held as a balance — they are not invested and do not earn interest.',
+      image: '/assets/support/support-savings.jpg',
+      imageAlt: 'Hands placing coins into a savings jar beside a mobile phone',
+      planPrograms: [],
+      kind: 'savings',
+      contributionOptions: [5, 10, 25, 50, 100, 250],
+      eligibility: 'Approved member with a Secure Wallet. Contributions are credited only after finance verifies the payment. Withdrawals are reviewed by finance and paid to your Mobile Money number; the minimum withdrawal is $10.00.',
+      availability: 'Open',
+      note: 'The Savings Programme is a member-held balance in the ministry wallet. It is not a bank account, an investment product or an interest-bearing deposit.',
+      order: 30,
+      active: true
+    },
+    {
+      id: 'community-family',
+      name: 'Community & Family Support',
+      eyebrow: 'Households & learning',
+      description: 'Education Support plans help households with school fees, books, uniforms and study costs, from primary school to tertiary study. The programme also points members to practical family and community resources.',
+      image: '/assets/support/support-community.jpg',
+      imageAlt: 'A family sharing a meal together',
+      planPrograms: ['Education'],
+      kind: 'plans',
+      eligibility: 'Approved member with an active Education Support plan and a learner in the household. School or institution documents are required when a claim is reviewed.',
+      availability: 'Open',
+      note: 'Education Support plans are monthly contributions inside a 12-month programme. Claim review happens after the programme matures; a plan does not guarantee a fixed payout.',
+      order: 40,
+      active: true
+    }
+  ];
+
+  function normalizeProgramme(value, id) {
+    var row = Object.assign({}, value || {});
+    row.id = String(row.id || id || '').trim().toLowerCase();
+    row.name = String(row.name || row.title || row.id);
+    row.eyebrow = String(row.eyebrow || '');
+    row.description = String(row.description || row.summary || '');
+    row.image = String(row.image || '/assets/support/support-education.jpg');
+    row.imageAlt = String(row.imageAlt || row.name);
+    row.kind = row.kind === 'savings' ? 'savings' : 'plans';
+    row.planPrograms = Array.isArray(row.planPrograms) ? row.planPrograms.map(String) : [];
+    row.contributionOptions = Array.isArray(row.contributionOptions)
+      ? row.contributionOptions.map(Number).filter(function (n) { return isFinite(n) && n >= 5; })
+      : [5, 10, 25, 50, 100, 250];
+    // A programme card is a doorway, never a price list. Prices live only in
+    // supportPlans; a savings card links to no plan at all.
+    delete row.price;
+    delete row.currency;
+    if (row.kind === 'savings') row.planPrograms = [];
+    row.eligibility = String(row.eligibility || '');
+    row.availability = String(row.availability || (row.active === false ? 'Closed' : 'Open'));
+    row.note = String(row.note || '');
+    row.order = Number.isFinite(Number(row.order)) ? Number(row.order) : 1000;
+    row.active = row.active !== false && row.availability !== 'Closed';
+    return row;
+  }
+
   var STATUS_LABELS = {
     draft: 'Draft',
-    pending_payment: 'Pending payment',
-    pending_verification: 'Awaiting verification',
+    pending_payment: 'Awaiting payment',
+    pending_verification: 'Pending verification',
     approved: 'Approved',
     active: 'Active',
     rejected: 'Rejected',
@@ -312,6 +419,7 @@
     PAYMENT_METHODS: PAYMENT_METHODS,
     PAYMENT_INSTRUCTIONS: PAYMENT_INSTRUCTIONS,
     PLANS: PLANS,
+    SUPPORT_PROGRAMMES: SUPPORT_PROGRAMMES,
     PROGRAM_ORDER: PROGRAM_ORDER,
     PROGRAM_THEMES: PROGRAM_THEMES,
     STATUS_LABELS: STATUS_LABELS,
@@ -328,6 +436,7 @@
     newReference: newReference,
     idempotencyKey: idempotencyKey,
     planPeriodLabel: planPeriodLabel,
-    normalizePlan: normalizePlan
+    normalizePlan: normalizePlan,
+    normalizeProgramme: normalizeProgramme
   };
 })(typeof window !== 'undefined' ? window : globalThis);
