@@ -430,6 +430,26 @@
         .programme-amount span { font-size: .62rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; color: var(--text-sub); }
         .programme-amount strong { font-size: 1.1rem; color: var(--pd-navy); white-space: nowrap; }
         .programme-choose .btn-main { padding: 12px 16px; font-size: .78rem; }
+        .programme-choose-title { margin: 0; font-size: .58rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; color: var(--text-sub); }
+        .programme-plan-list { display: grid; gap: 8px; margin-top: 2px; }
+        .programme-plan { position: relative; display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1.5px solid var(--border); border-radius: 14px; background: var(--bg-base); cursor: pointer; transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+        .programme-plan:hover { border-color: rgba(10,77,155,.4); }
+        .programme-plan.is-selected { border-color: var(--pd-green); background: rgba(10,77,155,.055); box-shadow: 0 0 0 1px rgba(10,77,155,.08); }
+        .programme-plan:focus-within { outline: 3px solid rgba(10,77,155,.32); outline-offset: 2px; }
+        .programme-plan input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+        .programme-plan-mark { position: relative; flex: 0 0 18px; width: 18px; height: 18px; margin-top: 2px; border: 2px solid #94a3b8; border-radius: 50%; background: var(--bg-card); }
+        .programme-plan input:checked + .programme-plan-mark { border-color: var(--pd-green); }
+        .programme-plan input:checked + .programme-plan-mark::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--pd-green); }
+        .programme-plan input:focus-visible + .programme-plan-mark { outline: 3px solid rgba(10,77,155,.32); outline-offset: 2px; }
+        .programme-plan-content { display: grid; gap: 5px; min-width: 0; flex: 1; }
+        .programme-plan-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 12px; flex-wrap: wrap; }
+        .programme-plan-head strong { font-size: .82rem; line-height: 1.35; color: var(--text-main); }
+        .programme-plan-price { font-size: .9rem; font-weight: 900; color: var(--pd-navy); white-space: nowrap; }
+        .programme-plan-price small { font-size: .62rem; font-weight: 700; color: var(--text-sub); }
+        .programme-plan-facts { display: flex; flex-wrap: wrap; gap: 3px 12px; font-size: .66rem; line-height: 1.4; color: var(--text-sub); }
+        .programme-plan-facts b, .programme-plan-eligibility b { display: inline; font-size: .56rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; color: var(--pd-green); margin-right: 4px; }
+        .programme-plan-eligibility { font-size: .66rem; line-height: 1.45; color: var(--text-sub); overflow-wrap: break-word; }
+        .programme-plan-summary { font-size: .68rem; line-height: 1.45; color: var(--text-main); opacity: .82; }
         .programme-note { margin: 0; font-size: .66rem; line-height: 1.5; color: var(--text-sub); }
         .programme-savings { padding: 10px 12px; border-radius: 12px; background: rgba(212,175,55,.12); border: 1px solid rgba(212,175,55,.35); font-size: .72rem; line-height: 1.5; color: var(--text-main); }
         @media (max-width: 720px) { .programme-grid { grid-template-columns: 1fr; } .programme-media { height: 155px; } }
@@ -473,6 +493,10 @@
         .checkout-paybox strong { display:block;font-size:1.22rem;letter-spacing:.04em;color:var(--pd-navy); }
         .checkout-paybox small { display:block;font-size:.66rem;color:var(--text-sub); }
         .checkout-instructions { background: rgba(10,77,155,.06); border: 1px solid rgba(10,77,155,.14); border-radius: 14px; padding: 13px 15px; font-size: .79rem; line-height: 1.58; color: var(--text-main); }
+        .checkout-confirmation { display: flex; align-items: flex-start; gap: 10px; margin: 12px 0; padding: 13px 14px; border: 1px solid rgba(16,185,129,.35); background: rgba(16,185,129,.08); border-radius: 14px; color: var(--text-main); }
+        .checkout-confirmation > i { flex: 0 0 auto; margin-top: 2px; font-size: 1.15rem; color: #047857; }
+        .checkout-confirmation strong { display: block; font-size: .84rem; color: #065f46; }
+        .checkout-confirmation span { display: block; margin-top: 2px; font-size: .73rem; line-height: 1.5; color: var(--text-sub); }
         .checkout-actions { display: grid; gap: 9px; margin-top: 15px; }
         .checkout-actions .btn-main { margin: 0; }
         .checkout-actions .btn-secondary { margin: 0; }
@@ -1190,6 +1214,42 @@
             ).join('');
         }
 
+        function planFrequencyLabel(plan) {
+            const period = String((plan && plan.billingPeriod) || 'monthly').toLowerCase();
+            if (period === 'monthly') return 'Monthly';
+            if (period === 'annual' || period === 'yearly') return 'Yearly';
+            if (period === 'weekly') return 'Weekly';
+            return period ? period.charAt(0).toUpperCase() + period.slice(1) : 'Monthly';
+        }
+
+        function programmePlanListHtml(programme, open) {
+            const plans = plansForProgramme(programme);
+            if (!plans.length) return '';
+            return '<div class="programme-plan-list" role="radiogroup" aria-label="Approved plans for ' + esc(programme.name) + '">' +
+                plans.map((plan, index) => {
+                    const frequency = planFrequencyLabel(plan);
+                    const period = Billing.planPeriodLabel(plan);
+                    const duration = Number(plan.programMonths) || 12;
+                    const eligibility = plan.eligibility || programme.eligibility || 'Approved Prayer Dome members.';
+                    return '<label class="programme-plan' + (index === 0 ? ' is-selected' : '') + '">' +
+                        '<input type="radio" name="programme-plan-' + esc(programme.id) + '" data-programme-plan="' + esc(programme.id) + '" value="' + esc(plan.id) + '"' +
+                            ' data-price="' + Number(plan.price) + '" data-currency="' + esc(plan.currency || 'USD') + '" data-period="' + esc(period) + '"' +
+                            (index === 0 ? ' checked' : '') + (open ? '' : ' disabled') +
+                            ' onchange="updateProgrammePlan(\'' + esc(programme.id) + '\')">' +
+                        '<span class="programme-plan-mark" aria-hidden="true"></span>' +
+                        '<span class="programme-plan-content">' +
+                            '<span class="programme-plan-head"><strong>' + esc(plan.name) + '</strong>' +
+                                '<span class="programme-plan-price">' + money(plan.price, plan.currency) + ' <small>' + esc(period) + '</small></span></span>' +
+                            '<span class="programme-plan-facts"><span><b>Payment frequency</b>' + esc(frequency) + '</span>' +
+                                '<span><b>Programme duration</b>' + duration + ' month' + (duration === 1 ? '' : 's') + '</span></span>' +
+                            '<span class="programme-plan-eligibility"><b>Eligibility</b>' + esc(eligibility) + '</span>' +
+                            (plan.summary ? '<span class="programme-plan-summary">' + esc(plan.summary) + '</span>' : '') +
+                        '</span>' +
+                    '</label>';
+                }).join('') +
+            '</div>';
+        }
+
         function programmePriceLine(programme) {
             const plans = plansForProgramme(programme);
             if (programme.kind === 'savings') {
@@ -1213,8 +1273,12 @@
                     '<div class="programme-body"><p>' + esc(programme.description) + '</p><div class="programme-savings">No plan is open under this programme right now. The ministry will publish the approved plan and price here when enrolment opens.</div></div></article>';
             }
             const firstOption = programme.kind === 'savings'
-                ? { price: (programme.contributionOptions || [5])[0], unit: 'contribution' }
-                : (plans[0] ? { price: plans[0].price, unit: Billing.planPeriodLabel(plans[0]) } : { price: 0, unit: '' });
+                ? { price: (programme.contributionOptions || [5])[0], currency: 'USD', unit: 'contribution' }
+                : (plans[0] ? { price: plans[0].price, currency: plans[0].currency || 'USD', unit: Billing.planPeriodLabel(plans[0]) } : { price: 0, currency: 'USD', unit: '' });
+            const planOptions = programme.kind === 'savings'
+                ? '<label for="programme-select-' + esc(programme.id) + '">Choose your contribution</label>' +
+                  '<select id="programme-select-' + esc(programme.id) + '" data-programme-select="' + esc(programme.id) + '"' + (open ? '' : ' disabled') + ' onchange="updateProgrammeAmount(\'' + esc(programme.id) + '\')">' + optionHtml + '</select>'
+                : '<p class="programme-choose-title">Choose a plan</p>' + programmePlanListHtml(programme, open);
             const savingsLine = programme.kind === 'savings'
                 ? '<div class="programme-savings"><strong>Current savings balance: <span data-savings-balance>' + money((userData && userData.balance) || 0, 'USD') + '</span></strong><br>Every verified contribution appears in the Secure Wallet ledger. Withdrawals are reviewed by finance; the minimum is $10.00.</div>'
                 : '';
@@ -1233,9 +1297,8 @@
                     '</dl>' +
                     savingsLine +
                     '<div class="programme-choose">' +
-                        '<label for="programme-select-' + esc(programme.id) + '">' + (programme.kind === 'savings' ? 'Choose your contribution' : 'Choose a plan') + '</label>' +
-                        '<select id="programme-select-' + esc(programme.id) + '" data-programme-select="' + esc(programme.id) + '"' + (open ? '' : ' disabled') + ' onchange="updateProgrammeAmount(\'' + esc(programme.id) + '\')">' + optionHtml + '</select>' +
-                        '<div class="programme-amount"><span>' + (programme.kind === 'savings' ? 'Contribution' : 'Exact amount') + '</span><strong data-programme-amount="' + esc(programme.id) + '">' + money(firstOption.price, 'USD') + ' ' + esc(firstOption.unit) + '</strong></div>' +
+                        planOptions +
+                        '<div class="programme-amount"><span>' + (programme.kind === 'savings' ? 'Contribution' : 'Exact amount') + '</span><strong data-programme-amount="' + esc(programme.id) + '">' + money(firstOption.price, firstOption.currency) + ' ' + esc(firstOption.unit) + '</strong></div>' +
                         '<button type="button" class="btn-main btn-green" ' + (open ? '' : 'disabled') + ' onclick="' + (programme.kind === 'savings' ? 'chooseProgrammeSavings' : 'chooseProgrammePlan') + '(\'' + esc(programme.id) + '\')"><i class="pd-i ' + (programme.kind === 'savings' ? 'pd-i-coins' : 'pd-i-hand-heart') + '" aria-hidden="true"></i> ' + (programme.kind === 'savings' ? 'Add to savings' : 'Choose Plan') + '</button>' +
                     '</div>' +
                     (programme.note ? '<p class="programme-note">' + esc(programme.note) + '</p>' : '') +
@@ -1263,10 +1326,25 @@
             target.textContent = money(option.dataset.price, 'USD') + ' ' + (option.dataset.unit || '');
         };
 
+        window.updateProgrammePlan = (programmeId) => {
+            const choices = Array.from(document.querySelectorAll('input[data-programme-plan]'))
+                .filter(input => input.dataset.programmePlan === programmeId);
+            const selected = choices.filter(input => input.checked)[0];
+            choices.forEach(input => {
+                const row = input.closest('.programme-plan');
+                if (row) row.classList.toggle('is-selected', input === selected);
+            });
+            const card = selected ? selected.closest('.programme-card') : null;
+            const target = card ? card.querySelector('[data-programme-amount]') : null;
+            if (!selected || !target) return;
+            target.textContent = money(selected.dataset.price, selected.dataset.currency) + ' ' + (selected.dataset.period || '');
+        };
+
         window.chooseProgrammePlan = (programmeId) => {
-            const select = document.getElementById('programme-select-' + programmeId);
-            if (!select || !select.value) return toast('Choose a plan first.', 'error');
-            subscribeToPlan(select.value);
+            const selected = Array.from(document.querySelectorAll('input[data-programme-plan]'))
+                .filter(input => input.dataset.programmePlan === programmeId && input.checked)[0];
+            if (!selected || !selected.value) return toast('Choose a plan first.', 'error');
+            subscribeToPlan(selected.value);
         };
 
         window.chooseProgrammeSavings = (programmeId) => {
@@ -1350,12 +1428,20 @@
             const paymentNumber = String(currentCheckout.payToNumber || paymentSettings.mobileMoneyNumber || '').trim();
             const payToName = String(currentCheckout.payToName || paymentSettings.accountName || 'PRAYER DOME').trim();
             const payToNetwork = String(currentCheckout.payToNetwork || paymentSettings.network || 'Mobile Money').trim();
+            const checkoutPlan = planFor(currentCheckout.planId) || {};
+            const isPlan = currentCheckout.kind !== 'wallet_deposit';
+            const frequency = isPlan ? planFrequencyLabel({
+                billingPeriod: currentCheckout.billingPeriod || checkoutPlan.billingPeriod
+            }) : 'One-off';
+            const programmeMonths = Number(currentCheckout.programMonths || checkoutPlan.programMonths || 12) || 12;
             body.innerHTML =
                 '<dl class="checkout-grid">' +
                     '<div><dt>Reference</dt><dd class="checkout-ref">' + esc(reference) + '</dd></div>' +
                     '<div><dt>Exact amount</dt><dd>' + money(currentCheckout.amount, currentCheckout.currency) + '</dd></div>' +
                     '<div><dt>Programme</dt><dd>' + esc(currentCheckout.program || (currentCheckout.kind === 'wallet_deposit' ? 'Savings Programme' : 'Support programme')) + '</dd></div>' +
                     '<div><dt>Plan</dt><dd>' + esc(currentCheckout.planName || 'Savings contribution') + '</dd></div>' +
+                    '<div><dt>Payment frequency</dt><dd>' + esc(frequency) + '</dd></div>' +
+                    '<div><dt>Programme duration</dt><dd>' + (isPlan ? programmeMonths + ' month' + (programmeMonths === 1 ? '' : 's') : 'One-off contribution') + '</dd></div>' +
                     '<div><dt>Status</dt><dd>' + statusChip(status) + '</dd></div>' +
                 '</dl>' +
                 (status === 'rejected' && currentCheckout.rejectionReason
@@ -1366,6 +1452,9 @@
                     : status === 'pending_payment'
                       ? '<p class="checkout-note" style="color:#b45309;"><strong>Payment details are not configured.</strong> Please contact the ministry office before sending money. Your reference is saved and will remain valid.</p>'
                       : '') +
+                (status === 'pending_verification'
+                    ? '<div class="checkout-confirmation" role="status"><i class="pd-i pd-i-circle-check" aria-hidden="true"></i><div><strong>Your request has been submitted and is awaiting verification.</strong><span>Reference <strong>' + esc(reference) + '</strong> and the selected ' + (isPlan ? 'plan <strong>' + esc(currentCheckout.planName || 'Support plan') + '</strong>' : 'savings contribution') + ' are attached. Finance will verify the payment before ' + (isPlan ? 'the plan is activated' : 'the savings balance is credited') + '.</span></div></div>'
+                    : '') +
                 '<div class="checkout-instructions"><strong>How to pay</strong><br>' + esc(instructions) + '</div>';
             renderCheckoutEvidence();
             renderCheckoutActions();
@@ -1495,12 +1584,17 @@
 
         window.submitCheckoutEvidence = async () => {
             if (!currentCheckout || !checkoutEvidence) return toast('Attach the receipt first.', 'error');
+            if (!currentCheckout.reference) return toast('The payment reference is missing. Create the checkout again.', 'error');
+            if (currentCheckout.kind === 'subscription' && (!currentCheckout.planId || !currentCheckout.planName)) {
+                return toast('Choose a plan before submitting the receipt. The selected plan must be attached to this request.', 'error');
+            }
             if (checkoutInFlight) return toast('Your receipt is already being submitted. Please wait.', 'error');
             checkoutInFlight = true;
             showLoading('Submitting receipt...');
             try {
                 const payload = {
                     reference: currentCheckout.reference,
+                    planId: currentCheckout.planId || '',
                     evidenceName: checkoutEvidence.name,
                     evidenceType: checkoutEvidence.type
                 };
@@ -1511,9 +1605,11 @@
                 if (checkoutEvidence.path) currentCheckout.evidencePath = checkoutEvidence.path;
                 else currentCheckout.evidenceUrl = checkoutEvidence.url;
                 checkoutEvidence = null;
-                renderCheckoutEvidence();
-                renderCheckoutActions();
-                toast('Receipt submitted. Finance will verify the payment before your plan is activated.', 'success');
+                // Rebuild the whole checkout, not just the buttons: the status
+                // chip, paybox and confirmation banner must all move to
+                // "awaiting verification" together.
+                openCheckoutModal();
+                toast('Request submitted for verification: ' + (currentCheckout.planName || 'Savings contribution') + ' · ' + currentCheckout.reference, 'success');
                 loadMyPlans().catch(() => {});
                 loadWalletData().catch(() => {});
             } catch (error) {

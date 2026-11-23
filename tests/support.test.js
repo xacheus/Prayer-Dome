@@ -202,3 +202,25 @@ test('a programme card cannot invent a price or a plan', () => {
   assert.equal(card.kind, 'savings');
   assert.equal(JSON.stringify(card.planPrograms), '[]');
 });
+
+test('every programme plan shows its full terms before checkout', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  assert.match(source, /function programmePlanListHtml\(programme, open\)/);
+  assert.match(source, /data-programme-plan=/);
+  assert.match(source, /Payment frequency/);
+  assert.match(source, /Programme duration/);
+  assert.match(source, /Eligibility/);
+  assert.match(source, /Choose Plan/);
+  assert.match(source, /function planFrequencyLabel\(plan\)/);
+});
+
+test('checkout carries the selected plan and reference into evidence submission', () => {
+  const source = fs.readFileSync('support.html', 'utf8');
+  assert.match(source, /currentCheckout\.kind === 'subscription' && \(!currentCheckout\.planId/);
+  assert.match(source, /planId: currentCheckout\.planId \|\| ''/);
+  assert.match(source, /Your request has been submitted and is awaiting verification/);
+  const server = fs.readFileSync('functions/billing.js', 'utf8');
+  assert.match(server, /This payment is not linked to a selected plan/);
+  assert.match(server, /const submittedPlanId = text\(data\.planId, 80\)/);
+  assert.match(server, /planId: payment\.planId \|\| ''/);
+});

@@ -234,6 +234,10 @@ function paymentView(data) {
     program: data.program || '',
     tier: data.tier || '',
     method: data.method || 'mobile-money',
+    billingPeriod: data.billingPeriod || '',
+    durationMonths: data.durationMonths || 0,
+    programMonths: data.programMonths || 0,
+    planSnapshot: data.planSnapshot || null,
     paymentInstructions: data.paymentInstructions || '',
     payToNumber: data.payToNumber || '',
     payToName: data.payToName || '',
@@ -447,6 +451,10 @@ async function createCheckout(data, context) {
       program: plan ? plan.program : 'Wallet',
       tier: plan ? plan.tier : '',
       method,
+      billingPeriod: plan ? plan.billingPeriod : '',
+      durationMonths: plan ? plan.durationMonths : 0,
+      programMonths: plan ? plan.programMonths : 0,
+      planSnapshot: plan ? publicPlan(plan) : null,
       paymentInstructions: paySettings.instructions,
       payToNumber: paySettings.number,
       payToName: paySettings.accountName || 'PRAYER DOME',
@@ -484,6 +492,13 @@ async function submitEvidence(data, context) {
       fail('failed-precondition', 'This payment has already been reviewed.');
     }
     if (payment.status === 'cancelled') fail('failed-precondition', 'This checkout was cancelled.');
+    if (payment.kind === 'subscription' && (!payment.planId || !payment.planName)) {
+      fail('failed-precondition', 'This payment is not linked to a selected plan. Create the checkout again from the programme card.');
+    }
+    const submittedPlanId = text(data.planId, 80);
+    if (payment.kind === 'subscription' && submittedPlanId && submittedPlanId !== payment.planId) {
+      fail('invalid-argument', 'The selected plan does not match this payment reference. Open the checkout again and choose the plan.');
+    }
     const subSnap = payment.subscriptionId
       ? await transaction.get(db.collection('subscriptions').doc(payment.subscriptionId))
       : null;
@@ -522,6 +537,8 @@ async function submitEvidence(data, context) {
     transaction.create(auditRef, {
       action: 'payment_evidence_submitted',
       paymentRef: reference,
+      planId: payment.planId || '',
+      planName: payment.planName || '',
       subscriptionId: payment.subscriptionId || '',
       walletTransactionId: payment.walletTransactionId || '',
       userId: uid,
