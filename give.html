@@ -138,6 +138,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="/assets/pd-upload.js"></script>
+    <script src="/assets/pd-billing.js"></script>
 
     <style>
         :root {
@@ -309,18 +310,11 @@
             padding: 20px 25px; 
             color: white; 
         }
-        .method-header.whatsapp { 
-            background: linear-gradient(135deg, #075e54, #128c7e); 
-        }
-        .method-header.momo { 
-            background: linear-gradient(135deg, #ffcc00, #ff9900); 
-            color: black; 
-        }
         .method-header.giving {
             background: linear-gradient(135deg, var(--accent-blue, #0A4D9B), #07244d);
             color: #fff;
         }
-        .give-purpose { grid-column: 1 / -1; }
+        .give-purpose, .give-payment { grid-column: 1 / -1; }
         .give-purpose .method-body { display: grid; gap: 12px; }
         .give-purpose p { margin: 0; line-height: 1.6; color: var(--text-secondary); }
         .give-label { font-size: .7rem; font-weight: 900; letter-spacing: .9px; text-transform: uppercase; color: var(--text-sub); }
@@ -329,6 +323,14 @@
             background: var(--bg-light); color: var(--text-main); font: inherit; font-weight: 700;
         }
         .give-select:focus { outline: none; border-color: var(--accent-blue, #0A4D9B); box-shadow: 0 0 0 3px rgba(10,77,155,.12); }
+        .give-method-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+        .give-method-head h3 { margin: 0; font-size: 1rem; color: var(--text-main); }
+        .give-method-badge { font-size: .64rem; font-weight: 900; letter-spacing: .8px; text-transform: uppercase; color: var(--accent-blue, #0A4D9B); background: rgba(37,99,235,.1); border-radius: 999px; padding: 5px 10px; }
+        .give-method-warning { border: 1px solid #f59e0b; background: rgba(245,158,11,.1); color: #92400e; border-radius: 16px; padding: 14px 16px; font-size: .82rem; line-height: 1.55; }
+        .dark-mode .give-method-warning { color: #fde68a; }
+        .give-method-card { display: grid; gap: 14px; }
+        .give-method-actions { display: grid; gap: 10px; }
+        .give-method-actions .btn-donate { margin: 0; }
         .give-ref-box {
             display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
             background: rgba(212,175,55,.1); border: 1px dashed var(--accent-gold);
@@ -689,90 +691,20 @@
                 </div>
             </div>
 
-            <!-- WHATSAPP PAYMENT CARD -->
-            <div class="method-card">
-                <div class="method-header whatsapp">
-                    <h2><i class="pd-i pd-i-brand-whatsapp"></i> WhatsApp Payment</h2>
-                    <p>Send payment proof via WhatsApp</p>
+            <!-- VERIFIED PAYMENT METHODS -->
+            <div class="method-card give-payment">
+                <div class="method-header giving">
+                    <h2><i class="pd-i pd-i-hand-heart"></i> Give by a verified PRAYER DOME method</h2>
+                    <p>Every number and account below is read from Finance settings when this page opens.</p>
                 </div>
                 <div class="method-body">
-                    <div class="info-box">
-                        <div class="info-row">
-                            <span class="info-label">Recipient</span>
-                            <span class="info-value">PRAYER DOME</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">WhatsApp Number</span>
-                            <span class="info-value" id="waPaymentNumber">Loading…</span>
-                            <button class="btn-copy" type="button" onclick="copyOfficialPaymentNumber()">COPY</button>
-                        </div>
+                    <label class="give-label" for="giveMethod">Choose a payment method</label>
+                    <select class="give-select" id="giveMethod" onchange="selectGivingMethod(this.value)">
+                        <option value="">Loading official payment methods…</option>
+                    </select>
+                    <div id="giveMethodCard" aria-live="polite" style="margin-top:16px;">
+                        <p class="give-note">Loading the official payment methods…</p>
                     </div>
-                    
-                    <div class="amount-selector">
-                        <button class="amt-chip" onclick="setA('wa', 20)">E20</button>
-                        <button class="amt-chip" onclick="setA('wa', 50)">E50</button>
-                        <button class="amt-chip" onclick="setA('wa', 100)">E100</button>
-                        <button class="amt-chip" onclick="setA('wa', 250)">E250</button>
-                    </div>
-                    <input type="number" id="waAmt" class="custom-input" placeholder="Custom Amount (E)">
-                    
-                    <div class="message-preview" id="messagePreview">
-                        <i class="pd-i pd-i-brand-whatsapp pd-i-lg"></i>
-                        <span>Enter amount to generate payment message</span>
-                    </div>
-                    
-                    <button class="btn-donate btn-whatsapp" onclick="sendWhatsAppWithProof()">
-                        <i class="pd-i pd-i-brand-whatsapp"></i> SEND PROOF VIA WHATSAPP
-                    </button>
-                </div>
-            </div>
-
-            <!-- MTN MOMO CARD -->
-            <div class="method-card">
-            <div class="method-header momo">
-                <h2><i class="pd-i pd-i-smartphone"></i> MTN MoMo</h2>
-                <p>Eswatini &amp; Zambia Direct — Supporting Prayer Dome Zambia</p>
-            </div>
-                <div class="method-body">
-                    <div class="info-box">
-                        <div class="info-row">
-                            <span class="info-label">MoMo Number</span>
-                            <span class="info-value" id="momoPaymentNumber">Loading…</span>
-                            <button class="btn-copy" type="button" onclick="copyOfficialPaymentNumber()">COPY</button>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Account Name</span>
-                            <span class="info-value" id="momoAccountName">PRAYER DOME</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Recipient</span>
-                            <span class="info-value">PRAYER DOME</span>
-                        </div>
-                        <div class="info-row" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border);">
-                            <span class="info-label" style="color: var(--accent-gold);"><i class="pd-i pd-i-map-pin" aria-hidden="true"></i> Zambia Branch</span>
-                            <span class="info-value" style="font-size: 0.75rem; color: var(--accent-gold);">PRAYER DOME Zambia · info@prayerdome.net</span>
-                        </div>
-                        <div class="info-row" style="font-size: 0.8rem; color: var(--text-secondary);">
-                            <span class="info-label">Daily Night Service</span>
-                            <span class="info-value" style="font-size: 0.8rem;">Every night — 8:00 PM CAT</span>
-                        </div>
-                    </div>
-                    <p class="give-note" style="margin:0 0 14px;"><strong>How to give:</strong> send the amount by MTN MoMo to the number above, use the payment reference in the note, then attach the confirmation screenshot. PRAYER DOME reconciles every reference.</p>
-                    <div class="upload-zone" onclick="openCloudinary()">
-                        <i class="pd-i pd-i-camera" style="font-size: 28px; color: var(--accent-gold);"></i>
-                        <h4 id="upLabel">Attach Payment Receipt</h4>
-                    </div>
-                    <input type="hidden" id="receiptUrl">
-                    <div class="amount-selector">
-                        <button class="amt-chip" onclick="setA('momo', 20)">E20</button>
-                        <button class="amt-chip" onclick="setA('momo', 50)">E50</button>
-                        <button class="amt-chip" onclick="setA('momo', 100)">E100</button>
-                        <button class="amt-chip" onclick="setA('momo', 250)">E250</button>
-                    </div>
-                    <input type="number" id="momoAmt" class="custom-input" placeholder="Custom Amount (E)">
-                    <button class="btn-donate btn-green" onclick="submitMoMoOffering()">
-                        <i class="pd-i pd-i-send"></i> SUBMIT OFFERING
-                    </button>
                 </div>
             </div>
         </div>
@@ -849,7 +781,6 @@
         const functions = getFunctions(app);
 
         let currentUser = null;
-        let officialPayment = { number: '', accountName: 'PRAYER DOME', network: 'Mobile Money', configured: false };
         let uploadedReceiptUrl = null;
         let exchangeRates = {};
         let lastFetchTime = null;
@@ -972,46 +903,159 @@
 
         onAuthStateChanged(auth, user => { currentUser = user; });
 
-        /* The giving page shows the same number finance configured for the
-           wallet and checkout. It is never typed into this file, so a changed
-           ministry number cannot leave a stale copy on the giving page. */
-        window.copyOfficialPaymentNumber = () => {
-            if (!officialPayment.configured) return toast('The official payment number is not configured yet. Please contact info@prayerdome.net.', 'error');
-            copy(officialPayment.number);
+        /* Payment details are configuration, not source code. The give page
+           reads every method from settings/payments through the billing
+           callable, so a changed number never leaves a stale copy here. */
+        const Billing = window.PDBilling;
+        let paymentMethods = [];
+        let selectedPaymentMethod = null;
+
+        function givingMethodNumber(method) {
+            if (!method) return '';
+            return String(method.type === 'bank-transfer' ? method.accountNumber : method.number || '').trim();
+        }
+
+        function givingCurrency(method) {
+            return String((method && method.currency) || 'SZL').toUpperCase();
+        }
+
+        function givingMethodIcon(type) {
+            return {
+                'mobile-money': 'smartphone',
+                'bank-transfer': 'building',
+                'cash-office': 'church',
+                whatsapp: 'brand-whatsapp'
+            }[type] || 'hand-heart';
+        }
+
+        function givingMethodRows(method) {
+            const rows = [['Recipient', 'PRAYER DOME']];
+            if (method.type === 'bank-transfer') {
+                rows.push(['Bank', method.bankName]);
+                rows.push(['Account number', method.accountNumber]);
+                rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+                if (method.branchCode) rows.push(['Branch code', method.branchCode]);
+                if (method.swift) rows.push(['SWIFT / BIC', method.swift]);
+            } else if (method.type === 'cash-office') {
+                rows.push(['Pay at', method.accountName || 'PRAYER DOME ministry office']);
+                if (method.instructions) rows.push(['Office note', method.instructions]);
+            } else if (method.type === 'whatsapp') {
+                rows.push(['WhatsApp number', method.number]);
+                rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+            } else {
+                rows.push(['Mobile Money number', method.number]);
+                rows.push(['Network', method.network || 'Mobile Money']);
+                rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+            }
+            rows.push(['Currency', givingCurrency(method)]);
+            return rows;
+        }
+
+        function renderGivingMethodCard(method) {
+            const host = document.getElementById('giveMethodCard');
+            if (!host) return;
+            if (!method) {
+                host.innerHTML = '<div class="give-method-warning" role="alert">' +
+                    '<strong>Finance has not enabled a giving method yet.</strong><br>' +
+                    'Please contact <a href="mailto:info@prayerdome.net">info@prayerdome.net</a> and do not send money to any number that is not shown here.' +
+                    '</div>';
+                return;
+            }
+            const number = givingMethodNumber(method);
+            const copyable = number && method.type !== 'cash-office';
+            const rows = givingMethodRows(method).filter(function (pair) { return pair[1]; }).map(function (pair) {
+                return '<div class="info-row"><span class="info-label">' + escapeGiving(pair[0]) + '</span>' +
+                    '<span class="info-value" style="overflow-wrap:break-word;">' + escapeGiving(pair[1]) + '</span>' +
+                    (copyable && pair[1] === number ? '<button class="btn-copy" type="button" onclick="copyOfficialPaymentNumber()">COPY</button>' : '') +
+                    '</div>';
+            }).join('');
+            const note = method.instructions ||
+                'Use the official details above, write the payment reference on the payment, then attach a clear receipt. Finance checks the receipt before the gift is recorded against PRAYER DOME.';
+            const currency = givingCurrency(method);
+            const chips = [20, 50, 100, 250].map(function (value) {
+                return '<button class="amt-chip" type="button" onclick="setGivingAmount(' + value + ')">' +
+                    escapeGiving(currency) + ' ' + value + '</button>';
+            }).join('');
+            // Keep the old give-page convenience: a mobile-money number can
+            // also receive the payment proof on WhatsApp. Bank and office
+            // methods have no WhatsApp target unless finance adds one.
+            const whatsapp = number && method.type !== 'bank-transfer' && method.type !== 'cash-office'
+                ? '<button class="btn-donate btn-whatsapp" type="button" onclick="sendWhatsAppProof()"><i class="pd-i pd-i-brand-whatsapp"></i> SEND PROOF VIA WHATSAPP</button>'
+                : '';
+            const proofRequired = method.type !== 'whatsapp';
+            host.innerHTML = '<div class="give-method-card">' +
+                '<div class="give-method-head"><h3><i class="pd-i pd-i-' + escapeGiving(givingMethodIcon(method.type)) + '" aria-hidden="true"></i> ' + escapeGiving(method.label) + '</h3>' +
+                    '<span class="give-method-badge">' + escapeGiving((Billing.PAYMENT_METHOD_TYPE_LABELS || {})[method.type] || method.type) + '</span></div>' +
+                '<div class="info-box">' + rows + '</div>' +
+                '<p class="give-note"><strong>How to give:</strong> ' + escapeGiving(note) + '</p>' +
+                '<div class="upload-zone" onclick="openCloudinary()" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openCloudinary();}">' +
+                    '<i class="pd-i pd-i-camera" style="font-size:28px;color:var(--accent-gold);"></i>' +
+                    '<h4 id="upLabel">' + (proofRequired ? 'Attach payment receipt' : 'Attach payment proof (optional)') + '</h4>' +
+                '</div>' +
+                '<input type="hidden" id="receiptUrl">' +
+                '<div class="amount-selector">' + chips + '</div>' +
+                '<input type="number" id="giveAmount" class="custom-input" min="0" step="any" placeholder="Custom amount (' + escapeGiving(currency) + ')" inputmode="decimal">' +
+                '<div class="give-method-actions">' +
+                    '<button class="btn-donate btn-green" type="button" onclick="submitGiving()"><i class="pd-i pd-i-send"></i> SUBMIT GIVING</button>' +
+                    whatsapp +
+                '</div>' +
+                '<p class="give-note" style="margin:0;">Reference <strong>' + escapeGiving(paymentReference || '—') + '</strong> · status is pending until finance confirms the payment. This is a giving record for PRAYER DOME, not a tax certificate.</p>' +
+            '</div>';
+        }
+
+        window.selectGivingMethod = function (id) {
+            selectedPaymentMethod = paymentMethods.find(function (method) { return method.id === id; }) || null;
+            // A receipt uploaded for one channel must not be attributed to
+            // another channel's pending gift.
+            uploadedReceiptUrl = null;
+            renderGivingMethodCard(selectedPaymentMethod);
         };
+
+        window.copyOfficialPaymentNumber = function () {
+            const number = givingMethodNumber(selectedPaymentMethod);
+            if (!number) return toast('Finance has not configured a number for this method yet. Please contact info@prayerdome.net.', 'error');
+            copy(number);
+        };
+
         async function loadOfficialPaymentDetails() {
+            let settings = {};
             try {
                 const call = httpsCallable(functions, 'billing');
                 const result = await call({ action: 'payment.settings.public' });
-                const settings = (result && result.data && result.data.settings) || {};
-                officialPayment = {
-                    number: String(settings.number || '').trim(),
-                    accountName: String(settings.accountName || 'PRAYER DOME').trim(),
-                    network: String(settings.network || 'Mobile Money').trim(),
-                    configured: Boolean(settings.configured && settings.number)
-                };
+                settings = (result && result.data && result.data.settings) || {};
+                paymentMethods = Billing.paymentMethodsFor(settings, 'give');
             } catch (error) {
-                console.warn('Official payment details could not be loaded:', error && error.message);
-                officialPayment = { number: '', accountName: 'PRAYER DOME', network: 'Mobile Money', configured: false };
+                console.warn('Official payment methods could not be loaded:', error && error.message);
+                paymentMethods = [];
             }
-            const label = officialPayment.configured ? officialPayment.number : 'Not configured — contact info@prayerdome.net';
-            ['waPaymentNumber', 'momoPaymentNumber'].forEach((id) => {
-                const node = document.getElementById(id);
-                if (node) node.textContent = label;
-            });
-            const account = document.getElementById('momoAccountName');
-            if (account) account.textContent = officialPayment.accountName || 'PRAYER DOME';
-            document.querySelectorAll('[onclick="copyOfficialPaymentNumber()"]').forEach((button) => {
-                button.disabled = !officialPayment.configured;
-                if (!officialPayment.configured) button.style.opacity = '.55';
-            });
+            const select = document.getElementById('giveMethod');
+            if (!paymentMethods.length) {
+                selectedPaymentMethod = null;
+                if (select) {
+                    select.disabled = true;
+                    select.innerHTML = '<option value="">No payment method configured</option>';
+                }
+                renderGivingMethodCard(null);
+                return;
+            }
+            if (select) {
+                select.disabled = false;
+                select.innerHTML = paymentMethods.map(function (method) {
+                    return '<option value="' + escapeGiving(method.id) + '">' + escapeGiving(method.label) + '</option>';
+                }).join('');
+            }
+            selectedPaymentMethod = paymentMethods.find(function (method) { return method.id === settings.primaryMethodId; }) || paymentMethods[0];
+            if (select) select.value = selectedPaymentMethod.id;
+            renderGivingMethodCard(selectedPaymentMethod);
         }
+        // Declared before the async load so an early render cannot touch the
+        // temporal dead zone while the callable is still in flight.
+        let paymentReference = '';
         loadOfficialPaymentDetails();
 
         /* A payment reference belongs to PRAYER DOME, not to a person. It is
            written to the private offering record so finance can reconcile the
            transaction and the donor can quote it on a receipt. */
-        let paymentReference = '';
         function makeReference() {
             const now = new Date();
             const date = String(now.getFullYear()) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
@@ -1057,109 +1101,113 @@
             box.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
-        window.setA = (type, v) => {
-            if (type === 'wa') document.getElementById('waAmt').value = v;
-            if (type === 'momo') document.getElementById('momoAmt').value = v;
-            updateMessagePreview();
+        window.setGivingAmount = function (value) {
+            const input = document.getElementById('giveAmount');
+            if (input) input.value = value;
+        };
+        // Kept for older links/bookmarks that still call setA('wa'|'momo', n).
+        window.setA = function (type, value) {
+            window.setGivingAmount(value);
         };
 
-        function updateMessagePreview() {
-            const amount = document.getElementById('waAmt').value;
-            const preview = document.getElementById('messagePreview');
-            if (amount && amount > 0) {
-                preview.innerHTML = `<i class="pd-i pd-i-brand-whatsapp pd-i-lg"></i> <span>Will send payment proof for E${amount}</span>`;
-                preview.style.borderColor = "#25d366";
-                preview.style.background = "rgba(37, 211, 102, 0.1)";
-            } else {
-                preview.innerHTML = `<i class="pd-i pd-i-brand-whatsapp pd-i-lg"></i> <span>Enter amount to send payment proof</span>`;
-                preview.style.borderColor = "var(--border)";
-                preview.style.background = "var(--bg-light)";
+        window.sendWhatsAppProof = function () {
+            const method = selectedPaymentMethod;
+            const number = givingMethodNumber(method);
+            const amount = (document.getElementById('giveAmount') || {}).value;
+            if (!method) {
+                toast('Finance has not configured a payment method yet. Please contact info@prayerdome.net before sending money.', 'error');
+                return;
             }
-        }
-
-        document.getElementById('waAmt')?.addEventListener('input', updateMessagePreview);
-
-        window.sendWhatsAppWithProof = () => {
-            const amount = document.getElementById('waAmt').value;
+            if (!number) {
+                toast('Finance has not configured a WhatsApp number for this method. Please contact info@prayerdome.net before sending money.', 'error');
+                return;
+            }
             if (!amount || amount <= 0) {
-                toast("Please enter a valid amount", "error");
+                toast('Please enter a valid amount', 'error');
                 return;
             }
-            
-            if (!officialPayment.configured) {
-                toast("The official payment number is not configured yet. Please contact info@prayerdome.net before sending money.", "error");
-                return;
-            }
-            const phone = officialPayment.number.replace(/\D/g, "");
             const purpose = givingPurpose();
-            const message = `Hello PRAYER DOME, I have made a ${purpose.toLowerCase()} gift of E${amount}. Reference: ${paymentReference}. ` +
-                (uploadedReceiptUrl ? `Payment proof: ${uploadedReceiptUrl}. ` : 'I will attach my payment proof. ') +
+            const currency = givingCurrency(method);
+            const message = 'Hello PRAYER DOME, I have made a ' + purpose.toLowerCase() + ' gift of ' + currency + ' ' + amount + '. Reference: ' + paymentReference + '. ' +
+                (uploadedReceiptUrl ? 'Payment proof: ' + uploadedReceiptUrl + '. ' : 'I will attach my payment proof. ') +
                 'Please confirm receipt for PRAYER DOME. God bless!';
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-            toast(uploadedReceiptUrl ? "Opening WhatsApp with payment proof..." : "Opening WhatsApp to send payment proof...", "success");
+            window.open('https://wa.me/' + number.replace(/\D/g, '') + '?text=' + encodeURIComponent(message), '_blank');
+            toast(uploadedReceiptUrl ? 'Opening WhatsApp with payment proof...' : 'Opening WhatsApp to send payment proof...', 'success');
             if (uploadedReceiptUrl) confetti({ particleCount: 50, spread: 60 });
         };
 
-        window.submitMoMoOffering = async () => {
-            const amount = document.getElementById('momoAmt').value;
-            const proof = document.getElementById('receiptUrl').value;
+        window.submitGiving = async function () {
+            const method = selectedPaymentMethod;
+            const amountNode = document.getElementById('giveAmount');
+            const proofNode = document.getElementById('receiptUrl');
+            const amount = amountNode ? amountNode.value : '';
+            const proof = proofNode ? proofNode.value : '';
             const purpose = givingPurpose();
 
-            if (!officialPayment.configured) {
-                toast("The official payment number is not configured yet. Please contact info@prayerdome.net before sending money.", "error");
+            if (!method) {
+                toast('Finance has not configured a payment method yet. Please contact info@prayerdome.net before sending money.', 'error');
                 return;
             }
             if (!amount || amount <= 0) {
-                toast("Enter valid amount", "error");
+                toast('Enter a valid amount', 'error');
                 return;
             }
-            if (!proof) {
-                toast("Please attach payment receipt", "error");
+            if (method.type !== 'whatsapp' && !proof) {
+                toast('Please attach your payment receipt', 'error');
                 return;
             }
             if (!currentUser) {
-                toast("Please sign in so PRAYER DOME can keep your giving record and receipt.", "error");
+                toast('Please sign in so PRAYER DOME can keep your giving record and receipt.', 'error');
                 return;
             }
 
             const reference = paymentReference || makeReference();
-            const button = document.querySelector('.btn-donate.btn-green');
+            const currency = givingCurrency(method);
+            const button = document.querySelector('#giveMethodCard .btn-donate.btn-green');
             if (button) button.disabled = true;
             try {
-                await addDoc(collection(db, "offerings"), {
+                await addDoc(collection(db, 'offerings'), {
                     organization: "PRAYER DOME",
                     recipient: "PRAYER DOME",
                     purpose: purpose,
                     category: purpose,
                     reference: reference,
-                    currency: "SZL",
+                    currency: currency,
                     donor: currentUser.displayName || currentUser.email || "Prayer Dome member",
                     donorEmail: currentUser.email || "",
                     donorUid: currentUser.uid,
                     amount: parseFloat(amount),
-                    method: "MTN MoMo",
-                    receipt: proof,
+                    method: method.label,
+                    methodId: method.id,
+                    methodType: method.type,
+                    payTo: givingMethodNumber(method),
+                    receipt: proof || '',
                     timestamp: serverTimestamp(),
                     status: 'pending'
                 });
                 confetti({ particleCount: 100, spread: 70 });
-                toast("Giving recorded for PRAYER DOME. Thank you.", "success");
-                showGivingReceipt({ amount: 'E' + parseFloat(amount).toFixed(2), purpose: purpose, reference: reference });
+                toast('Giving recorded for PRAYER DOME. Thank you.', 'success');
+                showGivingReceipt({ amount: currency + ' ' + parseFloat(amount).toFixed(2), purpose: purpose, reference: reference });
 
-                document.getElementById('momoAmt').value = "";
-                document.getElementById('receiptUrl').value = "";
-                document.getElementById('upLabel').innerHTML = "Attach Receipt";
-                document.getElementById('upLabel').style.color = "";
+                if (amountNode) amountNode.value = '';
+                if (proofNode) proofNode.value = '';
+                const uploadLabel = document.getElementById('upLabel');
+                if (uploadLabel) {
+                    uploadLabel.innerHTML = method.type === 'whatsapp' ? 'Attach payment proof (optional)' : 'Attach payment receipt';
+                    uploadLabel.style.color = '';
+                }
                 uploadedReceiptUrl = null;
                 document.getElementById('upload-zone-preview')?.remove();
                 setReference();
+                renderGivingMethodCard(method);
             } catch (e) {
                 console.error(e);
                 toast(e && e.code === 'permission-denied'
-                    ? "Sign in with your Prayer Dome account before recording a gift."
-                    : "Error sending offering. Please try again.", "error");
+                    ? 'Sign in with your Prayer Dome account before recording a gift.'
+                    : 'Error sending offering. Please try again.', 'error');
             } finally {
-                if (button) button.disabled = false;
+                const retryButton = document.querySelector('#giveMethodCard .btn-donate.btn-green');
+                if (retryButton) retryButton.disabled = false;
             }
         };
 
@@ -1210,7 +1258,6 @@ window.toggleDarkMode = function() {
         setReference();
         fetchExchangeRates();
         setInterval(fetchExchangeRates, 3600000); // Refresh every hour
-        updateMessagePreview();
     </script>
 </body>
 </html>

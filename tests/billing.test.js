@@ -215,3 +215,65 @@ test('membership cards and certificates print the fixed identity', () => {
   assert.match(certificate, /Founder and President/);
   assert.match(certificate, /administratorSignatureUrl/);
 });
+
+test('payment methods are configurable, scoped and never invented by a page', () => {
+  const methods = browser.paymentMethodsFromSettings({
+    mobileMoneyNumber: '+268 7600 0000',
+    accountName: 'PRAYER DOME',
+    network: 'MTN Mobile Money'
+  });
+  assert.equal(methods.length, 1, 'a legacy single-number document must still load');
+  assert.equal(methods[0].type, 'mobile-money');
+  assert.equal(methods[0].scope, 'both');
+  assert.equal(browser.usablePaymentMethod(methods[0]), true);
+
+  const scoped = browser.paymentMethodsFromSettings({
+    methods: [
+      { id: 'momo', type: 'mobile-money', label: 'MTN MoMo', number: '+26876000000', accountName: 'PRAYER DOME', enabled: true, scope: 'give', order: 2 },
+      { id: 'bank', type: 'bank-transfer', label: 'Standard Bank', bankName: 'Standard Bank', accountNumber: '123456789', enabled: true, scope: 'support', order: 1 },
+      { id: 'draft', type: 'mobile-money', label: 'Draft', number: '+268', enabled: false, scope: 'both', order: 3 }
+    ]
+  });
+  assert.deepEqual(scoped.map((method) => method.id), ['bank', 'momo', 'draft'], 'order must be respected');
+  assert.deepEqual(browser.paymentMethodsFor({ methods: scoped }, 'give').map((method) => method.id), ['momo']);
+  assert.deepEqual(browser.paymentMethodsFor({ methods: scoped }, 'support').map((method) => method.id), ['bank']);
+  assert.equal(browser.usablePaymentMethod({ type: 'bank-transfer', bankName: 'Standard Bank', accountNumber: '', enabled: true }), false);
+  assert.equal(browser.usablePaymentMethod({ type: 'cash-office', instructions: 'Visit the office', enabled: true }), true);
+
+  const billing = read('functions/billing.js');
+  assert.match(billing, /PAYMENT_METHOD_TYPES = \['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp'\]/);
+  assert.match(billing, /function normalizePaymentMethod/);
+  assert.match(billing, /function publicPaymentSettings/);
+  assert.match(billing, /function requirePaymentSettings\(settings, methodId, scope\)/);
+  assert.match(billing, /methods,\n\s*primaryMethodId/, 'saved settings must persist the methods list and its default');
+
+  const give = read('give.html');
+  assert.match(give, /payment\.settings\.public/);
+  assert.match(give, /paymentMethodsFor\(settings, 'give'\)/);
+  assert.match(give, /methodId: method\.id/);
+  assert.match(give, /method: method\.label/);
+  assert.doesNotMatch(give, /waPaymentNumber|momoPaymentNumber|momoAmt|waAmt/, 'no card may read a hardcoded element');
+  assert.doesNotMatch(give, />\s*MTN MoMo\s*</, 'the method name must come from finance settings');
+
+  const support = read('support.html');
+  assert.match(support, /data-support-method/);
+  assert.match(support, /methodId: selectedSupportMethodId/);
+  assert.match(support, /paymentMethodsFor\(row, 'support'\)/);
+
+  const admin = read('admin.html');
+  const adminJs = read('assets/pd-billing-admin.js');
+  assert.match(admin, /paymentMethodRows/);
+  assert.match(adminJs, /addPaymentMethodRow/);
+  assert.match(adminJs, /payment\.settings\.save', \{ methods: methods \}/);
+  assert.match(adminJs, /paymentMethodsFromSettings/);
+});
+
+test('the give page records the payment method the donor actually used', () => {
+  const give = read('give.html');
+  assert.match(give, /methodType: method\.type/);
+  assert.match(give, /payTo: givingMethodNumber\(method\)/);
+  assert.match(give, /currency: currency/);
+  assert.match(give, /status: 'pending'/);
+  assert.match(give, /Finance has not configured a payment method yet/);
+  assert.match(give, /do not send money to any number that is not shown here/);
+});

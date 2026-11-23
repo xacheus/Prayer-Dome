@@ -41,17 +41,95 @@
     member: 'MEMBERSHIP'
   };
 
+  // Channel names only. Every number, bank account and label comes from
+  // settings/payments; this list just keeps older callers from guessing.
   var PAYMENT_METHODS = [
-    { id: 'mobile-money', label: 'Mobile Money', hint: 'MTN Mobile Money · PRAYER DOME GROUP' }
+    { id: 'mobile-money', label: 'Mobile Money' },
+    { id: 'bank-transfer', label: 'Bank transfer' },
+    { id: 'cash-office', label: 'Cash at the ministry office' },
+    { id: 'whatsapp', label: 'WhatsApp' }
   ];
 
   /* The official number is configuration, never source code. Checkout receives
      it from settings/payments through the billing callable, and the support
      page shows the same value from the authorised finance settings. */
-  var PAYMENT_INSTRUCTIONS = 'Send the exact amount by Mobile Money to the official PRAYER DOME ' +
-    'number shown at checkout. Put the payment reference in the mobile-money reference field, then ' +
-    'upload a clear receipt. A plan is activated only after the finance team checks the payment ' +
-    'against the ministry account.';
+  var PAYMENT_INSTRUCTIONS = 'Send the exact amount using the official PRAYER DOME payment ' +
+    'method shown at checkout. Put the payment reference on the payment, then upload a clear ' +
+    'receipt. A plan is activated only after the finance team checks the payment against the ' +
+    'ministry account.';
+
+  var PAYMENT_METHOD_TYPE_LABELS = {
+    'mobile-money': 'Mobile Money',
+    'bank-transfer': 'Bank transfer',
+    'cash-office': 'Cash at the ministry office',
+    whatsapp: 'WhatsApp'
+  };
+
+  function slug(value) {
+    return String(value == null ? '' : value)
+      .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  /* The admin console, give page and support page all receive the same
+     settings/payments shape. Older documents only hold one Mobile Money
+     number, so they are lifted into a single-method list here instead of
+     every page growing its own fallback. */
+  function normalizePaymentMethod(value, index) {
+    if (!value || typeof value !== 'object') return null;
+    var type = slug(value.type) || 'mobile-money';
+    if (!PAYMENT_METHOD_TYPE_LABELS[type]) type = 'mobile-money';
+    return {
+      id: slug(value.id) || ('method-' + (Number(index) + 1)),
+      type: type,
+      label: String(value.label || '').trim() || PAYMENT_METHOD_TYPE_LABELS[type],
+      enabled: value.enabled !== false,
+      scope: ['both', 'give', 'support'].indexOf(String(value.scope)) !== -1 ? String(value.scope) : 'both',
+      order: Number(value.order) || (Number(index) + 1),
+      number: String(value.number || '').trim(),
+      accountNumber: String(value.accountNumber || '').trim(),
+      accountName: String(value.accountName || '').trim(),
+      network: String(value.network || '').trim(),
+      bankName: String(value.bankName || '').trim(),
+      branchCode: String(value.branchCode || '').trim(),
+      swift: String(value.swift || '').trim(),
+      currency: String(value.currency || 'SZL').toUpperCase(),
+      instructions: String(value.instructions || '').trim()
+    };
+  }
+
+  function usablePaymentMethod(method) {
+    if (!method || method.enabled === false) return false;
+    if (method.type === 'bank-transfer') return Boolean(method.bankName && method.accountNumber);
+    if (method.type === 'cash-office') return Boolean(method.instructions || method.accountName);
+    return String(method.number || '').replace(/\D/g, '').length >= 9;
+  }
+
+  function paymentMethodsFromSettings(settings) {
+    var row = settings || {};
+    var methods = Array.isArray(row.methods) ? row.methods.map(normalizePaymentMethod).filter(Boolean) : [];
+    const legacyNumber = String(row.mobileMoneyNumber || row.number || '').trim();
+    if (!methods.length && legacyNumber) {
+      methods = [normalizePaymentMethod({
+        id: 'official-mobile-money',
+        type: 'mobile-money',
+        label: String(row.network || '').trim() || PAYMENT_METHOD_TYPE_LABELS['mobile-money'],
+        enabled: true,
+        scope: 'both',
+        order: 1,
+        number: legacyNumber,
+        accountName: row.accountName,
+        network: row.network,
+        instructions: row.instructions
+      }, 0)];
+    }
+    return methods.sort(function (a, b) { return (a.order - b.order) || a.label.localeCompare(b.label); });
+  }
+
+  function paymentMethodsFor(settings, scope) {
+    return paymentMethodsFromSettings(settings)
+      .filter(usablePaymentMethod)
+      .filter(function (method) { return !scope || method.scope === 'both' || method.scope === scope; });
+  }
 
   /* Prices are USD per month. Every plan is a monthly subscription inside a
      12-month support programme. Keep these values in step with
@@ -510,6 +588,11 @@
     DEPARTMENT_LABELS: DEPARTMENT_LABELS,
     PAYMENT_METHODS: PAYMENT_METHODS,
     PAYMENT_INSTRUCTIONS: PAYMENT_INSTRUCTIONS,
+    PAYMENT_METHOD_TYPE_LABELS: PAYMENT_METHOD_TYPE_LABELS,
+    normalizePaymentMethod: normalizePaymentMethod,
+    usablePaymentMethod: usablePaymentMethod,
+    paymentMethodsFromSettings: paymentMethodsFromSettings,
+    paymentMethodsFor: paymentMethodsFor,
     PLANS: PLANS,
     SUPPORT_PROGRAMMES: SUPPORT_PROGRAMMES,
     PROGRAM_ORDER: PROGRAM_ORDER,

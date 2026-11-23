@@ -124,6 +124,10 @@ assert.match(give, /reference:\s*reference/, 'a payment reference must be stored
 assert.match(give, /PDG-/, 'payment reference must be a real, quotable format');
 assert.match(give, /PRAYER DOME — giving recorded/, 'confirmation must identify PRAYER DOME');
 assert.doesNotMatch(give, /moment\(/, 'give page must not call the unloaded moment library');
+assert.match(give, /payment\.settings\.public/, 'give page must read finance settings at runtime');
+assert.match(give, /paymentMethodsFor\(settings, 'give'\)/, 'give page must show only enabled giving methods');
+assert.match(give, /methodId: method\.id/, 'the offering must name the configured method used');
+assert.doesNotMatch(give, /waPaymentNumber|momoPaymentNumber|momoAmt|waAmt/, 'no hardcoded payment card elements');
 
 // ---- resources -------------------------------------------------------------
 assert.match(resources, /PD_RESOURCES_OWNED_BY_PAGE = true/, 'page must own the resource grid');
