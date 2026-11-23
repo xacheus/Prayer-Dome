@@ -219,12 +219,35 @@ mobile carrier NAT often need a TURN relay.
 
 Do **not** put TURN credentials in `assets/pd-live-webrtc.js`. Instead configure
 a server-side secret; `/api/live-ice` mints a short-lived credential and the page
-consumes it:
+consumes it.
+
+### Cloudflare Realtime TURN (recommended)
+
+In the Cloudflare dashboard open **Realtime → TURN Server Apps → Prayer Dome**.
+Copy the **TURN Token ID** and create/copy the **API Token**. The API token is a
+secret, so it belongs only in the server environment — never in Git, chat or a
+browser file.
+
+```sh
+vercel env add TURN_PROVIDER production        # cloudflare
+vercel env add TURN_KEY_ID production          # Cloudflare TURN Token ID
+vercel env add TURN_KEY_API_TOKEN production   # Cloudflare API Token (secret)
+```
+
+The endpoint exchanges those for short-lived credentials at
+`https://rtc.live.cloudflare.com/v1/turn/keys/<TURN_KEY_ID>/credentials/generate-ice-servers`.
+The browser receives only the normalised `iceServers` list (Cloudflare STUN/TURN
+URLs plus an expiring username/credential), never the TURN key or API token.
+
+If a Cloudflare key or token is exposed, revoke/rotate it in the Cloudflare
+dashboard before redeploying.
+
+### Metered or a custom relay
 
 ```sh
 vercel env add METERED_TURN_API_KEY production
 vercel env add METERED_TURN_SUBDOMAIN production  # optional, default prayerdome
-# OR a provider that returns an ICE-server array:
+# OR a provider that returns an ICE-server array or { iceServers: [...] }:
 vercel env add TURN_CREDENTIALS_URL production
 vercel env add TURN_API_KEY production            # sent as a Bearer token
 ```

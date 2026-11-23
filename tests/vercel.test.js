@@ -185,6 +185,57 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
     !/credential:\s*['"][^'"]+['"]/.test(fs.readFileSync(path.join(ROOT, 'assets/pd-live-webrtc.js'), 'utf8')) &&
     !/turn:[^'"]*metered\.ca/.test(fs.readFileSync(path.join(ROOT, 'assets/pd-live-webrtc.js'), 'utf8')));
 
+  // Cloudflare's TURN key is server-only. This proves the endpoint mints a
+  // short-lived credential and never returns the key or API token itself.
+  const savedFetch = global.fetch;
+  const savedEnv = {
+    TURN_PROVIDER: process.env.TURN_PROVIDER,
+    TURN_KEY_ID: process.env.TURN_KEY_ID,
+    TURN_KEY_API_TOKEN: process.env.TURN_KEY_API_TOKEN,
+    METERED_TURN_API_KEY: process.env.METERED_TURN_API_KEY
+  };
+  let cloudflareRequest = null;
+  process.env.TURN_PROVIDER = 'cloudflare';
+  process.env.TURN_KEY_ID = 'test-key-id-1234567890';
+  process.env.TURN_KEY_API_TOKEN = 'test-api-token-value';
+  delete process.env.METERED_TURN_API_KEY;
+  global.fetch = async (url, options = {}) => {
+    cloudflareRequest = { url: String(url), options };
+    return {
+      ok: true,
+      status: 201,
+      json: async () => ({
+        iceServers: [
+          { urls: ['stun:stun.cloudflare.com:3478'] },
+          {
+            urls: ['turn:turn.cloudflare.com:3478?transport=udp', 'turns:turn.cloudflare.com:443?transport=tcp'],
+            username: 'ephemeral-user',
+            credential: 'ephemeral-credential'
+          }
+        ]
+      })
+    };
+  };
+  const cloudflareIce = await invoke('api/system.js', 'GET', null, { op: 'live-ice' });
+  global.fetch = savedFetch;
+  for (const [name, value] of Object.entries(savedEnv)) {
+    if (value === undefined) delete process.env[name];
+    else process.env[name] = value;
+  }
+  test('/api/live-ice mints Cloudflare TURN credentials server-side',
+    cloudflareIce.status === 200 && cloudflareIce.json.provider === 'cloudflare' &&
+    cloudflareIce.json.relay === true &&
+    cloudflareIce.json.iceServers.some(server =>
+      (Array.isArray(server.urls) ? server.urls : [server.urls]).some(url => /^turns?:/i.test(url))) &&
+    cloudflareRequest && cloudflareRequest.url ===
+      'https://rtc.live.cloudflare.com/v1/turn/keys/test-key-id-1234567890/credentials/generate-ice-servers' &&
+    cloudflareRequest.options.method === 'POST' &&
+    cloudflareRequest.options.headers.Authorization === 'Bearer test-api-token-value' &&
+    cloudflareRequest.options.body === JSON.stringify({ ttl: 3600 }));
+  test('the Cloudflare key and API token never reach the browser payload',
+    !JSON.stringify(cloudflareIce.json).includes('test-api-token-value') &&
+    !JSON.stringify(cloudflareIce.json).includes('test-key-id-1234567890'));
+
   const rejected = await invoke('api/news.js', 'POST');
   test('read-only APIs reject unsupported methods',
     rejected.status === 405 && rejected.headers.allow === 'GET, HEAD');
