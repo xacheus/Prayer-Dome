@@ -48,16 +48,16 @@ assert.doesNotMatch(server, /userId:\s*context\.auth\.uid[^]*return\s*\{[^}]*use
 // ---- card identity and QR --------------------------------------------------
 assert.match(membership, /aspect-ratio:\s*85\.6\s*\/\s*54/, 'card must use CR80 proportions');
 assert.match(membership, /object-fit:\s*cover/, 'portrait must cover its frame');
-assert.match(membership, /object-position:\s*center top/, 'portrait must keep the face at the top');
-assert.match(membership, /S\.K\. MASUKU/, 'founder name must be exact');
+assert.match(membership, /object-position:\s*center 22%/, 'portrait must keep the face in the upper frame');
+assert.match(membership, /S\. K\. MASUKU/, 'founder name must be exact');
 assert.match(membership, /Founder and President/, 'founder role must be present');
 assert.doesNotMatch(membership, /barcodeImg|JsBarcode/, 'barcode must not compete with the QR');
 assert.match(membership, /verify\?ref=/, 'QR must point at a token URL');
 assert.doesNotMatch(membership, /verify\?id=/, 'QR must never expose a raw membership id');
 assert.match(membership, /verify\?ref=[^]*encodeURIComponent/, 'QR token must be encoded');
 assert.match(membership, /addPage\(\[width, height\]/, 'PDF must add exactly a second CR80 page');
-assert.match(membership, /const width = 85\.6;/, 'PDF page width must be CR80');
-assert.match(membership, /const height = 54;/, 'PDF page height must be CR80');
+assert.match(membership, /const width = bleed \? 91\.6 : 85\.6;/, 'PDF page width must be CR80 (or the optional bleed page)');
+assert.match(membership, /const height = bleed \? 60 : 54;/, 'PDF page height must be CR80 (or the optional bleed page)');
 assert.match(membership, /downloadID\('front'\)/, 'front download action missing');
 assert.match(membership, /downloadID\('back'\)/, 'back download action missing');
 assert.match(membership, /@page \{ size: 85\.6mm 54mm; margin: 0; \}/, 'print page must be CR80');
@@ -65,26 +65,52 @@ assert.match(membership, /ensureMyCardCall/, 'card page must ask the server for 
 assert.match(membership, /Secure QR could not be registered/, 'card must explain a missing token');
 assert.match(membership, /\/assets\/qrcode-generator\.js/, 'QR encoder must be bundled, not CDN-only');
 assert.doesNotMatch(membership, /cdn\.jsdelivr\.net\/npm\/qrcode-generator/, 'QR encoder must not depend on a CDN');
+assert.match(membership, /function cardRoleLabel/, 'card must derive a membership category, not print a raw role');
+assert.match(membership, /return 'PASTOR'/, 'pastors must print PASTOR');
+assert.match(membership, /return 'TEAM MANAGEMENT'/, 'church team roles must print TEAM MANAGEMENT');
+assert.match(membership, /return 'MEMBER'/, 'ordinary members must print MEMBER');
+assert.doesNotMatch(membership, /idRole/, 'raw role/department must not leak through the retired idRole field');
+assert.match(server, /_categoryLabel/, 'server must apply the same category rule as the card');
+assert.match(server, /reserveMembershipNumber/, 'membership numbers must be reserved atomically');
+assert.match(rules, /match \/membershipCounters\/\{year\}/, 'number counters must be server-only');
+assert.match(membership, /const width = bleed \? 91\.6 : 85\.6;/, 'PDF width must switch only for optional bleed');
+assert.match(membership, /const height = bleed \? 60 : 54;/, 'PDF height must switch only for optional bleed');
+assert.match(membership, /addPage\(\[width, height\]/, 'the back must be a second page of the same PDF');
+assert.match(membership, /downloadID\('front'\)/, 'front PNG download must stay separate');
+assert.match(membership, /downloadID\('back'\)/, 'back PNG download must stay separate');
+assert.match(membership, /normalizeCardCanvas/, 'exports must be normalised to exact CR80 pixels');
+assert.match(membership, /bleedCardCanvas/, 'optional bleed must not enlarge the card');
+assert.match(membership, /targetWidth \|\| 2568/, 'card export must use the exact CR80 pixel width');
+assert.match(membership, /const innerW = 2568;/, 'bleed must keep the card at 2568 px wide');
+assert.match(membership, /const innerH = 1620;/, 'bleed must keep the card at 1620 px high');
 assert.match(membership, /pd-signature\.png/, 'membership card must use the official signature image');
-assert.match(membership, /S\.K\. MASUKU/, 'membership card must print the authorised founder name');
+assert.match(membership, /S\. K\. MASUKU/, 'membership card must print the authorised founder name');
 assert.match(read('assets/pd-certificate.js'), /pd-signature\.png/, 'certificate must fall back to the official signature');
-assert.match(read('assets/pd-certificate.js'), /S\.K\. MASUKU/, 'certificate must print the authorised founder name');
+assert.match(read('assets/pd-certificate.js'), /S\. K\. MASUKU/, 'certificate must print the authorised founder name');
 assert.ok(fs.existsSync(path.join(ROOT, 'assets/pd-signature.png')), 'signature PNG must ship');
 assert.ok(fs.existsSync(path.join(ROOT, 'assets/pd-signature.svg')), 'signature vector must ship');
 assert.match(read('certificates.html'), /pd-signature\.png/, 'certificate card must show the signature image');
-assert.match(read('certificates.html'), /S\.K\. MASUKU/, 'certificate card must print the authorised founder name');
+assert.match(read('certificates.html'), /S\. K\. MASUKU/, 'certificate card must print the authorised founder name');
 
 // ---- approval creates the issued projection --------------------------------
-assert.match(admin, /window\.issueCardVerification\(uid, false\)/,
+assert.match(admin, /window\.issueCardVerification\(uid, false/,
   'approval must issue the card verification record');
 assert.match(admin, /Repair missing cards/i, 'the card panel must offer a repair action for approved members');
 assert.match(extras, /window\.repairMissingCards = repairMissingCards/, 'the repair action must be exposed to the inline handler');
 assert.match(extras, /membershipVerificationRefs/, 'repair must restore QR pointer documents, not only the card projection');
+assert.match(admin, /signatureFileIsSafe/, 'signature uploads must be validated');
+assert.match(admin, /signatureAuthorityConfirm/, 'signature changes must require an authority attestation');
+assert.match(admin, /readSignatureImage/, 'uploaded signatures must be probed before use');
+assert.match(admin, /signatureAuditNote/, 'the last authorised signature change must be visible');
+assert.match(read('assets/pd-app.js'), /founder\.setLocal\(data\);\s*return data;/, 'signature cache must update only after a successful write');
+assert.match(admin, /await PDApp\.founder\.save\(data\)/, 'signature save must await the secure write');
+assert.match(admin, /Only an authorised administrator may change certificate signatures/, 'signature changes must be admin-gated');
+assert.match(admin, /S\. K\. MASUKU/, 'admin signature identity must use the exact founder name');
 assert.match(admin, /membership_id_changed/, 'sensitive ID changes must be audited');
 assert.match(admin, /already used by another member/, 'duplicate IDs must be rejected');
 assert.match(extras, /memberSnap = await store\.getDoc\(store\.doc\(bridge\.db, 'memberships', uid\)\)/,
   'issuing must work outside the card-panel cache');
-assert.match(server, /Legacy approved member/, 'legacy repair must be described');
+assert.match(server, /not_issued/, 'an approved number without an issued card must resolve to not_issued');
 
 // ---- give page -------------------------------------------------------------
 assert.doesNotMatch(give, /Pastor Zacheus|Simbaya/, 'no individual may be a giving recipient');

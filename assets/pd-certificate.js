@@ -25,12 +25,11 @@
   var SERIF = "Georgia, 'Times New Roman', serif";
   var VERSE = '“He does everything blamelessly.” — Mark 7:37';
   var ORGANISATION = 'PRAYER DOME';
-  var FOUNDER_NAME = 'S.K. MASUKU';
+  var FOUNDER_NAME = 'S. K. MASUKU';
   var FOUNDER_TITLE = 'Founder and President';
   // The founder's official signing mark ships with the site, so a certificate
   // always carries a real signature even before an administrator uploads one.
   var DEFAULT_SIGNATURE_URL = '/assets/pd-signature.png';
-  var ADMIN_DEFAULT_TITLE = 'Authorised Administrator';
 
   var logoPromise = null;
   var sigPromise = null;
@@ -184,9 +183,10 @@
     ctx.fill();
   }
 
-  function seal(ctx, cx, cy) {
+  function seal(ctx, cx, cy, scale) {
     ctx.save();
     ctx.translate(cx, cy);
+    ctx.scale(scale || 1, scale || 1);
     // ribbons
     ctx.fillStyle = NAVY_SOFT;
     ctx.beginPath(); ctx.moveTo(-26, 34); ctx.lineTo(-54, 116); ctx.lineTo(-26, 98); ctx.lineTo(-2, 116); ctx.closePath(); ctx.fill();
@@ -264,38 +264,59 @@
     }
   }
 
-  function drawSignatureBlock(ctx, x, name, title, image) {
+  function drawSignatureBlock(ctx, x, name, title, image, fallbackLabel) {
     ctx.save();
     ctx.textAlign = 'center';
-    var label = name || '';
+    var ruleY = 950;
+    var label = String(name || fallbackLabel || '').trim();
     var imageDrawn = false;
     if (image && image.naturalWidth) {
-      // Sit the ink on the signature rule, the way a signed document does.
-      var sw = 280;
+      // The ink sits on the rule, with its lower edge six pixels above the line
+      // so a descender never collides with the printed name underneath.
+      var sw = 260;
       var sh = (sw * image.naturalHeight) / image.naturalWidth;
-      if (sh > 92) { sh = 92; sw = (sh * image.naturalWidth) / image.naturalHeight; }
-      try { ctx.drawImage(image, x - sw / 2, 992 - sh, sw, sh); imageDrawn = true; } catch (e) { imageDrawn = false; }
+      if (sh > 78) { sh = 78; sw = (sh * image.naturalWidth) / image.naturalHeight; }
+      try { ctx.drawImage(image, x - sw / 2, ruleY - sh - 6, sw, sh); imageDrawn = true; } catch (e) { imageDrawn = false; }
     }
     ctx.strokeStyle = MUTED; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x - 160, 1000); ctx.lineTo(x + 160, 1000); ctx.stroke();
-    if (!imageDrawn && name) {
-      ctx.fillStyle = NAVY;
-      var nameSize = Math.min(24, 330 / Math.max(12, name.length) * 2.0);
-      ctx.font = 'italic 600 ' + Math.max(15, nameSize) + 'px ' + SERIF;
-      ctx.fillText(name, x, 966);
-    }
+    ctx.beginPath(); ctx.moveTo(x - 150, ruleY); ctx.lineTo(x + 150, ruleY); ctx.stroke();
     ctx.fillStyle = MUTED;
     if (label) {
-      var size = Math.min(20, 330 / Math.max(12, label.length) * 2.0);
+      var size = Math.min(19, 300 / Math.max(12, label.length) * 2.0);
       ctx.font = '700 ' + Math.max(12, size) + 'px ' + SERIF;
-      spaced(ctx, label, x, 1028, Math.max(1.2, 4.6 - label.length * 0.08));
+      spaced(ctx, label.toUpperCase(), x, 980, Math.max(1.2, 4.6 - label.length * 0.08));
     }
     ctx.fillStyle = NAVY_SOFT;
-    ctx.font = '600 17px ' + SERIF;
-    ctx.fillText(title || '', x, 1052);
+    ctx.font = '600 16px ' + SERIF;
+    ctx.fillText(title || '', x, 1004);
     ctx.fillStyle = GOLD_DARK;
-    ctx.font = '700 15px ' + SERIF;
-    spaced(ctx, ORGANISATION, x, 1072, 4);
+    ctx.font = '700 13px ' + SERIF;
+    spaced(ctx, ORGANISATION, x, 1028, 4);
+    ctx.restore();
+  }
+
+  function drawMeta(ctx, cx, label, value) {
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.fillStyle = MUTED;
+    ctx.font = '700 14px ' + SERIF;
+    spaced(ctx, label, cx, 758, 3.2);
+    ctx.fillStyle = NAVY;
+    var size = 28;
+    ctx.font = '700 ' + size + 'px ' + SERIF;
+    while (size > 12 && ctx.measureText(String(value)).width > 340) {
+      size -= 1;
+      ctx.font = '700 ' + size + 'px ' + SERIF;
+    }
+    ctx.fillText(String(value), cx, 792);
+    ctx.restore();
+  }
+
+  function drawMetaDivider(ctx, x) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(201, 162, 39, .55)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x, 742); ctx.lineTo(x, 800); ctx.stroke();
     ctx.restore();
   }
 
@@ -339,63 +360,86 @@
 
     ctx.textAlign = 'center';
     ctx.fillStyle = NAVY;
-    ctx.font = "700 76px " + SERIF;
-    ctx.fillText('Certificate of Completion', W / 2, 428);
+    ctx.font = "700 72px " + SERIF;
+    ctx.fillText('Certificate of Completion', W / 2, 420);
 
     // divider
     ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(W / 2 - 250, 462); ctx.lineTo(W / 2 - 24, 462); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(W / 2 + 24, 462); ctx.lineTo(W / 2 + 250, 462); ctx.stroke();
-    diamond(ctx, W / 2, 462, 10, GOLD);
+    ctx.beginPath(); ctx.moveTo(W / 2 - 250, 452); ctx.lineTo(W / 2 - 24, 452); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(W / 2 + 24, 452); ctx.lineTo(W / 2 + 250, 452); ctx.stroke();
+    diamond(ctx, W / 2, 452, 10, GOLD);
 
     ctx.fillStyle = MUTED;
-    ctx.font = "italic 28px " + SERIF;
-    ctx.fillText('This certifies that', W / 2, 522);
+    ctx.font = "italic 27px " + SERIF;
+    ctx.fillText('This certifies that', W / 2, 505);
 
     // recipient name with flourish underline
     var nSize = fitFont(ctx, name, 1100, 64, 'normal', '700');
     ctx.fillStyle = NAVY;
     ctx.font = "700 " + nSize + "px " + SERIF;
-    ctx.fillText(name, W / 2, 592);
+    ctx.fillText(name, W / 2, 566);
     var nw = Math.min(ctx.measureText(name).width + 90, 1180);
     ctx.strokeStyle = GOLD; ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(W / 2 - nw / 2, 620);
-    ctx.quadraticCurveTo(W / 2, 634, W / 2 + nw / 2, 620);
+    ctx.moveTo(W / 2 - nw / 2, 594);
+    ctx.quadraticCurveTo(W / 2, 608, W / 2 + nw / 2, 594);
     ctx.stroke();
 
     ctx.fillStyle = MUTED;
-    ctx.font = "italic 28px " + SERIF;
-    ctx.fillText('has successfully completed', W / 2, 676);
+    ctx.font = "italic 27px " + SERIF;
+    ctx.fillText('has successfully completed', W / 2, 644);
 
-    var cSize = fitFont(ctx, course, 1280, 48, 'normal', '700');
+    var cSize = fitFont(ctx, course, 1280, 46, 'normal', '700');
     ctx.fillStyle = GOLD_DARK;
     ctx.font = "700 " + cSize + "px " + SERIF;
-    ctx.fillText(course, W / 2, 736);
+    ctx.fillText(course, W / 2, 700);
 
-    ctx.fillStyle = MUTED;
-    ctx.font = "25px " + SERIF;
-    ctx.fillText('Score: ' + score + '%   ·   Certificate ID: ' + certId + '   ·   ' + fmtDate(opts.date), W / 2, 788);
+    // A clear, three-part record line: the score, the date and the reference
+    // all have their own space so the certificate number is never buried in a
+    // run-on sentence.
+    drawMeta(ctx, 380, 'FINAL SCORE', score + '%');
+    drawMeta(ctx, 800, 'COMPLETED', fmtDate(opts.date));
+    drawMeta(ctx, 1220, 'CERTIFICATE ID', certId);
+    drawMetaDivider(ctx, 590);
+    drawMetaDivider(ctx, 1010);
 
     ctx.fillStyle = NAVY_SOFT;
-    ctx.font = "italic 27px " + SERIF;
-    ctx.fillText(VERSE, W / 2, 846);
+    ctx.font = "italic 26px " + SERIF;
+    ctx.fillText(VERSE, W / 2, 842);
 
     // Two separate signature areas. The founder block carries the authorised
-    // name (S.K. MASUKU), designation and official signing mark. The right
+    // name (S. K. MASUKU), designation and official signing mark. The right
     // block is the authorised administrator who signed this certificate; it
     // stays blank when no administrator signature is configured rather than
     // inventing one.
     var adminName = (sigMeta && sigMeta.administratorName) ? String(sigMeta.administratorName) : '';
-    var adminTitle = (sigMeta && sigMeta.administratorTitle) ? String(sigMeta.administratorTitle) : ADMIN_DEFAULT_TITLE;
+    var adminTitle = (sigMeta && sigMeta.administratorTitle) ? String(sigMeta.administratorTitle) : 'Prayer Dome Academy';
     drawSignatureBlock(ctx, 400, FOUNDER_NAME, FOUNDER_TITLE, sigImg);
-    drawSignatureBlock(ctx, 1200, adminName, adminName ? adminTitle : ADMIN_DEFAULT_TITLE, adminSigImg);
+    drawSignatureBlock(ctx, 1200, adminName, adminName ? adminTitle : 'Prayer Dome Academy', adminSigImg, 'AUTHORISED ADMINISTRATOR');
 
-    seal(ctx, 800, 946);
+    // The medal sits in its own lower-left field, clear of both signature
+    // blocks and the reference strip.
+    seal(ctx, 165, 930, 0.72);
 
-    ctx.fillStyle = '#a09a8b';
-    ctx.font = "20px " + SERIF;
-    ctx.fillText('Certificate reference: ' + certId + '  ·  Issued by Prayer Dome Academy', W / 2, 1082);
+    ctx.save();
+    ctx.fillStyle = 'rgba(29, 42, 107, .055)';
+    ctx.fillRect(430, 1036, 740, 30);
+    ctx.strokeStyle = GOLD; ctx.lineWidth = 1.5;
+    ctx.strokeRect(430, 1036, 740, 30);
+    ctx.fillStyle = NAVY;
+    ctx.font = "700 18px " + SERIF;
+    ctx.textAlign = 'center';
+    var refText = 'CERTIFICATE REFERENCE  ·  ' + certId;
+    if (ctx.measureText(refText).width > 690) {
+      refText = 'CERT. REF.  ·  ' + certId;
+    }
+    var refSize = 18;
+    while (refSize > 10 && ctx.measureText(refText).width > 690) {
+      refSize -= 1;
+      ctx.font = "700 " + refSize + "px " + SERIF;
+    }
+    ctx.fillText(refText, W / 2, 1057);
+    ctx.restore();
   }
 
   function slug(v) {
@@ -540,11 +584,15 @@
     return Promise.all([loadLogo(), founderWork]).then(function (res) {
       var logo = res[0];
       var founder = res[1] || {};
+      // Render at 2.2× (3520 × 2488) so the A4 PDF lands at about 300 dpi. The
+      // drawing coordinates stay in the 1600 × 1131 design space.
+      var SCALE = 2.2;
       var canvas = document.createElement('canvas');
-      canvas.width = W;
-      canvas.height = H;
+      canvas.width = W * SCALE;
+      canvas.height = H * SCALE;
       var ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('Canvas is not supported in this browser.');
+      if (typeof ctx.scale === 'function') ctx.scale(SCALE, SCALE);
       draw(ctx, opts, logo, founder.meta, founder.img, founder.adminImg);
       return canvas;
     });

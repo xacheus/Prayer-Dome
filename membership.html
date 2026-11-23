@@ -381,7 +381,7 @@
             position: relative;
             overflow: hidden;
             isolation: isolate;
-            width: min(100%, 520px);
+            width: min(100%, 560px);
             aspect-ratio: 85.6 / 54;
             border-radius: 14px;
             padding: clamp(9px, 2.35cqi, 16px);
@@ -448,26 +448,30 @@
 
         .cr80-main {
             display: grid;
-            grid-template-columns: clamp(54px, 17cqi, 82px) minmax(0, 1fr);
-            gap: clamp(7px, 2.2cqi, 13px);
-            align-items: stretch;
+            grid-template-columns: clamp(58px, 17.6cqi, 92px) minmax(0, 1fr);
+            gap: clamp(8px, 2.2cqi, 14px);
+            align-items: center;
             flex: 1;
             min-height: 0;
         }
+        /* A portrait frame, not a stretched column: the photograph keeps its
+           natural 3:4 window and object-fit:cover crops the edges, never the
+           face or body proportions. */
         .cr80-photo {
             width: 100%;
-            height: 100%;
-            min-height: 0;
-            border-radius: 7px;
+            aspect-ratio: 3 / 4;
+            align-self: center;
+            border-radius: 8px;
             border: 2px solid #d4af37;
             overflow: hidden;
             background: rgba(255, 255, 255, .12);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .22);
         }
         .cr80-photo img {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            object-position: center top;
+            object-position: center 22%;
             display: block;
         }
         .cr80-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; justify-content: center; }
@@ -513,10 +517,36 @@
             color: rgba(255, 255, 255, .62);
             font-weight: 800;
         }
+        .cr80-role {
+            display: inline-flex;
+            align-items: center;
+            gap: clamp(4px, 1.2cqi, 7px);
+            align-self: flex-start;
+            max-width: 100%;
+            margin: 3px 0 1px;
+            padding: 3px clamp(5px, 1.5cqi, 8px);
+            border-radius: 5px;
+            background: linear-gradient(135deg, #f6df8a, #d4af37);
+            color: #07244d;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .18);
+            white-space: nowrap;
+        }
+        .cr80-role .cr80-label {
+            color: #3f3515;
+            opacity: 1;
+            font-size: clamp(.32rem, 1.2cqi, .4rem);
+        }
+        .cr80-role strong {
+            font-size: clamp(.46rem, 1.75cqi, .6rem);
+            font-weight: 900;
+            letter-spacing: .055em;
+            line-height: 1.2;
+            white-space: nowrap;
+        }
         .cr80-grid {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 3px 8px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 3px clamp(6px, 2cqi, 11px);
             margin-top: 3px;
             background: rgba(255, 255, 255, .08);
             border: 1px solid rgba(255, 255, 255, .14);
@@ -524,12 +554,12 @@
             padding: clamp(4px, 1.5cqi, 7px);
         }
         .cr80-grid > div { min-width: 0; }
-        .cr80-grid-6 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .cr80-grid .cr80-wide { grid-column: 1 / -1; }
         .cr80-grid span:last-child {
             display: block;
             font-size: clamp(.48rem, 2cqi, .66rem);
             font-weight: 700;
-            line-height: 1.3;
+            line-height: 1.28;
             overflow-wrap: break-word;
             word-break: normal;
             hyphens: manual;
@@ -539,15 +569,22 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            flex-wrap: wrap;
+            gap: 6px;
+            flex-wrap: nowrap;
+            min-width: 0;
             border-top: 1px solid rgba(246, 223, 138, .3);
             padding-top: 3px;
-            font-size: clamp(.36rem, 1.5cqi, .5rem);
-            letter-spacing: .05em;
+            font-size: clamp(.34rem, 1.35cqi, .47rem);
+            letter-spacing: .045em;
             text-transform: uppercase;
             opacity: .94;
-            line-height: 1.25;
+            line-height: 1.2;
+        }
+        .cr80-foot .status-badge {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .cr80-foot .status-badge {
             margin: 0;
@@ -569,17 +606,17 @@
         .cr80-back .cr80-kind { color: #8a6d1a; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .12); letter-spacing: .06em; }
         .cr80-back-body {
             display: grid;
-            grid-template-columns: clamp(52px, 18cqi, 78px) minmax(0, 1fr) minmax(96px, 31cqi);
+            grid-template-columns: clamp(64px, 20cqi, 92px) minmax(0, 1fr) minmax(96px, 31cqi);
             gap: clamp(7px, 2.1cqi, 13px);
             flex: 1;
             min-height: 0;
-            align-items: stretch;
+            align-items: center;
         }
         .cr80-qr {
             background: #fff;
             border: 1px solid rgba(10, 77, 155, .2);
             border-radius: 7px;
-            padding: 5px;
+            padding: 4px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -587,31 +624,51 @@
             gap: 2px;
             text-align: center;
             min-width: 0;
+            align-self: center;
         }
-        .cr80-qr svg, .cr80-qr img { width: 100%; height: auto; max-height: 100%; display: block; }
+        #idQr { width: 100%; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; }
+        .cr80-qr svg, .cr80-qr img { width: 100%; height: 100%; display: block; }
+        .cr80-qr img { object-fit: contain; }
         .cr80-qr svg { shape-rendering: crispEdges; }
         .cr80-qr small { font-size: clamp(.3rem, 1.2cqi, .42rem); color: #5b6b82; letter-spacing: .04em; text-transform: uppercase; line-height: 1.15; }
-        .cr80-qr-fallback { font-size: .38rem; color: #5b6b82; word-break: normal; overflow-wrap: break-word; line-height: 1.25; }
+        .cr80-qr-fallback { font-size: .38rem; color: #5b6b82; word-break: normal; overflow-wrap: break-word; line-height: 1.25; padding: 3px; }
         .cr80-back-info { display: grid; gap: 2px; align-content: center; min-width: 0; }
         .cr80-back-info .cr80-label { color: #5b6b82; opacity: 1; }
-        .cr80-back-info strong { font-size: clamp(.48rem, 2cqi, .67rem); line-height: 1.25; font-weight: 700; overflow-wrap: break-word; word-break: normal; }
-        .cr80-sign { display: flex; flex-direction: column; justify-content: flex-end; text-align: center; min-width: 0; overflow: hidden; }
+        .cr80-back-info strong { font-size: clamp(.46rem, 1.9cqi, .64rem); line-height: 1.22; font-weight: 700; overflow-wrap: break-word; word-break: normal; }
+        .cr80-sign { display: flex; flex-direction: column; justify-content: flex-end; text-align: center; min-width: 0; overflow: hidden; padding-bottom: 2px; }
         .cr80-sign img { max-height: clamp(20px, 7.5cqi, 34px); max-width: 100%; object-fit: contain; margin: 0 auto 1px; }
         .cr80-sign-line { border-top: 1px solid #10233f; margin: 2px 2px 3px; flex: 0 0 auto; }
-        .cr80-sign small { font-size: clamp(.3rem, 1.2cqi, .42rem); letter-spacing: .04em; text-transform: uppercase; color: #5b6b82; line-height: 1.25; }
+        .cr80-sign small { font-size: clamp(.3rem, 1.15cqi, .4rem); letter-spacing: .04em; text-transform: uppercase; color: #5b6b82; line-height: 1.2; }
         .cr80-sign .cr80-sign-name {
             display: block;
-            font-size: clamp(.42rem, 1.7cqi, .56rem);
+            font-size: clamp(.4rem, 1.55cqi, .54rem);
             font-weight: 800;
             color: #10233f;
-            line-height: 1.2;
-            overflow-wrap: break-word;
+            line-height: 1.18;
+            overflow-wrap: normal;
             word-break: normal;
-            hyphens: manual;
-            white-space: normal;
+            white-space: nowrap;
         }
-        .cr80-foot-back { border-top-color: rgba(10, 77, 155, .22); color: #5b6b82; font-size: clamp(.33rem, 1.35cqi, .44rem); text-transform: none; letter-spacing: 0; }
+        .cr80-foot-back {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            border-top-color: rgba(10, 77, 155, .22);
+            color: #5b6b82;
+            font-size: clamp(.31rem, 1.2cqi, .42rem);
+            text-transform: none;
+            letter-spacing: 0;
+            gap: 4px 8px;
+        }
+        .cr80-foot-back span { min-width: 0; }
+        .cr80-foot-back span:last-child { white-space: nowrap; font-weight: 700; color: #0A4D9B; }
         .cr80-note { text-align: center; font-size: .68rem; color: var(--text-sub); margin-top: 10px; letter-spacing: .04em; }
+        .cr80-export-option {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 12px auto 0; max-width: 620px; font-size: .72rem; line-height: 1.45;
+            color: var(--text-sub); text-align: left;
+        }
+        .cr80-export-option input { width: 16px; height: 16px; flex: 0 0 auto; accent-color: var(--accent-gold); }
 
         /* Benefits */
         .benefit-card { background: var(--bg-primary); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--border-color); transition: 0.3s; }
@@ -1261,9 +1318,12 @@
                             <span class="cr80-label">Member name</span>
                             <div class="cr80-name" id="idName">Member Name</div>
                             <div class="cr80-id"><span class="cr80-id-label">Membership no.</span> <span id="idNumber">No Membership</span></div>
-                            <div class="cr80-grid cr80-grid-6">
-                                <div><span class="cr80-label">Category</span><span id="idCategory">Member</span></div>
-                                <div><span class="cr80-label">Department</span><span id="idRole">MEMBERSHIP</span></div>
+                            <div class="cr80-role">
+                                <span class="cr80-label">Category</span>
+                                <strong id="idCategory">MEMBER</strong>
+                            </div>
+                            <div class="cr80-grid">
+                                <div class="cr80-wide"><span class="cr80-label">Department / ministry</span><span id="idDepartment">—</span></div>
                                 <div><span class="cr80-label">Location</span><span id="idBranch">PRAYER DOME</span></div>
                                 <div><span class="cr80-label">Member since</span><span id="idDate">—</span></div>
                                 <div><span class="cr80-label">Issued</span><span id="idIssued">—</span></div>
@@ -1273,8 +1333,8 @@
                     </div>
 
                     <div class="cr80-foot">
-                        <span id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> NO MEMBERSHIP</span>
-                        <span class="cr80-verify">prayerdome.net/verify</span>
+                        <span id="statusBadge" class="status-badge status-pending"><i class="pd-i pd-i-clock"></i> CHECKING VERIFICATION</span>
+                        <span class="cr80-verify" id="cardVerifyHint">prayerdome.net/verify</span>
                     </div>
                 </div>
 
@@ -1306,19 +1366,23 @@
                         <div class="cr80-sign">
                             <img id="idSignature" src="" alt="" hidden>
                             <div class="cr80-sign-line"></div>
-                            <small>Authorized signature</small>
-                            <span class="cr80-sign-name" id="idSignName">S.K. MASUKU</span>
+                            <small>Authorised signature</small>
+                            <span class="cr80-sign-name" id="idSignName">S. K. MASUKU</span>
                             <small id="idSignRole">Founder and President</small>
                         </div>
                     </div>
 
                     <div class="cr80-foot cr80-foot-back">
-                        <span>Official membership identification. Property of PRAYER DOME.</span>
+                        <span>Issued by PRAYER DOME · Property of the ministry</span>
                         <span>prayerdome.net/verify</span>
                     </div>
                 </div>
             </div>
             <p class="cr80-note"><i class="pd-i pd-i-id-card" aria-hidden="true"></i> Standard CR80 card · 85.6 mm × 54 mm · 1.586:1</p>
+            <label class="cr80-export-option" for="cardBleed">
+                <input type="checkbox" id="cardBleed">
+                <span>Add a 3 mm print bleed (91.6 × 60 mm page, with the card still 85.6 × 54 mm in the centre). Leave off for an exact CR80 file.</span>
+            </label>
         </div>
         <div class="card-actions" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 25px;">
             <button class="btn btn-outline" type="button" style="width: auto; padding: 13px 20px;" onclick="downloadID('front')">
@@ -1385,6 +1449,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
     const ensureMyCardCall = httpsCallable(getFunctions(app, 'us-central1'), 'ensureMyCard');
+    const reserveMembershipNumberCall = httpsCallable(getFunctions(app, 'us-central1'), 'reserveMembershipNumber');
 
     /* The card template (church contact block + authorised signatory) is
        managed in Admin → Membership Cards. Cache it per device so the card
@@ -1418,7 +1483,7 @@
             if (!data.signatoryName) return;
             localStorage.setItem('pd_membership_card_template', JSON.stringify({
                 churchName: 'PRAYER DOME',
-                signatoryName: 'S.K. MASUKU',
+                signatoryName: 'S. K. MASUKU',
                 signatoryRole: 'Founder and President — Prayer Dome',
                 phone: data.phone || '',
                 email: data.email || '',
@@ -1439,6 +1504,8 @@
     let uploadedPhotoUrl = null;
     let currentVerification = null;
     let cardVerificationFailed = false;
+    let cardVerificationPending = false;
+    let cardVerificationCached = false;
     let retrievedMembershipData = null;
     let isExistingMember = false;
     let isRegisteringForSelf = true;
@@ -2051,6 +2118,53 @@
         }
     };
 
+    async function allocateMembershipNumber() {
+        try {
+            const response = await reserveMembershipNumberCall();
+            const reserved = response && response.data && response.data.membershipId;
+            if (reserved && /^PD\d{4}\d{4,}$/.test(String(reserved))) return String(reserved);
+            throw new Error('The server did not return a membership number.');
+        } catch (error) {
+            // Keep the portal usable while a functions deployment is rolling
+            // out, but never silently reuse a number: check every candidate
+            // against the memberships collection before saving.
+            console.warn('Server membership-number reservation unavailable:', error && error.message);
+        }
+        const year = new Date().getFullYear();
+        const prefix = `PD${year}`;
+        let next = 1;
+        try {
+            const lastSnap = await getDocs(query(
+                collection(db, 'memberships'),
+                where('membershipId', '>=', prefix),
+                where('membershipId', '<', prefix + '\uf8ff'),
+                orderBy('membershipId', 'desc'),
+                limit(1)
+            ));
+            if (!lastSnap.empty) {
+                const parsed = parseInt(String(lastSnap.docs[0].data().membershipId || '').slice(prefix.length), 10);
+                if (Number.isFinite(parsed)) next = parsed + 1;
+            }
+        } catch (error) {
+            const allMemberships = await getDocs(collection(db, 'memberships'));
+            let maxNum = 0;
+            allMemberships.forEach((entry) => {
+                const value = String(entry.data().membershipId || '');
+                if (value.startsWith(prefix)) {
+                    const num = parseInt(value.slice(prefix.length), 10);
+                    if (Number.isFinite(num) && num > maxNum) maxNum = num;
+                }
+            });
+            next = maxNum + 1;
+        }
+        for (let attempt = 0; attempt < 40; attempt += 1) {
+            const candidate = `${prefix}${String(next + attempt).padStart(4, '0')}`;
+            const clash = await getDocs(query(collection(db, 'memberships'), where('membershipId', '==', candidate), limit(1)));
+            if (clash.empty) return candidate;
+        }
+        throw new Error('Could not allocate a unique membership number. Please try again.');
+    }
+
     window.registerNewMember = async () => {
         if (!currentUser) {
             showToast("Please login to your account first", "error");
@@ -2085,20 +2199,10 @@
                 return;
             }
             
-            // Generate new Membership ID
-            const year = new Date().getFullYear();
-            const prefix = `PD${year}`;
-            let maxNum = 0;
-            const allMemberships = await getDocs(collection(db, "memberships"));
-            allMemberships.forEach(doc => {
-                const data = doc.data();
-                if (data.membershipId && data.membershipId.startsWith(prefix)) {
-                    const num = parseInt(data.membershipId.substring(prefix.length), 10);
-                    if (!isNaN(num) && num > maxNum) maxNum = num;
-                }
-            });
-            
-            const newMemberId = `${prefix}${String(maxNum + 1).padStart(4, '0')}`;
+            // Reserve the next number atomically on the server. The old
+            // "count the collection" approach could hand two registrations the
+            // same number when they arrived together.
+            const newMemberId = await allocateMembershipNumber();
             const signatureData = canvas.toDataURL();
             const photoUrl = uploadedPhotoUrl || "/assets/avatar-default.svg";
             
@@ -2315,7 +2419,7 @@
     function cardTemplate() {
         const defaults = {
             churchName: 'PRAYER DOME',
-            signatoryName: 'S.K. MASUKU',
+            signatoryName: 'S. K. MASUKU',
             signatoryRole: 'Founder and President — Prayer Dome',
             phone: '+268 7658 1804',
             email: 'info@prayerdome.net',
@@ -2343,12 +2447,27 @@
         const nameEl = document.getElementById('idSignName');
         const roleEl = document.getElementById('idSignRole');
         const imageEl = document.getElementById('idSignature');
-        if (nameEl) nameEl.innerText = template.signatoryName;
-        if (roleEl) roleEl.innerText = template.signatoryRole;
+        // The founder's name is fixed. Prefer the signature saved by an
+        // authorised administrator, then the card template, then the bundled
+        // official artwork. Never invent or synthesise a signature.
+        const founderSettings = (window.PDApp && PDApp.founder && PDApp.founder.get) ? PDApp.founder.get() : {};
+        const signature = founderSettings.signatureUrl || template.signature;
+        if (nameEl) nameEl.innerText = 'S. K. MASUKU';
+        if (roleEl) roleEl.innerText = 'Founder and President';
         if (imageEl) {
-            if (template.signature) {
-                imageEl.src = template.signature;
-                imageEl.alt = 'Authorized signature of ' + template.signatoryName;
+            if (signature) {
+                imageEl.onerror = () => {
+                    const fallback = template.signature || '/assets/pd-signature.png';
+                    if (imageEl.dataset.fallbackApplied === '1' || !fallback || imageEl.src.endsWith(fallback)) {
+                        imageEl.hidden = true;
+                        return;
+                    }
+                    imageEl.dataset.fallbackApplied = '1';
+                    imageEl.src = fallback;
+                };
+                imageEl.dataset.fallbackApplied = '';
+                imageEl.src = signature;
+                imageEl.alt = 'Authorised signature of S. K. MASUKU, Founder and President';
                 imageEl.hidden = false;
             } else {
                 imageEl.removeAttribute('src');
@@ -2356,6 +2475,73 @@
                 imageEl.hidden = true;
             }
         }
+    }
+
+    /* The card prints a category, not a job title. Only a pastor is PASTOR;
+       every church administrative or working-team role is TEAM MANAGEMENT;
+       an ordinary member is MEMBER. Never default a person to management. */
+    function cardRoleLabel(data) {
+        const row = data || {};
+        const values = [row.cardRole, row.membershipCategory, row.category, row.membershipType,
+            row.role, row.position, row.office, row.teamRole]
+            .filter((value) => value != null && String(value).trim() !== '')
+            .map((value) => String(value).toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim());
+        if (values.some((value) => /\b(pastor|pastoral|reverend|rev|bishop|apostle|evangelist|clergy)\b/.test(value))) {
+            return 'PASTOR';
+        }
+        if (values.some((value) => /\b(admin|administrator|management|team|staff|worker|finance|worship|usher|secretary|coordinator|leader|leadership|media|sound|choir|department|committee|elder|deacon|volunteer)\b/.test(value))) {
+            return 'TEAM MANAGEMENT';
+        }
+        return 'MEMBER';
+    }
+
+    function cardDepartment(data) {
+        const row = data || {};
+        const direct = String(row.department || row.ministry || '').trim();
+        if (direct) {
+            const key = direct.toLowerCase().replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+            if (['admin', 'administrator', 'management', 'team', 'team management'].includes(key)) return 'Church administration';
+            if (['member', 'membership'].includes(key)) return 'Membership';
+            if (['pastor', 'pastoral'].includes(key)) return 'Pastoral ministry';
+            return direct;
+        }
+        const ministries = Array.isArray(row.ministries)
+            ? row.ministries.filter(Boolean).map(String)
+            : (typeof row.ministries === 'string' ? row.ministries.split(/[,;]+/) : []);
+        if (ministries.length) return ministries.join(' · ');
+        const label = cardRoleLabel(row);
+        if (label === 'PASTOR') return 'Pastoral ministry';
+        if (label === 'TEAM MANAGEMENT') return 'Church administration';
+        return 'Membership';
+    }
+
+    window.__cardRoleLabel = cardRoleLabel;
+    window.__cardDepartment = cardDepartment;
+
+    /* Last successful server-issued verification record. It lets an approved
+       member's card keep its real QR and verified state during a temporary
+       connection failure, without ever pretending a never-verified card is
+       verified. */
+    const CARD_VERIFY_CACHE = 'pd_card_verification_v1:';
+    function cacheCardVerification(memberId, payload) {
+        if (!memberId || !payload || !payload.verificationRef) return;
+        try {
+            localStorage.setItem(CARD_VERIFY_CACHE + memberId, JSON.stringify({
+                savedAt: Date.now(), state: payload.state || '', record: payload.record || {},
+                verificationRef: payload.verificationRef
+            }));
+        } catch (error) { /* storage can be full or disabled */ }
+    }
+    function cachedCardVerification(memberId) {
+        if (!memberId) return null;
+        try {
+            const raw = localStorage.getItem(CARD_VERIFY_CACHE + memberId);
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            if (!parsed || !parsed.verificationRef || !parsed.record) return null;
+            if (Date.now() - Number(parsed.savedAt || 0) > 60 * 24 * 60 * 60 * 1000) return null;
+            return parsed;
+        } catch (error) { return null; }
     }
 
     /* Public verification reference. A card normally carries the membership
@@ -2374,16 +2560,24 @@
         if (!host) return;
         host.innerHTML = '';
         const reference = String((verification && verification.verificationRef) || '').trim();
+        if (!memberId) {
+            host.innerHTML = '<span class="cr80-qr-fallback">A membership number must be issued before this card can carry a verification QR.</span>';
+            return;
+        }
         if (!approved) {
             host.innerHTML = '<span class="cr80-qr-fallback">QR appears after approval</span>';
             return;
         }
         if (!reference) {
-            host.innerHTML = '<span class="cr80-qr-fallback">Secure QR could not be registered. Open this page while online.</span>';
+            host.innerHTML = '<span class="cr80-qr-fallback">' + (cardVerificationPending
+                ? 'Checking the secure verification QR…'
+                : (cardVerificationFailed
+                    ? 'Online check required. Connect once and reopen this page to register the QR.'
+                    : 'Secure QR could not be registered. Open this page while online.')) + '</span>';
             return;
         }
         if (typeof qrcode !== 'function') {
-            host.innerHTML = '<span class="cr80-qr-fallback">prayerdome.net/verify</span>';
+            host.innerHTML = '<span class="cr80-qr-fallback">QR encoder unavailable. Open prayerdome.net/verify and enter this membership number.</span>';
             return;
         }
         try {
@@ -2404,7 +2598,7 @@
                 svg.setAttribute('aria-label', 'Scan to verify this Prayer Dome membership card');
             }
         } catch (error) {
-            host.innerHTML = '<span class="cr80-qr-fallback">prayerdome.net/verify</span>';
+            host.innerHTML = '<span class="cr80-qr-fallback">The QR could not be drawn. Open prayerdome.net/verify and enter this membership number.</span>';
         }
     }
 
@@ -2418,37 +2612,59 @@
         return date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
-    function statusForCard(record, memberStatus) {
+    function statusForCard(record, memberStatus, verificationRef) {
         const cardStatus = String((record && record.status) || '').toLowerCase();
+        const resolved = String((record && record.state) || '').toLowerCase();
         const member = String(memberStatus || '').toLowerCase();
-        if (cardStatus === 'revoked' || cardStatus === 'rejected' || member === 'rejected') return { label: 'REVOKED', className: 'status-badge status-rejected' };
-        if (cardStatus === 'suspended' || member === 'suspended') return { label: 'SUSPENDED', className: 'status-badge status-rejected' };
+        if (resolved === 'revoked' || cardStatus === 'revoked' || cardStatus === 'rejected' || member === 'rejected') return { label: 'REVOKED', className: 'status-badge status-rejected' };
+        if (resolved === 'suspended' || cardStatus === 'suspended' || member === 'suspended') return { label: 'SUSPENDED', className: 'status-badge status-rejected' };
         const expiry = record && (record.expiresAt || record.validUntil);
+        if (resolved === 'expired' || cardStatus === 'expired') return { label: 'EXPIRED', className: 'status-badge status-rejected' };
         if (expiry) {
             const date = typeof expiry.toDate === 'function' ? expiry.toDate() : new Date(expiry.seconds ? expiry.seconds * 1000 : expiry);
-            if (date && date.getTime() < Date.now()) return { label: 'EXPIRED', className: 'status-badge status-rejected' };
+            if (date && !Number.isNaN(date.getTime()) && date.getTime() < Date.now()) return { label: 'EXPIRED', className: 'status-badge status-rejected' };
         }
-        if (cardStatus === 'pending' || member === 'pending') return { label: 'PENDING APPROVAL', className: 'status-badge status-pending' };
-        if (member === 'approved' && (!record || cardStatus === 'active' || cardStatus === 'approved')) return { label: 'VERIFIED & ACTIVE', className: 'status-badge status-approved' };
-        if (member === 'approved') return { label: 'NOT YET ISSUED', className: 'status-badge status-pending' };
-        return { label: member === 'pending' ? 'PENDING APPROVAL' : 'NO MEMBERSHIP', className: 'status-badge status-pending' };
+        if (cardStatus === 'pending' || member === 'pending' || resolved === 'pending') return { label: 'PENDING APPROVAL', className: 'status-badge status-pending' };
+        if (member === 'approved' && record && verificationRef && (resolved === 'active' || cardStatus === 'approved' || cardStatus === 'active')) {
+            return { label: 'VERIFIED & ACTIVE', className: 'status-badge status-approved' };
+        }
+        if (member === 'approved') return { label: 'CARD RECORD NOT ISSUED', className: 'status-badge status-pending' };
+        return { label: member === 'rejected' ? 'APPLICATION REJECTED' : (member === 'pending' ? 'PENDING APPROVAL' : 'NO MEMBERSHIP'), className: 'status-badge status-pending' };
     }
 
     function applyVerificationToCard(memberId, approved) {
         const badge = document.getElementById('statusBadge');
         const member = currentMemberData || {};
-        let state = statusForCard(currentVerification, member.status);
-        if (approved && !currentVerification && cardVerificationFailed) {
-            state = { label: 'VERIFICATION UNAVAILABLE', className: 'status-badge status-pending' };
+        const hasReference = !!(currentVerification && currentVerification.verificationRef);
+        let state = statusForCard(currentVerification, member.status, hasReference);
+        if (approved && !hasReference) {
+            if (cardVerificationPending) {
+                state = { label: 'CHECKING VERIFICATION', className: 'status-badge status-pending' };
+            } else if (cardVerificationFailed) {
+                // The member record is approved, but the issued card projection
+                // could not be read. This is not a "verified" claim and not a
+                // vague failure: say exactly what the member must do.
+                state = { label: 'ONLINE CHECK REQUIRED', className: 'status-badge status-pending' };
+            } else {
+                state = { label: 'CARD RECORD NOT ISSUED', className: 'status-badge status-pending' };
+            }
         }
-        if (badge && memberId) {
-            badge.innerHTML = '<i class="pd-i ' + (state.className.indexOf('approved') >= 0 ? 'pd-i-circle-check' : 'pd-i-circle-x') + '"></i> ' + state.label;
+        if (badge) {
+            const icon = state.className.indexOf('approved') >= 0 ? 'pd-i-circle-check'
+                : state.label === 'CHECKING VERIFICATION' ? 'pd-i-loader-circle pd-i-spin'
+                    : state.label === 'ONLINE CHECK REQUIRED' ? 'pd-i-cloud-off' : 'pd-i-circle-x';
+            badge.innerHTML = '<i class="pd-i ' + icon + '"></i> ' + state.label;
             badge.className = state.className;
+            badge.title = cardVerificationCached
+                ? 'Last verified online; this device is showing its saved record.'
+                : 'Verification is checked against the issued membership record.';
         }
         const issued = document.getElementById('idIssued');
         if (issued) issued.innerText = formatCardDate((currentVerification && (currentVerification.issuedAt || currentVerification.updatedAt)) || member.approvedAt);
         const expiry = document.getElementById('idExpiry');
         if (expiry) expiry.innerText = formatCardDate(currentVerification && (currentVerification.expiresAt || currentVerification.validUntil));
+        const hint = document.getElementById('cardVerifyHint');
+        if (hint) hint.innerText = cardVerificationCached ? 'offline copy · verify online' : 'prayerdome.net/verify';
         renderCardQr(memberId, approved, currentVerification);
     }
 
@@ -2458,78 +2674,88 @@
     async function loadCardVerification(memberId, approved) {
         if (!memberId || !approved) {
             currentVerification = null;
+            cardVerificationFailed = false;
+            cardVerificationPending = false;
+            cardVerificationCached = false;
             applyVerificationToCard(memberId || '', approved);
             return;
         }
         cardVerificationFailed = false;
-        try {
-            const response = await ensureMyCardCall();
-            const data = (response && response.data) || {};
-            currentVerification = Object.assign({}, data.record || {}, {
-                verificationRef: data.verificationRef || (data.record && data.record.verificationRef) || ''
+        cardVerificationPending = true;
+        cardVerificationCached = false;
+        applyVerificationToCard(memberId, approved);
+        let lastError = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+            try {
+                const response = await ensureMyCardCall();
+                const data = (response && response.data) || {};
+                const reference = data.verificationRef || (data.record && data.record.verificationRef) || '';
+                if (!reference) throw new Error('The verification reference was not returned.');
+                currentVerification = Object.assign({}, data.record || {}, {
+                    state: data.state || (data.record && data.record.state) || '',
+                    verificationRef: reference
+                });
+                cacheCardVerification(memberId, {
+                    state: data.state || '', record: data.record || {}, verificationRef: reference
+                });
+                cardVerificationPending = false;
+                applyVerificationToCard(memberId, approved);
+                return;
+            } catch (error) {
+                lastError = error;
+                if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 700));
+            }
+        }
+        const cached = cachedCardVerification(memberId);
+        if (cached) {
+            currentVerification = Object.assign({}, cached.record, {
+                state: cached.state || (cached.record && cached.record.state) || 'active',
+                verificationRef: cached.verificationRef
             });
-        } catch (error) {
-            console.warn('Card verification could not be registered:', error && error.message);
+            cardVerificationCached = true;
+            cardVerificationFailed = false;
+        } else {
+            console.warn('Card verification could not be read:', lastError && lastError.message);
             currentVerification = null;
             cardVerificationFailed = true;
         }
+        cardVerificationPending = false;
         applyVerificationToCard(memberId, approved);
     }
 
     function renderCard(data) {
+        const member = data || {};
         const idPhoto = document.getElementById('idPhoto');
         if (idPhoto) {
             idPhoto.onerror = () => { idPhoto.onerror = null; idPhoto.src = '/assets/avatar-default.svg'; };
-            idPhoto.src = data.photoUrl || data.photoURL || "/assets/avatar-default.svg";
+            idPhoto.src = member.photoUrl || member.photoURL || '/assets/avatar-default.svg';
+            idPhoto.alt = member.fullName ? ('Photograph of ' + member.fullName) : 'Member photograph';
         }
         const idName = document.getElementById('idName');
-        if (idName) idName.innerText = data.fullName || "MEMBER NAME";
-        
-        if (data.membershipId && data.status === 'approved') {
-            const idNumber = document.getElementById('idNumber');
-            if (idNumber) idNumber.innerText = data.membershipId;
-            const statusBadge = document.getElementById('statusBadge');
-            if (statusBadge) {
-                statusBadge.innerHTML = '<i class="pd-i pd-i-circle-check"></i> ACTIVE MEMBER';
-                statusBadge.className = 'status-badge status-approved';
-            }
-        } else if (data.membershipId && data.status === 'pending') {
-            const idNumber = document.getElementById('idNumber');
-            if (idNumber) idNumber.innerText = data.membershipId;
-            const statusBadge = document.getElementById('statusBadge');
-            if (statusBadge) {
-                statusBadge.innerHTML = '<i class="pd-i pd-i-clock"></i> PENDING APPROVAL';
-                statusBadge.className = 'status-badge status-pending';
-            }
-        } else {
-            const rejected = data.status === 'rejected';
-            const idNumber = document.getElementById('idNumber');
-            if (idNumber) idNumber.innerText = rejected ? 'Application rejected' : 'No Membership';
-            const statusBadge = document.getElementById('statusBadge');
-            if (statusBadge) {
-                statusBadge.innerHTML = rejected
-                    ? '<i class="pd-i pd-i-circle-x"></i> APPLICATION REJECTED'
-                    : '<i class="pd-i pd-i-clock"></i> NO MEMBERSHIP';
-                statusBadge.className = rejected ? 'status-badge status-rejected' : 'status-badge status-pending';
-            }
+        if (idName) idName.innerText = member.fullName || 'MEMBER NAME';
+
+        // ----- identity and category -------------------------------------
+        const approved = member.status === 'approved';
+        const memberId = String(member.membershipId || '').trim();
+        const idNumber = document.getElementById('idNumber');
+        if (idNumber) {
+            idNumber.innerText = memberId || (member.status === 'rejected' ? 'Application rejected' : 'Not issued');
         }
-        
-        const idChurch = document.getElementById('idChurch');
-        if (idChurch) idChurch.innerText = 'PRAYER DOME';
-        const branchName = String(data.branch || '').trim();
+        const roleLabel = cardRoleLabel(member);
+        const idCategory = document.getElementById('idCategory');
+        if (idCategory) idCategory.innerText = roleLabel;
+        const idDepartment = document.getElementById('idDepartment');
+        if (idDepartment) idDepartment.innerText = cardDepartment(member);
+
+        const branchName = String(member.branch || '').trim();
         const displayBranch = (!branchName || /freedom/i.test(branchName)) ? 'PRAYER DOME' : branchName;
         const idBranch = document.getElementById('idBranch');
         if (idBranch) idBranch.innerText = displayBranch;
-        const idRole = document.getElementById('idRole');
-        if (idRole) {
-            const department = data.department || data.ministry || data.role || 'Membership';
-            idRole.innerText = window.PDBilling && PDBilling.departmentLabel
-                ? PDBilling.departmentLabel(department)
-                : String(department).toUpperCase();
-        }
-        
+        const idChurch = document.getElementById('idChurch');
+        if (idChurch) idChurch.innerText = 'PRAYER DOME';
+
         let date = null;
-        const rawDate = data.createdAt || data.registrationDate || data.joinedAt;
+        const rawDate = member.createdAt || member.registrationDate || member.joinedAt;
         if (rawDate) {
             if (typeof rawDate.toDate === 'function') date = rawDate.toDate();
             else if (rawDate.seconds) date = new Date(rawDate.seconds * 1000);
@@ -2541,40 +2767,38 @@
             : '—';
 
         // ----- CR80 back face: category, membership line, QR and signature -----
-        const category = data.category || data.membershipType || data.memberCategory ||
-            (data.role ? 'Member' : 'Member');
-        const memberId = data.membershipId || '';
-        const approved = data.status === 'approved';
-
-        const idCategory = document.getElementById('idCategory');
-        if (idCategory) idCategory.innerText = category;
         const backMembership = document.getElementById('idBackMembership');
         if (backMembership) {
             backMembership.innerText = memberId
-                ? memberId + ' · ' + category + (approved ? '' : ' · pending')
+                ? memberId + ' · ' + roleLabel + (approved ? '' : ' · pending')
                 : 'Not issued yet';
         }
         const backId = document.getElementById('idBackId');
         if (backId) backId.innerText = memberId || 'No membership number';
         const backChurch = document.getElementById('idBackChurch');
-        if (backChurch) {
-            backChurch.innerText = 'PRAYER DOME · House of Prayer for All Nations';
-        }
+        if (backChurch) backChurch.innerText = 'PRAYER DOME · House of Prayer for All Nations';
         const backContact = document.getElementById('idBackContact');
         if (backContact) {
             const template = cardTemplate();
             backContact.innerText = [template.phone, template.email].filter(Boolean).join(' · ');
         }
-        renderCardQr(memberId, approved, currentVerification);
         renderAuthorizedSignature();
+        if (window.PDApp && PDApp.founder && PDApp.founder.refresh) {
+            PDApp.founder.refresh().then(() => renderAuthorizedSignature()).catch(() => {});
+        }
+
+        // The server-issued record is the only source of a QR reference and a
+        // VERIFIED badge. Start from "checking" rather than a stale badge.
+        cardVerificationPending = Boolean(memberId && approved);
+        cardVerificationCached = false;
         applyVerificationToCard(memberId, approved);
-        loadCardVerification(memberId, approved);
+        if (memberId && approved) loadCardVerification(memberId, approved);
 
         // Recognition badge (awarded by admin)
         const spotlight = document.getElementById('badgeSpotlight');
         if (spotlight) {
-            const badge = data.badge ? MEMBER_BADGES[data.badge] : null;
-            if (badge && data.status === 'approved') {
+            const badge = member.badge ? MEMBER_BADGES[member.badge] : null;
+            if (badge && approved) {
                 document.getElementById('badgeIcon').innerHTML = '<i class="pd-i ' + badge.icon + '" aria-hidden="true"></i>';
                 document.getElementById('badgeLabel').innerText = badge.label.toUpperCase();
                 spotlight.style.display = 'block';
@@ -2647,11 +2871,15 @@
             });
         }));
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        // Render at least 2568 px wide (the exact CR80 export width), even on
+        // a narrow phone where 4× of a 330 px card would be soft in print.
+        const box = node.getBoundingClientRect ? node.getBoundingClientRect() : { width: 560 };
+        const exportScale = Math.min(8, Math.max(4, 2568 / Math.max(1, box.width || 560)));
         return html2canvas(node, {
             useCORS: true,
             allowTaint: false,
             imageTimeout: 8000,
-            scale: 4,
+            scale: exportScale,
             backgroundColor: '#ffffff',
             logging: false,
             onclone: (doc) => {
@@ -2668,6 +2896,62 @@
         document.body.appendChild(link);
         link.click();
         link.remove();
+    }
+
+    /* html2canvas can be off by a pixel or two depending on the device. Put
+       every face on an exact CR80 canvas before export: cover-crop only the
+       outer edge, never stretch the photograph or the card text. */
+    function normalizeCardCanvas(source, targetWidth) {
+        // 2568 × 1620 is exactly 85.6 : 54 with whole pixels, so the CR80
+        // PDF never has to scale one axis to fit.
+        const width = targetWidth || 2568;
+        const height = Math.round(width * 54 / 85.6);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        const sw = source.width;
+        const sh = source.height;
+        const targetRatio = width / height;
+        let sx = 0, sy = 0, cropW = sw, cropH = sh;
+        if (sw / sh > targetRatio) { cropW = sh * targetRatio; sx = (sw - cropW) / 2; }
+        else { cropH = sw / targetRatio; sy = (sh - cropH) / 2; }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(source, sx, sy, cropW, cropH, 0, 0, width, height);
+        return canvas;
+    }
+
+    function bleedCardCanvas(card) {
+        // 85.6 × 54 mm card inside a 91.6 × 60 mm page. The card is not
+        // enlarged: the extra area is an edge extension for the trimmer.
+        // 2748 × 1800 is exactly 91.6 : 60; the card sits at 2568 × 1620 in
+        // the centre with 90 px (3 mm at 300 dpi) on every edge.
+        const width = 2748;
+        const height = 1800;
+        const innerW = 2568;
+        const innerH = 1620;
+        const x = Math.round((width - innerW) / 2);
+        const y = Math.round((height - innerH) / 2);
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        // A slightly enlarged copy fills the bleed; the exact-size card is drawn
+        // on top, so the visible card remains 85.6 × 54 mm.
+        ctx.drawImage(card, 0, 0, card.width, card.height, 0, 0, width, height);
+        ctx.drawImage(card, 0, 0, card.width, card.height, x, y, innerW, innerH);
+        return canvas;
+    }
+
+    function exportCardCanvas(source) {
+        const bleed = !!(document.getElementById('cardBleed') || {}).checked;
+        const exact = normalizeCardCanvas(source);
+        return bleed ? bleedCardCanvas(exact) : exact;
     }
 
     function combinedSheet(canvases) {
@@ -2707,20 +2991,21 @@
         const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
         const baseName = `PrayerDome-ID-${currentMemberData?.membershipId || 'Card'}-${stamp}`;
         try {
+            const bleed = !!(document.getElementById('cardBleed') || {}).checked;
             if (wantsSingle) {
-                const canvas = await captureCardFace(face);
-                downloadDataUrl(canvas.toDataURL('image/png'), `${baseName}-${format}.png`);
+                const canvas = exportCardCanvas(await captureCardFace(face));
+                downloadDataUrl(canvas.toDataURL('image/png'), `${baseName}-${format}${bleed ? '-bleed' : ''}.png`);
                 hideLoading();
                 showToast(`Membership card ${format} saved as PNG`, "success");
                 return;
             }
 
-            const canvases = [await captureCardFace(front)];
-            if (back) canvases.push(await captureCardFace(back));
+            const canvases = [exportCardCanvas(await captureCardFace(front))];
+            if (back) canvases.push(exportCardCanvas(await captureCardFace(back)));
 
             if (format === 'png') {
                 const sheet = combinedSheet(canvases);
-                downloadDataUrl(sheet.toDataURL('image/png'), `${baseName}.png`);
+                downloadDataUrl(sheet.toDataURL('image/png'), `${baseName}${bleed ? '-bleed' : ''}.png`);
                 hideLoading();
                 showToast("Membership card saved — front and back", "success");
                 return;
@@ -2729,20 +3014,28 @@
             const jsPDFClass = window.jspdf ? window.jspdf.jsPDF : (window.jsPDF || null);
             if (!jsPDFClass) {
                 const sheet = combinedSheet(canvases);
-                downloadDataUrl(sheet.toDataURL('image/png'), `${baseName}.png`);
+                downloadDataUrl(sheet.toDataURL('image/png'), `${baseName}${bleed ? '-bleed' : ''}.png`);
                 hideLoading();
                 showToast("PDF library unavailable — saved a high-quality image instead", "info");
                 return;
             }
-            const width = 85.6;
-            const height = 54;
+            const width = bleed ? 91.6 : 85.6;
+            const height = bleed ? 60 : 54;
             const pdf = new jsPDFClass({ orientation: 'landscape', unit: 'mm', format: [width, height], compress: true });
+            if (pdf.setProperties) {
+                pdf.setProperties({
+                    title: 'Prayer Dome membership card ' + (currentMemberData?.membershipId || ''),
+                    subject: 'Official Prayer Dome membership identification',
+                    author: 'Prayer Dome Ministries',
+                    creator: 'Prayer Dome membership portal'
+                });
+            }
             pdf.addImage(canvases[0].toDataURL('image/png'), 'PNG', 0, 0, width, height, undefined, 'FAST');
             if (canvases[1]) {
                 pdf.addPage([width, height], 'landscape');
                 pdf.addImage(canvases[1].toDataURL('image/png'), 'PNG', 0, 0, width, height, undefined, 'FAST');
             }
-            pdf.save(`${baseName}.pdf`);
+            pdf.save(`${baseName}${bleed ? '-bleed' : ''}.pdf`);
             hideLoading();
             showToast("Complete ID downloaded — two CR80 pages", "success");
         } catch (err) {

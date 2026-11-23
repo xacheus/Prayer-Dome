@@ -2745,7 +2745,7 @@
     get: function () {
       var local = founder.getLocal();
       if (local && (local.signatureUrl || local.founderName || local.administratorSignatureUrl)) {
-        local.founderName = 'S.K. MASUKU';
+        local.founderName = 'S. K. MASUKU';
         local.founderTitle = 'Founder and President';
         local.url = local.signatureUrl || local.url || '';
         return local;
@@ -2754,7 +2754,7 @@
       if (inj && (inj.signatureUrl || inj.founderName)) return inj;
       return {
         signatureUrl: '',
-        founderName: 'S.K. MASUKU',
+        founderName: 'S. K. MASUKU',
         founderTitle: 'Founder and President',
         administratorName: '',
         administratorTitle: 'Authorised Administrator',
@@ -2777,24 +2777,32 @@
       } catch (e) { return Promise.resolve(null); }
     },
     save: function (data) {
-      founder.setLocal(data);
-      if (fb && fb.doc && fb.setDoc) {
-        try {
-          var ref = fb.doc(fb.db, 'settings', 'founder');
-          fb.setDoc(ref, {
-            founderName: data.founderName || 'S.K. MASUKU',
-            founderTitle: data.founderTitle || 'Founder and President',
-            signatureUrl: data.signatureUrl || '',
-            administratorName: data.administratorName || '',
-            administratorTitle: data.administratorTitle || 'Authorised Administrator',
-            administratorSignatureUrl: data.administratorSignatureUrl || '',
-            organization: 'PRAYER DOME',
-            updatedAt: new Date().toISOString(),
-            updatedBy: (fb.auth && fb.auth.currentUser && fb.auth.currentUser.email) || ''
-          }, { merge: true }).catch(function () {});
-        } catch (e) {}
+      if (!(fb && fb.doc && fb.setDoc)) {
+        founder.setLocal(data);
+        return Promise.resolve(data);
       }
-      return data;
+      try {
+        var ref = fb.doc(fb.db, 'settings', 'founder');
+        var payload = {
+          founderName: 'S. K. MASUKU',
+          founderTitle: 'Founder and President',
+          signatureUrl: data.signatureUrl || '',
+          administratorName: data.administratorName || '',
+          administratorTitle: data.administratorTitle || 'Authorised Administrator',
+          administratorSignatureUrl: data.administratorSignatureUrl || '',
+          organization: 'PRAYER DOME',
+          updatedAt: new Date().toISOString(),
+          updatedBy: (fb.auth && fb.auth.currentUser && fb.auth.currentUser.email) || ''
+        };
+        // Surface a rejected write to the admin UI instead of claiming the
+        // signature was saved when Firestore refused it.
+        return fb.setDoc(ref, payload, { merge: true }).then(function () {
+          founder.setLocal(data);
+          return data;
+        });
+      } catch (e) {
+        return Promise.reject(e);
+      }
     },
     loadFounderSignature: function () {
       // Called by the certificate renderer: resolve the best-known signature
