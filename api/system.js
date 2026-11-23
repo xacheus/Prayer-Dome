@@ -82,6 +82,18 @@ function iceServerList(value) {
   });
 }
 
+// Metered returns an array, Cloudflare wraps the same shape in {"iceServers": [...]}.
+// Accept either, plus a single object, without passing unknown fields to the browser.
+function iceServersFrom(value) {
+  if (Array.isArray(value)) return iceServerList(value);
+  if (value && value.iceServers) {
+    return Array.isArray(value.iceServers)
+      ? iceServerList(value.iceServers)
+      : iceServerList([value.iceServers]);
+  }
+  return [];
+}
+
 async function liveIce(req, res) {
   var method = (req && req.method) || 'GET';
   if (method !== 'GET' && method !== 'HEAD') {
@@ -93,6 +105,9 @@ async function liveIce(req, res) {
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' }
   ];
+  var cloudflareKeyId = (process.env.TURN_KEY_ID || process.env.CLOUDFLARE_TURN_KEY_ID || '').trim();
+  var cloudflareToken = (process.env.TURN_KEY_API_TOKEN || process.env.CLOUDFLARE_TURN_API_TOKEN || '').trim();
+  var provider = String(process.env.TURN_PROVIDER || '').trim().toLowerCase();
   var key = process.env.METERED_TURN_API_KEY || process.env.TURN_API_KEY || '';
   var subdomain = process.env.METERED_TURN_SUBDOMAIN || 'prayerdome';
   var endpoint = process.env.TURN_CREDENTIALS_URL || '';
@@ -102,8 +117,52 @@ async function liveIce(req, res) {
 
   var iceServers = stun;
   var relay = false;
+  var providerUsed = 'none';
   var warning = 'Relay not configured; direct WebRTC only.';
-  if (endpoint) {
+  var cloudflareConfigured = !!(cloudflareKeyId && cloudflareToken);
+  if (provider === 'cloudflare' || (!provider && cloudflareConfigured)) {
+    providerUsed = 'cloudflare';
+    if (!cloudflareConfigured) {
+      warning = 'Cloudflare TURN is selected but its key ID or API token is missing; direct WebRTC only.';
+    } else if (!/^[A-Za-z0-9_-]{8,128}$/.test(cloudflareKeyId)) {
+      // Never interpolate an unvalidated key into the provider URL.
+      warning = 'Cloudflare TURN key ID has an unexpected format; direct WebRTC only.';
+    } else {
+      try {
+        var cfResponse = await fetch(
+          'https://rtc.live.cloudflare.com/v1/turn/keys/' + encodeURIComponent(cloudflareKeyId) + '/credentials/generate-ice-servers',
+          {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + cloudflareToken,
+              'Content-Type': 'application/json',
+              Accept: 'application/json'
+            },
+            body: JSON.stringify({ ttl: 3600 }),
+            cache: 'no-store'
+          }
+        );
+        if (cfResponse.ok) {
+          var cfMinted = iceServersFrom(await cfResponse.json());
+          if (cfMinted.length) {
+            iceServers = cfMinted;
+            relay = cfMinted.some(function (server) {
+              var urls = Array.isArray(server.urls) ? server.urls : [server.urls];
+              return urls.some(function (url) { return /^turns?:/i.test(url); });
+            });
+            warning = relay ? null : 'Cloudflare returned no TURN URL; direct WebRTC only.';
+          } else {
+            warning = 'Cloudflare returned no usable ICE servers; direct WebRTC only.';
+          }
+        } else {
+          warning = 'Cloudflare TURN did not issue credentials (HTTP ' + cfResponse.status + '); direct WebRTC only.';
+        }
+      } catch (error) {
+        warning = 'Cloudflare TURN is unreachable; direct WebRTC only.';
+      }
+    }
+  } else if (endpoint) {
+    providerUsed = key ? 'metered' : 'custom';
     try {
       var headers = { Accept: 'application/json' };
       if (process.env.TURN_API_KEY && !process.env.METERED_TURN_API_KEY) {
@@ -111,7 +170,7 @@ async function liveIce(req, res) {
       }
       var response = await fetch(endpoint, { headers: headers, cache: 'no-store' });
       if (response.ok) {
-        var minted = iceServerList(await response.json());
+        var minted = iceServersFrom(await response.json());
         if (minted.length) {
           iceServers = minted;
           relay = minted.some(function (server) {
@@ -130,15 +189,17 @@ async function liveIce(req, res) {
 
   var payload = {
     ok: true,
+    provider: providerUsed,
     relay: relay,
     iceServers: iceServers,
-    expiresInSeconds: 600,
+    expiresInSeconds: 3600,
     warning: warning
   };
   if (method === 'HEAD') return sendJson(res, 200, {}, { 'Cache-Control': 'no-store' });
   return sendJson(res, 200, payload, {
-    'Cache-Control': 'private, max-age=300',
-    'X-PD-Relay': relay ? 'turn' : 'stun'
+    'Cache-Control': 'no-store',
+    'X-PD-Relay': relay ? 'turn' : 'stun',
+    'X-PD-Turn-Provider': providerUsed
   });
 }
 

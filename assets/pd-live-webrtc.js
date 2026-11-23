@@ -27,8 +27,8 @@
     var MAX_WEBRTC_VIEWERS = 20;          // soft cap on mesh viewers (quality adapts below it)
     // Connectivity: STUN alone fails for viewers behind symmetric NAT — very
     // common on mobile carrier networks. A TURN relay is what makes
-    // "viewer can actually watch the admin" true in the real world. The relay
-    // list below can be overridden by window.PD_LIVE_SERVER.iceServers.
+    // "viewer can actually watch the admin" true in the real world, and a
+    // media-server config can still override ICE via PD_LIVE_SERVER.
     // Public STUN is enough to discover a route on most home networks. TURN
     // credentials are *never* committed to the page: /api/live-ice mints a
     // short-lived relay credential on the server, and this file only consumes
@@ -40,18 +40,28 @@
         { urls: 'stun:stun2.l.google.com:19302' }
     ];
     var iceServersPromise = null;
+    var iceServersExpireAt = 0;
     function loadIceServers() {
-        if (iceServersPromise) return iceServersPromise;
+        // Re-mint before the server-issued lifetime ends. A service can easily
+        // outlast one credential, and a late viewer must still get a working
+        // relay instead of a cached credential that already expired.
+        if (iceServersPromise && Date.now() < iceServersExpireAt) return iceServersPromise;
+        iceServersExpireAt = Date.now() + 60 * 1000;
         iceServersPromise = fetch('/api/live-ice', { cache: 'no-store' })
             .then(function (res) { return res.ok ? res.json() : null; })
             .then(function (payload) {
+                var ttl = Number(payload && payload.expiresInSeconds);
+                iceServersExpireAt = Date.now() + (isFinite(ttl) && ttl > 60 ? ttl : 600) * 1000 - 60 * 1000;
                 var list = payload && Array.isArray(payload.iceServers) ? payload.iceServers : [];
                 list = list.filter(function (server) {
                     return server && (Array.isArray(server.urls) || typeof server.urls === 'string');
                 });
                 return list.length ? list : ICE_SERVERS;
             })
-            .catch(function () { return ICE_SERVERS; });
+            .catch(function () {
+                iceServersExpireAt = 0;
+                return ICE_SERVERS;
+            });
         return iceServersPromise;
     }
 
