@@ -905,8 +905,12 @@
         try { added.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (error) { added.scrollIntoView(); }
       }
       const label = added.querySelector('[data-field="label"]');
-      if (label && typeof label.focus === 'function') label.focus({ preventScroll: true });
+      if (label && typeof label.focus === 'function') {
+        try { label.focus({ preventScroll: true }); } catch (error) { label.focus(); }
+      }
     }
+    const status = document.getElementById('paySettingsStatus');
+    if (status) status.textContent = 'New method added — not saved yet. Fill in its details, keep it enabled, then press Save payment methods.';
     if (typeof window.toast === 'function') window.toast('New payment method added. Fill in the details, keep it enabled, then save.');
   };
 
@@ -1027,6 +1031,8 @@
       window.toast('Payment methods saved. The give page reads them directly from Firestore.');
     } catch (error) {
       window.hideLoading();
+      const status = document.getElementById('paySettingsStatus');
+      if (status) status.textContent = error.message || 'Payment methods could not be saved.';
       window.toast(error.message, 'error');
     }
   };
