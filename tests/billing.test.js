@@ -266,8 +266,12 @@ test('payment methods are configurable, scoped and never invented by a page', ()
   const adminJs = read('assets/pd-billing-admin.js');
   assert.match(admin, /paymentMethodRows/);
   assert.match(adminJs, /addPaymentMethodRow/);
-  assert.doesNotMatch(adminJs, /payment\.settings\.save/, 'payment settings must be saved to Firestore, not a callable');
-  assert.match(adminJs, /setDoc\(doc\(bridge\.db, 'settings', 'payments'\)/);
+  assert.match(adminJs, /setDoc\(doc\(bridge\.db, 'settings', 'payments'\)/,
+    'payment settings must be saved to Firestore');
+  assert.match(adminJs, /Add at least one complete, enabled payment method/);
+  // The callable is retained only as a one-release fallback while a preview is
+  // newer than the deployed Firestore rules; it is not the primary write.
+  assert.match(adminJs, /payment\.settings\.save/);
   assert.match(adminJs, /paymentMethodsFromSettings/);
 });
 

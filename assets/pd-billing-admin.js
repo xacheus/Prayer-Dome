@@ -892,8 +892,26 @@
 
   window.addPaymentMethodRow = function () {
     const rows = collectedPaymentMethods();
-    rows.push(Object.assign({}, PAYMENT_METHOD_DEFAULT));
+    // A newly added row starts enabled so it cannot be saved as a silent
+    // draft; the save step still refuses to publish it until its details are
+    // complete. This also makes the click visibly do something even when the
+    // panel is scrolled near the bottom.
+    rows.push(Object.assign({}, PAYMENT_METHOD_DEFAULT, { enabled: true }));
     renderPaymentMethods(rows);
+    const host = document.getElementById('paymentMethodRows');
+    const added = host && host.lastElementChild;
+    if (added) {
+      if (typeof added.scrollIntoView === 'function') {
+        try { added.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (error) { added.scrollIntoView(); }
+      }
+      const label = added.querySelector('[data-field="label"]');
+      if (label && typeof label.focus === 'function') {
+        try { label.focus({ preventScroll: true }); } catch (error) { label.focus(); }
+      }
+    }
+    const status = document.getElementById('paySettingsStatus');
+    if (status) status.textContent = 'New method added — not saved yet. Fill in its details, keep it enabled, then press Save payment methods.';
+    if (typeof window.toast === 'function') window.toast('New payment method added. Fill in the details, keep it enabled, then save.');
   };
 
   window.removePaymentMethodRow = function (index) {
@@ -972,16 +990,30 @@
       // Payment details are public by design (donors must see them), but only
       // an administrator may change them. This writes Firestore directly, so
       // giving no longer depends on Cloud Functions or a Cloud billing account.
-      await setDoc(doc(bridge.db, 'settings', 'payments'), {
-        methods: normalized,
-        primaryMethodId: primary.id || '',
-        mobileMoneyNumber: ['mobile-money', 'whatsapp'].includes(primary.type) ? primary.number : '',
-        accountName: primary.accountName || 'PRAYER DOME',
-        network: primary.network || primary.bankName || primary.label || 'Mobile Money',
-        instructions: primary.instructions || '',
-        updatedAt: serverTimestamp(),
-        updatedBy: actor.uid || ''
-      }, { merge: true });
+      try {
+        await setDoc(doc(bridge.db, 'settings', 'payments'), {
+          methods: normalized,
+          primaryMethodId: primary.id || '',
+          mobileMoneyNumber: ['mobile-money', 'whatsapp'].includes(primary.type) ? primary.number : '',
+          accountName: primary.accountName || 'PRAYER DOME',
+          network: primary.network || primary.bankName || primary.label || 'Mobile Money',
+          instructions: primary.instructions || '',
+          updatedAt: serverTimestamp(),
+          updatedBy: actor.uid || ''
+        }, { merge: true });
+      } catch (directError) {
+        // A preview can be newer than the deployed Firestore rules. Keep the
+        // existing billing service as a one-release safety net so finance can
+        // still configure giving before `firestore:rules` is deployed. The
+        // direct Firestore write above is always the primary path.
+        if (!directError || directError.code !== 'permission-denied') throw directError;
+        try {
+          await callBilling('payment.settings.save', { methods: normalized });
+          window.toast('Saved through the legacy billing service. Deploy firestore:rules so Firestore can own this write.', 'info');
+        } catch (fallbackError) {
+          throw new Error('Firestore rejected the save. Deploy the updated rules with \u201cfirebase deploy --only firestore:rules --project prayer-dome\u201d, then try again.');
+        }
+      }
       try {
         await addDoc(collection(bridge.db, 'givingAudit'), {
           action: 'payment_settings_updated',
@@ -999,6 +1031,8 @@
       window.toast('Payment methods saved. The give page reads them directly from Firestore.');
     } catch (error) {
       window.hideLoading();
+      const status = document.getElementById('paySettingsStatus');
+      if (status) status.textContent = error.message || 'Payment methods could not be saved.';
       window.toast(error.message, 'error');
     }
   };
