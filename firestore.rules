@@ -227,12 +227,78 @@ service cloud.firestore {
     }
 
     // Offerings / Deposits / Withdrawals
+    // ---------------------------------------------------------------------
+    // Giving is written straight to Firestore. A signed-in giver creates one
+    // pending record whose document id is the reference shown on screen, so a
+    // reference can never be used twice. The visitor controls only the donor
+    // and payment-description fields; the status starts at `pending`, and no
+    // browser can pre-set a confirmation, receipt or review field. Only the
+    // finance team moves a row to approved/received/rejected.
     match /offerings/{id} {
-      // Giving records are financial data. A member may read only their own
-      // rows; the finance team reads and reconciles everything.
       allow read: if isAdmin() || (isSignedIn() && resource.data.donorUid == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.donorUid == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow create: if isSignedIn()
+        && request.resource.data.donorUid == request.auth.uid
+        && request.resource.data.reference == id
+        && request.resource.data.status == 'pending'
+        && request.resource.data.amount is number
+        && request.resource.data.amount >= 1
+        && request.resource.data.amount <= 1000000
+        && request.resource.data.currency is string
+        && request.resource.data.currency.size() == 3
+        && request.resource.data.category in [
+             'church-support', 'general-offering', 'missions',
+             'evangelism', 'building-projects', 'other'
+           ]
+        && request.resource.data.methodType in [
+             'mobile-money', 'bank-transfer', 'cash-office',
+             'whatsapp', 'hosted-checkout'
+           ]
+        && request.resource.data.method is string
+        && request.resource.data.method.size() >= 2
+        && request.resource.data.method.size() <= 80
+        && request.resource.data.transactionReference is string
+        && request.resource.data.transactionReference.size() >= 4
+        && request.resource.data.transactionReference.size() <= 120
+        && request.resource.data.donorName is string
+        && request.resource.data.donorName.size() >= 2
+        && request.resource.data.donorName.size() <= 120
+        && request.resource.data.donorEmail is string
+        && request.resource.data.donorEmail.size() <= 254
+        && (!('methodId' in request.resource.data) ||
+            (request.resource.data.methodId is string &&
+             request.resource.data.methodId.size() <= 80))
+        && (!('note' in request.resource.data) ||
+            (request.resource.data.note is string &&
+             request.resource.data.note.size() <= 500))
+        && (!('receiptUrl' in request.resource.data) ||
+            (request.resource.data.receiptUrl is string &&
+             request.resource.data.receiptUrl.size() <= 1200))
+        && (!('receiptPath' in request.resource.data) ||
+            (request.resource.data.receiptPath is string &&
+             request.resource.data.receiptPath.size() <= 300))
+        // A browser may not submit a confirmation, receipt number or review
+        // metadata, and card data is never accepted into Firestore at all.
+        && !request.resource.data.keys().hasAny([
+             'approvedBy', 'approvedAt', 'confirmedBy', 'confirmedAt',
+             'receivedBy', 'receivedAt', 'receiptNumber', 'reviewedBy',
+             'reviewedAt', 'rejectionReason',
+             'cardNumber', 'cardCvv', 'cvv', 'cvc', 'pan', 'cardExpiry'
+           ]);
+      allow update: if isAdmin()
+        && request.resource.data.reference == resource.data.reference
+        && request.resource.data.donorUid == resource.data.donorUid
+        && request.resource.data.amount == resource.data.amount
+        && request.resource.data.currency == resource.data.currency
+        && request.resource.data.status in ['pending', 'approved', 'received', 'rejected'];
+      allow delete: if isAdmin();
+    }
+    // Append-only record of who changed a giving record or the payment
+    // settings. Members never see it; administrators cannot rewrite history.
+    match /givingAudit/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin()
+        && request.resource.data.actorUid == request.auth.uid;
+      allow update, delete: if false;
     }
     match /deposits/{id} {
       allow read: if isSignedIn() || isAdmin();
@@ -665,17 +731,18 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
-    // Official payment details are managed by the finance callable. Signed-in
-    // members may read the number so the wallet can show it, but no browser
-    // may change it and the billing function writes the exact number it used
-    // onto every payment request.
+    // Official payment details are public on purpose: the give page shows the
+    // church's own numbers before anyone signs in, and the support page uses
+    // the same document. Only an administrator may replace them, and the
+    // write must name that administrator so the change is attributable. This
+    // removes the old Cloud Functions dependency for finance configuration.
     match /settings/payments {
-      allow read: if isSignedIn();
-      allow write: if false;
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.data.updatedBy == request.auth.uid;
     }
     match /settings/{docId} {
-      // `payments` has its own read-only rule above; keep it out of the
-      // admin wildcard so browser code can never rewrite the official number.
+      // `payments` has its own rule above; keep it out of the admin wildcard.
       allow read, write: if isAdmin() && docId != 'payments';
     }
 

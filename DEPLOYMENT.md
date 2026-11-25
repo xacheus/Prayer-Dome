@@ -81,6 +81,40 @@ The Firestore rules target is explicitly configured. Firebase Hosting does not
 implement every Vercel-only `/api/*` handler; Vercel remains the recommended
 website target. Confirm feature parity before switching hosting providers.
 
+### Giving and donations (no Cloud Functions, no Cloud billing)
+
+Giving is a Firestore-only path and does **not** require Cloud Functions or an
+enabled Google Cloud billing account:
+
+* `give.html` reads `settings/payments` directly (public read) and creates
+  `offerings/{reference}` with `status: 'pending'`.
+* The member support page has a **Give** tab that writes the same collection.
+* Receipts are uploaded to the private `givingEvidence/{uid}/…` Storage path.
+* `admin.html` → **Giving & Donations** reviews, approves, rejects and marks
+  gifts received. Only `received` rows count towards confirmed contributions.
+* `settings/payments` and `givingAudit` are administrator-writable only.
+
+Deploy the rules and indexes for this path:
+
+```sh
+firebase deploy --only firestore:rules,storage --project <project-id>
+```
+
+Then sign in as an administrator, open **Payment Verification → Payment
+methods**, add the church's real Airtel/MTN/bank/hosted-checkout details and
+save. The save writes Firestore directly. Never put a number or bank account in
+the repository; if no method is configured the give page deliberately shows a
+contact notice instead of invented details.
+
+For a provider-hosted card checkout, set the method's **Hosted checkout URL**
+(a secure `https://` link from an approved provider). The donor pays on the
+provider page and returns with the provider's transaction reference; the gift
+still starts pending until Finance checks it. Automatic provider webhooks are
+not required for this manual-safe flow. If automatic verification is added
+later, terminate the webhook on Vercel (`api/system.js?op=…`) or another
+non-GCP-billing host, verify the provider signature and write the status with a
+server credential — never trust a browser claim.
+
 ### Support-plan billing callable
 
 The member support page and the finance console both call one callable named

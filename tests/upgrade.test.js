@@ -81,7 +81,7 @@ const widgetUsers = ['index.html', 'prayer.html', 'give.html', 'support.html', '
 for (const page of widgetUsers) {
   const s = read(page);
   t(`${page} uses the native picker instead of the Cloudinary widget`,
-    s.includes('PDUpload') && !s.includes('createUploadWidget') && !s.includes('upload-widget.cloudinary.com'));
+    (s.includes('PDUpload') || s.includes('type="file"')) && !s.includes('createUploadWidget') && !s.includes('upload-widget.cloudinary.com'));
 }
 
 /* -------------------------------------- 4. Profile-driven certificates */

@@ -115,7 +115,7 @@ assert.match(server, /not_issued/, 'an approved number without an issued card mu
 // ---- give page -------------------------------------------------------------
 assert.doesNotMatch(give, /Pastor Zacheus|Simbaya/, 'no individual may be a giving recipient');
 assert.doesNotMatch(give, /PRAYER DOME CHURCH/, 'recipient must be PRAYER DOME, the organisation');
-const purposeValues = ['General Offering', 'Tithes', 'Missions', 'Church Development', 'Special Donations'];
+const purposeValues = ['Church support', 'General offering', 'Missions', 'Evangelism', 'Building projects', 'Other'];
 for (const value of purposeValues) assert.ok(give.includes('>' + value + '<'), 'missing giving purpose: ' + value);
 assert.match(give, /organization:\s*"PRAYER DOME"/, 'offering must name the organisation');
 assert.match(give, /recipient:\s*"PRAYER DOME"/, 'offering must name the recipient');
@@ -124,7 +124,8 @@ assert.match(give, /reference:\s*reference/, 'a payment reference must be stored
 assert.match(give, /PDG-/, 'payment reference must be a real, quotable format');
 assert.match(give, /PRAYER DOME — giving recorded/, 'confirmation must identify PRAYER DOME');
 assert.doesNotMatch(give, /moment\(/, 'give page must not call the unloaded moment library');
-assert.match(give, /payment\.settings\.public/, 'give page must read finance settings at runtime');
+assert.match(give, /getDoc\(doc\(db, 'settings', 'payments'\)\)/, 'give page must read finance settings directly from Firestore');
+assert.doesNotMatch(give, /firebase-functions|httpsCallable/, 'giving must not depend on a Cloud Function');
 assert.match(give, /paymentMethodsFor\(settings, 'give'\)/, 'give page must show only enabled giving methods');
 assert.match(give, /methodId: method\.id/, 'the offering must name the configured method used');
 assert.doesNotMatch(give, /waPaymentNumber|momoPaymentNumber|momoAmt|waAmt/, 'no hardcoded payment card elements');

@@ -106,13 +106,14 @@ function amount(value) {
  * Legacy documents with only mobileMoneyNumber/accountName/network still work:
  * they are read as one mobile-money method and every save writes the new shape.
  */
-const PAYMENT_METHOD_TYPES = ['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp'];
+const PAYMENT_METHOD_TYPES = ['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp', 'hosted-checkout'];
 const PAYMENT_METHOD_SCOPES = ['both', 'give', 'support'];
 const PAYMENT_METHOD_LABELS = {
   'mobile-money': 'Mobile Money',
   'bank-transfer': 'Bank transfer',
   'cash-office': 'Cash at the ministry office',
-  whatsapp: 'WhatsApp'
+  whatsapp: 'WhatsApp',
+  'hosted-checkout': 'Hosted checkout'
 };
 
 function paymentMethodType(value) {
@@ -155,12 +156,19 @@ function normalizePaymentMethod(value, index) {
     branchCode: text(value.branchCode, 40),
     swift: text(value.swift, 20),
     currency: text(value.currency, 8).toUpperCase() || 'SZL',
+    checkoutUrl: text(value.checkoutUrl, 1000),
     instructions
   };
 }
 
+function methodCheckoutUrl(method) {
+  const url = text(method && method.checkoutUrl, 1000);
+  return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+}
+
 function usablePaymentMethod(method) {
   if (!method || method.enabled === false) return false;
+  if (methodCheckoutUrl(method)) return true;
   if (method.type === 'bank-transfer') {
     return Boolean(method.bankName && method.accountNumber);
   }
@@ -187,7 +195,8 @@ function paymentMethodPayTo(method) {
     payToLabel: paymentMethodLabel(method),
     payToBankName: isBank ? method.bankName : '',
     payToBranchCode: isBank ? method.branchCode : '',
-    payToSwift: isBank ? method.swift : ''
+    payToSwift: isBank ? method.swift : '',
+    payToCheckoutUrl: methodCheckoutUrl(method)
   };
 }
 
@@ -200,6 +209,10 @@ function paymentMethodInstructions(method) {
       (method.accountName ? ' in the name of ' + method.accountName : '') +
       '. Use the payment reference as the transfer reference, then upload a clear receipt. ' +
       'A plan is activated only after the finance team checks the payment against the ministry account.';
+  }
+  if (method.type === 'hosted-checkout') {
+    return 'Open the secure hosted checkout, pay the exact amount, then enter the provider transaction reference and upload a receipt. ' +
+      'A plan or gift is confirmed only after the finance team checks the provider record.';
   }
   if (method.type === 'cash-office') {
     return 'Take the exact amount to the ministry office. Give the finance team the payment reference, then upload a photo of the receipt. ' +
@@ -440,6 +453,7 @@ function paymentView(data) {
     payToBankName: data.payToBankName || '',
     payToBranchCode: data.payToBranchCode || '',
     payToSwift: data.payToSwift || '',
+    payToCheckoutUrl: data.payToCheckoutUrl || '',
     evidenceUrl: data.evidenceUrl || '',
     evidencePath: data.evidencePath || '',
     evidenceName: data.evidenceName || '',
@@ -1465,6 +1479,15 @@ async function savePaymentSettings(data, context) {
     // Disabled rows are drafts: finance may save a half-typed method while
     // still checking it. Only a method that is about to go live is validated.
     if (!method.enabled) return method;
+    if (method.checkoutUrl && !/^https:\/\/[^\s]+$/i.test(method.checkoutUrl)) {
+      fail('invalid-argument', 'The hosted checkout URL for “' + method.label + '” must start with https://.');
+    }
+    if (method.type === 'hosted-checkout' && !methodCheckoutUrl(method)) {
+      fail('invalid-argument', 'A hosted checkout method needs a secure https:// checkout URL before it can be enabled.');
+    }
+    // A provider-hosted checkout URL is complete on its own: the donor pays on
+    // the provider page and returns with a transaction reference.
+    if (methodCheckoutUrl(method)) return method;
     if (method.type === 'bank-transfer') {
       if (!method.bankName || !method.accountNumber || method.accountNumber.length < 4) {
         fail('invalid-argument', 'A bank transfer method needs a bank name and account number before it can be enabled.');

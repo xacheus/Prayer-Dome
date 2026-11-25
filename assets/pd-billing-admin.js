@@ -17,7 +17,7 @@
   const store = bridge.firestore;
   const Billing = window.PDBilling;
   const {
-    collection, getDocs, getDoc, doc, setDoc, serverTimestamp, query, orderBy, limit
+    collection, getDocs, getDoc, doc, setDoc, addDoc, serverTimestamp, query, orderBy, limit
   } = store;
 
   let payments = [];
@@ -789,7 +789,7 @@
   const PAYMENT_METHOD_DEFAULT = {
     id: '', type: 'mobile-money', label: '', enabled: false, scope: 'both',
     number: '', accountNumber: '', accountName: 'PRAYER DOME', network: '',
-    bankName: '', branchCode: '', swift: '', currency: 'SZL', instructions: ''
+    bankName: '', branchCode: '', swift: '', currency: 'SZL', checkoutUrl: '', instructions: ''
   };
 
   function methodFieldLabel(value) {
@@ -838,6 +838,7 @@
         methodInput('branchCode', 'Branch code', row.branchCode, 'placeholder="Optional"') +
         methodInput('swift', 'SWIFT / BIC', row.swift, 'placeholder="Optional"') +
         methodInput('currency', 'Currency label', row.currency, 'maxlength="8" placeholder="SZL"') +
+        methodInput('checkoutUrl', 'Hosted checkout URL (optional, https)', row.checkoutUrl, 'type="url" inputmode="url" placeholder="https://provider.example/checkout/..."') +
         '<div style="grid-column:1/-1;">' + methodFieldLabel('Payment instructions for this method') +
           '<textarea data-field="instructions" class="form-control" rows="2" placeholder="Leave blank to use the standard wording for this method">' + esc(row.instructions) + '</textarea>' +
         '</div>' +
@@ -867,6 +868,7 @@
         branchCode: value('branchCode'),
         swift: value('swift'),
         currency: value('currency') || 'SZL',
+        checkoutUrl: value('checkoutUrl'),
         instructions: value('instructions')
       };
     });
@@ -944,6 +946,13 @@
     for (let index = 0; index < enabled.length; index += 1) {
       const method = enabled[index];
       const label = method.label || Billing.PAYMENT_METHOD_TYPE_LABELS[method.type] || ('Method ' + (index + 1));
+      if (method.checkoutUrl && !/^https:\/\/[^\s]+$/i.test(method.checkoutUrl)) {
+        return window.toast('The hosted checkout URL for “' + label + '” must start with https://.', 'error');
+      }
+      if (method.type === 'hosted-checkout' && !/^https:\/\//i.test(method.checkoutUrl || '')) {
+        return window.toast('Add the secure hosted checkout URL for “' + label + '”.', 'error');
+      }
+      if (method.checkoutUrl) continue;
       if (method.type === 'bank-transfer') {
         if (!method.bankName || !method.accountNumber) return window.toast('Add a bank name and account number for “' + label + '”.', 'error');
       } else if (method.type === 'cash-office') {
@@ -954,13 +963,40 @@
     }
     window.showLoading();
     try {
-      const result = await callBilling('payment.settings.save', { methods: methods });
-      paymentSettings = result.settings || null;
+      const normalized = methods.map(function (method, index) {
+        return Billing.normalizePaymentMethod(Object.assign({}, method, { order: index + 1 }), index);
+      }).filter(Boolean);
+      const primary = normalized.find(function (method) { return Billing.usablePaymentMethod(method); }) || normalized[0];
+      if (!primary) throw new Error('Add at least one complete, enabled payment method.');
+      const actor = bridge.auth && bridge.auth.currentUser ? bridge.auth.currentUser : {};
+      // Payment details are public by design (donors must see them), but only
+      // an administrator may change them. This writes Firestore directly, so
+      // giving no longer depends on Cloud Functions or a Cloud billing account.
+      await setDoc(doc(bridge.db, 'settings', 'payments'), {
+        methods: normalized,
+        primaryMethodId: primary.id || '',
+        mobileMoneyNumber: ['mobile-money', 'whatsapp'].includes(primary.type) ? primary.number : '',
+        accountName: primary.accountName || 'PRAYER DOME',
+        network: primary.network || primary.bankName || primary.label || 'Mobile Money',
+        instructions: primary.instructions || '',
+        updatedAt: serverTimestamp(),
+        updatedBy: actor.uid || ''
+      }, { merge: true });
+      try {
+        await addDoc(collection(bridge.db, 'givingAudit'), {
+          action: 'payment_settings_updated',
+          methodCount: normalized.filter(function (method) { return Billing.usablePaymentMethod(method); }).length,
+          actorUid: actor.uid || '',
+          actorEmail: actor.email || '',
+          createdAt: serverTimestamp()
+        });
+      } catch (auditError) {
+        console.warn('Payment settings audit could not be written:', auditError && auditError.message);
+      }
+      paymentSettings = null;
       window.hideLoading();
-      renderPaymentMethods(Billing.paymentMethodsFromSettings(result.settings || {}));
-      const status = document.getElementById('paySettingsStatus');
-      if (status) status.textContent = paymentMethodStatus(Billing.paymentMethodsFromSettings(result.settings || {}));
-      window.toast('Payment methods saved. Give page and checkout now use them.');
+      await window.loadPaymentSettings();
+      window.toast('Payment methods saved. The give page reads them directly from Firestore.');
     } catch (error) {
       window.hideLoading();
       window.toast(error.message, 'error');
