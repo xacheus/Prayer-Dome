@@ -504,6 +504,7 @@
         if (silence) clearTimeout(silence);
         try { recognition.abort(); } catch (e) {}
         if (self.current === recognition) self.current = null;
+        if (opts.onEnd) { try { opts.onEnd(reason); } catch (e) {} }
         var text = String(finalText != null ? finalText : (heard || interim)).trim();
         resolve({ text: text, reason: text ? (reason === 'silent' ? 'heard' : reason) : reason });
       }
@@ -533,16 +534,27 @@
         }
         if (heard) done('heard', heard);
       };
+      var startNotified = false;
+      function notifyStart() {
+        if (startNotified || settled) return;
+        startNotified = true;
+        self.permission = 'granted';
+        if (opts.onStart) { try { opts.onStart(); } catch (e) {} }
+      }
       recognition.onerror = function (event) {
         var code = (event && event.error) || 'error';
         if (code === 'not-allowed' || code === 'service-not-allowed') self.permission = 'denied';
+        if (opts.onError) { try { opts.onError(code); } catch (e) {} }
         done(code === 'no-speech' ? 'silent' : code);
       };
       recognition.onend = function () { done(heard ? 'heard' : 'silent', heard || interim); };
+      if (typeof recognition.onstart !== 'undefined') recognition.onstart = notifyStart;
 
       try {
         recognition.start();
-        self.permission = 'granted';
+        // Some test engines and older WebViews never fire `onstart`; starting
+        // successfully is already the moment the microphone is genuinely live.
+        notifyStart();
       } catch (e) {
         done('error');
       }
@@ -1338,17 +1350,7 @@
     this.answerForm.appendChild(send);
     this.answerForm.addEventListener('submit', function (e) {
       e.preventDefault();
-      var value = self.answerInput.value.trim();
-      if (!value) return;
-      self.answerInput.value = '';
-      // Typing "C" or "Noah" answers the same question the same way saying it
-      // would: through the shared matcher, never a second code path.
-      var typedIndex = null;
-      if (self.question && self.question.kind === 'choice') {
-        var typedMatch = matchChoices(value, self.question.choices || []);
-        if (typedMatch.index != null) typedIndex = typedMatch.index;
-      }
-      self._accept(value, 'typed', typedIndex);
+      self._submitTyped(self.answerInput.value);
     });
 
     var enable = el('button', 'pdm-enable-voice',
@@ -1883,9 +1885,22 @@
     this.voice.stop();
     this.ears.stop();
     this.act(null);
+    this._waiting = false;
+    this._questionTalk = null;
+    this._continueTalk = null;
+    if (this._continueFinish) {
+      var finishWait = this._continueFinish;
+      this._continueFinish = null;
+      try { finishWait('stopped'); } catch (e) {}
+    }
+    if (this.answerForm) {
+      this.answerForm.setAttribute('hidden', '');
+      this.answerInput.placeholder = this.options.placeholder;
+    }
     if (this.answerResolve) { var r = this.answerResolve; this.answerResolve = null; r({ text: '', source: 'stopped', index: null }); }
     this._setState('idle');
     this.setStatus('Stopped');
+    this.emit('listening', false);
   };
 
   Host.prototype.destroy = function () {
@@ -1992,6 +2007,8 @@
   };
 
   Host.prototype.micEnabled = false;
+  Host.prototype.autoListen = true;
+  Host.prototype._listenPaused = false;
 
   Host.prototype._micUi = function (on) {
     if (this.micBtn) {
@@ -2019,21 +2036,26 @@
     opts = opts || {};
     if (!this.ears.supported) {
       this.setStatus('This browser cannot listen — tap a choice or type');
+      this.emit('permission', 'unsupported');
       return Promise.resolve(false);
     }
     // A member who already blocked the microphone is not asked again: the host
     // keeps working, it just stops offering to listen.
     if (this.ears.permission === 'denied' && this._micWarmed) {
       this.setStatus('Microphone blocked — tap a choice or type instead');
+      this.emit('permission', 'denied');
       return Promise.resolve(false);
     }
     Band.unlock();
+    this._listenPaused = false;
     if (!this.micEnabled) {
+      // "Voice answers on" is honest immediately: the browser has been asked.
+      // "Listening" is only shown once a recognition session really starts.
       this.micEnabled = true;
       this._micUi(true);
-      this.emote('listening');
       this.emit('mic', true);
     }
+    this.emit('permission', this.ears.permission === 'unknown' ? 'prompt' : this.ears.permission);
     // A question that is already on screen starts listening again right away.
     if (this.answerResolve && this._listenLoop) this._later(this._listenLoop, 220);
     if (opts.warmUp === false || this._micWarmed) return Promise.resolve(true);
@@ -2043,11 +2065,35 @@
       if (self.ears.permission === 'denied') {
         self.disableMic();
         self.setStatus('Microphone blocked — tap a choice or type instead');
+        self.emit('permission', 'denied');
         return false;
       }
+      self.emit('permission', 'granted');
       if (self.answerResolve && self._listenLoop) self._later(self._listenLoop, 220);
       return true;
     });
+  };
+
+  /** What the microphone is really doing right now. */
+  Host.prototype.micState = function () {
+    if (!this.ears.supported) return 'unsupported';
+    if (this.ears.permission === 'denied') return 'denied';
+    if (this.ears.current) return 'active';
+    if (this._listenPaused) return 'paused';
+    if (this.micEnabled) return 'granted';
+    return this.ears.permission === 'unknown' ? 'prompt' : this.ears.permission;
+  };
+
+  /** Stop listening but stay in the conversation: Resume reopens the ears. */
+  Host.prototype.pauseListening = function () {
+    this._listenPaused = true;
+    this.disableMic();
+    return this;
+  };
+
+  Host.prototype.resumeListening = function () {
+    this._listenPaused = false;
+    return this.enableMic();
   };
 
   /** Can this browser let Domey hear spoken answers at all? */
@@ -2057,7 +2103,9 @@
     this.micEnabled = false;
     this._micUi(false);
     this.ears.stop();
+    if (this.micBadge) this.micBadge.hidden = true;
     if (this.state === 'listening') this._setState('idle');
+    this.emit('listening', false);
     this.emit('mic', false);
     return this;
   };
@@ -2076,6 +2124,22 @@
    * saying "next". Nothing is spoken and nothing times out underneath the
    * member's finger; resolve value is how the pause ended.
    */
+  /** A truthful explanation of the answer just given, using the bank's own
+      reference rather than inventing a verse or a quotation. */
+  function explainLastAnswer(spec, answer) {
+    if (!spec || !answer || !answer.judged) {
+      return 'I do not have enough of that answer to explain it safely. Ask me for the Bible passage and I will give you its reference.';
+    }
+    var right = (spec.choices || [])[answer.judged.correctIndex] || 'the marked choice';
+    var passage = spec.verse || (spec.hints && spec.hints.length ? spec.hints[0] : '');
+    var lead = answer.judged.right
+      ? 'You chose ' + right + ', and that is correct. '
+      : 'The correct choice is ' + right + '. ';
+    if (!passage) return lead + 'I do not have a safe scripture reference for this question here, so I will not invent one.';
+    return lead + 'This question is built on ' + passage +
+      '. Read that passage for the whole account; I will not put words in Scripture that it does not say.';
+  }
+
   Host.prototype.waitForContinue = function (opts) {
     var self = this;
     opts = opts || {};
@@ -2095,6 +2159,34 @@
     var promise = new Promise(function (resolve) { resolveContinue = resolve; });
     var timeoutId = null;
 
+    // The conversation is not over when the answer is in: the member can type
+    // (or say) "why?", "which verse?" or "next" without losing the exchange.
+    var lastSpec = this._lastQuestion;
+    var lastAnswer = this._lastAnswer;
+    this.answerForm.removeAttribute('hidden');
+    this.answerInput.placeholder = 'Ask about this answer, or type “next”…';
+    this._continueTalk = function (raw) {
+      var text = norm(raw);
+      if (!text) return false;
+      if (/^(next|continue|yes|yeah|yep|ok|okay|ready|go on|go ahead|move on|proceed|another|keep going|lets go|let us go)\b/.test(text)) {
+        finish('typed');
+        return true;
+      }
+      if (/^(why|explain|how do you know|tell me more|can you explain)\b/.test(text)) {
+        self.say(explainLastAnswer(lastSpec, lastAnswer), { emote: 'thinking', status: 'Take your time' });
+        return true;
+      }
+      if (/^(verse|scripture|passage|chapter|where .*bible|which verse|what verse|read)\b/.test(text)) {
+        var passage = lastSpec && (lastSpec.verse || (lastSpec.hints && lastSpec.hints[0]));
+        self.say(passage
+          ? 'This question is built on ' + passage + '. Read that passage for the full account.'
+          : 'I do not have a safe reference for this question here, so I will not invent one.',
+          { emote: 'thinking', status: 'Take your time' });
+        return true;
+      }
+      return false;
+    };
+
     function finish(source) {
       if (done) return;
       done = true;
@@ -2102,7 +2194,12 @@
       if (timeoutId != null) clearTimeout(timeoutId);
       self.ears.stop();
       self.micBadge.hidden = true;
+      self._continueTalk = null;
+      self._continueFinish = null;
+      self.answerForm.setAttribute('hidden', '');
+      self.answerInput.placeholder = self.options.placeholder;
       chip.disabled = true;
+      self.emit('listening', false);
       resolveContinue(source);
     }
 
@@ -2110,14 +2207,23 @@
 
     var earsOpen = false;
     function listenLoop() {
-      if (done || self.destroyed || !self.micEnabled || !self.ears.supported) return;
+      if (done || self.destroyed || !self.micEnabled || self._listenPaused || !self.ears.supported) return;
       if (earsOpen) return;
       earsOpen = true;
-      self.emote('listening');
-      self.micBadge.hidden = false;
       self.ears.listenOnce({
         lang: self.options.lang,
         timeout: 12000,
+        onStart: function () {
+          if (self.destroyed) return;
+          self.emote('listening');
+          self.micBadge.hidden = false;
+          self.emit('listening', true);
+        },
+        onEnd: function () {
+          self.micBadge.hidden = true;
+          if (self.state === 'listening') self._setState('idle');
+          self.emit('listening', false);
+        },
         onInterim: function (partial) {
           if (!partial) return;
           self.setStatus('Heard: ' + partial);
@@ -2137,14 +2243,20 @@
           finish('stop');
           return;
         }
+        if (text && self._continueTalk && self._continueTalk(text)) {
+          self._later(listenLoop, 1600);
+          return;
+        }
         if (result.reason === 'not-allowed' || result.reason === 'service-not-allowed') {
           self.disableMic();
+          self.emit('mic-error', result.reason);
           return;
         }
         if (!done) self._later(listenLoop, 300);
       });
     }
 
+    this._continueFinish = finish;
     if (this.micEnabled && this.ears.supported) this._later(listenLoop, 350);
     timeoutId = this._later(function () { if (!done) finish('timeout'); }, opts.timeout || 120000);
     return promise;
@@ -2197,9 +2309,48 @@
 
   Host.prototype._clearQuestion = function () {
     this.question = null;
+    this._questionTalk = null;
     this.chips.innerHTML = '';
     this.answerForm.setAttribute('hidden', '');
     this.micBadge.hidden = true;
+  };
+
+  /**
+   * One route for typed input, whether the member is answering or asking
+   * Domey something about the question. Conversation never touches the score.
+   */
+  Host.prototype._submitTyped = function (raw) {
+    var value = String(raw == null ? '' : raw).trim();
+    if (!value || this.destroyed) return false;
+    this.answerInput.value = '';
+    if (this.answerResolve) {
+      // Typing "C" or "Noah" answers the same question the same way saying it
+      // would: through the shared matcher, never a second code path.
+      var typedIndex = null;
+      if (this.question && this.question.kind === 'choice') {
+        var typedMatch = matchChoices(value, this.question.choices || []);
+        if (typedMatch.index != null) typedIndex = typedMatch.index;
+      }
+      // A real question ("which verse is this?", "why?", "tell me the
+      // answer") is conversation, not an answer. It must not be scored, and it
+      // must never reveal the right choice before the member has chosen. A
+      // question that happens to contain an option name ("Who is Moses?") must
+      // still be read as a question.
+      var conversational = /^(who|what|why|how|where|when|which|whose|can|could|would|should|do|does|did|tell me)\b/.test(norm(value));
+      if ((typedIndex == null || conversational) &&
+          typeof this._questionTalk === 'function' && this._questionTalk(value)) {
+        return true;
+      }
+      this._accept(value, 'typed', typedIndex);
+      return true;
+    }
+    if (typeof this._continueTalk === 'function' && this._continueTalk(value)) return true;
+    if (this._lastQuestion) {
+      this.say('Tap Continue when you are ready, or ask me about the Bible passage behind this answer.',
+        { status: 'Take your time' });
+      return true;
+    }
+    return false;
   };
 
   Host.prototype._accept = function (value, source, index) {
@@ -2208,6 +2359,7 @@
     var resolve = this.answerResolve;
     this.answerResolve = null;
     this._listenLoop = null;
+    this._questionTalk = null;
     this.question = null;
     this.ears.stop();
     this.micBadge.hidden = true;
@@ -2225,6 +2377,9 @@
       answer.judged = verdict;
       this.markAnswer(verdict);
     }
+    this._lastQuestion = spec;
+    this._lastAnswer = answer;
+    this._lastVerdict = verdict;
     if (answer.text) this.logLine('you', answer.text, source === 'voice' ? 'pdm-log-spoken' : '');
     this.emit('answered', answer);
     resolve(answer);
@@ -2257,6 +2412,7 @@
       self.question = spec;
       self.chips.innerHTML = '';
       self.answerForm.removeAttribute('hidden');
+      self.emit('question', spec);
       // Only pop the keyboard on devices with a real pointer: on a phone the
       // member is far more likely to answer with the microphone.
       var typingDevice = typeof global.matchMedia === 'function' && global.matchMedia('(hover: hover)').matches;
@@ -2303,22 +2459,57 @@
       var heardNothing = 0;
 
       /**
-       * Things a member can simply say to the host, in the middle of a
-       * question: "say that again", "give me a hint", "skip", "slow down".
-       * Answering a question is not the only way to talk to Domey.
+       * Everything the member can say or type while a question is open, other
+       * than the answer: ask for the question again, a hint, the Bible passage,
+       * an explanation, or simply say hello. Two rules are absolute here:
+       *   • a conversational line is never scored as an answer;
+       *   • the right choice is never revealed before the member has answered.
        */
-      function voiceCommand(spoken) {
+      function handleTalk(spoken) {
         var text = norm(spoken);
-        if (/^(repeat|again|say (that|it) again|pardon|come again|what)\b/.test(text)) {
-          self.say('Of course. ' + (spec.text || '') + (spec.hints && spec.hints.length ? ' A hint for you: ' + spec.hints.join(' ') + '.' : ''), { emote: 'happy', status: 'Your turn' })
-            .then(function () { if (self.answerResolve) listenLoop(); });
+        if (!text) return false;
+        var passage = spec.verse || (spec.hints && spec.hints.length ? spec.hints[0] : '');
+
+        function reply(line, emote) {
+          self.emit('heard', spoken);
+          self.showHeard(spoken);
+          self.say(line, { emote: emote || 'happy', status: 'Your turn' })
+            .then(function () {
+              if (self.answerResolve && self.micEnabled && !self._listenPaused) listenLoop();
+            });
+        }
+
+        // A direct request for the answer is politely refused, not obeyed.
+        if (/(what|which|who|tell me|give me|just say|just tell me).{0,32}(answer|correct|right one)|give me the answer|what is the answer|is it [a-d]\b/.test(text)) {
+          reply('I will show you the answer as soon as you choose — that is how we learn. Try one of the choices, or ask me for a hint.');
           return true;
         }
-        if (/^(hint|help|clue|i need help)\b/.test(text)) {
-          self.say(spec.hints && spec.hints.length
+        if (/^(why|explain|how do you know|what does .* mean|tell me more|can you explain)\b/.test(text)) {
+          reply('I will explain it fully once you answer. ' +
+            (passage ? 'This question is built on ' + passage + ', so read that passage and look for what it says. ' : '') +
+            'For now, choose the answer you believe fits.');
+          return true;
+        }
+        if (/^(verse|scripture|passage|chapter|where .*bible|which verse|what verse|read)\b/.test(text)) {
+          reply(passage
+            ? 'The Bible passage behind this question is ' + passage + '. Read it, then choose your answer. I will never make up a reference.'
+            : 'This question comes from the Bible, but I do not have a safe reference for it here. I will not invent one. Choose the answer you believe fits.');
+          return true;
+        }
+        if (/^(repeat|again|say (that|it) again|pardon|come again|what was the question)\b/.test(text)) {
+          reply('Of course. ' + (spec.text || '') +
+            (spec.hints && spec.hints.length ? ' A hint for you: ' + spec.hints.join(' ') + '.' : ''));
+          return true;
+        }
+        if (/^(hint|help|clue|i need help|give me a clue)\b/.test(text)) {
+          reply(spec.hints && spec.hints.length
             ? 'Here is your hint: ' + spec.hints.join(' ') + '.'
-            : 'Think about who God chose for that moment in the story.', { emote: 'thinking', status: 'Your turn' })
-            .then(function () { if (self.answerResolve) listenLoop(); });
+            : 'Think about who God chose for that moment in the story, and choose the name or detail that fits.', 'thinking');
+          return true;
+        }
+        if (/^(slow down|speak slower|too fast)\b/.test(text)) {
+          self.options.rate = Math.max(0.7, (self.options.rate || 1) - 0.14);
+          reply('No problem, I will speak a little slower.', 'happy');
           return true;
         }
         if (/^(skip|pass|next|move on|no idea|i do not know|i dont know|dont know|i don't know)\b/.test(text)) {
@@ -2326,30 +2517,41 @@
           self._accept('', 'skip', null);
           return true;
         }
-        if (/^(slow down|speak slower|too fast)\b/.test(text)) {
-          self.options.rate = Math.max(0.7, (self.options.rate || 1) - 0.14);
-          self.say('No problem, I will speak a little slower.', { emote: 'happy', status: 'Your turn' })
-            .then(function () { if (self.answerResolve) listenLoop(); });
-          return true;
-        }
         if (/^(stop|quiet|silence|be quiet)\b/.test(text)) {
           self._accept('', 'skip', null);
+          return true;
+        }
+        if (/^(hello|hi|hey|good morning|good afternoon|good evening|who are you|what can you do|thank you|thanks)\b/.test(text)) {
+          reply('I am Domey, your Prayer Dome Bible host. I am right here with you. ' +
+            'Answer this question by tapping a choice, typing it, or saying it. You can also ask for a hint, the Bible passage, or an explanation.',
+            'happy');
+          return true;
+        }
+        // A sentence ending in a question mark is a question, not an answer —
+        // even when it happens to contain a choice word.
+        if (/^(can|could|would|should|do|does|did|tell me|explain)\b/.test(text)) {
+          reply('I am listening. For this question, choose the answer you believe fits, or ask me for a hint or the Bible passage.');
+          return true;
+        }
+        if (/^(who|what|why|how|where|when|which|whose)\b/.test(text) ||
+            (/\?\s*$/.test(String(spoken || '')) && matchChoices(text, choices).index == null)) {
+          reply('I am listening. For this question, choose the answer you believe fits, or ask me for a hint or the Bible passage.');
           return true;
         }
         return false;
       }
 
+      self._questionTalk = handleTalk;
+
       var earsOpen = false;
       function listenLoop() {
         if (self.destroyed || !self.answerResolve || token.cancelled) return;
-        if (!self.micEnabled || !self.ears.supported) return;
+        if (!self.micEnabled || self._listenPaused || !self.ears.supported) return;
         // One recognition at a time: the question can be re-armed from several
         // places (the ask itself, the microphone button, a tap on her), but
         // two open ears only keep the microphone hot after the answer.
         if (earsOpen) return;
         earsOpen = true;
-        self.emote('listening');
-        self.micBadge.hidden = false;
         Band.play('listen');
         self.ears.listenOnce({
           lang: self.options.lang,
@@ -2357,6 +2559,17 @@
           // A prayer request or a spoken sentence is longer than one quiz word,
           // so those keep the ears open a moment after the member stops.
           continuous: spec.kind === 'text' || !!spec.continuous,
+          onStart: function () {
+            if (self.destroyed) return;
+            self.emote('listening');
+            self.micBadge.hidden = false;
+            self.emit('listening', true);
+          },
+          onEnd: function () {
+            self.micBadge.hidden = true;
+            if (self.state === 'listening') self._setState('idle');
+            self.emit('listening', false);
+          },
           onInterim: function (partial) {
             if (!partial) return;
             // The member's own words appear on screen as they are spoken.
@@ -2374,13 +2587,13 @@
             // member can catch a misheard answer and say it again or type it.
             self.emit('heard', result.text);
             self.showHeard(result.text);
-            if (voiceCommand(result.text)) return;
+            if (handleTalk(result.text)) return;
             var match = spec.kind === 'choice' ? matchChoices(result.text, choices) : { index: null, score: 1 };
             if (spec.kind === 'choice' && match.index == null && (spec.accept || []).length === 0) {
               heardNothing++;
               self.react('hand', 1);
               self.say(match.score > 0.3 ? 'I am not sure I caught that. Say it again, or type your answer below.' : 'I did not quite catch an answer. Say it again, tap a choice, or type it.', { status: 'Your turn' })
-                .then(function () { if (self.answerResolve) listenLoop(); });
+                .then(function () { if (self.answerResolve && self.micEnabled) listenLoop(); });
               return;
             }
             self._accept(result.text, 'voice', match.index);
@@ -2388,7 +2601,14 @@
           }
           if (result.reason === 'not-allowed' || result.reason === 'service-not-allowed') {
             self.disableMic();
+            self.emit('mic-error', result.reason);
             self.say('I cannot reach the microphone, so just type your answer or tap a choice.', { emote: 'encouraging', status: 'Your turn' });
+            return;
+          }
+          if (result.reason === 'error' || result.reason === 'network' || result.reason === 'audio-capture' || result.reason === 'language-not-supported') {
+            self.emit('mic-error', result.reason);
+            self.say('I could not hear you clearly. You can type your answer, tap a choice, or try the microphone again.', { emote: 'encouraging', status: 'Your turn' })
+              .then(function () { if (self.answerResolve && self.micEnabled && !self._listenPaused) self._later(listenLoop, 800); });
             return;
           }
           if (result.reason === 'silent' || result.reason === 'no-speech' || result.reason === 'aborted') {
@@ -2397,7 +2617,7 @@
               // Keep the conversation warm, then quietly start listening again
               // so a member who needs a moment can still simply speak.
               self.say('I am still here. Take your time — tap a choice if you would rather not talk.', { emote: 'encouraging', status: 'Your turn' })
-                .then(function () { if (self.answerResolve) self._later(listenLoop, 2500); });
+                .then(function () { if (self.answerResolve && !self._listenPaused) self._later(listenLoop, 2500); });
               return;
             }
             if (heardNothing > 6) return;
@@ -2412,8 +2632,12 @@
       // The open question owns its ears: however the microphone is opened — the
       // Start button, the microphone button, or a tap on Domey himself — the
       // question starts listening again instead of waiting in silence.
-      if (spec.listen !== false && self.ears.supported) self._listenLoop = listenLoop;
-      if (spec.listen !== false && self.ears.supported && !self.micEnabled) {
+      // The question owns its ears even in typing mode, so switching to voice
+      // later picks up the same question without restarting it. Opening the
+      // microphone automatically is gated by `autoListen` and Pause listening.
+      self._listenLoop = self.ears.supported ? listenLoop : null;
+      if (spec.listen !== false && self.autoListen !== false && !self._listenPaused &&
+          self.ears.supported && !self.micEnabled) {
         self.enableMic({ warmUp: !!spec.warmUp }).then(function () {
           if (self.destroyed || !self.answerResolve) return;
           self._later(listenLoop, 260);
@@ -2558,17 +2782,17 @@
       if (token.cancelled) return null;
       // If the microphone is open, say so out loud — half the fun of talking to
       // Domey is finding out he really does hear you.
-      if (host.ears.supported && host.micEnabled) {
-        return host.say('My ears are open — you can answer by talking.', { emote: 'listening' });
+      if (host.ears.supported && host.micEnabled && !host._listenPaused) {
+        return host.say('My ears are open — you can answer by talking, tapping or typing.', { emote: 'happy' });
       }
-      return null;
+      return host.say('Answer by tapping a choice or typing — and tap Talk with Domey any time to use your voice.', { emote: 'happy' });
     }).then(function () {
       if (token.cancelled) return null;
       return host.ask({
         text: 'Before we start, what should I call you?',
         kind: 'name',
         allowSkip: true,
-        listen: true,
+        listen: options.listen !== false,
         listenTimeout: 9000
       });
     }).then(function (nameAnswer) {
@@ -2601,9 +2825,10 @@
             kind: 'choice',
             choices: item.options,
             correctIndex: item.correctIndex,
-            listen: true,
+            listen: options.listen !== false,
             listenTimeout: 15000,
-            hints: [item.verse],
+            hints: item.verse ? ['Read ' + item.verse + ' and look for what the passage says.'] : [],
+            verse: item.verse || '',
             letters: true
           });
         })
@@ -2658,7 +2883,8 @@
           host.act('open', 1500);
           if (options.onScore) options.onScore({ correct: correct, total: questions.length, xp: xp, streak: streak, right: false });
           var right = item.options[item.correctIndex];
-          return host.say(pick(ENCOURAGE) + ' The answer is ' + right + '. ' + item.verse + ' says it clearly.',
+          return host.say(pick(ENCOURAGE) + ' The answer is ' + right + '. ' +
+            (item.verse ? 'This question is built on ' + item.verse + '. Read that passage for the whole account.' : ''),
             { emote: 'encouraging', hold: 250 });
         })
         .then(function () {
@@ -2708,7 +2934,7 @@
       host.emit('show:end', { correct: correct, total: total, xp: xp, percent: percent, bestStreak: bestStreak });
       if (options.onFinish) options.onFinish({ correct: correct, total: total, xp: xp, percent: percent, bestStreak: bestStreak });
       return host.say(closing, { emote: 'celebrating', hold: 600 }).then(function () {
-        host.setStatus('The show is finished — tap Start to play again');
+        host.setStatus('The show is finished — tap Talk with Domey to play again');
         return { correct: correct, total: total, xp: xp, percent: percent, bestStreak: bestStreak, name: host.name };
       });
     }

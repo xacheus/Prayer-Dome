@@ -30,80 +30,189 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    /* This page is built for the phone first: Domey is the star, she appears
-       right under a compact hero, and everything she says sits below her —
-       never over her face. */
-    .game-wrap {
-      max-width: 1080px;
-      margin: 0 auto;
-      padding: 18px 12px 48px;
+    /* ==========================================================================
+       Prayer Dome Bible Challenge — a phone-first app shell
+       --------------------------------------------------------------------------
+       The old focused mode pinned #panel-talk to the viewport and hid whole
+       sections, which is what pushed the last answer under a fixed footer and
+       made the game feel like a website squeezed into a phone. The screen now
+       flows: a sticky, always-visible section bar; compact progress; Domey;
+       the conversation; voice/text controls; every answer; then Continue.
+       Nothing is positioned over the question, and the document itself scrolls,
+       so a long question or answer can never be clipped.
+       ========================================================================== */
+
+    body.game-page {
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+      overflow-x: clip;
+    }
+    body.game-page .pd-topbar {
+      padding-top: calc(10px + env(safe-area-inset-top, 0px));
     }
 
+    .game-wrap {
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 10px max(10px, env(safe-area-inset-right, 0px))
+               calc(22px + env(safe-area-inset-bottom, 0px))
+               max(10px, env(safe-area-inset-left, 0px));
+    }
+
+    .game-wrap > section,
+    .game-wrap > .game-stats-row {
+      scroll-margin-top: calc(var(--pd-game-sticky, 0px) + var(--pd-game-tabbar-h, 58px) + 8px);
+    }
+
+    /* ---------------------------------------------------------------- hero */
     .game-hero {
       text-align: center;
-      padding: clamp(22px, 5vw, 44px) 14px;
-      background: linear-gradient(135deg, rgba(10,77,155,0.9), rgba(7,36,77,0.95));
-      border-radius: 22px;
+      padding: clamp(18px, 4.8vw, 40px) clamp(12px, 3.5vw, 22px);
+      background: linear-gradient(135deg, rgba(10,77,155,0.92), rgba(7,36,77,0.97));
+      border-radius: 20px;
       color: white;
-      margin-bottom: 16px;
+      margin: 0 0 12px;
       box-shadow: var(--pd-shadow-lg);
       border: 1px solid rgba(212,175,55,0.3);
       position: relative;
       overflow: hidden;
     }
-
     .game-hero h1 {
       font-family: 'Poppins', serif;
-      font-size: clamp(1.55rem, 6vw, 2.8rem);
+      font-size: clamp(1.45rem, 7vw, 2.8rem);
       font-weight: 900;
-      margin-bottom: 8px;
+      margin: 0 0 8px;
       color: var(--pd-gold);
+      line-height: 1.08;
     }
-
     .game-hero p {
-      font-size: clamp(.9rem, 2.6vw, 1.05rem);
+      font-size: clamp(.88rem, 3.4vw, 1.05rem);
       max-width: 700px;
-      margin: 0 auto 18px;
-      opacity: 0.9;
+      margin: 0 auto 14px;
+      opacity: .94;
       line-height: 1.55;
     }
+    .game-hero > * { position: relative; z-index: 1; }
+    .game-hero::before {
+      content: ""; position: absolute; inset: -40% -10% auto; height: 180%;
+      background: radial-gradient(ellipse at 50% 20%, rgba(212,175,55,.42), transparent 62%);
+      pointer-events: none; animation: none;
+    }
+    .game-hero .pd-acad-eyebrow { color: var(--pd-gold-soft); }
+    .game-hero h1 { letter-spacing: -.02em; text-shadow: 0 8px 30px rgba(0,0,0,.28); }
+    .game-hero .pd-acad-btn { margin: 3px; }
+    .game-hero .pd-acad-chip.gold { background: rgba(212,175,55,.16); border-color: rgba(212,175,55,.45); color: #fff; }
+    .game-hero-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+    .game-hero-actions .pd-acad-btn {
+      flex: 1 1 150px;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
 
-    /* STATS — two by two on a phone, four across on a tablet */
+    /* --------------------------------------------------------------- stats */
     .game-stats-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin: 16px 0;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0;
     }
-
     .game-stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      padding: 14px 10px;
-      border-radius: 16px;
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border, rgba(15,23,42,.10));
+      padding: 12px 8px;
+      border-radius: 14px;
       text-align: center;
       box-shadow: var(--pd-shadow-sm);
-      transition: transform 0.2s;
+      min-width: 0;
     }
+    .game-stat-card:hover { transform: translateY(-2px); }
+    .game-stat-card i { font-size: 1.35rem; color: var(--pd-gold); margin-bottom: 4px; display: block; }
+    .game-stat-card .val { font-size: clamp(1.35rem, 6vw, 1.8rem); font-weight: 850; color: var(--pd-blue); display: block; line-height: 1.1; }
+    .game-stat-card .lbl { font-size: .68rem; font-weight: 700; color: var(--text-dim, #64748b); text-transform: uppercase; letter-spacing: .4px; line-height: 1.25; }
 
-    .game-stat-card:hover { transform: translateY(-4px); }
-    .game-stat-card i { font-size: 1.5rem; color: var(--pd-gold); margin-bottom: 6px; display: block; }
-    .game-stat-card .val { font-size: 1.6rem; font-weight: 850; color: var(--pd-blue); display: block; }
-    .game-stat-card .lbl { font-size: .72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-
-    @media (min-width: 760px) {
-      .game-wrap { padding: 32px 20px 56px; }
-      .game-stats-row { grid-template-columns: repeat(4, 1fr); gap: 16px; }
-      .game-stat-card { padding: 20px; }
-      .game-stat-card i { font-size: 2rem; }
-      .game-stat-card .val { font-size: 2.2rem; }
-      .game-stat-card .lbl { font-size: .85rem; }
+    /* --------------------------------------------------- the section tabs */
+    .game-tabbar {
+      position: sticky;
+      top: var(--pd-game-sticky, 0px);
+      z-index: 870;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 3px;
+      width: 100%;
+      margin: 0 0 12px;
+      padding: 5px;
+      border-radius: 16px;
+      border: 1px solid rgba(10,77,155,.14);
+      background: rgba(255,255,255,.97);
+      box-shadow: 0 8px 22px rgba(6,26,51,.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
+    body.dark-mode .game-tabbar { background: rgba(15,27,47,.97); border-color: rgba(226,232,240,.14); }
+    .game-tab {
+      appearance: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-width: 0;
+      min-height: 48px;
+      padding: 5px 3px;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--pd-acad-muted, #64748b);
+      font: inherit;
+      font-size: clamp(.6rem, 2.7vw, .74rem);
+      font-weight: 800;
+      line-height: 1.1;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background .18s ease, color .18s ease, transform .18s ease;
+    }
+    .game-tab i { font-size: 1.1rem; line-height: 1; }
+    .game-tab .game-tab-label { display: block; max-width: 100%; overflow-wrap: break-word; white-space: normal; }
+    .game-tab:hover { background: rgba(10,77,155,.07); color: var(--pd-acad-blue, #0A4D9B); }
+    .game-tab:active { transform: scale(.97); }
+    .game-tab:focus-visible { outline: 3px solid var(--pd-gold); outline-offset: 1px; }
+    .game-tab[aria-current="true"] {
+      background: linear-gradient(135deg, #0A4D9B, #07244d);
+      color: #fff;
+      box-shadow: 0 5px 14px rgba(10,77,155,.26);
+    }
+    .game-tab[aria-current="true"] i { color: var(--pd-gold-soft, #f6df8a); }
 
-    /* Domey is the voice host: her words and the conversation sit below, so
-       the page is easy to scroll and nothing covers the content. */
-    /* Topic tabs: a wrapping grid, never a column of single letters. Each tab
-       is a full tap target and the active topic is visibly marked. */
+    /* ------------------------------------------------------- dialogue area */
+    #panel-talk {
+      position: relative;
+      overflow: visible;
+      padding: clamp(12px, 3.2vw, 24px) !important;
+      margin: 0 0 12px !important;
+      border-radius: 20px;
+      border-color: rgba(212,175,55,.34) !important;
+    }
+    #panel-talk::after {
+      content: ""; position: absolute; inset: auto -30% -55% -30%; height: 70%;
+      background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.16), transparent 65%);
+      pointer-events: none;
+    }
+    #panel-talk > * { position: relative; z-index: 1; }
+    #domeyTopics, #domeyBadges {
+      padding: clamp(14px, 3.4vw, 24px) !important;
+      margin: 0 0 12px !important;
+      border-radius: 18px;
+    }
+    #panel-talk .pd-acad-btn { min-height: 44px; }
+    .domey-sound-btn { display: inline-flex; align-items: center; gap: 7px; }
+
+    /* Topic chips: a wrapping grid, never a column of single letters. */
     #domeyTopicChips {
       display: grid !important;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 136px), 1fr));
@@ -134,187 +243,289 @@
       box-shadow: 0 6px 16px rgba(10,77,155,.22);
     }
     #domeyTopicChips .pd-acad-chip:focus-visible { outline: 3px solid var(--pd-gold); outline-offset: 2px; }
+    #domeyTopicChips .pd-acad-chip[data-topic] { background: rgba(10,77,155,.05); }
+    #domeyTopicChips .pd-acad-chip[data-topic]:active { transform: scale(.97); }
     @media (max-width: 380px) {
       #domeyTopicChips { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
       #domeyTopicChips .pd-acad-chip { min-height: 44px; font-size: .78rem; padding: 8px 9px; }
     }
-    #domeyBadges .badge-item { cursor: default; }
-
-    /* ---- The game, polished: one warm stage, clearly playable controls ---- */
-    .game-hero::before {
-      content: ""; position: absolute; inset: -40% -10% auto; height: 180%;
-      background: radial-gradient(ellipse at 50% 20%, rgba(212,175,55,.42), transparent 62%);
-      pointer-events: none; animation: none;
-    }
-    .game-hero > * { position: relative; z-index: 1; }
-    .game-hero .pd-acad-eyebrow { color: var(--pd-gold-soft); }
-    .game-hero h1 { letter-spacing: -.02em; text-shadow: 0 8px 30px rgba(0,0,0,.28); }
-    .game-hero .pd-acad-btn { margin: 4px; }
-    .game-hero .pd-acad-chip.gold { background: rgba(212,175,55,.16); border-color: rgba(212,175,55,.45); color: #fff; }
-    #panel-talk { position: relative; overflow: hidden; border-color: rgba(212,175,55,.34) !important; }
-    #panel-talk::after {
-      content: ""; position: absolute; inset: auto -30% -55% -30%; height: 70%;
-      background: radial-gradient(ellipse at 50% 0%, rgba(212,175,55,.16), transparent 65%);
-      pointer-events: none;
-    }
-    .domey-sound-btn { display: inline-flex; align-items: center; gap: 7px; }
-    .domey-sound-btn[data-on="false"] { opacity: .62; }
-    #panel-talk .pd-acad-btn { min-height: 46px; }
-    #domeySummary { animation: none; }
-    #domeyTopicChips .pd-acad-chip[data-topic] { background: rgba(10,77,155,.05); }
-    #domeyTopicChips .pd-acad-chip[data-topic]:active { transform: scale(.97); }
-    #domeyBadges .badge-item { transition: transform .2s ease, box-shadow .2s ease; }
+    #domeyBadges .badge-item { cursor: default; transition: transform .2s ease, box-shadow .2s ease; }
     #domeyBadges .badge-item.unlocked:hover { transform: translateY(-3px); box-shadow: var(--pd-shadow-md); }
+    .domey-sound-btn[data-on="false"] { opacity: .62; }
+    #domeySummary { animation: none; }
 
-    /* ============================================================
-       Focused game mode. Starting a show hides the marketing sections
-       and lets the question, its four answers, the verdict and the
-       "Next question" button own the screen — no scrolling to find an
-       answer. Animations are off here; the sound controls stay.
-       ============================================================ */
-    body.game-focus { overflow: hidden; }
-    body.game-focus .game-hero,
-    body.game-focus .game-stats-row,
-    body.game-focus #domeyTopics,
-    body.game-focus #domeyBadges,
-    body.game-focus .game-wrap > .pd-acad-card:not(#panel-talk),
-    body.game-focus .pd-footer,
-    body.game-focus .ticker-bar,
-    body.game-focus [data-pd-install-banner] { display: none !important; }
-    body.game-focus #panel-talk {
-      position: fixed;
-      inset: 0;
-      z-index: 950;
+    /* The section bar starts compact; on a tablet it can show icon + label in
+       a row without changing the destinations. */
+    @media (min-width: 760px) {
+      .game-wrap { padding: 22px 18px 42px; }
+      .game-stats-row { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 16px 0; }
+      .game-stat-card { padding: 18px 12px; }
+      .game-stat-card i { font-size: 1.8rem; }
+      .game-stat-card .lbl { font-size: .82rem; }
+      .game-tab { flex-direction: row; gap: 8px; font-size: .86rem; min-height: 50px; padding: 9px 14px; }
+      .game-tab i { font-size: 1.2rem; }
+    }
+
+    /* ------------------------------------------------------- live status */
+    .domey-live-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      margin: 0 0 10px;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(10,77,155,.14);
+      background: rgba(10,77,155,.055);
+      color: var(--pd-acad-ink, #0f172a);
+      font-size: .84rem;
+      font-weight: 750;
+      line-height: 1.35;
+    }
+    .domey-live-status .domey-status-dot {
+      flex: none;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #94a3b8;
+      box-shadow: 0 0 0 3px rgba(148,163,184,.18);
+    }
+    .domey-live-status[data-state="listening"] { background: rgba(239,68,68,.07); border-color: rgba(239,68,68,.30); }
+    .domey-live-status[data-state="listening"] .domey-status-dot { background: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.18); animation: pdm-pulse .8s ease-in-out infinite; }
+    .domey-live-status[data-state="speaking"] { background: rgba(34,197,94,.07); border-color: rgba(34,197,94,.30); }
+    .domey-live-status[data-state="speaking"] .domey-status-dot { background: #16a34a; box-shadow: 0 0 0 3px rgba(34,197,94,.18); animation: pdm-pulse 1s ease-in-out infinite; }
+    .domey-live-status[data-state="processing"] { background: rgba(245,158,11,.08); border-color: rgba(245,158,11,.32); }
+    .domey-live-status[data-state="processing"] .domey-status-dot { background: #d97706; box-shadow: 0 0 0 3px rgba(245,158,11,.18); }
+    .domey-live-status[data-state="permission"] { background: rgba(212,175,55,.12); border-color: rgba(212,175,55,.42); }
+    .domey-live-status[data-state="permission"] .domey-status-dot { background: var(--pd-gold); }
+    .domey-live-status[data-state="error"] { background: rgba(239,68,68,.09); border-color: rgba(239,68,68,.38); }
+    .domey-live-status[data-state="error"] .domey-status-dot { background: #dc2626; }
+    .domey-live-status[data-state="ready"] .domey-status-dot { background: #0A4D9B; box-shadow: 0 0 0 3px rgba(10,77,155,.14); }
+
+    /* --------------------------------------------------- start choices */
+    .domey-start-choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 10px;
+    }
+    .domey-start-choices .pd-acad-btn {
+      flex: 1 1 145px;
+      justify-content: center;
+      min-height: 48px;
+      border-radius: 14px;
+    }
+    .domey-start-choices .pd-acad-btn-ghost {
+      color: var(--pd-acad-blue, #0A4D9B);
+      background: rgba(10,77,155,.07);
+      border: 1px solid rgba(10,77,155,.22);
+    }
+    .domey-start-choices[hidden] { display: none; }
+
+    /* ---------------------------------------------- the conversation card */
+    #domeyStage { width: 100%; min-width: 0; max-width: 100%; }
+    .game-wrap .pd-mascot.pdm-companion { width: 100%; max-width: 100%; min-width: 0; }
+    .game-wrap .pdm-companion .pdm-stage {
+      width: min(100%, 250px);
+      min-height: 0;
+      height: auto;
+      aspect-ratio: 11 / 13;
+      margin-inline: auto;
+      border-radius: 18px;
+    }
+    .game-wrap .pdm-companion .pdm-dialog {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
       margin: 0;
-      border: 0;
-      border-radius: 0;
-      padding: 6px clamp(8px, 2.4vw, 18px) calc(6px + env(safe-area-inset-bottom));
+      overflow: visible;
+    }
+    .game-wrap .pdm-companion .pdm-dialogue-card { padding: 11px 12px; border-radius: 16px; }
+    .game-wrap .pdm-companion .pdm-dialogue-card .pdm-text {
+      font-size: clamp(.94rem, 3.7vw, 1.06rem);
+      line-height: 1.5;
+      overflow: visible;
+    }
+    .game-wrap .pdm-chip.pdm-chip-big {
+      min-height: 50px;
+      padding: 10px 12px;
+      font-size: clamp(.86rem, 3.5vw, .98rem);
+      border-radius: 12px;
+    }
+    .game-wrap .pdm-chip-letter { width: 28px; height: 28px; flex: none; }
+    .game-wrap .pdm-chip-label { flex: 1; min-width: 0; overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: break-word; }
+    .game-wrap .pdm-answer { gap: 7px; }
+    .game-wrap .pdm-answer input { min-height: 48px; font-size: 16px; padding: 11px 12px; }
+    .game-wrap .pdm-send { min-height: 48px; padding: 0 14px; }
+    .game-wrap .pdm-log { max-height: 210px; overflow-y: auto; }
+    .game-wrap .pdm-hint { color: var(--pd-acad-muted, #64748b); }
+
+    /* Voice / text / pause / end: their own row, always before the answers. */
+    .domey-session-controls {
       display: grid;
-      grid-template-rows: minmax(0, 1fr) auto;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      width: 100%;
+      margin: 9px 0 2px;
+      padding: 9px 0 2px;
+      border-top: 1px solid rgba(10,77,155,.13);
+    }
+    .domey-session-controls[hidden] { display: none; }
+    .domey-session-btn {
+      appearance: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       gap: 6px;
-      height: 100vh;
-      height: 100dvh;
-      overflow: hidden;
-      overscroll-behavior: contain;
+      min-height: 46px;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(10,77,155,.22);
+      background: rgba(10,77,155,.06);
+      color: #0A4D9B;
+      font: inherit;
+      font-size: .78rem;
+      font-weight: 800;
+      line-height: 1.2;
+      cursor: pointer;
+      text-align: center;
+    }
+    .domey-session-btn:hover { border-color: var(--pd-gold); }
+    .domey-session-btn:focus-visible { outline: 3px solid var(--pd-gold); outline-offset: 1px; }
+    .domey-session-btn[aria-pressed="true"] { background: #0A4D9B; border-color: #07244d; color: #fff; }
+    .domey-session-btn.danger { color: #b91c1c; border-color: rgba(185,28,28,.30); background: rgba(185,28,28,.06); }
+    .domey-session-btn[hidden] { display: none; }
+    @media (min-width: 620px) {
+      .domey-session-controls { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+
+    /* --------------------------------------------------------- game focus
+       Focused mode is a calmer page, not a fixed overlay. The section bar and
+       the document remain scrollable; the hero steps out of the way so the
+       question owns the first screen. */
+    body.game-focus { overflow: visible; }
+    body.game-focus .game-hero { display: none; }
+    body.game-focus .game-wrap { padding-top: 8px; }
+    body.game-focus #panel-talk {
+      position: relative;
+      inset: auto;
+      z-index: auto;
+      height: auto;
+      min-height: 0;
+      max-height: none;
+      margin: 0 0 12px !important;
+      border-radius: 20px;
+      padding: clamp(10px, 2.8vw, 20px) !important;
+      overflow: visible;
       background: var(--pd-acad-card, #fff);
     }
     body.game-focus #panel-talk .domey-panel-head,
     body.game-focus #panel-talk .domey-intro,
-    body.game-focus #domeyMicNote { display: none !important; }
-    body.game-focus #panel-talk .domey-controls { margin-top: 4px; order: 9; }
-    body.game-focus #panel-talk .domey-controls #domeyStartBtn { display: none !important; }
-    body.game-focus #panel-talk .domey-controls #domeyExitBtn { display: inline-flex !important; }
-    /* #domeyStage is the mascot root, not a wrapper: it must stay a grid.
-       Turning it into a flex row put the stage beside the dialogue and pushed
-       the fourth answer off the phone screen. Three rows keep Domey on top,
-       the question and all four answers underneath, and the exit controls at
-       the bottom — never under a scroll position. */
+    body.game-focus #domeyMicNote { display: none; }
+    body.game-focus .domey-controls { margin-top: 10px; }
+    body.game-focus #domeyBestChip { display: inline-flex; }
+
     body.game-focus #domeyStage {
-      display: grid !important;
-      grid-template-columns: minmax(0, 1fr);
-      grid-template-rows: auto auto minmax(0, 1fr);
-      align-content: start;
-      align-items: start;
-      justify-items: stretch;
+      display: block;
       width: 100%;
-      max-width: 760px;
+      max-width: 100%;
       min-height: 0;
-      margin: 0 auto;
-      overflow: hidden;
+      margin: 0;
+      overflow: visible;
     }
-    body.game-focus .pdm-companion { gap: 6px; }
     body.game-focus .pdm-companion .pdm-dialog {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      min-height: 0;
+      gap: 7px;
       width: 100%;
-      overflow-y: auto;
-      overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 2px;
+      max-height: none;
+      min-height: 0;
+      overflow: visible;
     }
-    body.game-focus .pdm-answer,
-    body.game-focus .pdm-hint { display: none !important; }
-    body.game-focus #domeyBestChip,
-    body.game-focus #domeyMicChip { display: none !important; }
-    body.game-focus .pdm-companion .pdm-topbar { min-height: 34px; gap: 6px; }
-    /* Keep the stage's 11:13 aspect ratio. A fixed height with width:100%
-       turned it into a wide letterbox and the SVG body was cropped. The
-       narrow centred stage shows Domey head-to-feet, and the question and
-       four answers stay in normal flow underneath — never over her. */
+    /* Reading order inside the conversation: Domey's words → voice/text
+       controls → the typed box → every answer → the written log. */
+    body.game-focus .pdm-dialogue-card { order: 1; }
+    body.game-focus .pdm-enable-voice { order: 0; }
+    body.game-focus .domey-session-controls { order: 2; }
+    body.game-focus .pdm-answer { order: 3; display: flex; margin-top: 2px; }
+    body.game-focus .pdm-answer[hidden] { display: none; }
+    body.game-focus .pdm-chips { order: 4; }
+    body.game-focus .pdm-log { order: 5; display: block; }
+    body.game-focus .pdm-hint { order: 6; }
+
     body.game-focus .pdm-companion .pdm-stage {
-      width: min(28vh, 46vw, 190px) !important;
-      max-width: 100%;
+      width: clamp(96px, 18dvh, 152px) !important;
       min-height: 0 !important;
       height: auto !important;
       aspect-ratio: 11 / 13;
       margin-inline: auto;
       border-radius: 14px;
     }
-    /* The drawing is never stretched or cropped: the wrap is a containing box
-       and the SVG keeps its own aspect ratio inside it. */
-    body.game-focus .pdm-companion .pdm-char-wrap {
-      width: 90%;
-      height: calc(100% - 8px);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      overflow: visible;
+    body.game-focus .pdm-companion .pdm-topbar {
+      min-height: 34px;
+      gap: 6px;
+      margin-bottom: 6px;
     }
-    body.game-focus .pdm-companion .pdm-char {
-      width: 100%;
-      height: 100%;
-      object-fit: contain;
-      object-position: center bottom;
-      max-height: 100%;
+    body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .6rem; }
+    body.game-focus .pdm-companion .pdm-back { min-height: 40px; padding: 6px 10px; }
+    body.game-focus .pdm-companion .pdm-dialogue-card { padding: 10px 11px; }
+    body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text {
+      font-size: clamp(.92rem, 3.7vw, 1.05rem);
+      line-height: 1.48;
     }
-    body.game-focus .pdm-companion .pdm-dialogue-card { padding: 10px 12px; border-radius: 14px; }
-    body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .92rem; line-height: 1.42; }
-    body.game-focus .pdm-companion .pdm-chips { margin-top: 8px; gap: 7px; }
-    body.game-focus .pdm-chip.pdm-chip-big { min-height: 44px; padding: 8px 10px; font-size: .85rem; border-radius: 10px; }
-    body.game-focus .pdm-chip-letter { width: 25px; height: 25px; font-size: .74rem; }
-    body.game-focus .pdm-chip-continue { min-height: 46px; font-weight: 800; }
-    body.game-focus .pdm-companion .pdm-dialogue-card { padding: 9px 11px; }
+    body.game-focus .pdm-companion .pdm-chips {
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin-top: 0;
+    }
+    body.game-focus .pdm-chip.pdm-chip-big {
+      min-height: 50px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: clamp(.86rem, 3.6vw, .98rem);
+    }
+    body.game-focus .pdm-chip-letter { width: 28px; height: 28px; font-size: .74rem; }
+    body.game-focus .pdm-chip-continue { min-height: 52px; font-size: .95rem; }
     body.game-focus .pdm-companion .pdm-bar { margin-top: 7px; padding-top: 7px; gap: 6px; }
-    body.game-focus .pdm-companion .pdm-bar .pdm-mic { min-height: 40px; }
-    body.game-focus .pdm-companion .pdm-bar button { font-size: .7rem; padding: 7px 9px; }
-    body.game-focus .pdm-log { display: none; }
-    /* No idle motion, no sheen, no scroll-reveal inside the game. */
+    body.game-focus .pdm-companion .pdm-bar .pdm-mic { min-height: 42px; }
+    body.game-focus .pdm-companion .pdm-bar button { font-size: .72rem; padding: 8px 10px; }
+    body.game-focus .pdm-log { max-height: 165px; }
+
+    /* No idle motion, sheen or scroll-reveal inside the game. */
     body.game-focus .pdm-companion *,
     body.game-focus .pdm-companion *::before,
     body.game-focus .pdm-companion *::after {
       animation: none !important;
       transition: none !important;
     }
+    body.game-focus .pdm-companion[data-pdm-state="listening"] .pdm-listen-ring,
+    body.game-focus .pdm-companion[data-pdm-state="speaking"] .pdm-status .pdm-pip {
+      animation: pdm-pulse 1s ease-in-out infinite !important;
+    }
     .game-wrap [class*="pd-reveal"] { opacity: 1 !important; transform: none !important; animation: none !important; }
+
+    /* Landscape phones: the illustration gets out of the way, never the answer. */
+    @media (max-height: 560px) and (orientation: landscape) {
+      body.game-focus .pdm-companion .pdm-stage { width: clamp(72px, 16dvh, 112px) !important; }
+      body.game-focus .pdm-companion .pdm-topbar { min-height: 30px; }
+      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .9rem; }
+    }
     @media (max-height: 700px) {
-      body.game-focus .pdm-companion .pdm-stage { width: min(26vh, 40vw, 170px) !important; }
-      body.game-focus .pdm-chip.pdm-chip-big { min-height: 40px; padding: 6px 9px; font-size: .82rem; }
-      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-text { font-size: .84rem; line-height: 1.38; }
-      body.game-focus .pdm-companion .pdm-dialogue-card { padding: 8px 10px; }
-      body.game-focus .pdm-companion .pdm-bar { margin-top: 5px; padding-top: 5px; }
-    }
-    @media (max-height: 580px) {
-      body.game-focus .pdm-companion .pdm-stage { width: min(22vh, 34vw, 140px) !important; }
-      body.game-focus .pdm-companion .pdm-dialogue-card .pdm-bar { display: none !important; }
-      body.game-focus .pdm-chip.pdm-chip-big { min-height: 37px; padding: 5px 8px; font-size: .79rem; }
-      body.game-focus .pdm-chip-letter { width: 22px; height: 22px; font-size: .68rem; }
-      body.game-focus .domey-controls { gap: 6px !important; }
-      body.game-focus .domey-controls .pd-acad-btn { padding: 7px 10px; font-size: .72rem; }
-    }
-    @media (max-width: 480px) {
-      body.game-focus .pdm-companion .pdm-chips { grid-template-columns: 1fr; gap: 6px; }
+      body.game-focus .pdm-companion .pdm-stage { width: clamp(88px, 16dvh, 132px) !important; }
+      body.game-focus .pdm-chip.pdm-chip-big { min-height: 46px; padding: 8px 10px; }
+      body.game-focus .domey-session-btn { min-height: 44px; font-size: .74rem; }
     }
     @media (max-width: 380px) {
-      body.game-focus .pdm-companion .pdm-stage { width: min(24vh, 40vw, 150px) !important; }
-      body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .56rem; }
+      .game-tab { font-size: .58rem; min-height: 46px; }
+      body.game-focus .pdm-companion .pdm-topbar .pdm-hud { font-size: .54rem; }
       body.game-focus .pdm-companion .pdm-topbar { min-height: 28px; }
+      .domey-session-btn { font-size: .72rem; padding: 7px 8px; }
     }
     body.game-focus .pdm-text,
-    body.game-focus .pdm-chip-label { overflow-wrap: break-word; word-break: normal; hyphens: manual; }
+    body.game-focus .pdm-chip-label { overflow-wrap: break-word; word-break: normal; hyphens: manual; text-overflow: clip; }
     @media (prefers-reduced-motion: reduce) {
       .game-hero::before { animation: none; }
+      .game-tab, .game-stat-card { transition: none; }
     }
   </style>
 
@@ -326,7 +537,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 
-<body class="pd-acad-page">
+<body class="pd-acad-page game-page">
 <div class="pd-aurora" aria-hidden="true"><span></span></div>
 
 <aside class="pd-drawer" id="pdDrawer" aria-label="Main menu">
@@ -391,15 +602,33 @@
 
 <main class="game-wrap">
   <div data-pd-install-banner></div>
+
+  <!-- All four sections, always visible. A 4-column bar fits a 320 px phone
+       without horizontal scrolling, and it stays out of the question's way. -->
+  <nav class="game-tabbar" id="gameTabbar" aria-label="Game sections">
+    <a class="game-tab" href="#panel-talk" data-game-tab="panel-talk" aria-current="true">
+      <i class="pd-i pd-i-gamepad-2" aria-hidden="true"></i><span class="game-tab-label">Play</span>
+    </a>
+    <a class="game-tab" href="#domeyTopics" data-game-tab="domeyTopics">
+      <i class="pd-i pd-i-book-open" aria-hidden="true"></i><span class="game-tab-label">Topics</span>
+    </a>
+    <a class="game-tab" href="#gameProgress" data-game-tab="gameProgress">
+      <i class="pd-i pd-i-chart-column" aria-hidden="true"></i><span class="game-tab-label">Progress</span>
+    </a>
+    <a class="game-tab" href="#domeyBadges" data-game-tab="domeyBadges">
+      <i class="pd-i pd-i-award" aria-hidden="true"></i><span class="game-tab-label">Badges</span>
+    </a>
+  </nav>
+
   <section class="game-hero">
     <span class="pd-acad-eyebrow"><i class="pd-i pd-i-gamepad-2"></i> THE PRAYER DOME BIBLE CHALLENGE</span>
     <h1>Play the Bible Challenge</h1>
-    <p><strong id="domeyBankTotal">1,000+</strong> Bible questions across 14 topics. Domey reads each question out loud, gives you four choices and the scripture behind the answer. Answer by tapping, typing or speaking — then carry on at your own pace.</p>
-    <div>
-      <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="talkWithDomey()"><i class="pd-i pd-i-play"></i> Talk with Domey</button>
-      <button class="pd-acad-btn pd-acad-btn-ghost" type="button" onclick="chooseDomeyTopic()" style="border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-list"></i> Choose a topic</button>
+    <p><strong id="domeyBankTotal">1,000+</strong> Bible questions across 14 topics. Domey reads each question out loud, gives you four choices and the scripture behind the answer. Answer by talking, typing or tapping — then carry on at your own pace.</p>
+    <div class="game-hero-actions">
+      <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="talkWithDomey()"><i class="pd-i pd-i-mic-vocal"></i> Talk to Domey</button>
+      <button class="pd-acad-btn pd-acad-btn-ghost" type="button" onclick="typeToDomey()"><i class="pd-i pd-i-type"></i> Type to Domey</button>
     </div>
-    <p class="pd-acad-chip gold" style="margin-top:14px;"><i class="pd-i pd-i-sparkles"></i> Talk to her — she really does hear you, and she answers back</p>
+    <p class="pd-acad-chip gold" style="margin-top:12px;"><i class="pd-i pd-i-sparkles"></i> Talk to her or type to her — the conversation stays with you either way</p>
   </section>
 
   <!-- TALK WITH DOMEY — Domey speaks the questions out loud, listens to your
@@ -410,27 +639,48 @@
       <h2 style="margin:0; font-family:Poppins,sans-serif; color:var(--pd-acad-blue); font-size:1.35rem;"><i class="pd-i pd-i-mic-vocal" style="color:var(--pd-gold);"></i> Talk with Domey</h2>
     </div>
     <p class="domey-intro" style="color:var(--pd-acad-muted); margin:0 0 18px; line-height:1.6;">Domey reads each Bible question out loud, listens to your answer, and explains the scripture behind every answer. Answer by talking, by tapping <strong>A, B, C or D</strong>, or by typing. Ask her to <em>repeat</em>, ask for a <em>hint</em>, or say <em>skip</em>. The whole conversation is written below so you can read along.</p>
+
+    <div class="domey-live-status" id="domeyLiveStatus" role="status" aria-live="polite" data-state="ready">
+      <span class="domey-status-dot" aria-hidden="true"></span>
+      <span id="domeyStatusText">Ready — talk or type to Domey</span>
+    </div>
+
+    <!-- Two clear ways in. Either button starts the conversation in one tap;
+         Talk to Domey asks for the microphone on that same tap and begins
+         listening as soon as the browser allows it. There is no second
+         "Start talking" step. -->
+    <div class="domey-start-choices" id="domeyStartChoices">
+      <button class="pd-acad-btn pd-acad-btn-primary" id="domeyStartBtn" type="button"><i class="pd-i pd-i-mic-vocal"></i> Talk to Domey</button>
+      <button class="pd-acad-btn pd-acad-btn-ghost" id="domeyTypeBtn" type="button"><i class="pd-i pd-i-type"></i> Type to Domey</button>
+    </div>
+
     <div id="domeyStage"></div>
 
-    <div class="domey-controls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px;">
-      <button class="pd-acad-btn pd-acad-btn-primary" id="domeyStartBtn" type="button"><i class="pd-i pd-i-play"></i> Start the show</button>
-      <button class="pd-acad-btn pd-acad-btn-ghost" id="domeyExitBtn" type="button" onclick="exitDomeyShow()" style="display:none; border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-x"></i> Exit game</button>
-      <button class="pd-acad-btn pd-acad-btn-ghost" id="domeyStopBtn" type="button" style="border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-square"></i> Stop talking</button>
+    <!-- Moved inside Domey's conversation card after she mounts, so voice and
+         text controls sit above the answers (accessible on every screen). -->
+    <div class="domey-session-controls" id="domeyGameControls" hidden>
+      <button class="domey-session-btn" id="domeyPauseListenBtn" type="button" aria-pressed="false"><i class="pd-i pd-i-mic-off"></i> <span>Pause listening</span></button>
+      <button class="domey-session-btn" id="domeyMuteBtn" type="button" aria-pressed="false"><i class="pd-i pd-i-volume-2"></i> <span>Mute Domey</span></button>
+      <button class="domey-session-btn" id="domeyModeBtn" type="button"><i class="pd-i pd-i-type"></i> <span>Type instead</span></button>
+      <button class="domey-session-btn danger" id="domeyEndBtn" type="button"><i class="pd-i pd-i-square"></i> <span>End conversation</span></button>
+    </div>
+
+    <div class="domey-controls" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px;">
       <button class="pd-acad-btn pd-acad-btn-ghost domey-sound-btn" id="domeySfxBtn" type="button" style="border:1px solid var(--pd-acad-border);" aria-pressed="true" title="Turn game sound effects on or off"><i class="pd-i pd-i-volume-2"></i> <span>Sound on</span></button>
       <span class="pd-acad-chip" id="domeyBestChip"><i class="pd-i pd-i-trophy"></i> Best score: —</span>
-      <span class="pd-acad-chip" id="domeyMicChip"><i class="pd-i pd-i-mic"></i> Voice answers ready</span>
+      <span class="pd-acad-chip" id="domeyMicChip"><i class="pd-i pd-i-mic-off"></i> Voice is off — type or tap</span>
     </div>
 
     <p id="domeyMicNote" style="margin:12px 0 0; font-size:.86rem; color:var(--pd-acad-muted); line-height:1.55;">
       <i class="pd-i pd-i-info" style="color:var(--pd-gold);"></i>
-      Domey listens on your device through your browser's own speech engine — Nothing is recorded, and you can always tap a choice or type instead. If she mishears you, just say it again or type the answer. Say <strong>repeat</strong>, <strong>hint</strong>, <strong>skip</strong> or <strong>slow down</strong> any time.
+      Nothing is recorded. Tap <strong>Talk to Domey</strong> to use your voice, or <strong>Type to Domey</strong> to answer with the keyboard. You can switch between them at any time without losing the conversation. Say or type <strong>repeat</strong>, <strong>hint</strong>, <strong>skip</strong> or <strong>slow down</strong> any time.
     </p>
 
     <div id="domeySummary" style="display:none; margin-top:18px; padding:18px; border-radius:20px; background:linear-gradient(135deg, rgba(212,175,55,.12), rgba(10,77,155,.06)); border:1px solid rgba(212,175,55,.35);"></div>
   </section>
 
   <!-- STATS -->
-  <section class="game-stats-row">
+  <section class="game-stats-row" id="gameProgress" aria-label="Your progress">
     <div class="game-stat-card">
       <i class="pd-i pd-i-star"></i>
       <span class="val" id="xpVal">120</span>
@@ -475,7 +725,7 @@
           <option value="15">15 questions</option>
         </select>
       </label>
-      <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="startDomeyShow()"><i class="pd-i pd-i-play"></i> Start with this topic</button>
+      <button class="pd-acad-btn pd-acad-btn-primary" type="button" onclick="startDomeyShow('voice')"><i class="pd-i pd-i-mic-vocal"></i> Talk this topic</button>
     </div>
     <div id="domeyTopicChips" role="group" aria-label="Choose a Bible topic"></div>
   </section>
@@ -652,15 +902,48 @@
     return wanted;
   }
 
+  var gameMode = 'voice';
+  var gameActive = false;
+  var pendingTextFocus = false;
+
   function domeyElements() {
     return {
       stage: document.getElementById('domeyStage'),
       startBtn: document.getElementById('domeyStartBtn'),
-      stopBtn: document.getElementById('domeyStopBtn'),
+      typeBtn: document.getElementById('domeyTypeBtn'),
+      startChoices: document.getElementById('domeyStartChoices'),
+      controls: document.getElementById('domeyGameControls'),
+      pauseListen: document.getElementById('domeyPauseListenBtn'),
+      mute: document.getElementById('domeyMuteBtn'),
+      mode: document.getElementById('domeyModeBtn'),
+      status: document.getElementById('domeyLiveStatus'),
+      statusText: document.getElementById('domeyStatusText'),
       best: document.getElementById('domeyBestChip'),
       mic: document.getElementById('domeyMicChip'),
       summary: document.getElementById('domeySummary')
     };
+  }
+
+  /* One truthful status line. It is only "Listening" when a recognition
+     session really started; a pending or blocked permission has its own
+     message, and a microphone error is never disguised as listening. */
+  function setDomeyStatus(state, text) {
+    var ui = domeyElements();
+    if (ui.status) ui.status.setAttribute('data-state', state || 'ready');
+    if (ui.statusText) ui.statusText.textContent = text || 'Ready';
+  }
+
+  function setDomeyStatusFromHost(host) {
+    if (!host || !gameActive) return;
+    var mic = host.micState();
+    if (mic === 'active') { setDomeyStatus('listening', 'Listening — speak now'); return; }
+    if (mic === 'denied') { setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead'); return; }
+    if (mic === 'unsupported') { setDomeyStatus('error', 'Voice is not available in this browser — type your answer'); return; }
+    if (host.state === 'speaking') { setDomeyStatus('speaking', 'Domey is speaking'); return; }
+    if (host.state === 'thinking') { setDomeyStatus('processing', 'Processing…'); return; }
+    if (mic === 'paused') { setDomeyStatus('ready', 'Listening paused — resume when you are ready'); return; }
+    if (host.answerResolve) { setDomeyStatus('ready', 'Ready — your turn'); return; }
+    setDomeyStatus('ready', 'Ready');
   }
 
   function renderDomeyStats() {
@@ -669,11 +952,52 @@
       ui.best.innerHTML = '<i class="pd-i pd-i-trophy"></i> Best score: ' +
         (domeyBest ? domeyBest + ' / ' + domeyBestTotal : '—');
     }
-    if (ui.mic) {
-      var ready = window.PDMascot && PDMascot.supportsListening();
-      ui.mic.innerHTML = '<i class="pd-i ' + (ready ? 'pd-i-mic' : 'pd-i-mic-off') + '"></i> ' +
-        (ready ? 'Voice answers ready' : 'Type or tap to answer');
+    updateMicChip();
+  }
+
+  function updateMicChip() {
+    var chip = domeyElements().mic;
+    if (!chip) return;
+    var ready = window.PDMascot && PDMascot.supportsListening();
+    var state = domey ? domey.micState() : (ready ? 'prompt' : 'unsupported');
+    var label = !ready ? 'Voice is not available — type or tap'
+      : state === 'active' ? 'Listening for your voice'
+      : state === 'denied' ? 'Microphone blocked — type or tap'
+      : state === 'paused' ? 'Listening paused'
+      : state === 'granted' ? 'Voice ready'
+      : 'Voice ready when you tap Talk';
+    chip.innerHTML = '<i class="pd-i ' + (state === 'active' ? 'pd-i-mic' : 'pd-i-mic-off') + '"></i> ' + label;
+  }
+
+  function updateSessionControls() {
+    var ui = domeyElements();
+    var host = domey;
+    if (ui.startChoices) ui.startChoices.hidden = !!gameActive;
+    if (ui.controls) {
+      ui.controls.hidden = !gameActive;
+      if (gameActive && host && host.chips && ui.controls.parentNode !== host.dialog) {
+        // Between the conversation card and the choices: controls before answers.
+        host.dialog.insertBefore(ui.controls, host.chips);
+      }
     }
+    if (ui.pauseListen && host) {
+      var canPause = gameMode === 'voice' && host.canHear && host.canHear() && host.micState() !== 'denied';
+      ui.pauseListen.hidden = !canPause;
+      var listening = host.micState() === 'active' || host.micEnabled;
+      ui.pauseListen.setAttribute('aria-pressed', listening ? 'false' : 'true');
+      ui.pauseListen.innerHTML = '<i class="pd-i ' + (listening ? 'pd-i-pause' : 'pd-i-mic') + '"></i> <span>' +
+        (listening ? 'Pause listening' : 'Resume listening') + '</span>';
+    }
+    if (ui.mute && host) {
+      ui.mute.setAttribute('aria-pressed', host.muted ? 'true' : 'false');
+      ui.mute.innerHTML = '<i class="pd-i ' + (host.muted ? 'pd-i-volume-x' : 'pd-i-volume-2') + '"></i> <span>' +
+        (host.muted ? 'Unmute Domey' : 'Mute Domey') + '</span>';
+    }
+    if (ui.mode) {
+      ui.mode.innerHTML = '<i class="pd-i ' + (gameMode === 'voice' ? 'pd-i-type' : 'pd-i-mic') + '"></i> <span>' +
+        (gameMode === 'voice' ? 'Type instead' : 'Use voice') + '</span>';
+    }
+    updateMicChip();
   }
 
   function updateDomeyMicNote(on) {
@@ -688,7 +1012,7 @@
     note.innerHTML = '<i class="pd-i ' + (on ? 'pd-i-mic' : 'pd-i-info') + '" style="color:var(--pd-gold);"></i> ' +
       (on
         ? 'Your microphone is on — talk to Domey like a friend. Say <strong>repeat</strong>, <strong>hint</strong>, <strong>skip</strong> or <strong>slow down</strong> any time. Nothing is recorded; everything is answered on your device.'
-        : 'Tap <strong>Start the show</strong> and Domey will ask for your microphone so she can hear your answers. Nothing is recorded, and you can always tap a choice or type instead.');
+        : 'Tap <strong>Talk to Domey</strong> and Domey will ask for your microphone so she can hear your answers. Nothing is recorded, and you can always tap a choice or type instead.');
   }
 
   function ensureDomey() {
@@ -699,48 +1023,106 @@
       name: 'Domey',
       role: 'Prayer Dome Bible host',
       lang: (document.documentElement.lang || 'en').slice(0, 2) || 'en',
-      placeholder: 'Type your answer, or tap a choice…',
+      placeholder: 'Type your answer, or ask Domey a question…',
       layout: 'companion',
       back: { href: '/', label: 'Home' },
       log: true,
+      // A tap on the drawing must not quietly open the microphone: only the
+      // deliberate Talk to Domey / resume controls may ask for it.
+      listenOnTap: false,
       // No 3D model: voice only, with the conversation shown below.
       render: 'svg'
     });
+
+    // The controls belong inside the conversation, before the answer options.
+    var controls = document.getElementById('domeyGameControls');
+    if (controls && domey.chips && domey.dialog) {
+      domey.dialog.insertBefore(controls, domey.chips);
+    }
+
     domey.on('mic', function (on) {
-      var chip = domeyElements().mic;
-      if (chip) chip.innerHTML = '<i class="pd-i ' + (on ? 'pd-i-mic' : 'pd-i-mic-off') + '"></i> ' + (on ? 'Listening for your voice' : 'Voice answers ready');
       updateDomeyMicNote(on);
+      updateSessionControls();
+      if (!gameActive) return;
+      if (!on && (domey.ears.permission === 'denied' || domey.ears.permission === 'not-allowed')) {
+        setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead');
+      }
     });
+    domey.on('permission', function (state) {
+      if (!gameActive) return;
+      if (state === 'denied') setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead');
+      else if (state === 'unsupported') setDomeyStatus('error', 'Voice is not available in this browser — type your answer');
+      else if (state === 'prompt' || state === 'unknown') setDomeyStatus('permission', 'Microphone permission required — allow the microphone prompt');
+      else if (state === 'granted' && domey.state !== 'speaking') setDomeyStatus('ready', 'Ready — your turn');
+      updateSessionControls();
+    });
+    domey.on('listening', function (on) {
+      if (!gameActive) return;
+      if (on) { setDomeyStatus('listening', 'Listening — speak now'); }
+      else if (domey.state !== 'speaking' && domey.state !== 'thinking') { setDomeyStatus('ready', 'Ready — your turn'); }
+      updateSessionControls();
+    });
+    domey.on('state', function (state) {
+      if (!gameActive) return;
+      if (state === 'speaking') setDomeyStatus('speaking', 'Domey is speaking');
+      else if (state === 'thinking') setDomeyStatus('processing', 'Processing…');
+      else if (state === 'listening') setDomeyStatus('listening', 'Listening — speak now');
+      else if (state === 'idle') setDomeyStatusFromHost(domey);
+      updateSessionControls();
+    });
+    domey.on('heard', function () {
+      if (gameActive) setDomeyStatus('processing', 'Processing…');
+    });
+    domey.on('answered', function () {
+      if (gameActive) setDomeyStatus('processing', 'Processing…');
+    });
+    domey.on('question', function () {
+      // In text mode, let the keyboard come up when the answer box appears.
+      if (pendingTextFocus) setTimeout(focusTypedAnswer, 120);
+    });
+    domey.on('mic-error', function (reason) {
+      if (!gameActive) return;
+      if (reason === 'not-allowed' || reason === 'service-not-allowed') {
+        setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead');
+        gameMode = 'text';
+        domey.autoListen = false;
+      } else if (reason === 'network') {
+        setDomeyStatus('error', 'Connection error — the speech service could not be reached. You can type instead.');
+      } else {
+        setDomeyStatus('error', 'Microphone error — you can type your answer or tap a choice');
+      }
+      updateSessionControls();
+    });
+    domey.on('muted', function () {
+      updateSessionControls();
+      if (gameActive) setDomeyStatus('ready', domey.muted ? 'Domey is muted — answers are written on screen' : 'Ready — your turn');
+    });
+
     renderDomeyStats();
     updateDomeyMicNote(false);
+    updateSessionControls();
     return domey;
   }
 
-  /* Greet the member the moment the page is ready: Domey speaks hello. */
+  /* Prepare the host without speaking and without touching the microphone. */
   function wakeDomey() {
     var host = ensureDomey();
     if (!host) return null;
-    host.setStatus('Tap Start the show and talk to me');
+    host.setStatus('Ready when you are');
+    setDomeyStatus('ready', 'Ready — talk or type to Domey');
     return host;
   }
 
-  /* `rounds` questions from the 1,200-strong bank, in the chosen topic, in the
-     shape PDMascot.show() reads. */
+  /* The chosen topic, round count and answer order stay in the bank's hands. */
   function domeyBank(count) {
     if (!window.PDDomeyQuestions || !PDDomeyQuestions.count) return null;
     var select = document.getElementById('domeyTopicSelect');
     var topic = select ? select.value : '';
     var picked = PDDomeyQuestions.forMascot(count, topic ? { topic: topic } : {});
     if (!picked || !picked.length) return null;
-    /* Every question stays a four-choice question. An earlier version turned
-       every third "Who …?" item into a true-or-false statement by subject
-       substitution; it read well on paper but broke the show: with only
-       "True" and "False" to match against, a member who answered the obvious
-       "Daniel" was scored wrong, and a two-way choice is a coin toss rather
-       than a memory of the Word. The bank's own promise — four choices, so a
-       spoken answer is never a guess — is kept here. Verse completion is
-       deliberately NOT generated: the bank carries references, not full
-       quotations, and completing a reference would invent a quote. */
+    /* Verse completion is deliberately NOT generated: the bank carries
+       references, not full quotations, and completing a reference would
+       invent a quote. */
     return picked;
   }
 
@@ -766,55 +1148,105 @@
       '<a class="pd-acad-btn pd-acad-btn-ghost" href="/lessons.html" style="border:1px solid var(--pd-acad-border);"><i class="pd-i pd-i-graduation-cap"></i> Study in the Academy</a>' +
       '</div>';
     var again = document.getElementById('domeyPlayAgain');
-    if (again) again.addEventListener('click', function () { startDomeyShow(); });
+    if (again) again.addEventListener('click', function () { startDomeyShow('voice'); });
   }
 
   function enterGameFocus() {
     document.body.classList.add('game-focus');
-    var exit = document.getElementById('domeyExitBtn');
-    if (exit) exit.style.display = 'inline-flex';
     var stage = document.getElementById('domeyStage');
     if (stage) stage.setAttribute('aria-hidden', 'false');
   }
 
   function leaveGameFocus() {
     document.body.classList.remove('game-focus');
-    var exit = document.getElementById('domeyExitBtn');
-    if (exit) exit.style.display = 'none';
     var stage = document.getElementById('domeyStage');
-    if (stage) stage.setAttribute('aria-hidden', 'true');
+    if (stage) stage.setAttribute('aria-hidden', 'false');
+  }
+
+  function setGameMode(mode) {
+    gameMode = mode === 'text' ? 'text' : 'voice';
+    if (!domey) { updateSessionControls(); return; }
+    domey.autoListen = gameMode === 'voice';
+    if (gameMode === 'text') {
+      domey.pauseListening();
+      domey.answerInput.placeholder = 'Type your answer, or ask Domey a question…';
+      if (gameActive) setDomeyStatus('ready', 'Text mode — type your answer');
+      updateSessionControls();
+      return;
+    }
+    if (!domey.canHear()) {
+      gameMode = 'text';
+      domey.autoListen = false;
+      setDomeyStatus('error', 'Voice is not available in this browser — type your answer');
+      updateSessionControls();
+      return;
+    }
+    domey.answerInput.placeholder = 'Type here, or speak your answer…';
+    if (gameActive) setDomeyStatus('permission', 'Microphone permission required — allow the microphone prompt');
+    domey.enableMic().then(function (granted) {
+      if (!gameActive) return;
+      if (!granted) setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead');
+      else setDomeyStatusFromHost(domey);
+      updateSessionControls();
+    });
   }
 
   window.exitDomeyShow = function () {
-    if (domey && typeof domey.stop === 'function') {
+    gameActive = false;
+    if (domey) {
       try { domey.stop(); } catch (e) { /* nothing to stop */ }
+      try { domey.disableMic(); } catch (e) {}
+      domey.autoListen = true;
+      domey.answerInput.placeholder = 'Type your answer, or ask Domey a question…';
     }
     domeyBusy = false;
-    var startBtn = document.getElementById('domeyStartBtn');
-    if (startBtn) { startBtn.disabled = false; startBtn.innerHTML = '<i class="pd-i pd-i-play"></i> Start the show'; }
     leaveGameFocus();
+    setDomeyStatus('ready', 'Ready — talk or type to Domey');
+    updateSessionControls();
   };
 
-  function startDomeyShow() {
+  function startDomeyShow(mode) {
     if (domeyBusy) return;
     var host = ensureDomey();
     if (!host) return;
     var ui = domeyElements();
+    gameMode = mode === 'text' ? 'text' : 'voice';
+    gameActive = true;
+    domeyBusy = true;
     enterGameFocus();
     if (ui.summary) ui.summary.style.display = 'none';
-    // Ask for the microphone right now, while this tap is still a user gesture:
-    // it is the only moment a browser will let us open Domey's ears.
-    if (host.canHear()) host.enableMic();
-    if (ui.startBtn) { ui.startBtn.disabled = true; ui.startBtn.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> Domey is talking…'; }
-    domeyBusy = true;
+    host.autoListen = gameMode === 'voice';
+    updateSessionControls();
+
+    if (gameMode === 'text') {
+      host.pauseListening();
+      host.answerInput.placeholder = 'Type your answer, or ask Domey a question…';
+      setDomeyStatus('ready', 'Text mode — type your answer');
+    } else if (!host.canHear()) {
+      gameMode = 'text';
+      host.autoListen = false;
+      host.pauseListening();
+      setDomeyStatus('error', 'Voice is not available in this browser — type your answer');
+    } else {
+      setDomeyStatus('permission', 'Microphone permission required — allow the microphone prompt');
+      // Ask for the microphone right now, while this tap is still a user
+      // gesture: it is the only moment a browser will let us open her ears.
+      // Talking to Domey is the whole action — there is no second start step.
+      if (host.canHear()) host.enableMic();
+      host.answerInput.placeholder = 'Type here, or speak your answer…';
+    }
+    updateSessionControls();
+
     var rounds = domeyRounds();
     var answeredRight = 0;
 
     PDMascot.show(host, {
       rounds: rounds,
       bank: domeyBank(rounds),
-      // The reading pace: her explanation and its verse stay on screen until
-      // the member continues — a big button, or simply saying "next".
+      // Voice mode opens listening automatically; text mode never does.
+      listen: gameMode === 'voice',
+      // Her explanation and its verse stay on screen until the member
+      // continues — a big button, or simply saying or typing "next".
       pace: 'manual',
       onScore: function (score) {
         if (!score.right) return;
@@ -826,10 +1258,12 @@
         syncToFirebase();
       },
       onFinish: function (data) {
+        gameActive = false;
+        if (domey) { try { domey.disableMic(); } catch (e) {} }
         leaveGameFocus();
-        if (data.percent >= 80) {
-          unlockBadge('word-seeker');
-        }
+        setDomeyStatus('ready', 'Ready — round complete');
+        updateSessionControls();
+        if (data.percent >= 80) unlockBadge('word-seeker');
         if (data.total >= 15) unlockBadge('quiz-champion');
         var score = data.correct;
         if (score > domeyBest || data.total !== domeyBestTotal) {
@@ -850,13 +1284,22 @@
       }
     }).then(function () {
       domeyBusy = false;
-      leaveGameFocus();
-      if (ui.startBtn) { ui.startBtn.disabled = false; ui.startBtn.innerHTML = '<i class="pd-i pd-i-play"></i> Start the show'; }
+      // A normal finish already closed the session. Ending early may resolve
+      // here too; keep the page in a calm, ready state either way.
+      if (gameActive) {
+        gameActive = false;
+        if (domey) { try { domey.disableMic(); } catch (e) {} }
+        setDomeyStatus('ready', 'Ready — talk or type to Domey');
+      }
+      updateSessionControls();
     }).catch(function (error) {
       console.warn('[Domey] show failed', error);
       domeyBusy = false;
+      gameActive = false;
+      if (domey) { try { domey.disableMic(); } catch (e) {} }
       leaveGameFocus();
-      if (ui.startBtn) { ui.startBtn.disabled = false; ui.startBtn.innerHTML = '<i class="pd-i pd-i-play"></i> Start the show'; }
+      setDomeyStatus('error', 'Connection error — Domey could not start the round. Check your connection and try again.');
+      updateSessionControls();
     });
   }
 
@@ -920,14 +1363,92 @@
   };
 
   window.startDomeyShow = startDomeyShow;
+
+  /* ---------------------------------------------------------- section tabs */
+  var GAME_SECTIONS = ['panel-talk', 'domeyTopics', 'gameProgress', 'domeyBadges'];
+
+  function setActiveGameTab(id) {
+    document.querySelectorAll('[data-game-tab]').forEach(function (tab) {
+      var on = tab.getAttribute('data-game-tab') === id;
+      if (on) tab.setAttribute('aria-current', 'true');
+      else tab.removeAttribute('aria-current');
+    });
+  }
+
+  function scrollToGameSection(id, smooth) {
+    var target = document.getElementById(id);
+    setActiveGameTab(id);
+    if (!target) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (target.scrollIntoView) {
+      try {
+        target.scrollIntoView({ behavior: smooth && !reduce ? 'smooth' : 'auto', block: 'start' });
+      } catch (e) { target.scrollIntoView(); }
+    }
+  }
+
+  function syncStickyOffset() {
+    var topbar = document.querySelector('.pd-topbar');
+    var bar = document.getElementById('gameTabbar');
+    var height = topbar && topbar.getBoundingClientRect ? Math.max(0, Math.round(topbar.getBoundingClientRect().height)) : 0;
+    var barHeight = bar && bar.getBoundingClientRect ? Math.max(0, Math.round(bar.getBoundingClientRect().height)) : 58;
+    document.documentElement.style.setProperty('--pd-game-sticky', height + 'px');
+    document.documentElement.style.setProperty('--pd-game-tabbar-h', (barHeight || 58) + 'px');
+  }
+
+  function initGameTabs() {
+    syncStickyOffset();
+    document.querySelectorAll('[data-game-tab]').forEach(function (tab) {
+      tab.addEventListener('click', function (event) {
+        event.preventDefault();
+        scrollToGameSection(tab.getAttribute('data-game-tab'), true);
+      });
+    });
+
+    var frame = 0;
+    function updateActiveFromScroll() {
+      frame = 0;
+      var bar = document.getElementById('gameTabbar');
+      var marker = (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pd-game-sticky'), 10) || 0) +
+        (bar ? bar.offsetHeight : 0) + 24;
+      var current = GAME_SECTIONS[0];
+      GAME_SECTIONS.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= marker) current = id;
+      });
+      setActiveGameTab(current);
+    }
+    window.addEventListener('scroll', function () {
+      if (frame) return;
+      frame = window.requestAnimationFrame ? window.requestAnimationFrame(updateActiveFromScroll) : setTimeout(updateActiveFromScroll, 80);
+    }, { passive: true });
+    window.addEventListener('resize', function () { syncStickyOffset(); setTimeout(syncStickyOffset, 120); }, { passive: true });
+    updateActiveFromScroll();
+  }
+
+  function focusTypedAnswer() {
+    if (!pendingTextFocus || !domey || !domey.answerInput) return;
+    pendingTextFocus = false;
+    try { domey.answerInput.focus({ preventScroll: true }); } catch (e) {}
+  }
+
   window.talkWithDomey = function () {
-    var stage = document.getElementById('panel-talk');
-    if (stage && stage.scrollIntoView) stage.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    startDomeyShow();
+    // The tap itself starts the conversation and asks for the microphone.
+    startDomeyShow('voice');
+    setTimeout(function () { scrollToGameSection('panel-talk', true); }, 30);
   };
+
+  window.typeToDomey = function () {
+    pendingTextFocus = true;
+    startDomeyShow('text');
+    setTimeout(function () {
+      scrollToGameSection('panel-talk', true);
+      focusTypedAnswer();
+    }, 30);
+  };
+
   window.chooseDomeyTopic = function () {
-    var card = document.getElementById('domeyTopics');
-    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    scrollToGameSection('domeyTopics', true);
     var select = document.getElementById('domeyTopicSelect');
     if (select) select.focus({ preventScroll: true });
   };
@@ -948,36 +1469,81 @@
       roundsSelect.addEventListener('change', function () { renderDomeyStats(); });
     }
 
-    // Domey is the whole page: wake her up and let her wave hello.
+    // Mount Domey silently. No microphone is requested until the member taps
+    // Talk to Domey (or Resume listening).
     wakeDomey();
+    initGameTabs();
 
     renderSfxButton();
     var sfxBtn = document.getElementById('domeySfxBtn');
     if (sfxBtn) sfxBtn.addEventListener('click', window.toggleDomeySound);
 
-    // Friendly UI ticks: choices, topic chips and the two primary controls.
+    // Friendly UI ticks: choices, topic chips and the primary controls.
     // Guarded so a screen reader's synthetic click never turns into a chorus.
     document.addEventListener('click', function (event) {
       if (!window.PDSFX) return;
       var hit = event.target && event.target.closest
-        ? event.target.closest('.pdm-choice, #domeyTopicChips [data-topic], #domeyStartBtn, #domeyStopBtn')
+        ? event.target.closest('.pdm-chip, #domeyTopicChips [data-topic], #domeyStartBtn, #domeyTypeBtn')
         : null;
       if (!hit) return;
       PDSFX.unlock();
-      PDSFX.play(hit.id === 'domeyStartBtn' ? 'select' : 'tap');
+      PDSFX.play(hit.id === 'domeyStartBtn' || hit.id === 'domeyTypeBtn' ? 'select' : 'tap');
     }, true);
 
     var domeyStart = document.getElementById('domeyStartBtn');
-    if (domeyStart) domeyStart.addEventListener('click', function () { if (window.PDSFX) PDSFX.unlock(); startDomeyShow(); });
-    var domeyStop = document.getElementById('domeyStopBtn');
-    if (domeyStop) domeyStop.addEventListener('click', function () {
-      if (domey) { domey.hurry(); domey.stop(); domey.setStatus('Stopped — tap Start the show when you are ready'); }
-      var ui = domeyElements();
-      if (ui.startBtn) ui.startBtn.innerHTML = '<i class="pd-i pd-i-play"></i> Start the show';
-      domeyBusy = false;
+    if (domeyStart) domeyStart.addEventListener('click', function () {
+      if (window.PDSFX) PDSFX.unlock();
+      window.talkWithDomey();
     });
+    var domeyType = document.getElementById('domeyTypeBtn');
+    if (domeyType) domeyType.addEventListener('click', function () {
+      if (window.PDSFX) PDSFX.unlock();
+      window.typeToDomey();
+    });
+
+    var pauseListen = document.getElementById('domeyPauseListenBtn');
+    if (pauseListen) pauseListen.addEventListener('click', function () {
+      if (!domey) return;
+      if (domey.micState() === 'active' || domey.micEnabled) {
+        domey.pauseListening();
+        setDomeyStatus('ready', 'Listening paused — resume when you are ready');
+        updateSessionControls();
+        return;
+      }
+      setDomeyStatus('permission', 'Microphone permission required — allow the microphone prompt');
+      domey.resumeListening().then(function (granted) {
+        if (!gameActive) return;
+        if (!granted) setDomeyStatus('error', 'Microphone permission required — allow it in your browser, or type instead');
+        else setDomeyStatusFromHost(domey);
+        updateSessionControls();
+      });
+    });
+
+    var muteBtn = document.getElementById('domeyMuteBtn');
+    if (muteBtn) muteBtn.addEventListener('click', function () {
+      if (!domey) return;
+      domey.toggleMuted();
+      updateSessionControls();
+    });
+
+    var modeBtn = document.getElementById('domeyModeBtn');
+    if (modeBtn) modeBtn.addEventListener('click', function () {
+      setGameMode(gameMode === 'voice' ? 'text' : 'voice');
+    });
+
+    var endBtn = document.getElementById('domeyEndBtn');
+    if (endBtn) endBtn.addEventListener('click', function () { window.exitDomeyShow(); });
+
     document.addEventListener('visibilitychange', function () {
-      if (document.hidden && domey) domey.stop();
+      if (!document.hidden || !domey) return;
+      try { domey.stop(); domey.disableMic(); } catch (e) {}
+      if (gameActive) {
+        gameActive = false;
+        domeyBusy = false;
+        leaveGameFocus();
+        setDomeyStatus('ready', 'Ready — your round is paused while you are away');
+        updateSessionControls();
+      }
     });
     window.addEventListener('pagehide', function () { if (domey) domey.destroy(); });
 
