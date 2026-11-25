@@ -74,6 +74,10 @@ t('Android app-link package ID matches the assetlinks target', (() => {
 })());
 t('manifest start_url stays inside the app scope',
   manifest.start_url.startsWith('/') && manifest.scope === '/', `${manifest.start_url} / ${manifest.scope}`);
+t('manifest records home-screen launches without leaving the scope',
+  manifest.start_url === '/?source=pwa' && manifest.id === '/', `${manifest.start_url} / ${manifest.id}`);
+t('the launch handler is the single value the manifest spec accepts',
+  manifest.launch_handler && typeof manifest.launch_handler.client_mode === 'string');
 t('manifest keeps the brand colours and language',
   manifest.theme_color === '#104F91' && manifest.background_color === '#ffffff' && manifest.lang === 'en');
 

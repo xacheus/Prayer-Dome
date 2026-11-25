@@ -203,11 +203,12 @@ translation.
 
 Brevo delivers two kinds of mail; both are optional and both fail safely.
 
-1. **Account verification.** The `sendBrevoVerificationEmail` callable asks
-   Firebase Admin for a real verification link, then Brevo sends it from the
-   ministry's authenticated sender. Accounts keep working while unverified, and
-   if Brevo is not configured the account page quietly falls back to Firebase's
-   own `sendEmailVerification()`.
+1. **Account verification.** `sendRegistrationVerificationCode` generates a
+   six-digit code on the server, stores only its salted scrypt hash, and asks
+   Brevo to deliver it from the ministry's authenticated sender. The code
+   expires after ten minutes, resends are throttled, and only
+   `verifyRegistrationCode` can mark the account verified. The code is never
+   returned to the browser or written to a log.
 2. **Support-page updates.** The support page form posts one consenting address
    to `POST /api/newsletter` (Vercel) or the `brevoSubscribe` function (Firebase
    Hosting). With a list and double opt-in template configured, Brevo sends the

@@ -81,7 +81,7 @@ test('sendVerificationEmail sends a branded transactional message', async () => 
       link: 'https://prayerdome.net/__/auth/action?mode=verifyEmail&oobCode=1',
       env: CONFIGURED
     });
-    assert.deepEqual(result, { sent: true, provider: 'brevo' });
+    assert.deepEqual(result, { sent: true, provider: 'brevo', messageId: 'abc' });
     assert.equal(fetchMock.calls.length, 1);
     const { url, options, body } = fetchMock.calls[0];
     assert.equal(url, 'https://api.brevo.com/v3/smtp/email');

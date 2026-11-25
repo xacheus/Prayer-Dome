@@ -87,7 +87,10 @@ try {
 // v44 — the support page gained information sections and the Brevo update
 // form. The form script is precached so the page's markup and behaviour stay
 // in step after an upgrade.
-const CACHE_NAME = 'prayer-dome-v52';
+// v53 — the manifest now records home-screen launches and the app shell only
+// treats a real standalone/fullscreen launch as installed. A new cache name
+// retires the old shell so the corrected launch and email-admin assets load.
+const CACHE_NAME = 'prayer-dome-v53';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
