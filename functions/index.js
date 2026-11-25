@@ -199,63 +199,12 @@ exports.share = functions.https.onRequest((req, res) => shareHandler(req, res));
 exports.translate = functions.https.onRequest((req, res) => translateHandler(req, res));
 
 // ==========================================
-// Brevo email (verification + support newsletter)
+// Brevo email (support newsletter)
 // ==========================================
-// A signed-in member may request a fresh verification message, but not in a
-// loop: three per minute is enough for a real inbox and stops a script from
-// burning the ministry's Brevo quota. The map is per function instance.
-const brevoVerificationHits = new Map();
-function allowBrevoVerification(uid) {
-  const now = Date.now();
-  const hits = (brevoVerificationHits.get(uid) || []).filter((at) => now - at < 60 * 1000);
-  if (hits.length >= 3) { brevoVerificationHits.set(uid, hits); return false; }
-  hits.push(now);
-  brevoVerificationHits.set(uid, hits);
-  if (brevoVerificationHits.size > 2000) {
-    for (const [key, times] of brevoVerificationHits) {
-      if (!times.some((at) => now - at < 60 * 1000)) brevoVerificationHits.delete(key);
-    }
-  }
-  return true;
-}
-
-
-// Verification email: Firebase still owns the account and the verification
-// state, but the message is delivered by Brevo from the ministry's authenticated
-// domain instead of the generic firebaseapp.com sender. The account is never
-// blocked if Brevo is unavailable — the client falls back to Firebase's own
-// sendEmailVerification().
-exports.sendBrevoVerificationEmail = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data, context) => {
-  if (!context.auth || !context.auth.token.email) {
-    throw new functions.https.HttpsError('unauthenticated', 'Sign in before requesting a verification email.');
-  }
-  if (context.auth.token.email_verified) {
-    return { sent: false, reason: 'already-verified' };
-  }
-  if (!brevo.isConfigured(process.env)) {
-    return { sent: false, reason: 'not-configured' };
-  }
-  if (!allowBrevoVerification(context.auth.uid)) {
-    throw new functions.https.HttpsError('resource-exhausted', 'Please wait a minute before requesting another email.');
-  }
-  const email = context.auth.token.email;
-  const name = String((data && data.name) || context.auth.token.name || '').slice(0, 80);
-  let link;
-  try {
-    link = await admin.auth().generateEmailVerificationLink(email, {
-      url: SITE_URL + '/account?verified=1'
-    });
-  } catch (error) {
-    console.error('Could not generate a verification link:', error.message);
-    throw new functions.https.HttpsError('internal', 'The verification link could not be created.');
-  }
-  try {
-    return await brevo.sendVerificationEmail({ email, name, link, env: process.env });
-  } catch (error) {
-    console.error('Brevo verification email failed:', error.code || error.message);
-    throw new functions.https.HttpsError('unavailable', 'Email delivery is temporarily unavailable.');
-  }
-});
+// Verification is handled exclusively by the six-digit registration service
+// below. There is deliberately no link-based verification callable: a second
+// delivery path would make it possible for one account to receive two kinds of
+// proof and for an old link to outlive the code that replaced it.
 
 // Registration email verification codes.
 // ---------------------------------------------------------------------------
@@ -271,8 +220,34 @@ const REG_CODE_MAX_SENDS = 5;
 const REG_CODE_MAX_ATTEMPTS = 5;
 const registrationCodeSends = new Map();
 
-function registrationCodeHash(code, salt) {
-  return crypto.createHash('sha256').update(salt + ':' + code).digest('hex');
+function registrationCodeHash(code, salt, algorithm) {
+  // New records use scrypt, so a leaked database is not enough to brute-force a
+  // six-digit code offline. SHA-256 remains only to verify records created
+  // before this change, which expire within ten minutes.
+  if (algorithm !== 'scrypt') {
+    return crypto.createHash('sha256').update(salt + ':' + code).digest('hex');
+  }
+  return crypto.scryptSync(String(code), String(salt), 32, { N: 16384, r: 8, p: 1 }).toString('hex');
+}
+
+function registrationDeliveryMessage(error) {
+  const code = String(error && error.code || '');
+  if (code === 'not_configured') {
+    return 'Email verification is not configured on this deployment. Please contact info@prayerdome.net.';
+  }
+  if (code === 'auth_failed') {
+    return 'The email service could not authenticate. Please contact info@prayerdome.net so the mail credentials can be checked.';
+  }
+  if (code === 'sender_not_verified') {
+    return 'The Prayer Dome sender address is not verified with the mail service. Please contact info@prayerdome.net.';
+  }
+  if (code === 'rate_limited') {
+    return 'The mail service is busy right now. Please wait a few minutes and request a new code.';
+  }
+  if (code === 'provider_error' || code === 'unreachable') {
+    return 'The verification email could not be sent just now. Please try again in a few minutes.';
+  }
+  return 'The verification email could not be sent. Please try again, or contact info@prayerdome.net if it continues.';
 }
 
 function registrationCodeRetryAfter(record, now) {
@@ -345,6 +320,59 @@ exports.sendRegistrationVerificationCode = functions.runWith({ secrets: [brevoAp
 
   const code = String(crypto.randomInt(100000, 1000000));
   const salt = crypto.randomBytes(16).toString('hex');
+  const sendRecord = {
+    uid,
+    email,
+    codeHash: registrationCodeHash(code, salt),
+    hashAlgo: 'scrypt',
+    salt,
+    attempts: 0,
+    sends: sends + 1,
+    windowStartedAt: sameWindow && previous.windowStartedAt
+      ? previous.windowStartedAt
+      : admin.firestore.Timestamp.fromMillis(now),
+    lastSentAt: admin.firestore.Timestamp.fromMillis(now),
+    expiresAt: admin.firestore.Timestamp.fromMillis(now + REG_CODE_TTL_MS),
+    consumed: false,
+    deliveryStatus: 'sending',
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  };
+
+  // Reserve the code before handing it to the mail provider. If the message is
+  // accepted but this write failed, the member would receive a code that can
+  // never verify — so storage comes first. A failed delivery deletes the
+  // record again, so no usable code is left behind.
+  try {
+    await ref.set(sendRecord, { merge: true });
+  } catch (error) {
+    registrationCodeSends.delete(uid);
+    console.error('Registration code could not be stored:', error.message);
+    throw new functions.https.HttpsError('internal', 'The verification code could not be prepared. Please try again.');
+  }
+
+  // The delivery log records the request and the provider response, never the
+  // code itself. Retrying this row would send a code the server no longer
+  // knows, so it is informational and the member must request a new one.
+  const logRef = db.collection('emailOutbox').doc('verification_' + uid + '_' + now.toString(36));
+  try {
+    await logRef.set({
+      event: 'email_verification',
+      category: 'account',
+      essential: true,
+      userId: uid,
+      recipient: email,
+      recipientName: name,
+      subject: 'Your Prayer Dome verification code',
+      status: 'sending',
+      attempts: 1,
+      retryable: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  } catch (error) {
+    console.warn('Verification delivery could not be logged:', error.message);
+  }
+
   let delivery;
   try {
     delivery = await brevo.sendRegistrationCodeEmail({
@@ -356,35 +384,51 @@ exports.sendRegistrationVerificationCode = functions.runWith({ secrets: [brevoAp
     });
   } catch (error) {
     registrationCodeSends.delete(uid);
+    await ref.delete().catch(() => {});
+    await logRef.set({
+      status: 'failed',
+      lastError: registrationDeliveryMessage(error),
+      failureReason: registrationDeliveryMessage(error),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
     console.error('Registration code email failed:', error && (error.code || error.message));
-    throw new functions.https.HttpsError('unavailable', 'The verification email could not be sent. Please try again.');
+    throw new functions.https.HttpsError('unavailable', registrationDeliveryMessage(error));
   }
   if (!delivery || delivery.sent !== true) {
     registrationCodeSends.delete(uid);
+    await ref.delete().catch(() => {});
+    await logRef.set({
+      status: 'failed',
+      lastError: 'Email verification is not configured on this deployment.',
+      failureReason: 'Email verification is not configured on this deployment.',
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
     throw new functions.https.HttpsError('failed-precondition',
       'Email verification is not configured on this deployment. Please contact info@prayerdome.net.');
   }
 
   try {
-    await ref.set({
-      uid,
-      email,
-      codeHash: registrationCodeHash(code, salt),
-      salt,
-      attempts: 0,
-      sends: sends + 1,
-      windowStartedAt: sameWindow && previous.windowStartedAt
-        ? previous.windowStartedAt
-        : admin.firestore.Timestamp.fromMillis(now),
-      lastSentAt: admin.firestore.Timestamp.fromMillis(now),
-      expiresAt: admin.firestore.Timestamp.fromMillis(now + REG_CODE_TTL_MS),
-      consumed: false,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true });
+    await Promise.all([
+      ref.set({
+        deliveryStatus: 'accepted',
+        provider: 'brevo',
+        providerMessageId: String(delivery.messageId || ''),
+        acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }),
+      logRef.set({
+        status: 'accepted',
+        providerStatus: 'accepted',
+        provider: 'brevo',
+        providerMessageId: String(delivery.messageId || ''),
+        acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true })
+    ]);
   } catch (error) {
-    registrationCodeSends.delete(uid);
-    console.error('Registration code could not be stored:', error.message);
-    throw new functions.https.HttpsError('internal', 'The verification code could not be saved. Please try again.');
+    // The code is already stored and the member has the message; a logging
+    // failure must not make the request look unsuccessful.
+    console.warn('Registration code delivery could not be logged:', error.message);
   }
 
   return {
@@ -408,44 +452,62 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
 
   const db = admin.firestore();
   const ref = db.collection('registrationVerification').doc(uid);
-  const snapshot = await ref.get();
-  if (!snapshot.exists) {
-    throw new functions.https.HttpsError('failed-precondition', 'Request a new verification code.');
-  }
-  const record = snapshot.data() || {};
-  if (String(record.email || '').toLowerCase() !== email) {
-    throw new functions.https.HttpsError('permission-denied', 'This code was issued to a different email address.');
-  }
-  if (record.consumed === true) {
-    throw new functions.https.HttpsError('failed-precondition', 'This code has already been used. Request a new one.');
-  }
-  const expires = record.expiresAt && typeof record.expiresAt.toMillis === 'function' ? record.expiresAt.toMillis() : 0;
-  if (!expires || Date.now() > expires) {
-    throw new functions.https.HttpsError('deadline-exceeded', 'This code has expired. Request a new one.');
-  }
-  const attempts = Number(record.attempts) || 0;
-  if (attempts >= REG_CODE_MAX_ATTEMPTS) {
-    throw new functions.https.HttpsError('resource-exhausted', 'Too many incorrect attempts. Request a new code.');
-  }
+  const outcome = await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(ref);
+    if (!snapshot.exists) {
+      throw new functions.https.HttpsError('failed-precondition', 'Request a new verification code.');
+    }
+    const record = snapshot.data() || {};
+    if (String(record.email || '').toLowerCase() !== email) {
+      throw new functions.https.HttpsError('permission-denied', 'This code was issued to a different email address.');
+    }
+    if (record.consumed === true) {
+      throw new functions.https.HttpsError('failed-precondition', 'This code has already been used. Request a new one.');
+    }
+    const expires = record.expiresAt && typeof record.expiresAt.toMillis === 'function' ? record.expiresAt.toMillis() : 0;
+    if (!expires || Date.now() > expires) {
+      throw new functions.https.HttpsError('deadline-exceeded', 'This code has expired. Request a new one.');
+    }
+    const attempts = Number(record.attempts) || 0;
+    if (attempts >= REG_CODE_MAX_ATTEMPTS) {
+      throw new functions.https.HttpsError('resource-exhausted', 'Too many incorrect attempts. Request a new code.');
+    }
 
-  const supplied = registrationCodeHash(code, String(record.salt || ''));
-  const expected = String(record.codeHash || '');
-  const matches = expected.length === supplied.length &&
-    crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(supplied, 'utf8'));
-  if (!matches) {
-    const remaining = Math.max(0, REG_CODE_MAX_ATTEMPTS - attempts - 1);
-    await ref.set({
-      attempts: attempts + 1,
-      lastAttemptAt: admin.firestore.FieldValue.serverTimestamp()
-    }, { merge: true }).catch(() => {});
+    const supplied = registrationCodeHash(code, String(record.salt || ''), record.hashAlgo);
+    const expected = String(record.codeHash || '');
+    const matches = expected.length === supplied.length &&
+      crypto.timingSafeEqual(Buffer.from(expected, 'utf8'), Buffer.from(supplied, 'utf8'));
+    if (!matches) {
+      const nextAttempts = attempts + 1;
+      const remaining = Math.max(0, REG_CODE_MAX_ATTEMPTS - nextAttempts);
+      transaction.set(ref, {
+        attempts: nextAttempts,
+        lastAttemptAt: admin.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+      return { ok: false, remaining: remaining };
+    }
+
+    // Consume inside the same transaction that checked the code, so two taps
+    // cannot both pass and a used code can never verify a second account.
+    transaction.set(ref, {
+      consumed: true,
+      consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+      attempts: attempts + 1
+    }, { merge: true });
+    return { ok: true };
+  });
+
+  if (!outcome.ok) {
     throw new functions.https.HttpsError('invalid-argument',
-      remaining ? 'That code is incorrect. ' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left.'
+      outcome.remaining
+        ? 'That code is incorrect. ' + outcome.remaining + ' attempt' + (outcome.remaining === 1 ? '' : 's') + ' left.'
         : 'Too many incorrect attempts. Request a new code.');
   }
 
   try {
     await admin.auth().updateUser(uid, { emailVerified: true });
   } catch (error) {
+    await ref.set({ consumed: false }, { merge: true }).catch(() => {});
     console.error('Could not mark the account email verified:', error.message);
     throw new functions.https.HttpsError('internal', 'The account could not be verified. Please try again.');
   }
@@ -459,19 +521,185 @@ exports.verifyRegistrationCode = functions.https.onCall(async (data, context) =>
   }, { merge: true });
   await ref.set({
     consumed: true,
-    consumedAt: admin.firestore.FieldValue.serverTimestamp(),
+    completedAt: admin.firestore.FieldValue.serverTimestamp(),
     codeHash: admin.firestore.FieldValue.delete(),
-    salt: admin.firestore.FieldValue.delete(),
-    attempts: attempts + 1
+    salt: admin.firestore.FieldValue.delete()
   }, { merge: true });
+
+  // Welcome mail is a notification like any other: branded, logged in the
+  // outbox and sent once per account. A failure here must never undo a
+  // successful verification.
+  try {
+    await notificationModule.deliverEvent({
+      event: 'welcome',
+      eventId: 'evt_welcome_' + uid,
+      userId: uid,
+      values: { name: context.auth.token.name || '' },
+      link: '/account.html'
+    });
+  } catch (error) {
+    console.warn('Welcome email could not be queued:', error && error.message);
+  }
 
   return { verified: true };
 });
+
+// Expired verification records are useless and contain a protected code hash
+// plus the email address. Remove them on a schedule so the collection cannot
+// grow without limit and an old code can never become usable again.
+exports.cleanupRegistrationVerification = functions.pubsub
+  .schedule('every 60 minutes')
+  .timeZone('Africa/Lusaka')
+  .onRun(async () => {
+    const db = admin.firestore();
+    const cutoff = admin.firestore.Timestamp.fromMillis(Date.now());
+    let removed = 0;
+    try {
+      const snapshot = await db.collection('registrationVerification')
+        .where('expiresAt', '<', cutoff)
+        .limit(400)
+        .get();
+      if (snapshot.empty) return null;
+      const batch = db.batch();
+      snapshot.forEach((entry) => batch.delete(entry.ref));
+      await batch.commit();
+      removed = snapshot.size;
+    } catch (error) {
+      console.warn('Expired verification cleanup failed:', error.message);
+    }
+    return removed ? { removed: removed } : null;
+  });
 
 // Newsletter / updates signup used by the support page. The same handler runs
 // through api/system.js on Vercel; this export gives Firebase Hosting parity.
 exports.brevoSubscribe = functions.runWith({ secrets: [brevoApiKey] }).https.onRequest((req, res) => {
   brevo.newsletterHandler(req, res);
+});
+
+// Account security email.
+// ---------------------------------------------------------------------------
+// Password resets use a one-time Firebase link delivered through the same
+// Brevo infrastructure and branded template as every other message. The
+// callable deliberately gives the same answer whether or not the address has an
+// account, so it cannot be used to enumerate members.
+const authEmailHits = new Map();
+function allowAuthEmail(key, windowMs, max) {
+  const now = Date.now();
+  const entry = (authEmailHits.get(key) || []).filter((at) => now - at < windowMs);
+  if (entry.length >= max) { authEmailHits.set(key, entry); return false; }
+  entry.push(now);
+  authEmailHits.set(key, entry);
+  if (authEmailHits.size > 5000) {
+    for (const [name, times] of authEmailHits) {
+      if (!times.some((at) => now - at < windowMs)) authEmailHits.delete(name);
+    }
+  }
+  return true;
+}
+
+function accountDeviceLabel(value) {
+  return String(value || '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, 160);
+}
+
+exports.requestPasswordReset = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data) => {
+  const email = brevo.cleanEmail(data && data.email);
+  const configured = brevo.isConfigured(process.env);
+  // Same response for invalid, missing and existing addresses.
+  const answer = { ok: true, delivery: configured ? 'email' : 'fallback' };
+  if (!email) return answer;
+  if (!allowAuthEmail('reset:' + email, 15 * 60 * 1000, 3)) return answer;
+  let user;
+  try {
+    user = await admin.auth().getUserByEmail(email);
+  } catch (error) {
+    return answer;
+  }
+  if (!user || user.disabled) return answer;
+  if (!configured) return { ok: true, delivery: 'fallback' };
+
+  let link;
+  try {
+    link = await admin.auth().generatePasswordResetLink(email, {
+      url: SITE_URL + '/account?reset=1'
+    });
+  } catch (error) {
+    console.warn('Password reset link could not be generated:', error.code || error.message);
+    return { ok: true, delivery: 'fallback' };
+  }
+  try {
+    const result = await notificationModule.sendPasswordResetEmail({
+      to: email,
+      name: user.displayName || '',
+      link: link,
+      userId: user.uid
+    });
+    return { ok: true, delivery: result && result.sent ? 'email' : 'fallback' };
+  } catch (error) {
+    console.warn('Password reset email failed:', error.code || error.message);
+    return { ok: true, delivery: 'fallback' };
+  }
+});
+
+exports.notifyNewLogin = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in to update your account security notices.');
+  }
+  if (!context.auth.token.email_verified) return { notified: false, reason: 'email-unverified' };
+  const uid = context.auth.uid;
+  const rawDevice = accountDeviceLabel(data && data.deviceId);
+  if (!rawDevice) return { notified: false, reason: 'missing-device' };
+  if (!allowAuthEmail('login:' + uid, 60 * 60 * 1000, 4)) return { notified: false, reason: 'rate-limited' };
+
+  const db = admin.firestore();
+  const fingerprint = crypto.createHash('sha256').update(uid + ':' + rawDevice).digest('hex');
+  const deviceRef = db.collection('knownDevices').doc(uid).collection('devices').doc(fingerprint);
+  try {
+    const known = await deviceRef.get();
+    if (known.exists) {
+      await deviceRef.set({ lastSeenAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      return { notified: false, reason: 'known-device' };
+    }
+    await deviceRef.set({
+      label: accountDeviceLabel(data && data.label) || 'A new browser or device',
+      platform: accountDeviceLabel(data && data.platform),
+      firstSeenAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastSeenAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Could not record the sign-in device:', error.message);
+    return { notified: false, reason: 'record-unavailable' };
+  }
+
+  const result = await notificationModule.deliverEvent({
+    event: 'new_login',
+    eventId: 'evt_new_login_' + uid + '_' + Date.now().toString(36),
+    userId: uid,
+    values: {
+      device: accountDeviceLabel(data && data.label) || 'A new browser or device',
+      date: new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lusaka' }) + ' (Lusaka time)'
+    },
+    link: '/account.html'
+  });
+  return { notified: Boolean(result && result.sent), reason: result && result.reason || '' };
+});
+
+exports.notifyPasswordChanged = functions.runWith({ secrets: [brevoApiKey] }).https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'Sign in to update your account security notices.');
+  }
+  const uid = context.auth.uid;
+  if (!allowAuthEmail('password:' + uid, 10 * 60 * 1000, 2)) return { notified: false, reason: 'rate-limited' };
+  const result = await notificationModule.deliverEvent({
+    event: 'password_changed',
+    eventId: 'evt_password_changed_' + uid + '_' + Date.now().toString(36),
+    userId: uid,
+    values: {
+      device: accountDeviceLabel(data && data.device) || '',
+      date: new Date().toLocaleString('en-GB', { timeZone: 'Africa/Lusaka' }) + ' (Lusaka time)'
+    },
+    link: '/account.html'
+  });
+  return { notified: Boolean(result && result.sent), reason: result && result.reason || '' };
 });
 
 // ==========================================
@@ -975,6 +1203,10 @@ exports.paymentNotifications = notificationModule.paymentNotifications;
 exports.subscriptionNotifications = notificationModule.subscriptionNotifications;
 exports.churchIdNotifications = notificationModule.churchIdNotifications;
 exports.prayerNotifications = notificationModule.prayerNotifications;
+exports.prayerUpdateNotifications = notificationModule.prayerUpdateNotifications;
+exports.givingNotifications = notificationModule.givingNotifications;
+exports.announcementNotifications = notificationModule.announcementNotifications;
+exports.userWelcomeNotifications = notificationModule.userWelcomeNotifications;
 exports.testimonyNotifications = notificationModule.testimonyNotifications;
 exports.certificateNotifications = notificationModule.certificateNotifications;
 exports.examNotifications = notificationModule.examNotifications;

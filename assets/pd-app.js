@@ -2006,7 +2006,7 @@
       var out = {
         permission: permission,
         supported: typeof Notification !== 'undefined' && !!navigator.serviceWorker,
-        installed: mode === 'standalone' || mode === 'fullscreen' || mode === 'minimal-ui' || mode === 'native',
+        installed: mode === 'standalone' || mode === 'fullscreen' || mode === 'native',
         displayMode: mode,
         token: localStorage.getItem('pd_push_token') || '',
         tokenSavedAt: Number(localStorage.getItem('pd_push_token_saved') || 0),
@@ -2964,8 +2964,8 @@
   var appShell = {
     CSS: ''
       + '@supports (padding: max(0px)){body.pd-app-mode{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}}'
-      + 'html.pd-app-mode{overscroll-behavior-y:none;background:#07244d;}'
-      + 'body.pd-app-mode{overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;}'
+      + 'html.pd-app-mode{min-height:100%;overscroll-behavior-y:none;background:#07244d;}'
+      + 'body.pd-app-mode{min-height:100vh;min-height:100dvh;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;}'
       + 'body.pd-app-mode ::-webkit-scrollbar{width:0;height:0;}'
       + 'body.pd-app-mode .pd-topbar{padding-top:max(10px,env(safe-area-inset-top));}'
       + 'body.pd-app-mode .pd-drawer{padding-top:max(18px,env(safe-area-inset-top));}'
@@ -2998,7 +2998,10 @@
     },
     installed: function () {
       var mode = appShell.mode();
-      return mode === 'standalone' || mode === 'fullscreen' || mode === 'minimal-ui' || mode === 'native';
+      // minimal-ui still has browser controls, so it must never be treated as
+      // the installed app. Only a real standalone/fullscreen launch earns the
+      // app shell (and hides the install invitation).
+      return mode === 'standalone' || mode === 'fullscreen' || mode === 'native';
     },
     ensureMeta: function () {
       var metas = {
@@ -3159,7 +3162,6 @@
     installed: function () {
       try {
         if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
-        if (window.matchMedia && window.matchMedia('(display-mode: minimal-ui)').matches) return true;
         if (window.matchMedia && window.matchMedia('(display-mode: fullscreen)').matches) return true;
         return navigator.standalone === true;
       } catch (e) { return false; }

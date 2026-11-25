@@ -21,6 +21,7 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const brevo = require('./brevo');
+const design = require('./email-design');
 const { defineSecret } = require('firebase-functions/params');
 
 const REGION = 'us-central1';
@@ -29,13 +30,16 @@ const brevoApiKey = defineSecret('BREVO_API_KEY');
 const { HttpsError } = functions.https;
 
 const EMAIL_CATEGORIES = {
-  account: 'Membership and account',
+  account: 'Membership, account and security',
   billing: 'Payments and subscriptions',
+  giving: 'Giving and offerings',
   church_id: 'Church ID cards',
   certificates: 'Certificates and documents',
   prayer: 'Prayer requests',
   testimony: 'Testimonies',
-  support: 'Support claims'
+  support: 'Support claims',
+  newsletter: 'Newsletter and ministry updates',
+  announcement: 'Ministry announcements'
 };
 
 /* ------------------------------------------------------------------ helpers */
@@ -449,6 +453,131 @@ const EVENTS = {
     actionLabel: 'View my support plan', actionPath: '/support.html#myplans',
     inAppTitle: 'Support claim update',
     inAppMessage: 'Please review the reason for this decision.'
+  },
+
+  /* ---------------------------------------------------- account + security */
+  email_verification: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome verification code',
+    heading: 'Verify your email address',
+    message: 'Enter the six-digit code below in Prayer Dome to verify this email address. The code expires in {{minutes}} minutes.\nIf you did not create a Prayer Dome account, you can ignore this message and do not share the code.',
+    actionLabel: 'Open Prayer Dome', actionPath: '/account.html',
+    inAppTitle: 'Verify your email',
+    inAppMessage: 'Enter the six-digit code sent to your email address.'
+  },
+  welcome: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Welcome to Prayer Dome',
+    heading: 'Welcome to the Prayer Dome family',
+    message: 'Your email address is now verified and your Prayer Dome account is ready.\nYou can use your account to join the prayer wall, follow daily devotionals, read the Bible, save your progress in the Academy and manage your giving records.\nThank you for joining a house of prayer for all nations. We look forward to praying with you.',
+    actionLabel: 'Open my account', actionPath: '/account.html',
+    inAppTitle: 'Welcome to Prayer Dome',
+    inAppMessage: 'Your account is verified and ready to use.'
+  },
+  password_reset: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Reset your Prayer Dome password',
+    heading: 'Reset your password',
+    message: 'We received a request to reset the password for your Prayer Dome account. Use the secure button below to choose a new password. The link can only be used once and expires shortly.\nIf you did not ask for a reset, you can ignore this message. Your current password will continue to work and no change will be made.',
+    actionLabel: 'Choose a new password', actionPath: '{{resetLink}}',
+    inAppTitle: 'Password reset requested',
+    inAppMessage: 'A secure password reset link was requested for your account.'
+  },
+  password_changed: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome password was changed',
+    heading: 'Your password was changed',
+    message: 'The password for your Prayer Dome account was changed successfully.\nIf you made this change, no further action is needed. If you did not make it, reset your password immediately and contact the ministry office so we can help secure your account.',
+    actionLabel: 'Secure my account', actionPath: '/account.html',
+    inAppTitle: 'Password changed',
+    inAppMessage: 'Your Prayer Dome password was changed.'
+  },
+  new_login: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'New sign-in to your Prayer Dome account',
+    heading: 'New sign-in detected',
+    message: 'Your Prayer Dome account was signed in from a device or browser we have not seen before.\nIf this was you, no action is needed. If you do not recognise this sign-in, change your password immediately and contact the ministry office.',
+    actionLabel: 'Review my account', actionPath: '/account.html',
+    inAppTitle: 'New sign-in',
+    inAppMessage: 'A new device signed in to your account.'
+  },
+  account_security_alert: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Security notice for your Prayer Dome account',
+    heading: 'Account security notice',
+    message: 'There was a security-related change or request on your Prayer Dome account. The details are shown below.\nIf you do not recognise this activity, please reset your password and contact the ministry office immediately.',
+    actionLabel: 'Review my account', actionPath: '/account.html',
+    inAppTitle: 'Account security notice',
+    inAppMessage: 'Please review recent security activity on your account.'
+  },
+
+  /* ------------------------------------------------------------- giving */
+  giving_submitted: {
+    category: 'giving', essential: true, kind: 'account',
+    subject: 'We received your Prayer Dome giving record',
+    heading: 'Thank you for giving',
+    message: 'Thank you for supporting the work of Prayer Dome. Your giving record has been received and our finance team will review it.\nThis message confirms that your submission arrived. It does not confirm that the payment has been received or verified. You will receive another message when the review is complete.',
+    actionLabel: 'View my giving record', actionPath: '/give.html',
+    inAppTitle: 'Giving record received',
+    inAppMessage: 'Your giving submission is with the finance team.'
+  },
+  giving_confirmed: {
+    category: 'giving', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome giving has been confirmed',
+    heading: 'Giving confirmed',
+    message: 'Our finance team has reviewed and confirmed your giving record. Thank you for your generous support of the ministry.\nThe details of the confirmed record are shown below.',
+    actionLabel: 'View my giving record', actionPath: '/give.html',
+    inAppTitle: 'Giving confirmed',
+    inAppMessage: 'Your giving record has been confirmed by finance.'
+  },
+  giving_rejected: {
+    category: 'giving', essential: true, kind: 'account',
+    subject: 'Update on your Prayer Dome giving record',
+    heading: 'Giving record needs attention',
+    message: 'Our finance team reviewed your giving record but could not confirm it for the reason shown below.\nIf you believe the information is correct, please contact the ministry office with your payment reference so the team can assist you.',
+    actionLabel: 'Contact the ministry', actionPath: '/contact.html',
+    inAppTitle: 'Giving record update',
+    inAppMessage: 'Please review the reason on your giving record.'
+  },
+
+  /* ------------------------------------------------------------- prayer */
+  prayer_request_confirmation: {
+    category: 'prayer', essential: false, kind: 'prayer',
+    subject: 'We received your Prayer Dome prayer request',
+    heading: 'Your prayer request has been received',
+    message: 'Thank you for sharing your prayer request with Prayer Dome. Our prayer team has received it and will stand with you in prayer.\nYou can return to the prayer wall at any time to read encouragement or share an update.',
+    actionLabel: 'Open the prayer wall', actionPath: '/prayer.html',
+    inAppTitle: 'Prayer request received',
+    inAppMessage: 'The Prayer Dome team has received your request.'
+  },
+  prayer_request_update: {
+    category: 'prayer', essential: false, kind: 'prayer',
+    subject: 'An update on your Prayer Dome prayer request',
+    heading: 'Your prayer request has been updated',
+    message: 'There is an update on the prayer request you shared with Prayer Dome. The current status is shown below.\nThank you for letting us pray with you.',
+    actionLabel: 'View my prayer request', actionPath: '/prayer.html',
+    inAppTitle: 'Prayer request updated',
+    inAppMessage: 'There is an update on your prayer request.'
+  },
+
+  /* -------------------------------------------------- ministry + updates */
+  ministry_announcement: {
+    category: 'announcement', essential: false, kind: 'news',
+    subject: '{{title}}',
+    heading: '{{title}}',
+    message: '{{message}}',
+    actionLabel: 'Read on Prayer Dome', actionPath: '/news.html',
+    inAppTitle: 'Ministry announcement',
+    inAppMessage: 'A new notice from Prayer Dome.'
+  },
+  newsletter_welcome: {
+    category: 'newsletter', essential: false, kind: 'news',
+    subject: 'Welcome to Prayer Dome updates',
+    heading: 'Thank you for staying connected',
+    message: 'Thank you for agreeing to receive Prayer Dome ministry updates. We will share service notices, devotional encouragement and ministry news with you from time to time.\nYou can change your email preferences at any time from your account, and every message includes a way to stop receiving updates.',
+    actionLabel: 'Visit Prayer Dome', actionPath: '/',
+    inAppTitle: 'Prayer Dome updates',
+    inAppMessage: 'You are on the Prayer Dome updates list.'
   }
 };
 
@@ -473,15 +602,24 @@ function interpolate(value, values) {
   });
 }
 
+function safeTemplateAction(value, fallback) {
+  const raw = String(value == null ? '' : value).trim().slice(0, 1600);
+  // A password-reset template legitimately points at a one-time link that is
+  // only known when the event fires. Keep the placeholder here and validate the
+  // resolved URL in buildEmail; every other value must be a safe site path.
+  if (/\{\{\s*[A-Za-z0-9_]+\s*\}\}/.test(raw)) return raw;
+  return safePath(raw, fallback);
+}
+
 function normalizeTemplate(event, custom) {
-  const base = EVENTS[event];
+  const base = EVENTS[event] || EVENTS.membership_submitted;
   const row = custom && typeof custom === 'object' ? custom : {};
   return {
     subject: text(row.subject, 180) || base.subject,
     heading: text(row.heading, 120) || base.heading,
     message: (typeof row.message === 'string' ? row.message.replace(/\r\n/g, '\n').trim().slice(0, 3000) : '') || base.message,
     actionLabel: text(row.actionLabel, 80) || base.actionLabel,
-    actionPath: safePath(row.actionPath, base.actionPath)
+    actionPath: safeTemplateAction(row.actionPath, base.actionPath)
   };
 }
 
@@ -491,81 +629,40 @@ function buildEmail(event, values, settings, customTemplate) {
   const data = Object.assign(defaultValue(), values || {});
   const subject = interpolate(template.subject, data);
   const heading = interpolate(template.heading, data);
-  const paragraphs = interpolate(template.message, data).split('\n').map(function (line) { return line.trim(); }).filter(Boolean);
+  const body = interpolate(template.message, data);
   const actionLabel = interpolate(template.actionLabel, data);
-  const actionUrl = absoluteLink(interpolate(template.actionPath, data));
+  const actionPath = interpolate(template.actionPath, data);
+  const actionUrl = design.safeActionUrl(actionPath, SITE_URL);
   const details = [
     ['Status', data.status],
     ['Reference', data.reference],
     ['Plan', data.plan],
     ['Amount', data.amount],
     ['Date', data.date],
-    ['Reason', data.reason]
+    ['Reason', data.reason],
+    ['Device', data.device]
   ].filter(function (item) { return item[1]; });
 
-  const safeSite = escapeHtml(SITE_URL.replace(/^https?:\/\//, ''));
-  const detailsHtml = details.length
-    ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 18px;background:#f6f8fc;border:1px solid #dbe3ee;border-radius:10px;">' +
-        details.map(function (item) {
-          return '<tr><td style="padding:8px 12px;font-size:12px;color:#5b6b82;font-weight:700;width:34%;vertical-align:top;">' + escapeHtml(item[0]) +
-            '</td><td style="padding:8px 12px;font-size:13px;color:#172033;font-weight:700;overflow-wrap:break-word;">' + escapeHtml(item[1]) + '</td></tr>';
-        }).join('') +
-      '</table>'
-    : '';
-
-  const html = `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(subject)}</title></head>
-<body style="margin:0;padding:0;background:#f3f6fb;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-  <div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(subject)}</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fb;padding:24px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbe3ee;">
-        <tr><td style="background:#0A4D9B;padding:22px 26px;">
-          <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#f6df8a;font-weight:800;">PRAYER DOME</div>
-          <div style="font-size:19px;font-weight:800;color:#ffffff;margin-top:4px;">A House of Prayer for All Nations</div>
-        </td></tr>
-        <tr><td style="padding:28px 26px 8px;">
-          <h1 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#07244d;">${escapeHtml(heading)}</h1>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.65;">Dear ${escapeHtml(data.name || 'Prayer Dome member')},</p>
-          ${paragraphs.map(function (line) { return '<p style="margin:0 0 14px;font-size:15px;line-height:1.65;">' + escapeHtml(line) + '</p>'; }).join('')}
-          ${detailsHtml}
-          <p style="margin:0 0 22px;"><a href="${escapeHtml(actionUrl)}" style="display:inline-block;background:#0A4D9B;color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:10px;">${escapeHtml(actionLabel)}</a></p>
-          <p style="margin:0 0 10px;font-size:13px;line-height:1.6;color:#5b6b82;">If the button does not open, copy this address into your browser:</p>
-          <p style="margin:0 0 20px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="${escapeHtml(actionUrl)}" style="color:#0A4D9B;">${escapeHtml(actionUrl)}</a></p>
-        </td></tr>
-        <tr><td style="padding:16px 26px 24px;border-top:1px solid #e6edf6;">
-          <p style="margin:0 0 4px;font-size:12px;line-height:1.6;color:#5b6b82;font-weight:700;">PRAYER DOME</p>
-          <p style="margin:0;font-size:12px;line-height:1.6;color:#5b6b82;"><a href="${escapeHtml(SITE_URL)}" style="color:#0A4D9B;">${escapeHtml(SITE_URL)}</a><br>This is an automated service message about your Prayer Dome account. You can manage optional email preferences in your account.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-
-  const textBody = [
-    'PRAYER DOME',
-    'A House of Prayer for All Nations',
-    '',
-    heading,
-    '',
-    'Dear ' + (data.name || 'Prayer Dome member') + ',',
-    '',
-  ].concat(paragraphs).concat([
-    '',
-  ]).concat(details.map(function (item) { return item[0] + ': ' + item[1]; })).concat([
-    '',
-    actionLabel + ': ' + actionUrl,
-    '',
-    'PRAYER DOME · ' + SITE_URL,
-    'This is an automated service message about your Prayer Dome account.'
-  ]).join('\n');
+  const rendered = design.renderEmail({
+    subject: subject,
+    heading: heading,
+    preheader: body,
+    greeting: 'Dear ' + (data.name || 'Prayer Dome member') + ',',
+    paragraphs: body,
+    details: details,
+    code: data.code,
+    action: actionLabel ? { label: actionLabel, url: actionUrl } : null,
+    footerNote: base.footerNote,
+    category: base.category,
+    siteUrl: SITE_URL
+  });
 
   return {
-    subject,
-    heading,
-    html,
-    text: textBody,
-    actionUrl,
+    subject: rendered.subject,
+    heading: rendered.heading,
+    html: rendered.html,
+    text: rendered.text,
+    actionUrl: rendered.actionUrl,
     kind: base.kind,
     category: base.category,
     essential: base.essential !== false
@@ -622,7 +719,8 @@ async function sendOutbox(eventDocId) {
   const snap = await ref.get();
   if (!snap.exists) return { sent: false, reason: 'missing' };
   const row = snap.data() || {};
-  if (['sent', 'disabled', 'opted_out', 'missing_email'].includes(row.status)) return { sent: false, reason: row.status };
+  if (row.retryable === false) return { sent: false, reason: 'not-retryable' };
+  if (['sent', 'accepted', 'delivered', 'bounced', 'disabled', 'opted_out', 'missing_email'].includes(row.status)) return { sent: false, reason: row.status };
   if (!row.recipient) {
     await ref.set({ status: 'missing_email', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
     return { sent: false, reason: 'missing-email' };
@@ -630,6 +728,20 @@ async function sendOutbox(eventDocId) {
   const attempts = Number(row.attempts || 0);
   if (attempts >= 5) return { sent: false, reason: 'retry-limit' };
   const settings = await loadSettings();
+  // A retry must obey the same switches as the first attempt. Without this
+  // check, a message queued before an administrator disabled email (or before
+  // a member opted out) would still be delivered by the retry job.
+  if (!settings.enabled || (row.category && settings.categories[row.category] === false)) {
+    await ref.set({ status: 'disabled', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    return { sent: false, reason: 'disabled' };
+  }
+  if (row.essential !== true && row.userId) {
+    const allowed = await emailAllowed(row.userId, row.category, false);
+    if (!allowed) {
+      await ref.set({ status: 'opted_out', updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      return { sent: false, reason: 'opted_out' };
+    }
+  }
   const template = await loadCustomTemplate(row.event);
   const email = buildEmail(row.event, row.values || {}, settings, template);
   await ref.set({
@@ -650,13 +762,19 @@ async function sendOutbox(eventDocId) {
       tags: ['prayer-dome', row.event]
     });
     await ref.set({
-      status: 'sent',
+      // Brevo accepting the message is not proof that it reached the inbox.
+      // The provider's later delivery/bounce state is recorded by
+      // refreshProviderStatuses, and the admin console never calls this
+      // "delivered" unless the provider actually says so.
+      status: 'accepted',
+      providerStatus: 'accepted',
+      acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
       sentAt: admin.firestore.FieldValue.serverTimestamp(),
       providerMessageId: result && result.messageId ? String(result.messageId) : '',
       lastError: '',
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    return { sent: true, messageId: result && result.messageId };
+    return { sent: true, accepted: true, messageId: result && result.messageId };
   } catch (error) {
     const message = text(error && error.message, 300) || 'The email provider did not accept the message.';
     const nextAttempt = new Date(Date.now() + Math.min(60, Math.pow(2, attempts + 1)) * 60 * 1000);
@@ -733,6 +851,167 @@ async function deliverEvent(options) {
   return sendOutbox(docId);
 }
 
+/**
+ * Deliver one event to an address that is not necessarily tied to a member
+ * account: a password-reset link, a newsletter welcome, or a receipt for a
+ * guest giving. It still uses the same branded renderer, settings, outbox log
+ * and deduplication contract as member email.
+ */
+async function deliverDirect(options) {
+  const opts = options || {};
+  const event = EVENTS[opts.event] ? opts.event : '';
+  if (!event) return { skipped: true, reason: 'unknown-event' };
+  const recipient = cleanEmail(opts.to || opts.email);
+  if (!recipient) return { skipped: true, reason: 'invalid-recipient' };
+  const descriptor = EVENTS[event];
+  const docId = text(opts.eventId, 220)
+    || eventId(event, 'direct-' + recipient.replace(/[^a-z0-9]/g, '-').slice(0, 40), Date.now());
+  const outboxRef = admin.firestore().collection('emailOutbox').doc(docId);
+  const existing = await outboxRef.get();
+  if (existing.exists) return { skipped: true, reason: 'duplicate' };
+
+  const settings = await loadSettings();
+  const enabled = settings.enabled && (descriptor.essential === true || settings.categories[descriptor.category] !== false);
+  if (!enabled) return { sent: false, reason: 'disabled' };
+  const values = Object.assign({ name: text(opts.name, 120) || 'Prayer Dome member', site: SITE_URL }, opts.values || {});
+  const template = await loadCustomTemplate(event);
+  const rendered = buildEmail(event, values, settings, template);
+
+  await outboxRef.set({
+    eventId: docId,
+    event,
+    category: descriptor.category,
+    essential: descriptor.essential !== false,
+    userId: '',
+    direct: true,
+    recipient,
+    recipientName: values.name,
+    subject: rendered.subject,
+    values,
+    status: 'pending',
+    attempts: 0,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  return sendOutbox(docId);
+}
+
+/**
+ * Send a one-time password-reset link without writing that link (or the
+ * member's password) into the outbox. The row keeps only the event, recipient,
+ * subject and provider result so the admin log is useful but cannot be used to
+ * reset somebody's account.
+ */
+async function sendPasswordResetEmail(options) {
+  const opts = options || {};
+  const to = cleanEmail(opts.to || opts.email);
+  if (!to) return { sent: false, reason: 'invalid-recipient' };
+  const settings = await loadSettings();
+  if (!settings.enabled) return { sent: false, reason: 'disabled' };
+  const values = { name: text(opts.name, 120) || 'Prayer Dome member', email: to };
+  const rendered = buildEmail('password_reset', Object.assign({}, values, { resetLink: String(opts.link || '') }), settings, null);
+  const docId = 'reset_' + Date.now().toString(36) + '_' + to.replace(/[^a-z0-9]/g, '').slice(0, 24);
+  const ref = admin.firestore().collection('emailOutbox').doc(docId);
+  await ref.set({
+    event: 'password_reset', category: 'account', essential: true,
+    userId: text(opts.userId, 160), recipient: to, recipientName: values.name,
+    subject: rendered.subject, values, status: 'sending', attempts: 1,
+    retryable: false,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+  try {
+    const result = await brevo.sendTransactionalEmail({
+      to, toName: values.name, subject: rendered.subject,
+      html: rendered.html, text: rendered.text,
+      senderName: settings.senderName, senderEmail: settings.senderEmail,
+      replyTo: settings.replyTo, tags: ['prayer-dome', 'password-reset']
+    });
+    await ref.set({
+      status: 'accepted', providerStatus: 'accepted',
+      providerMessageId: result && result.messageId ? String(result.messageId) : '',
+      acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    return { sent: true, messageId: result && result.messageId };
+  } catch (error) {
+    const message = text(error && error.message, 300) || 'The email provider did not accept the message.';
+    await ref.set({
+      status: 'failed', lastError: message, failureReason: message,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true }).catch(() => {});
+    return { sent: false, reason: error && error.code || 'provider-error' };
+  }
+}
+
+/**
+ * Ask Brevo for the current state of messages it accepted. This is the only
+ * place an address is called "delivered": the provider has to say so.
+ * Limited to recent rows so one admin click cannot exhaust the API quota.
+ */
+async function refreshProviderStatuses(limitValue) {
+  const db = admin.firestore();
+  const max = Math.min(25, Math.max(1, Number(limitValue) || 15));
+  const snapshot = await db.collection('emailOutbox').orderBy('createdAt', 'desc').limit(80).get();
+  let checked = 0;
+  let updated = 0;
+  for (const entry of snapshot.docs) {
+    if (checked >= max) break;
+    const row = entry.data() || {};
+    if (!row.providerMessageId) continue;
+    if (!['accepted', 'sent', 'delivered', 'bounced', 'failed'].includes(String(row.status || ''))) continue;
+    if (row.deliveredAt || row.bouncedAt) continue;
+    checked += 1;
+    const result = await brevo.getEmailStatus(row.providerMessageId, process.env, row.recipient);
+    if (!result || !result.ok) continue;
+    const providerStatus = String(result.status || '').toLowerCase();
+    if (!providerStatus) continue;
+    const patch = {
+      providerStatus,
+      providerCheckedAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    };
+    if (providerStatus === 'delivered') {
+      patch.status = 'delivered';
+      patch.deliveredAt = admin.firestore.FieldValue.serverTimestamp();
+      patch.failureReason = '';
+    } else if (['bounced', 'blocked', 'invalid', 'spam', 'hard_bounce', 'soft_bounce'].includes(providerStatus)) {
+      patch.status = providerStatus === 'bounced' || providerStatus === 'hard_bounce' ? 'bounced' : 'failed';
+      patch.bouncedAt = admin.firestore.FieldValue.serverTimestamp();
+      patch.failureReason = text(result.reason, 300) || 'The provider reported that the message was not delivered.';
+      patch.lastError = patch.failureReason;
+    } else if (providerStatus === 'deferred') {
+      patch.failureReason = text(result.reason, 300) || 'The provider deferred delivery.';
+    }
+    await entry.ref.set(patch, { merge: true });
+    updated += 1;
+  }
+  return { checked, updated };
+}
+
+async function emailDiagnostics() {
+  const settings = await loadSettings();
+  const connection = await brevo.checkConnection(process.env);
+  const db = admin.firestore();
+  let counts = { pending: 0, accepted: 0, delivered: 0, failed: 0, bounced: 0, disabled: 0, missing_email: 0, opted_out: 0 };
+  try {
+    const snapshot = await db.collection('emailOutbox').orderBy('createdAt', 'desc').limit(200).get();
+    snapshot.forEach(function (entry) {
+      const status = String((entry.data() || {}).status || 'pending');
+      if (Object.prototype.hasOwnProperty.call(counts, status)) counts[status] += 1;
+    });
+  } catch (error) { /* diagnostics must still return the credential check */ }
+  return {
+    provider: 'brevo',
+    configured: connection.configured,
+    connection: connection,
+    sender: { name: settings.senderName, email: settings.senderEmail, replyTo: settings.replyTo || '' },
+    enabled: settings.enabled,
+    counts: counts,
+    checkedAt: new Date().toISOString()
+  };
+}
+
 /* --------------------------------------------------------------- admin auth */
 
 async function isAdmin(uid) {
@@ -771,10 +1050,17 @@ async function listLogs(limitValue, statusFilter) {
       recipientName: row.recipientName || '',
       subject: row.subject || '',
       status: row.status || 'pending',
+      providerStatus: row.providerStatus || '',
+      providerMessageId: row.providerMessageId || '',
+      retryable: row.retryable !== false,
       attempts: Number(row.attempts || 0),
       lastError: row.lastError || '',
+      failureReason: row.failureReason || '',
       createdAt: row.createdAt || null,
+      acceptedAt: row.acceptedAt || row.sentAt || null,
       sentAt: row.sentAt || null,
+      deliveredAt: row.deliveredAt || null,
+      bouncedAt: row.bouncedAt || null,
       nextAttemptAt: row.nextAttemptAt || null
     });
   });
@@ -787,6 +1073,7 @@ async function retryFailed(limitValue) {
   const results = [];
   for (const entry of snapshot.docs) {
     const row = entry.data() || {};
+    if (row.retryable === false) continue;
     if (Number(row.attempts || 0) >= 5) continue;
     // Respect the exponential backoff recorded when the last attempt failed;
     // the scheduler wakes every 30 minutes but a message is not retried before
@@ -822,7 +1109,7 @@ async function saveSettings(data, actor) {
 async function saveTemplate(data, actor) {
   const event = text(data && data.event, 80);
   if (!EVENTS[event]) fail('invalid-argument', 'Choose a known notification event.');
-  const path = safePath(data && data.actionPath, EVENTS[event].actionPath);
+  const path = safeTemplateAction(data && data.actionPath, EVENTS[event].actionPath);
   const payload = {
     event,
     subject: text(data && data.subject, 180),
@@ -897,11 +1184,13 @@ async function sendTestEmail(data, context) {
       replyTo: settings.replyTo, tags: ['prayer-dome', 'test']
     });
     await logRef.set({
-      status: 'sent', sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      status: 'accepted', providerStatus: 'accepted',
+      acceptedAt: admin.firestore.FieldValue.serverTimestamp(),
+      sentAt: admin.firestore.FieldValue.serverTimestamp(),
       providerMessageId: result && result.messageId ? String(result.messageId) : '',
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      lastError: '', updatedAt: admin.firestore.FieldValue.serverTimestamp()
     }, { merge: true });
-    return { sent: true, messageId: result && result.messageId };
+    return { sent: true, accepted: true, messageId: result && result.messageId };
   } catch (error) {
     await logRef.set({
       status: 'failed', lastError: text(error && error.message, 300),
@@ -928,6 +1217,12 @@ async function emailAdminHandler(data, context) {
     case 'logs.list':
       await requireAdmin(context);
       return { logs: await listLogs(payload.limit, payload.status) };
+    case 'logs.refresh':
+      await requireAdmin(context);
+      return await refreshProviderStatuses(payload.limit);
+    case 'diagnostics':
+      await requireAdmin(context);
+      return await emailDiagnostics();
     case 'retry':
       await requireAdmin(context);
       if (payload.id) return await sendOutbox(text(payload.id, 220));
@@ -1185,19 +1480,131 @@ async function notifyVerification(change, context) {
   });
 }
 
+/*
+ * A Google sign-up has already proved the address, so it never passes through
+ * the emailed-code step. Send the same one-time welcome as a verified
+ * email/password sign-up; the deterministic event id means the two paths can
+ * never produce two welcome messages for one account.
+ */
+async function notifyNewUser(snap, context) {
+  const row = snap.data() || {};
+  if (row.emailVerified !== true) return null;
+  return deliverEvent({
+    event: 'welcome',
+    eventId: 'evt_welcome_' + context.params.uid,
+    userId: context.params.uid,
+    values: { name: row.fullName || row.displayName || '' },
+    link: '/account.html'
+  });
+}
+
 async function notifyPrayer(snap, context) {
   const row = snap.data() || {};
   const userId = row.userId || row.uid;
   if (!userId) return null;
   return deliverEvent({
-    event: 'prayer_received',
-    eventId: eventId('prayer_received', userId, snap.id),
+    event: 'prayer_request_confirmation',
+    eventId: eventId('prayer_request_confirmation', userId, snap.id),
     userId,
     values: {
       name: row.name || row.userName || '',
       reference: snap.id,
       status: 'Received',
       date: formatDate(snap.createTime ? snap.createTime.toDate() : new Date())
+    },
+    link: '/prayer.html'
+  });
+}
+
+async function notifyAnnouncement(snap, context) {
+  const row = snap.data() || {};
+  if (row.emailMembers !== true) return null;
+  const title = text(row.title, 140);
+  const message = text(row.body, 900);
+  if (!title || !message) return null;
+  const db = admin.firestore();
+  let users = [];
+  try {
+    const snapshot = await db.collection('users').limit(200).get();
+    users = snapshot.docs.map((entry) => entry.id).filter(Boolean);
+  } catch (error) {
+    console.warn('Announcement recipients could not be listed:', error.message);
+    return null;
+  }
+  let sent = 0;
+  for (let index = 0; index < users.length; index += 20) {
+    const batch = users.slice(index, index + 20);
+    const results = await Promise.all(batch.map((userId) => deliverEvent({
+      event: 'ministry_announcement',
+      eventId: eventId('ministry_announcement', userId, String(context.params.id || snap.id)),
+      userId,
+      values: { title, message, name: '', reference: snap.id },
+      title,
+      message,
+      link: '/news.html'
+    }).catch((error) => ({ sent: false, error: error && error.message }))));
+    sent += results.filter((result) => result && result.sent).length;
+  }
+  return { recipients: users.length, sent };
+}
+
+async function notifyGiving(change, context) {
+  if (!change.after.exists) return null;
+  const row = change.after.data() || {};
+  const before = change.before.exists ? change.before.data() : null;
+  const userId = row.donorUid || row.userId;
+  const current = String(row.status || 'pending').toLowerCase();
+  const previous = before ? String(before.status || 'pending').toLowerCase() : '';
+  let event = '';
+  if (!before) {
+    if (current === 'pending') event = 'giving_submitted';
+  } else if (previous !== current) {
+    // Only a confirmed receipt is a payment confirmation. An approved record
+    // is still awaiting the finance team's receipt check.
+    if (current === 'received') event = 'giving_confirmed';
+    else if (current === 'rejected') event = 'giving_rejected';
+  }
+  if (!event) return null;
+  const values = {
+    name: row.donorName || row.donor || '',
+    reference: row.reference || context.params.reference || '',
+    status: statusLabel(current),
+    amount: formatAmount(row.amount, row.currency),
+    plan: row.category || row.purpose || '',
+    reason: row.rejectionReason || row.rejectReason || '',
+    date: formatDate(change.after.updateTime ? change.after.updateTime.toDate() : new Date())
+  };
+  const id = eventId(event, userId || cleanEmail(row.donorEmail || row.email || row.receiptEmail) || 'guest',
+    String(context.params.reference || context.params.id || '') + '-' + current + '-' + eventSuffix(change.after));
+  if (!userId) {
+    // A guest giver has no member record to resolve an address from, but still
+    // deserves the same branded receipt. The address comes from the giving
+    // record the finance team already reviews and is never used for marketing.
+    const to = cleanEmail(row.donorEmail || row.email || row.receiptEmail);
+    if (!to) return { skipped: true, reason: 'missing-email' };
+    return deliverDirect({ event, eventId: id, to, name: values.name, values, link: '/give.html' });
+  }
+  return deliverEvent({ event, eventId: id, userId, values, link: '/give.html' });
+}
+
+async function notifyPrayerUpdate(change, context) {
+  if (!change.after.exists || !change.before.exists) return null;
+  const row = change.after.data() || {};
+  const before = change.before.data() || {};
+  const userId = row.userId || row.uid;
+  if (!userId) return null;
+  const current = String(row.status || '').toLowerCase();
+  const previous = String(before.status || '').toLowerCase();
+  if (!current || current === previous) return null;
+  return deliverEvent({
+    event: 'prayer_request_update',
+    eventId: eventId('prayer_request_update', userId, context.params.id + '-' + current + '-' + eventSuffix(change.after)),
+    userId,
+    values: {
+      name: row.name || row.userName || '',
+      reference: context.params.id,
+      status: statusLabel(current),
+      date: formatDate(change.after.updateTime ? change.after.updateTime.toDate() : new Date())
     },
     link: '/prayer.html'
   });
@@ -1358,7 +1765,11 @@ const membershipNotifications = region.firestore.document('memberships/{uid}').o
 const paymentNotifications = region.firestore.document('paymentRequests/{reference}').onWrite(notifyPayment);
 const subscriptionNotifications = region.firestore.document('subscriptions/{id}').onWrite(notifySubscription);
 const churchIdNotifications = region.firestore.document('membershipVerification/{id}').onWrite(notifyVerification);
+const userWelcomeNotifications = region.firestore.document('users/{uid}').onCreate(notifyNewUser);
 const prayerNotifications = region.firestore.document('prayers/{id}').onCreate(notifyPrayer);
+const prayerUpdateNotifications = region.firestore.document('prayers/{id}').onWrite(notifyPrayerUpdate);
+const givingNotifications = region.firestore.document('offerings/{reference}').onWrite(notifyGiving);
+const announcementNotifications = region.firestore.document('announcements/{id}').onCreate(notifyAnnouncement);
 const testimonyNotifications = region.firestore.document('testimonies/{id}').onWrite(notifyTestimony);
 const certificateNotifications = region.firestore.document('certificates/{id}').onCreate(notifyCertificate);
 const examNotifications = region.firestore.document('finalExamSubmissions/{id}').onWrite(notifyExam);
@@ -1373,12 +1784,21 @@ module.exports = {
   buildEmail,
   eventId,
   normalizeSettings,
+  deliverEvent,
+  deliverDirect,
+  sendPasswordResetEmail,
+  refreshProviderStatuses,
+  emailDiagnostics,
   emailAdmin,
   membershipNotifications,
+  userWelcomeNotifications,
   paymentNotifications,
   subscriptionNotifications,
   churchIdNotifications,
   prayerNotifications,
+  prayerUpdateNotifications,
+  givingNotifications,
+  announcementNotifications,
   testimonyNotifications,
   certificateNotifications,
   examNotifications,

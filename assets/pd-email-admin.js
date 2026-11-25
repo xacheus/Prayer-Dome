@@ -46,10 +46,29 @@
     return Promise.resolve(callable(Object.assign({ action: action }, payload || {})))
       .then(function (result) { return (result && result.data) || {}; })
       .catch(function (error) {
-        var raw = error && error.message ? error.message : 'The email service could not be reached.';
-        throw new Error(/not found|unavailable|internal/i.test(raw)
-          ? 'Email delivery is temporarily unavailable. Deploy the functions and try again.'
-          : raw.replace(/^FirebaseError:\s*/i, ''));
+        var code = String((error && (error.code || error.status)) || '');
+        var raw = String((error && error.message) || '').replace(/^FirebaseError:\s*/i, '').trim();
+        var message;
+        if (/unauthenticated/i.test(code)) {
+          message = 'Your administrator session has expired. Sign in again, then retry.';
+        } else if (/permission-denied/i.test(code)) {
+          message = 'This account is not allowed to manage email delivery. Ask a Prayer Dome administrator to grant access.';
+        } else if (/not-found/i.test(code)) {
+          message = 'The email service is not deployed for this project yet. An administrator must deploy the email function before this page can send or list messages.';
+        } else if (/resource-exhausted/i.test(code)) {
+          message = 'The email service is busy or rate-limited. Wait a few minutes and try again.';
+        } else if (/failed-precondition/i.test(code)) {
+          message = raw || 'Email delivery is not configured yet. Check the sender and Brevo settings below.';
+        } else if (/invalid-argument/i.test(code)) {
+          message = raw || 'Check the values on this page and try again.';
+        } else if (/unavailable/i.test(code) || /deadline-exceeded/i.test(code)) {
+          message = raw || 'The email service did not respond in time. Check your connection and retry; if it continues, open the delivery log for the provider error.';
+        } else if (/internal/i.test(code)) {
+          message = raw || 'The email service hit an unexpected error. Open the delivery log for the exact provider response.';
+        } else {
+          message = raw || 'The email service could not be reached. Check your connection and try again.';
+        }
+        throw new Error(message);
       });
   }
 
@@ -71,29 +90,35 @@
   }
 
   function statusTone(status) {
-    if (status === 'sent') return 'ok';
-    if (status === 'failed') return 'bad';
+    if (status === 'delivered') return 'ok';
+    if (status === 'accepted' || status === 'sent') return 'warn';
+    if (status === 'failed' || status === 'bounced') return 'bad';
     if (status === 'missing_email') return 'bad';
     if (status === 'disabled' || status === 'opted_out') return 'warn';
     return 'warn';
   }
 
   function chip(status) {
-    return '<span class="audit-pill ' + statusTone(status) + '">' + esc(String(status || 'unknown').replace(/_/g, ' ')) + '</span>';
+    var label = String(status || 'unknown').replace(/_/g, ' ');
+    if (status === 'sent') label = 'accepted (legacy)';
+    return '<span class="audit-pill ' + statusTone(status) + '">' + esc(label) + '</span>';
   }
 
   function renderHealth(logs) {
-    var counts = { sent: 0, failed: 0, pending: 0, missing_email: 0, disabled: 0, opted_out: 0 };
+    var counts = { accepted: 0, delivered: 0, failed: 0, bounced: 0, pending: 0, missing_email: 0, disabled: 0, opted_out: 0 };
     (logs || []).forEach(function (row) {
       if (Object.prototype.hasOwnProperty.call(counts, row.status)) counts[row.status] += 1;
       else if (row.status === 'sending') counts.pending += 1;
+      else if (row.status === 'sent') counts.accepted += 1;
     });
     var grid = $('emailHealthGrid');
     if (grid) {
       var cards = [
-        { key: 'sent', label: 'Delivered', tone: 'green' },
+        { key: 'accepted', label: 'Accepted by Brevo', tone: 'blue' },
+        { key: 'delivered', label: 'Delivered (provider)', tone: 'green' },
+        { key: 'bounced', label: 'Bounced / blocked', tone: 'red' },
         { key: 'failed', label: 'Failed', tone: 'red' },
-        { key: 'pending', label: 'Pending / sending', tone: 'blue' },
+        { key: 'pending', label: 'Pending / sending', tone: 'gold' },
         { key: 'missing_email', label: 'No email on file', tone: 'red' },
         { key: 'opted_out', label: 'Opted out', tone: 'gold' }
       ];
@@ -159,26 +184,46 @@
     if ($('emailTemplateActionPath')) $('emailTemplateActionPath').value = row.actionPath || '';
   }
 
+  function providerLabel(row) {
+    if (row.providerStatus) return String(row.providerStatus).replace(/_/g, ' ');
+    if (row.status === 'accepted') return 'accepted — awaiting provider report';
+    if (row.status === 'sent') return 'accepted — legacy record';
+    return '—';
+  }
+
+  function retryLabel(row) {
+    var attempts = Number(row.attempts || 0);
+    var next = toDate(row.nextAttemptAt);
+    if (row.status === 'delivered') return attempts ? attempts + ' · provider confirmed' : 'provider confirmed';
+    if (row.status === 'accepted') return attempts ? attempts + ' · accepted' : 'accepted';
+    if (row.status === 'bounced') return attempts + ' · not retried';
+    if (next && row.status === 'failed') return attempts + ' · next ' + when(next);
+    if (row.status === 'failed' && attempts >= 5) return attempts + ' · retry limit reached';
+    return attempts ? String(attempts) : '—';
+  }
+
   function renderLogs(logs) {
     var body = $('emailLogsBody');
     if (!body) return;
     if (!logs || !logs.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-sub);">No email deliveries match this filter.</td></tr>';
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-sub);">No email deliveries match this filter.</td></tr>';
       renderHealth([]);
       return;
     }
     body.innerHTML = logs.map(function (row) {
-      var canRetry = row.status === 'failed' || row.status === 'pending' || row.status === 'sending';
+      var canRetry = row.retryable !== false && (row.status === 'failed' || row.status === 'pending' || row.status === 'sending');
       var actions = canRetry
         ? '<button class="btn btn-outline btn-sm" type="button" onclick="retryEmailDelivery(\'' + esc(row.id) + '\')"><i class="pd-i pd-i-refresh-cw"></i> Retry</button>'
         : '—';
+      var failure = row.failureReason || row.lastError || '';
       return '<tr>' +
         '<td style="white-space:nowrap;">' + esc(when(row.createdAt)) + '</td>' +
-        '<td>' + esc(String(row.event || '').replace(/_/g, ' ')) + '</td>' +
+        '<td>' + esc(String(row.event || '').replace(/_/g, ' ')) + (row.subject ? '<br><span style="font-size:.68rem;color:var(--text-sub);">' + esc(row.subject) + '</span>' : '') + '</td>' +
         '<td>' + esc(row.recipient || '—') + (row.recipientName ? '<br><span style="font-size:.68rem;color:var(--text-sub);">' + esc(row.recipientName) + '</span>' : '') + '</td>' +
-        '<td>' + esc(row.subject || '—') + '</td>' +
-        '<td>' + chip(row.status) + (row.lastError ? '<br><span style="font-size:.66rem;color:var(--danger,#ef4444);">' + esc(row.lastError) + '</span>' : '') + '</td>' +
-        '<td>' + esc(row.attempts || 0) + '</td>' +
+        '<td>' + chip(row.status) + '</td>' +
+        '<td>' + esc(providerLabel(row)) + (row.deliveredAt ? '<br><span style="font-size:.66rem;color:var(--text-sub);">' + esc(when(row.deliveredAt)) + '</span>' : '') + '</td>' +
+        '<td style="max-width:220px;">' + (failure ? esc(failure) : '—') + '</td>' +
+        '<td>' + esc(retryLabel(row)) + '</td>' +
         '<td>' + actions + '</td>' +
         '</tr>';
     }).join('');
@@ -188,18 +233,72 @@
   function loadLogs() {
     var status = ($('emailLogStatus') || {}).value || 'all';
     if ($('emailLogsBody')) {
-      $('emailLogsBody').innerHTML = '<tr><td colspan="7"><div class="spinner" style="width:26px;height:26px;"></div></td></tr>';
+      $('emailLogsBody').innerHTML = '<tr><td colspan="8"><div class="spinner" style="width:26px;height:26px;"></div></td></tr>';
     }
     return call('logs.list', { limit: 100, status: status })
       .then(function (result) { renderLogs(result.logs || []); return result.logs || []; })
       .catch(function (error) {
         if ($('emailLogsBody')) {
-          $('emailLogsBody').innerHTML = '<tr><td colspan="7" style="color:var(--danger,#ef4444);">' + esc(error.message) + '</td></tr>';
+          $('emailLogsBody').innerHTML = '<tr><td colspan="8" style="color:var(--danger,#ef4444);">' + esc(error.message) + '</td></tr>';
         }
         renderHealth([]);
         return [];
       });
   }
+
+  window.checkEmailDiagnostics = function () {
+    var host = $('emailDiagnostics');
+    if (host) {
+      host.style.display = 'block';
+      host.style.borderColor = 'var(--border-color)';
+      host.innerHTML = '<div class="spinner" style="width:22px;height:22px;display:inline-block;vertical-align:middle;"></div> Checking the server credential with Brevo…';
+    }
+    return call('diagnostics').then(function (result) {
+      var connection = result.connection || {};
+      var ok = connection.configured && connection.ok;
+      if (host) {
+        host.style.display = 'block';
+        host.style.borderColor = ok ? 'var(--accent-green)' : 'var(--danger,#ef4444)';
+        var lines = [];
+        lines.push('<strong style="color:' + (ok ? 'var(--accent-green)' : 'var(--danger,#ef4444)') + ';">'
+          + (ok ? 'Brevo credential accepted' : (connection.configured ? 'Brevo rejected the request' : 'Brevo is not configured on the server')) + '</strong>');
+        if (connection.message) lines.push(esc(connection.message));
+        if (connection.code) lines.push('Reason code: <code>' + esc(connection.code) + '</code>' + (connection.status ? ' (HTTP ' + esc(connection.status) + ')' : ''));
+        if (connection.companyName) lines.push('Brevo account: ' + esc(connection.companyName));
+        lines.push('Sender: ' + esc((result.sender && result.sender.email) || connection.senderEmail || 'not set')
+          + ' · reply-to: ' + esc((result.sender && result.sender.replyTo) || 'not set'));
+        if (connection.senderVerified === false) {
+          lines.push('<span style="color:var(--danger,#ef4444);">The sender address is not in Brevo’s verified senders list. Verify it in Brevo before sending.</span>');
+        } else if (connection.senderVerified === true) {
+          lines.push('The sender address is verified in Brevo.');
+        }
+        lines.push('Messages: ' + esc(Object.keys(result.counts || {}).map(function (key) { return key + ' ' + result.counts[key]; }).join(' · ')));
+        if (!connection.configured) {
+          lines.push('Set <code>BREVO_API_KEY</code> in Firebase Secret Manager for the functions that send mail, and in Vercel if the newsletter endpoint is used. The key is never entered in this page.');
+        } else if (!connection.ok) {
+          lines.push('The key is present but Brevo did not accept it. Check that it is an active v3 API key and that the sender address or domain is verified in Brevo.');
+        }
+        host.innerHTML = lines.map(function (line) { return '<div style="margin:3px 0;">' + line + '</div>'; }).join('');
+      }
+      return result;
+    }).catch(function (error) {
+      if (host) {
+        host.style.display = 'block';
+        host.style.borderColor = 'var(--danger,#ef4444)';
+        host.innerHTML = '<strong>Connection check failed.</strong><br>' + esc(error.message);
+      }
+      toast('Connection check failed: ' + error.message, 'error');
+    });
+  };
+
+  window.refreshEmailProviderStatus = function () {
+    return call('logs.refresh', { limit: 20 }).then(function (result) {
+      toast('Provider report checked: ' + (result.checked || 0) + ' message(s), ' + (result.updated || 0) + ' updated.', 'info');
+      return loadLogs();
+    }).catch(function (error) {
+      toast('Provider status could not be refreshed: ' + error.message, 'error');
+    });
+  };
 
   window.loadEmailAdmin = function () {
     if (!bridge()) return Promise.resolve(false);
@@ -283,9 +382,9 @@
     if (stateEl) stateEl.textContent = 'Sending through Brevo…';
     return call('test', { to: to }).then(function (result) {
       if (stateEl) stateEl.textContent = result && result.sent === false
-        ? 'The provider did not accept the test. Check the delivery log.'
-        : 'Test accepted by the provider. Check ' + to + ' (and the spam folder).';
-      toast('Test email sent. It is in the delivery log.', 'success');
+        ? 'The provider did not accept the test. Check the delivery log for the exact reason.'
+        : 'Brevo accepted the test message. That is not proof of delivery; use “Refresh provider status” to check the provider report. Check ' + to + ' and the spam folder.';
+      toast('Test message accepted by Brevo. It is in the delivery log.', 'success');
       return loadLogs();
     }).catch(function (error) {
       if (stateEl) stateEl.textContent = 'Test failed: ' + error.message;
@@ -298,8 +397,8 @@
   window.retryEmailDelivery = function (id) {
     if (!id) return;
     return call('retry', { id: id }).then(function (result) {
-      if (result && result.sent) toast('Email delivered on retry.', 'success');
-      else toast('Retry checked: ' + (result && result.reason ? String(result.reason).replace(/_/g, ' ') : 'still not delivered') + '.', 'info');
+      if (result && result.sent) toast('Brevo accepted the email on retry. Delivery is not yet confirmed; use “Refresh provider status” for the provider report.', 'success');
+      else toast('Retry checked: ' + (result && result.reason ? String(result.reason).replace(/_/g, ' ') : 'still not accepted') + '.', 'info');
       return loadLogs();
     }).catch(function (error) {
       toast('Retry failed: ' + error.message, 'error');

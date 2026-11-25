@@ -31,6 +31,7 @@
 const BREVO_API = 'https://api.brevo.com/v3';
 const DEFAULT_SITE = 'https://prayerdome.net';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const design = require('./email-design');
 const REQUEST_TIMEOUT_MS = 7000;
 
 function config(env) {
@@ -41,6 +42,7 @@ function config(env) {
     senderName: String(source.BREVO_SENDER_NAME || 'Prayer Dome').trim(),
     listId: Number(source.BREVO_LIST_ID) || 0,
     doiTemplateId: Number(source.BREVO_DOI_TEMPLATE_ID) || 0,
+    replyTo: String(source.BREVO_REPLY_TO || '').trim(),
     siteUrl: String(source.PD_SITE_URL || DEFAULT_SITE).replace(/\/+$/, '')
   };
 }
@@ -65,7 +67,43 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-async function callBrevo(path, body, options) {
+function providerFailure(response, payload) {
+  const status = Number(response && response.status) || 0;
+  const providerCode = String((payload && (payload.code || payload.error)) || '').slice(0, 80);
+  const providerMessage = String((payload && payload.message) || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 240);
+  let code = 'provider_error';
+  let message = 'The mail service rejected the request.';
+  if (status === 401 || status === 403) {
+    code = 'auth_failed';
+    message = 'Brevo rejected the API key. Check that BREVO_API_KEY is the current v3 key for this account.';
+  } else if (status === 429) {
+    code = 'rate_limited';
+    message = 'Brevo is rate-limiting this account. Please wait a few minutes before trying again.';
+  } else if (status === 400 || status === 422) {
+    if (/sender|from|domain|verified/i.test(providerMessage)) {
+      code = 'sender_not_verified';
+      message = 'Brevo rejected the sender address. Verify the sender or authenticate the prayerdome.net domain in Brevo.';
+    } else if (/recipient|email|to/i.test(providerMessage)) {
+      code = 'recipient_rejected';
+      message = 'Brevo rejected the recipient address.';
+    } else {
+      code = 'invalid_request';
+      message = providerMessage || 'Brevo rejected the request as invalid.';
+    }
+  } else if (status >= 500) {
+    code = 'provider_error';
+    message = 'Brevo is temporarily unavailable. The message will be retried.';
+  }
+  const failure = new Error(message);
+  failure.code = code;
+  failure.status = status;
+  failure.providerCode = providerCode;
+  failure.providerMessage = providerMessage;
+  // Never attach response headers: they can contain account identifiers.
+  return failure;
+}
+
+async function requestBrevo(method, path, body, options) {
   const cfg = options || config();
   if (!cfg.apiKey) {
     const missing = new Error('Brevo is not configured.');
@@ -76,16 +114,16 @@ async function callBrevo(path, body, options) {
   const timer = controller ? setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS) : null;
   let response;
   try {
-    response = await fetch(BREVO_API + path, {
-      method: 'POST',
-      headers: {
-        accept: 'application/json',
-        'content-type': 'application/json',
-        'api-key': cfg.apiKey
-      },
-      body: JSON.stringify(body || {}),
-      signal: controller ? controller.signal : undefined
-    });
+    const headers = {
+      accept: 'application/json',
+      'api-key': cfg.apiKey
+    };
+    const init = { method: method, headers: headers, signal: controller ? controller.signal : undefined };
+    if (body !== undefined && body !== null) {
+      headers['content-type'] = 'application/json';
+      init.body = JSON.stringify(body);
+    }
+    response = await fetch(BREVO_API + path, init);
   } catch (error) {
     const failure = new Error(error && error.name === 'AbortError'
       ? 'The mail service timed out.'
@@ -101,64 +139,115 @@ async function callBrevo(path, body, options) {
     try { payload = JSON.parse(text); } catch (error) { payload = {}; }
   }
   if (!response.ok && response.status !== 201 && response.status !== 204) {
-    const failure = new Error(payload.message || 'Brevo rejected the request.');
-    failure.code = payload.code || ('http_' + response.status);
-    failure.status = response.status;
-    // Never surface the request headers (which contain the key) to a caller.
-    throw failure;
+    throw providerFailure(response, payload);
   }
   return payload;
 }
 
+function callBrevo(path, body, options) {
+  return requestBrevo('POST', path, body || {}, options);
+}
+
+/**
+ * Verify the credential and sender without sending mail.
+ * Returns booleans and provider-safe labels only; never the API key.
+ */
+async function checkConnection(env) {
+  const cfg = config(env);
+  if (!cfg.apiKey) {
+    return { configured: false, ok: false, code: 'not_configured', message: 'BREVO_API_KEY is not set on this deployment.' };
+  }
+  try {
+    const account = await requestBrevo('GET', '/account', null, cfg);
+    let senderVerified = null;
+    try {
+      const senders = await requestBrevo('GET', '/senders', null, cfg);
+      const list = Array.isArray(senders.senders) ? senders.senders : [];
+      const match = list.find(function (entry) {
+        return cleanEmail(entry && entry.email) === cleanEmail(cfg.senderEmail);
+      });
+      senderVerified = match ? match.active !== false : false;
+    } catch (error) { /* sender listing is optional; the send result is authoritative */ }
+    return {
+      configured: true,
+      ok: true,
+      companyName: String(account.companyName || account.enterpriseName || '').slice(0, 120),
+      senderEmail: cfg.senderEmail,
+      senderName: cfg.senderName,
+      senderVerified: senderVerified,
+      message: senderVerified === false
+        ? 'Brevo accepted the API key, but the sender address is not in the verified senders list.'
+        : 'Brevo accepted the API key.'
+    };
+  } catch (error) {
+    return {
+      configured: true,
+      ok: false,
+      code: error.code || 'provider_error',
+      status: error.status || 0,
+      senderEmail: cfg.senderEmail,
+      senderName: cfg.senderName,
+      message: error.message || 'Brevo could not be reached.'
+    };
+  }
+}
+
+/**
+ * Ask Brevo for the delivery state of one accepted message. "sent" here means
+ * the provider accepted it, not that the recipient's mailbox displayed it.
+ */
+async function getEmailStatus(messageId, env, recipient) {
+  const cfg = config(env);
+  const id = String(messageId || '').trim();
+  if (!cfg.apiKey) return { ok: false, code: 'not_configured', message: 'BREVO_API_KEY is not set.' };
+  if (!id) return { ok: false, code: 'invalid_message_id', message: 'A provider message id is required.' };
+  try {
+    const query = '/smtp/emails?messageId=' + encodeURIComponent(id) + '&limit=5'
+      + (cleanEmail(recipient) ? '&email=' + encodeURIComponent(cleanEmail(recipient)) : '');
+    const payload = await requestBrevo('GET', query, null, cfg);
+    const rows = Array.isArray(payload.transactionalEmails) ? payload.transactionalEmails : [];
+    const row = rows[0] || {};
+    return {
+      ok: true,
+      messageId: String(row.messageId || id),
+      status: String(row.status || '').toLowerCase(),
+      reason: String(row.reason || row.errorReason || '').slice(0, 240),
+      date: row.date || row.createdAt || ''
+    };
+  } catch (error) {
+    return { ok: false, code: error.code || 'provider_error', status: error.status || 0, message: error.message || 'Brevo could not be queried.' };
+  }
+}
+
 function verificationEmailHtml(cfg, name, link) {
-  const safeName = escapeHtml(cleanName(name) || 'friend');
-  const safeLink = escapeHtml(link);
-  const safeSite = escapeHtml(cfg.siteUrl.replace(/^https?:\/\//, ''));
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Confirm your email — Prayer Dome</title></head>
-<body style="margin:0;padding:0;background:#f3f6fb;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-  <div style="display:none;max-height:0;overflow:hidden;">Confirm your email address to finish setting up your Prayer Dome account.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fb;padding:24px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbe3ee;">
-        <tr><td style="background:#0A4D9B;padding:22px 26px;">
-          <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#f6df8a;font-weight:800;">Prayer Dome</div>
-          <div style="font-size:19px;font-weight:800;color:#ffffff;margin-top:4px;">A House of Prayer for All Nations</div>
-        </td></tr>
-        <tr><td style="padding:28px 26px 10px;">
-          <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#07244d;">Confirm your email address</h1>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.65;">Hello ${safeName},</p>
-          <p style="margin:0 0 20px;font-size:15px;line-height:1.65;">Thank you for creating a Prayer Dome account. Confirm this address so we know it is yours. Your account already works — this step keeps it secure and lets us reach you with service updates you ask for.</p>
-          <p style="margin:0 0 24px;"><a href="${safeLink}" style="display:inline-block;background:#0A4D9B;color:#ffffff;text-decoration:none;font-weight:800;font-size:15px;padding:13px 22px;border-radius:10px;">Confirm my email</a></p>
-          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">If the button does not open, copy this link into your browser:</p>
-          <p style="margin:0 0 22px;font-size:12px;line-height:1.5;word-break:break-all;"><a href="${safeLink}" style="color:#0A4D9B;">${safeLink}</a></p>
-          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">If you did not create this account, you can ignore this message.</p>
-        </td></tr>
-        <tr><td style="padding:16px 26px 24px;border-top:1px solid #e6edf6;">
-          <p style="margin:0;font-size:12px;line-height:1.6;color:#5b6b82;">Prayer Dome Ministry · ${safeSite}<br>You received this because an account was created with this address.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
+  return design.renderEmail({
+    subject: 'Confirm your email — Prayer Dome',
+    heading: 'Confirm your email address',
+    preheader: 'Confirm this address to finish setting up your Prayer Dome account.',
+    greeting: 'Hello ' + (cleanName(name) || 'friend') + ',',
+    paragraphs: [
+      'Thank you for creating a Prayer Dome account. Confirm this address so we know it is yours. Your account already works; this step keeps it secure and lets us reach you with service updates you ask for.',
+      'If you did not create this account, you can ignore this message.'
+    ],
+    action: { label: 'Confirm my email', url: link },
+    footerNote: 'You received this because an account was created with this address.',
+    siteUrl: cfg.siteUrl
+  }).html;
 }
 
 function verificationEmailText(cfg, name, link) {
-  return [
-    'Prayer Dome — confirm your email address',
-    '',
-    'Hello ' + (cleanName(name) || 'friend') + ',',
-    '',
-    'Thank you for creating a Prayer Dome account. Confirm this address so we know it is yours. Your account already works — this step keeps it secure and lets us reach you with service updates you ask for.',
-    '',
-    'Open this link to confirm:',
-    link,
-    '',
-    'If you did not create this account, you can ignore this message.',
-    '',
-    'Prayer Dome Ministry · ' + cfg.siteUrl.replace(/^https?:\/\//, '')
-  ].join('\n');
+  return design.renderEmail({
+    subject: 'Confirm your email — Prayer Dome',
+    heading: 'Confirm your email address',
+    greeting: 'Hello ' + (cleanName(name) || 'friend') + ',',
+    paragraphs: [
+      'Thank you for creating a Prayer Dome account. Confirm this address so we know it is yours. Your account already works; this step keeps it secure and lets us reach you with service updates you ask for.',
+      'If you did not create this account, you can ignore this message.'
+    ],
+    action: { label: 'Confirm my email', url: link },
+    footerNote: 'You received this because an account was created with this address.',
+    siteUrl: cfg.siteUrl
+  }).text;
 }
 
 /*
@@ -180,7 +269,7 @@ async function sendVerificationEmail(options) {
     throw error;
   }
   if (!cfg.apiKey) return { sent: false, reason: 'not-configured' };
-  await callBrevo('/smtp/email', {
+  const provider = await callBrevo('/smtp/email', {
     sender: { name: cfg.senderName, email: cfg.senderEmail },
     to: [{ email, name: cleanName(options && options.name) || undefined }],
     replyTo: { email: cfg.senderEmail, name: cfg.senderName },
@@ -189,58 +278,42 @@ async function sendVerificationEmail(options) {
     textContent: verificationEmailText(cfg, options && options.name, link),
     tags: ['account-verification']
   }, cfg);
-  return { sent: true, provider: 'brevo' };
+  return { sent: true, provider: 'brevo', messageId: String(provider && provider.messageId || '') };
 }
 
 function registrationCodeEmailHtml(cfg, name, code, minutes) {
-  const safeName = escapeHtml(cleanName(name) || 'friend');
-  const safeCode = escapeHtml(String(code || ''));
-  const safeSite = escapeHtml(cfg.siteUrl.replace(/^https?:\/\//, ''));
-  const safeMinutes = Math.max(1, Number(minutes) || 10);
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Your Prayer Dome verification code</title></head>
-<body style="margin:0;padding:0;background:#f3f6fb;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a;">
-  <div style="display:none;max-height:0;overflow:hidden;">Your Prayer Dome verification code expires in ${safeMinutes} minutes.</div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f6fb;padding:24px 12px;">
-    <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #dbe3ee;">
-        <tr><td style="background:#104F91;padding:22px 26px;">
-          <div style="font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#f6df8a;font-weight:800;">Prayer Dome</div>
-          <div style="font-size:19px;font-weight:800;color:#ffffff;margin-top:4px;">A House of Prayer for All Nations</div>
-        </td></tr>
-        <tr><td style="padding:28px 26px 10px;">
-          <h1 style="margin:0 0 12px;font-size:22px;line-height:1.3;color:#07244d;">Verify your email address</h1>
-          <p style="margin:0 0 14px;font-size:15px;line-height:1.65;">Hello ${safeName},</p>
-          <p style="margin:0 0 18px;font-size:15px;line-height:1.65;">Enter this six-digit code in Prayer Dome to finish creating your account. It expires in ${safeMinutes} minutes.</p>
-          <p style="margin:0 0 20px;text-align:center;"><span style="display:inline-block;background:#f3f6fb;border:1px solid #dbe3ee;border-radius:12px;padding:16px 24px;font-size:32px;letter-spacing:.28em;font-weight:800;color:#104F91;font-family:Consolas,Menlo,monospace;">${safeCode}</span></p>
-          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">Prayer Dome will never ask you for this code by phone, WhatsApp or social media.</p>
-          <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#5b6b82;">If you did not create this account, ignore this message and do not share the code.</p>
-        </td></tr>
-        <tr><td style="padding:16px 26px 24px;border-top:1px solid #e6edf6;">
-          <p style="margin:0;font-size:12px;line-height:1.6;color:#5b6b82;">Prayer Dome Ministry · ${safeSite}<br>You received this because an account was created with this address.</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
+  return design.renderEmail({
+    subject: 'Your Prayer Dome verification code',
+    heading: 'Verify your email address',
+    preheader: 'Your Prayer Dome verification code expires in ' + Math.max(1, Number(minutes) || 10) + ' minutes.',
+    greeting: 'Hello ' + (cleanName(name) || 'friend') + ',',
+    paragraphs: [
+      'Enter this six-digit code in Prayer Dome to finish creating your account. It expires in ' + Math.max(1, Number(minutes) || 10) + ' minutes.',
+      'Prayer Dome will never ask you for this code by phone, WhatsApp or social media.',
+      'If you did not create this account, ignore this message and do not share the code.'
+    ],
+    code: code,
+    action: { label: 'Open Prayer Dome', url: cfg.siteUrl + '/account.html' },
+    footerNote: 'You received this because an account was created with this address.',
+    siteUrl: cfg.siteUrl
+  }).html;
 }
 
 function registrationCodeEmailText(cfg, name, code, minutes) {
-  return [
-    'Prayer Dome — verify your email address',
-    '',
-    'Hello ' + (cleanName(name) || 'friend') + ',',
-    '',
-    'Enter this six-digit code in Prayer Dome to finish creating your account:',
-    String(code || ''),
-    '',
-    'The code expires in ' + (Math.max(1, Number(minutes) || 10)) + ' minutes.',
-    'Prayer Dome will never ask you for this code by phone, WhatsApp or social media.',
-    'If you did not create this account, ignore this message and do not share the code.',
-    '',
-    'Prayer Dome Ministry · ' + cfg.siteUrl.replace(/^https?:\/\//, '')
-  ].join('\n');
+  return design.renderEmail({
+    subject: 'Your Prayer Dome verification code',
+    heading: 'Verify your email address',
+    greeting: 'Hello ' + (cleanName(name) || 'friend') + ',',
+    paragraphs: [
+      'Enter this six-digit code in Prayer Dome to finish creating your account. It expires in ' + Math.max(1, Number(minutes) || 10) + ' minutes.',
+      'Prayer Dome will never ask you for this code by phone, WhatsApp or social media.',
+      'If you did not create this account, ignore this message and do not share the code.'
+    ],
+    code: code,
+    action: { label: 'Open Prayer Dome', url: cfg.siteUrl + '/account.html' },
+    footerNote: 'You received this because an account was created with this address.',
+    siteUrl: cfg.siteUrl
+  }).text;
 }
 
 /**
@@ -263,7 +336,7 @@ async function sendRegistrationCodeEmail(options) {
     throw error;
   }
   if (!cfg.apiKey) return { sent: false, reason: 'not-configured' };
-  await callBrevo('/smtp/email', {
+  const provider = await callBrevo('/smtp/email', {
     sender: { name: cfg.senderName, email: cfg.senderEmail },
     to: [{ email, name: cleanName(options && options.name) || undefined }],
     replyTo: { email: cfg.senderEmail, name: cfg.senderName },
@@ -272,7 +345,7 @@ async function sendRegistrationCodeEmail(options) {
     textContent: registrationCodeEmailText(cfg, options && options.name, code, minutes),
     tags: ['registration-code']
   }, cfg);
-  return { sent: true, provider: 'brevo' };
+  return { sent: true, provider: 'brevo', messageId: String(provider && provider.messageId || '') };
 }
 
 /*
@@ -373,6 +446,39 @@ async function subscribe(options) {
     // for this form (the person is already subscribed).
     if (!/duplicate/i.test(String(error.code || '')) && !/already/i.test(String(error.message || ''))) throw error;
   }
+  if (options && options.welcome === true) {
+    // The contact is already on the list. The welcome is a separate branded
+    // transactional message, so a failure here must not make the signup look
+    // unsuccessful.
+    try {
+      const rendered = design.renderEmail({
+        subject: 'Welcome to Prayer Dome updates',
+        heading: 'Thank you for staying connected',
+        greeting: 'Hello' + (name ? ' ' + name : '') + ',',
+        paragraphs: [
+          'Thank you for agreeing to receive Prayer Dome ministry updates. We will share service notices, devotional encouragement and ministry news with you from time to time.',
+          'You can change your email preferences at any time from your account, and every message includes a way to stop receiving updates.'
+        ],
+        action: { label: 'Visit Prayer Dome', url: cfg.siteUrl },
+        footerNote: 'You received this because you asked to receive Prayer Dome updates.',
+        category: 'newsletter',
+        siteUrl: cfg.siteUrl
+      });
+      await sendTransactionalEmail({
+        to: email,
+        toName: name,
+        subject: rendered.subject,
+        html: rendered.html,
+        text: rendered.text,
+        senderName: cfg.senderName,
+        senderEmail: cfg.senderEmail,
+        replyTo: cfg.replyTo,
+        tags: ['prayer-dome', 'newsletter-welcome']
+      });
+    } catch (error) {
+      console.warn('Newsletter welcome could not be sent:', error.code || error.message);
+    }
+  }
   return { ok: true, doubleOptIn: false };
 }
 
@@ -384,8 +490,15 @@ function readJsonBody(req) {
     }
     let raw = '';
     let settled = false;
-    const finish = (value) => { if (!settled) { settled = true; resolve(value); } };
+    let timer = null;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      if (timer) clearTimeout(timer);
+      resolve(value);
+    };
     if (!req || typeof req.on !== 'function') return finish(null);
+    timer = setTimeout(() => finish(null), 5000);
     req.on('data', (chunk) => {
       raw += chunk;
       if (raw.length > 8 * 1024) { req.destroy && req.destroy(); finish(null); }
@@ -394,7 +507,6 @@ function readJsonBody(req) {
       try { finish(raw ? JSON.parse(raw) : {}); } catch (error) { finish(null); }
     });
     req.on('error', () => finish(null));
-    setTimeout(() => finish(null), 5000);
   });
 }
 
@@ -452,7 +564,7 @@ async function newsletterHandler(req, res) {
     return sendJson(res, 400, { ok: false, error: 'CONSENT_REQUIRED', message: 'Please agree to receive Prayer Dome updates.' });
   }
   try {
-    const result = await subscribe({ email, name: body.name, consent: true, env: process.env });
+    const result = await subscribe({ email, name: body.name, consent: true, welcome: true, env: process.env });
     if (result.reason === 'not-configured') {
       return sendJson(res, 503, {
         ok: false,
@@ -482,6 +594,8 @@ module.exports = {
   subscribe,
   sendVerificationEmail,
   sendRegistrationCodeEmail,
+  checkConnection,
+  getEmailStatus,
   registrationCodeEmailHtml,
   registrationCodeEmailText,
   newsletterHandler,

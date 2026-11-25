@@ -114,19 +114,27 @@ test('the updates form explains an unconfigured or failing endpoint', async () =
   assert.equal(status.dataset.state, 'error');
 });
 
-test('the account page asks the Brevo callable and keeps Firebase as fallback', () => {
+test('the account page verifies with a server-issued six-digit code', () => {
   const account = fs.readFileSync('account.html', 'utf8');
-  assert.match(account, /httpsCallable\(cloudFunctions, 'sendBrevoVerificationEmail'\)/);
-  assert.match(account, /await sendEmailVerification\(user\)/);
+  assert.match(account, /httpsCallable\(cloudFunctions, 'sendRegistrationVerificationCode'\)/);
+  assert.match(account, /httpsCallable\(cloudFunctions, 'verifyRegistrationCode'\)/);
+  assert.match(account, /autocomplete="one-time-code"/);
   assert.match(account, /firebase-functions\.js/);
+  // The badge/resend path must not quietly fall back to a Firebase link; that
+  // would reintroduce the flow the six-digit service replaced.
+  assert.ok(!/await sendEmailVerification\(user\)/.test(account));
 });
 
-test('the callable generates a real Firebase link and never trusts a caller link', () => {
+test('the server issues verification codes and never trusts a caller link', () => {
   const source = fs.readFileSync('functions/index.js', 'utf8');
-  assert.match(source, /exports\.sendBrevoVerificationEmail = functions\.runWith\(\{ secrets: \[brevoApiKey\] \}\)\.https\.onCall/);
-  assert.match(source, /admin\.auth\(\)\.generateEmailVerificationLink\(email/);
+  assert.match(source, /exports\.sendRegistrationVerificationCode = functions\.runWith\(\{ secrets: \[brevoApiKey\] \}\)\.https\.onCall/);
+  assert.match(source, /exports\.verifyRegistrationCode = functions\.https\.onCall/);
+  assert.match(source, /registrationCodeHash\(code, salt\)/);
+  assert.match(source, /crypto\.scryptSync/);
+  assert.ok(!/generateEmailVerificationLink/.test(source), 'no second, link-based verification path');
+  assert.ok(!/sendBrevoVerificationEmail/.test(source), 'the old link callable is removed');
   assert.match(source, /exports\.brevoSubscribe = functions\.runWith\(\{ secrets: \[brevoApiKey\] \}\)\.https\.onRequest/);
-  assert.ok(!/data\.link/.test(source), 'the verification link must come from Firebase Admin, not the caller');
+  assert.ok(!/data\.link/.test(source), 'a verification link must never come from the caller');
   const firebase = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
   assert.ok(firebase.hosting.rewrites.some((rule) => rule.source === '/api/newsletter' && rule.function === 'brevoSubscribe'));
   const vercel = JSON.parse(fs.readFileSync('vercel.json', 'utf8'));
