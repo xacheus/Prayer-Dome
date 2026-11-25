@@ -1014,11 +1014,16 @@ function pdSearchVerses(query, lang) {
   }).map(function (v) { return pdRenderVerse(v, lang); });
 }
 
-/** Deterministic verse of the day — same verse for everyone, all day. */
+/** Deterministic verse of the day — same verse for everyone, all day.
+ *
+ * Use the UTC calendar day, not the browser's local day. A local day would
+ * give members in different timezones different verses at the same moment,
+ * and would make the selection flip mid-day for anyone east or west of UTC.
+ */
 function pdVerseOfDay(lang, date) {
   var d = date || new Date();
   var dayIndex = Math.floor(
-    Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 86400000
   );
   return pdRenderVerse(PD_VERSES[dayIndex % PD_VERSES.length], lang);
 }
