@@ -137,7 +137,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-    <script src="/assets/pd-upload.js"></script>
     <script src="/assets/pd-billing.js"></script>
 
     <style>
@@ -675,11 +674,12 @@
                     <p><strong>Recipient: PRAYER DOME.</strong> Gifts are not collected for any individual, staff member or personal fund. They support the church’s ministry, missions and development.</p>
                     <label class="give-label" for="giveCategory">Purpose of this gift</label>
                     <select class="give-select" id="giveCategory">
-                        <option value="General Offering">General Offering</option>
-                        <option value="Tithes">Tithes</option>
-                        <option value="Missions">Missions</option>
-                        <option value="Church Development">Church Development</option>
-                        <option value="Special Donations">Special Donations</option>
+                        <option value="church-support">Church support</option>
+                        <option value="general-offering" selected>General offering</option>
+                        <option value="missions">Missions</option>
+                        <option value="evangelism">Evangelism</option>
+                        <option value="building-projects">Building projects</option>
+                        <option value="other">Other</option>
                     </select>
                     <div class="give-ref-box">
                         <span>Payment reference</span>
@@ -763,9 +763,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", 
@@ -778,7 +778,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const functions = getFunctions(app);
+        const storage = getStorage(app);
 
         let currentUser = null;
         let uploadedReceiptUrl = null;
@@ -904,8 +904,9 @@
         onAuthStateChanged(auth, user => { currentUser = user; });
 
         /* Payment details are configuration, not source code. The give page
-           reads every method from settings/payments through the billing
-           callable, so a changed number never leaves a stale copy here. */
+           reads settings/payments directly from Firestore. Firestore rules
+           make that document world-readable but administrator-writable, so
+           giving needs no Cloud Function or Cloud billing account. */
         const Billing = window.PDBilling;
         let paymentMethods = [];
         let selectedPaymentMethod = null;
@@ -924,7 +925,8 @@
                 'mobile-money': 'smartphone',
                 'bank-transfer': 'building',
                 'cash-office': 'church',
-                whatsapp: 'brand-whatsapp'
+                whatsapp: 'brand-whatsapp',
+                'hosted-checkout': 'shield-check'
             }[type] || 'hand-heart';
         }
 
@@ -942,6 +944,9 @@
             } else if (method.type === 'whatsapp') {
                 rows.push(['WhatsApp number', method.number]);
                 rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+            } else if (method.type === 'hosted-checkout') {
+                rows.push(['Pay on', 'Secure hosted checkout']);
+                if (method.accountName) rows.push(['Account name', method.accountName]);
             } else {
                 rows.push(['Mobile Money number', method.number]);
                 rows.push(['Network', method.network || 'Mobile Money']);
@@ -983,18 +988,29 @@
                 ? '<button class="btn-donate btn-whatsapp" type="button" onclick="sendWhatsAppProof()"><i class="pd-i pd-i-brand-whatsapp"></i> SEND PROOF VIA WHATSAPP</button>'
                 : '';
             const proofRequired = method.type !== 'whatsapp';
+            const checkoutUrl = Billing.methodCheckoutUrl ? Billing.methodCheckoutUrl(method) : '';
+            const payOnline = checkoutUrl
+                ? '<a class="btn-donate btn-green" style="text-decoration:none;" href="' + escapeGiving(checkoutUrl) + '" target="_blank" rel="noopener noreferrer"><i class="pd-i pd-i-shield-check"></i> PAY ON SECURE CHECKOUT</a>' +
+                  '<p class="give-note" style="margin:0 0 10px;">Pay on the provider’s own page, then enter the transaction reference below. Card details are entered only on the provider’s page and never reach Prayer Dome.</p>'
+                : '';
             host.innerHTML = '<div class="give-method-card">' +
                 '<div class="give-method-head"><h3><i class="pd-i pd-i-' + escapeGiving(givingMethodIcon(method.type)) + '" aria-hidden="true"></i> ' + escapeGiving(method.label) + '</h3>' +
                     '<span class="give-method-badge">' + escapeGiving((Billing.PAYMENT_METHOD_TYPE_LABELS || {})[method.type] || method.type) + '</span></div>' +
                 '<div class="info-box">' + rows + '</div>' +
                 '<p class="give-note"><strong>How to give:</strong> ' + escapeGiving(note) + '</p>' +
-                '<div class="upload-zone" onclick="openCloudinary()" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openCloudinary();}">' +
+                '<div class="upload-zone" onclick="openGivingProof()" role="button" tabindex="0" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openGivingProof();}">' +
                     '<i class="pd-i pd-i-camera" style="font-size:28px;color:var(--accent-gold);"></i>' +
                     '<h4 id="upLabel">' + (proofRequired ? 'Attach payment receipt' : 'Attach payment proof (optional)') + '</h4>' +
                 '</div>' +
+                '<input type="file" id="givingProofInput" accept="image/*,application/pdf" style="display:none;" onchange="handleGivingProof(event)">' +
                 '<input type="hidden" id="receiptUrl">' +
+                '<input type="hidden" id="receiptPath">' +
                 '<div class="amount-selector">' + chips + '</div>' +
-                '<input type="number" id="giveAmount" class="custom-input" min="0" step="any" placeholder="Custom amount (' + escapeGiving(currency) + ')" inputmode="decimal">' +
+                '<input type="number" id="giveAmount" class="custom-input" min="1" step="any" placeholder="Custom amount (' + escapeGiving(currency) + ')" inputmode="decimal">' +
+                '<label class="give-label" for="givingTransactionRef" style="margin-top:12px;">Transaction / reference number</label>' +
+                '<input type="text" id="givingTransactionRef" class="custom-input" maxlength="120" placeholder="e.g. Airtel/MTN/bank transaction ID" autocomplete="off">' +
+                '<p class="give-note" style="margin:8px 0 0;">Copy the exact transaction ID from the SMS or receipt. Finance checks it against the ministry account; your submission alone never marks a gift as paid.</p>' +
+                payOnline +
                 '<div class="give-method-actions">' +
                     '<button class="btn-donate btn-green" type="button" onclick="submitGiving()"><i class="pd-i pd-i-send"></i> SUBMIT GIVING</button>' +
                     whatsapp +
@@ -1020,9 +1036,8 @@
         async function loadOfficialPaymentDetails() {
             let settings = {};
             try {
-                const call = httpsCallable(functions, 'billing');
-                const result = await call({ action: 'payment.settings.public' });
-                settings = (result && result.data && result.data.settings) || {};
+                const snap = await getDoc(doc(db, 'settings', 'payments'));
+                settings = snap.exists() ? snap.data() : {};
                 paymentMethods = Billing.paymentMethodsFor(settings, 'give');
             } catch (error) {
                 console.warn('Official payment methods could not be loaded:', error && error.message);
@@ -1081,9 +1096,21 @@
         window.copyReference = function () {
             copy(paymentReference);
         };
-        function givingPurpose() {
+        const GIVING_CATEGORY_LABELS = {
+            'church-support': 'Church support',
+            'general-offering': 'General offering',
+            'missions': 'Missions',
+            'evangelism': 'Evangelism',
+            'building-projects': 'Building projects',
+            'other': 'Other'
+        };
+        function givingCategory() {
             const select = document.getElementById('giveCategory');
-            return select ? select.value : 'General Offering';
+            const value = select ? select.value : 'general-offering';
+            return GIVING_CATEGORY_LABELS[value] ? value : 'general-offering';
+        }
+        function givingPurpose() {
+            return GIVING_CATEGORY_LABELS[givingCategory()];
         }
         function escapeGiving(value) {
             return String(value == null ? '' : value).replace(/[&<>"]/g, function (ch) {
@@ -1140,16 +1167,30 @@
             const method = selectedPaymentMethod;
             const amountNode = document.getElementById('giveAmount');
             const proofNode = document.getElementById('receiptUrl');
+            const proofPathNode = document.getElementById('receiptPath');
+            const txNode = document.getElementById('givingTransactionRef');
             const amount = amountNode ? amountNode.value : '';
             const proof = proofNode ? proofNode.value : '';
+            const proofPath = proofPathNode ? proofPathNode.value : '';
+            const transactionReference = txNode ? String(txNode.value || '').trim() : '';
+            const category = givingCategory();
             const purpose = givingPurpose();
 
             if (!method) {
                 toast('Finance has not configured a payment method yet. Please contact info@prayerdome.net before sending money.', 'error');
                 return;
             }
-            if (!amount || amount <= 0) {
-                toast('Enter a valid amount', 'error');
+            const amountValue = Number(amount);
+            if (!Number.isFinite(amountValue) || amountValue < 1) {
+                toast('Enter an amount of at least 1.', 'error');
+                return;
+            }
+            if (amountValue > 1000000) {
+                toast('That amount is too large for an online record. Please contact the finance office.', 'error');
+                return;
+            }
+            if (transactionReference.length < 4 || transactionReference.length > 120) {
+                toast('Enter the transaction or reference number from your payment receipt.', 'error');
                 return;
             }
             if (method.type !== 'whatsapp' && !proof) {
@@ -1163,34 +1204,45 @@
 
             const reference = paymentReference || makeReference();
             const currency = givingCurrency(method);
-            const button = document.querySelector('#giveMethodCard .btn-donate.btn-green');
+            const button = document.querySelector('#giveMethodCard button.btn-donate.btn-green');
             if (button) button.disabled = true;
             try {
-                await addDoc(collection(db, 'offerings'), {
+                // The reference is the Firestore document id, so two givers can
+                // never overwrite each other and an accidental resubmit cannot
+                // create a second record for the same reference.
+                const record = {
                     organization: "PRAYER DOME",
                     recipient: "PRAYER DOME",
                     purpose: purpose,
-                    category: purpose,
+                    category: category,
                     reference: reference,
                     currency: currency,
                     donor: currentUser.displayName || currentUser.email || "Prayer Dome member",
+                    donorName: currentUser.displayName || currentUser.email || "Prayer Dome member",
                     donorEmail: currentUser.email || "",
                     donorUid: currentUser.uid,
-                    amount: parseFloat(amount),
+                    amount: amountValue,
                     method: method.label,
                     methodId: method.id,
                     methodType: method.type,
+                    transactionReference: transactionReference,
                     payTo: givingMethodNumber(method),
-                    receipt: proof || '',
+                    receiptUrl: proof || '',
+                    receiptPath: proofPath || '',
+                    note: (document.getElementById('givingNote') || {}).value || '',
                     timestamp: serverTimestamp(),
+                    createdAt: serverTimestamp(),
                     status: 'pending'
-                });
+                };
+                await setDoc(doc(db, 'offerings', reference), record);
                 confetti({ particleCount: 100, spread: 70 });
                 toast('Giving recorded for PRAYER DOME. Thank you.', 'success');
-                showGivingReceipt({ amount: currency + ' ' + parseFloat(amount).toFixed(2), purpose: purpose, reference: reference });
+                showGivingReceipt({ amount: currency + ' ' + amountValue.toFixed(2), purpose: purpose, reference: reference });
 
                 if (amountNode) amountNode.value = '';
                 if (proofNode) proofNode.value = '';
+                if (proofPathNode) proofPathNode.value = '';
+                if (txNode) txNode.value = '';
                 const uploadLabel = document.getElementById('upLabel');
                 if (uploadLabel) {
                     uploadLabel.innerHTML = method.type === 'whatsapp' ? 'Attach payment proof (optional)' : 'Attach payment receipt';
@@ -1202,29 +1254,63 @@
                 renderGivingMethodCard(method);
             } catch (e) {
                 console.error(e);
-                toast(e && e.code === 'permission-denied'
-                    ? 'Sign in with your Prayer Dome account before recording a gift.'
-                    : 'Error sending offering. Please try again.', 'error');
+                if (e && e.code === 'permission-denied') {
+                    toast('This reference was already used, or the details are incomplete. Generate a new reference and try again.', 'error');
+                } else {
+                    toast('Error sending offering. Please try again.', 'error');
+                }
             } finally {
-                const retryButton = document.querySelector('#giveMethodCard .btn-donate.btn-green');
+                const retryButton = document.querySelector('#giveMethodCard button.btn-donate.btn-green');
                 if (retryButton) retryButton.disabled = false;
             }
         };
 
-        window.openCloudinary = async () => {
-            const res = await PDUpload.pick({
-                title: 'Attach donation proof',
-                accept: 'image/*,application/pdf',
-                preset: 'donation_proofs',
-                maxBytes: 5 * 1024 * 1024,
-                onError: (m) => toast(m, 'error')
-            });
-            if (!res.ok) return;
-            uploadedReceiptUrl = res.files[0].url;
-            document.getElementById('receiptUrl').value = uploadedReceiptUrl;
-            document.getElementById('upLabel').innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> RECEIPT ATTACHED';
-            document.getElementById('upLabel').style.color = "#3b82f6";
-            toast("Receipt attached successfully!", "success");
+        window.openGivingProof = function () {
+            const input = document.getElementById('givingProofInput');
+            if (input) input.click();
+        };
+
+        window.handleGivingProof = async function (event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            if (!currentUser) {
+                toast('Sign in before attaching a receipt.', 'error');
+                input.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                toast('That receipt is too large. Choose a file under 5 MB.', 'error');
+                input.value = '';
+                return;
+            }
+            if (!/^(image\/|application\/pdf$)/.test(file.type)) {
+                toast('Attach a PNG, JPG or PDF receipt.', 'error');
+                input.value = '';
+                return;
+            }
+            const label = document.getElementById('upLabel');
+            if (label) label.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> UPLOADING…';
+            try {
+                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
+                const path = 'givingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
+                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
+                const url = await getDownloadURL(storageRef(storage, path));
+                uploadedReceiptUrl = url;
+                document.getElementById('receiptUrl').value = url;
+                document.getElementById('receiptPath').value = path;
+                if (label) {
+                    label.innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> RECEIPT ATTACHED';
+                    label.style.color = '#3b82f6';
+                }
+                toast('Receipt attached securely.', 'success');
+            } catch (error) {
+                console.error('Giving proof upload failed:', error);
+                if (label) label.innerHTML = 'Attach payment receipt';
+                toast('The receipt could not be uploaded. Check your connection and try again.', 'error');
+            } finally {
+                input.value = '';
+            }
         };
 
         window.copy = (text) => {

@@ -677,6 +677,7 @@
         <button class="tab-item active" type="button" role="tab" aria-selected="true" aria-controls="view-programs" onclick="setView('programs', this)">PROGRAMMES</button>
         <button class="tab-item" type="button" role="tab" aria-selected="false" aria-controls="view-myplans" onclick="setView('myplans', this)">MY PLANS</button>
         <button class="tab-item" type="button" role="tab" aria-selected="false" aria-controls="view-wallet" onclick="setView('wallet', this)">SAVINGS &amp; WALLET</button>
+        <button class="tab-item" type="button" role="tab" aria-selected="false" aria-controls="view-give" onclick="setView('give', this)">GIVE</button>
     </div>
 
     <main class="page-container">
@@ -919,6 +920,70 @@
 
         </div>
 
+        <!-- ========================================== -->
+        <!-- SECTION 4: DIRECT GIVING                    -->
+        <!-- ========================================== -->
+        <div id="view-give" class="view-section">
+            <section class="sp-section" aria-labelledby="supportGiveHeading">
+                <div class="sp-section-head">
+                    <div>
+                        <span class="sp-eyebrow">CHURCH SUPPORT</span>
+                        <h2 id="supportGiveHeading">Give to PRAYER DOME</h2>
+                    </div>
+                    <span class="sp-badge"><i class="pd-i pd-i-shield-check" aria-hidden="true"></i> Finance verified</span>
+                </div>
+                <p style="color:var(--text-sub);line-height:1.65;margin:0 0 20px;">Give by Airtel Money, MTN Mobile Money, bank transfer, a secure provider checkout or another method Finance has enabled. Every gift is recorded as <strong>pending</strong> until the finance team checks it — submitting this form never marks a payment as received.</p>
+
+                <div class="money-form" style="max-width:720px;margin:0 auto;">
+                    <div class="money-field">
+                        <label for="supportGiveCategory">What is this gift for?</label>
+                        <select id="supportGiveCategory" class="form-control">
+                            <option value="church-support">Church support</option>
+                            <option value="general-offering" selected>General offering</option>
+                            <option value="missions">Missions</option>
+                            <option value="evangelism">Evangelism</option>
+                            <option value="building-projects">Building projects</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="money-field">
+                        <label for="supportGiveMethod">Payment method</label>
+                        <select id="supportGiveMethod" class="form-control" data-support-give-method onchange="selectSupportGivingMethod(this.value)">
+                            <option value="">Loading official payment methods…</option>
+                        </select>
+                        <p class="money-hint" id="supportGiveMethodNote" data-support-give-method-note>Finance loads these details from Firestore; no number is hard-coded in this page.</p>
+                    </div>
+                    <div id="supportGiveDetails" class="money-note" hidden></div>
+                    <div class="money-field">
+                        <label for="supportGiveAmount">Amount</label>
+                        <div class="money-input-wrap">
+                            <i class="pd-i pd-i-coins" aria-hidden="true"></i>
+                            <input type="number" id="supportGiveAmount" min="1" step="0.01" inputmode="decimal" placeholder="Amount">
+                        </div>
+                    </div>
+                    <div class="money-field">
+                        <label for="supportGiveTransactionRef">Transaction / reference number</label>
+                        <div class="money-input-wrap">
+                            <i class="pd-i pd-i-receipt-text" aria-hidden="true"></i>
+                            <input type="text" id="supportGiveTransactionRef" maxlength="120" autocomplete="off" placeholder="Airtel / MTN / bank transaction ID">
+                        </div>
+                        <p class="money-hint">Copy the exact ID from the SMS or receipt. Finance matches it to the ministry account.</p>
+                    </div>
+                    <div class="money-field">
+                        <label for="supportGiveNote">Note (optional)</label>
+                        <textarea id="supportGiveNote" maxlength="500" rows="2" class="form-control" placeholder="Anything Finance should know about this gift"></textarea>
+                    </div>
+                    <input type="file" id="supportGiveProofInput" accept="image/*,application/pdf" style="display:none;" onchange="handleSupportGivingProof(event)">
+                    <button type="button" class="btn-main" style="background:transparent;border:1px solid var(--border);color:var(--text-main);" onclick="openSupportGivingProof()"><i class="pd-i pd-i-camera"></i> <span id="supportGiveProofLabel">Attach payment receipt</span></button>
+                    <p class="money-hint">PNG, JPG or PDF under 5 MB. The file is stored privately and is visible only to you and Finance.</p>
+                    <div class="money-actions" style="margin-top:18px;">
+                        <button class="btn-main btn-green" type="button" onclick="submitSupportGiving()"><i class="pd-i pd-i-send"></i> Submit giving record</button>
+                    </div>
+                    <div id="supportGivingReceipt" class="money-note" hidden aria-live="polite"></div>
+                </div>
+            </section>
+        </div>
+
     </main>
 
     <!-- =========================================================
@@ -1075,7 +1140,7 @@
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
-        import { getStorage, ref as storageRef, uploadBytes } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
+        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
@@ -1250,6 +1315,10 @@
             }
             showView(view, el);
             if (view === 'myplans') loadMyPlans();
+            if (view === 'give') {
+                populateSupportGivingMethods();
+                renderSupportGivingDetails();
+            }
         };
 
         function showView(view, el) {
@@ -1263,7 +1332,7 @@
             if (el) { el.classList.add('active'); el.setAttribute('aria-selected', 'true'); }
             else {
                 const tabs = document.querySelectorAll('.tab-item');
-                const index = { programs: 0, myplans: 1, wallet: 2 }[view];
+                const index = { programs: 0, myplans: 1, wallet: 2, give: 3 }[view];
                 if (tabs[index]) { tabs[index].classList.add('active'); tabs[index].setAttribute('aria-selected', 'true'); }
             }
         }
@@ -1295,7 +1364,9 @@
                 paymentSettings = { mobileMoneyNumber: '', accountName: 'PRAYER DOME', network: 'Mobile Money', instructions: '', configured: false, methods: [] };
             }
             populateSupportPaymentMethods();
+            populateSupportGivingMethods();
             renderPaymentChannels();
+            renderSupportGivingDetails();
         }
 
         function selectedSupportMethod() {
@@ -1328,6 +1399,211 @@
                 note.textContent = 'Paying by ' + method.label + '. The verified details and your unique reference appear on the next screen.';
             });
         }
+
+        /* --------------------------------------------------- direct giving
+         * Giving is a Firestore-only flow: the method catalogue is public,
+         * the offering record is created by the signed-in giver with
+         * status:'pending', and only Finance can confirm it. No Cloud
+         * Function, card field or client-side "paid" flag is involved. */
+        let selectedSupportGiveMethodId = '';
+        let supportGivingProof = null;
+
+        function populateSupportGivingMethods() {
+            const select = document.querySelector('[data-support-give-method]');
+            if (!select) return;
+            if (!supportPaymentMethods.length) {
+                select.disabled = true;
+                select.innerHTML = '<option value="">No payment method configured</option>';
+                const note = document.querySelector('[data-support-give-method-note]');
+                if (note) note.textContent = 'Finance has not configured a payment method yet. Please contact the ministry office and do not send money to any other number.';
+                return;
+            }
+            if (!supportPaymentMethods.some(function (method) { return method.id === selectedSupportGiveMethodId; })) {
+                selectedSupportGiveMethodId = supportPaymentMethods[0].id;
+            }
+            select.disabled = false;
+            select.innerHTML = supportPaymentMethods.map(function (method) {
+                return '<option value="' + esc(method.id) + '">' + esc(method.label) + '</option>';
+            }).join('');
+            select.value = selectedSupportGiveMethodId;
+            const note = document.querySelector('[data-support-give-method-note]');
+            if (note) note.textContent = 'Paying by ' + supportPaymentMethods.find(function (method) { return method.id === selectedSupportGiveMethodId; }).label + '. Only the details Finance saved are shown.';
+        }
+
+        window.selectSupportGivingMethod = function (id) {
+            if (!supportPaymentMethods.some(function (method) { return method.id === id; })) return;
+            selectedSupportGiveMethodId = id;
+            renderSupportGivingDetails();
+        };
+
+        function renderSupportGivingDetails() {
+            const host = document.getElementById('supportGiveDetails');
+            if (!host) return;
+            const method = supportPaymentMethods.find(function (item) { return item.id === selectedSupportGiveMethodId; }) || null;
+            if (!method) {
+                host.hidden = true;
+                host.innerHTML = '';
+                return;
+            }
+            const checkout = Billing.methodCheckoutUrl ? Billing.methodCheckoutUrl(method) : '';
+            const rows = [['Recipient', 'PRAYER DOME']];
+            if (method.type === 'bank-transfer') {
+                rows.push(['Bank', method.bankName]);
+                rows.push(['Account number', method.accountNumber]);
+                rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+                if (method.branchCode) rows.push(['Branch code', method.branchCode]);
+                if (method.swift) rows.push(['SWIFT / BIC', method.swift]);
+            } else if (method.type === 'cash-office') {
+                rows.push(['Pay at', method.accountName || 'PRAYER DOME ministry office']);
+                if (method.instructions) rows.push(['Office note', method.instructions]);
+            } else if (method.type === 'hosted-checkout') {
+                rows.push(['Pay on', 'Secure hosted checkout']);
+                if (method.accountName) rows.push(['Account name', method.accountName]);
+            } else {
+                rows.push([method.type === 'whatsapp' ? 'WhatsApp number' : 'Mobile Money number', method.number]);
+                rows.push(['Network', method.network || method.label]);
+                rows.push(['Account name', method.accountName || 'PRAYER DOME']);
+            }
+            host.hidden = false;
+            host.style.display = 'block';
+            host.innerHTML = '<strong style="display:block;margin-bottom:8px;">Official details</strong>' +
+                rows.filter(function (pair) { return pair[1]; }).map(function (pair) {
+                    return '<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;border-bottom:1px solid var(--border);"><span>' + esc(pair[0]) + '</span><strong style="text-align:right;overflow-wrap:anywhere;">' + esc(pair[1]) + '</strong></div>';
+                }).join('') +
+                (checkout ? '<a class="btn-main btn-green" style="display:inline-flex;width:auto;margin-top:14px;text-decoration:none;" href="' + esc(checkout) + '" target="_blank" rel="noopener noreferrer"><i class="pd-i pd-i-shield-check"></i> Open secure checkout</a><p class="money-hint">Card details are entered only on the provider page and never reach Prayer Dome.</p>' : '') +
+                (method.instructions ? '<p class="money-hint" style="margin-top:10px;">' + esc(method.instructions) + '</p>' : '');
+        }
+
+        window.openSupportGivingProof = function () {
+            const input = document.getElementById('supportGiveProofInput');
+            if (input) input.click();
+        };
+
+        window.handleSupportGivingProof = async function (event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+            if (!currentUser) {
+                toast('Sign in before attaching a receipt.', 'error');
+                input.value = '';
+                return;
+            }
+            if (file.size > 5 * 1024 * 1024) {
+                toast('That receipt is too large. Choose a file under 5 MB.', 'error');
+                input.value = '';
+                return;
+            }
+            if (!/^(image\/|application\/pdf$)/.test(file.type)) {
+                toast('Attach a PNG, JPG or PDF receipt.', 'error');
+                input.value = '';
+                return;
+            }
+            const label = document.getElementById('supportGiveProofLabel');
+            if (label) label.textContent = 'Uploading…';
+            showLoading('Uploading receipt securely…');
+            try {
+                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
+                const path = 'givingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
+                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
+                const url = await getDownloadURL(storageRef(storage, path));
+                supportGivingProof = { path: path, url: url, name: file.name || 'Payment receipt', type: file.type };
+                if (label) label.textContent = 'Receipt attached';
+                toast('Receipt attached securely.', 'success');
+            } catch (error) {
+                console.error('Giving receipt upload failed:', error);
+                if (label) label.textContent = 'Attach payment receipt';
+                toast('The receipt could not be uploaded. Check your connection and try again.', 'error');
+            } finally {
+                input.value = '';
+                hideLoading();
+            }
+        };
+
+        function supportGiveReference() {
+            const now = new Date();
+            const date = String(now.getFullYear()) + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+            let suffix = '';
+            try {
+                const bytes = new Uint8Array(4);
+                crypto.getRandomValues(bytes);
+                suffix = Array.from(bytes).map(function (b) { return b.toString(36).padStart(2, '0'); }).join('').slice(0, 6).toUpperCase();
+            } catch (error) {
+                suffix = Math.random().toString(36).slice(2, 8).toUpperCase();
+            }
+            return 'PDG-' + date + '-' + suffix;
+        }
+
+        window.submitSupportGiving = async function () {
+            const method = supportPaymentMethods.find(function (item) { return item.id === selectedSupportGiveMethodId; }) || null;
+            const categoryNode = document.getElementById('supportGiveCategory');
+            const amountNode = document.getElementById('supportGiveAmount');
+            const txNode = document.getElementById('supportGiveTransactionRef');
+            const noteNode = document.getElementById('supportGiveNote');
+            const button = document.querySelector('#view-give .btn-main.btn-green');
+            if (!currentUser) return toast('Sign in to record a gift.', 'error');
+            if (!method) return toast('Finance has not configured a payment method yet. Please contact the ministry office.', 'error');
+            const amount = Number(amountNode && amountNode.value);
+            const transactionReference = String(txNode && txNode.value || '').trim();
+            const category = String(categoryNode && categoryNode.value || 'general-offering');
+            if (!Number.isFinite(amount) || amount < 1) return toast('Enter an amount of at least 1.', 'error');
+            if (amount > 1000000) return toast('That amount is too large for an online record. Please contact the finance office.', 'error');
+            if (transactionReference.length < 4 || transactionReference.length > 120) return toast('Enter the transaction or reference number from your payment receipt.', 'error');
+            if (method.type !== 'whatsapp' && !supportGivingProof) return toast('Attach your payment receipt first.', 'error');
+            const reference = supportGiveReference();
+            const currency = String(method.currency || 'SZL').toUpperCase();
+            if (button) button.disabled = true;
+            showLoading('Recording your gift…');
+            try {
+                await setDoc(doc(db, 'offerings', reference), {
+                    organization: 'PRAYER DOME',
+                    recipient: 'PRAYER DOME',
+                    purpose: (categoryNode && categoryNode.options[categoryNode.selectedIndex].text) || 'General offering',
+                    category: category,
+                    reference: reference,
+                    currency: currency,
+                    donor: currentUser.displayName || currentUser.email || 'Prayer Dome member',
+                    donorName: currentUser.displayName || currentUser.email || 'Prayer Dome member',
+                    donorEmail: currentUser.email || '',
+                    donorUid: currentUser.uid,
+                    amount: amount,
+                    method: method.label,
+                    methodId: method.id,
+                    methodType: method.type,
+                    transactionReference: transactionReference,
+                    payTo: String(method.type === 'bank-transfer' ? method.accountNumber : method.number || '').trim(),
+                    receiptUrl: supportGivingProof ? supportGivingProof.url : '',
+                    receiptPath: supportGivingProof ? supportGivingProof.path : '',
+                    note: String(noteNode && noteNode.value || '').slice(0, 500),
+                    timestamp: serverTimestamp(),
+                    createdAt: serverTimestamp(),
+                    status: 'pending'
+                });
+                const box = document.getElementById('supportGivingReceipt');
+                if (box) {
+                    box.hidden = false;
+                    box.style.display = 'block';
+                    box.innerHTML = '<strong><i class="pd-i pd-i-circle-check"></i> Gift recorded — awaiting Finance</strong>' +
+                        '<div style="margin-top:8px;">Reference <strong>' + esc(reference) + '</strong></div>' +
+                        '<div>' + esc(currency) + ' ' + esc(amount.toFixed(2)) + ' · ' + esc((categoryNode && categoryNode.options[categoryNode.selectedIndex].text) || 'General offering') + ' · ' + esc(method.label) + '</div>' +
+                        '<p style="margin:8px 0 0;font-size:.76rem;">Status: <strong>pending</strong>. Your giving is not counted as received until Finance checks the transaction and confirms it.</p>';
+                }
+                supportGivingProof = null;
+                if (amountNode) amountNode.value = '';
+                if (txNode) txNode.value = '';
+                if (noteNode) noteNode.value = '';
+                const label = document.getElementById('supportGiveProofLabel');
+                if (label) label.textContent = 'Attach payment receipt';
+                toast('Giving recorded. Reference ' + reference, 'success');
+            } catch (error) {
+                console.error('Support giving failed:', error);
+                toast(error && error.code === 'permission-denied'
+                    ? 'The giving record was rejected. Check the amount, reference and receipt, then try again.'
+                    : 'Could not record the gift. Check your connection and try again.', 'error');
+            } finally {
+                if (button) button.disabled = false;
+                hideLoading();
+            }
+        };
 
         window.selectSupportPaymentMethod = function (id) {
             if (!supportPaymentMethods.some(function (method) { return method.id === id; })) return;
@@ -1665,6 +1941,7 @@
             const payToName = String(currentCheckout.payToName || paymentSettings.accountName || 'PRAYER DOME').trim();
             const payToNetwork = String(currentCheckout.payToLabel || currentCheckout.payToNetwork || paymentSettings.network || 'Mobile Money').trim();
             const payToDetail = String(currentCheckout.payToNetwork || paymentSettings.network || '').trim();
+            const payCheckoutUrl = /^https:\/\/[^\s]+$/i.test(String(currentCheckout.payToCheckoutUrl || '')) ? String(currentCheckout.payToCheckoutUrl) : '';
             const copyNumber = currentCheckout.payToType === 'bank-transfer'
                 ? paymentNumber
                 : paymentNumber.replace(/[^+\d]/g, '');
@@ -1687,6 +1964,9 @@
                 '</dl>' +
                 (status === 'rejected' && currentCheckout.rejectionReason
                     ? '<p class="checkout-note" style="color:#b91c1c;"><strong>Rejected:</strong> ' + esc(currentCheckout.rejectionReason) + '</p>'
+                    : '') +
+                (status === 'pending_payment' && payCheckoutUrl
+                    ? '<div class="checkout-paybox"><div><span>Secure hosted checkout</span><strong>' + esc(payToNetwork) + '</strong><small>Card details are entered only on the provider page.</small></div><a class="btn-main btn-gold" style="width:auto;padding:11px 16px;font-size:.74rem;text-decoration:none;" href="' + esc(payCheckoutUrl) + '" target="_blank" rel="noopener noreferrer"><i class="pd-i pd-i-shield-check"></i> Open checkout</a></div>'
                     : '') +
                 (status === 'pending_payment' && paymentNumber
                     ? '<div class="checkout-paybox"><div><span>Pay by ' + esc(payToNetwork) + (payToDetail && payToDetail !== payToNetwork ? ' · ' + esc(payToDetail) : '') + '</span><strong>' + esc(paymentNumber) + '</strong><small>Account: ' + esc(payToName) + '</small></div><button type="button" class="btn-main btn-gold" style="width:auto;padding:11px 16px;font-size:.74rem;" onclick="copyToClipboard(\'' + copyNumberAttr + '\')"><i class="pd-i pd-i-copy"></i> Copy details</button></div>'

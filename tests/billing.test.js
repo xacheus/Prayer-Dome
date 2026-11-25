@@ -241,14 +241,16 @@ test('payment methods are configurable, scoped and never invented by a page', ()
   assert.equal(browser.usablePaymentMethod({ type: 'cash-office', instructions: 'Visit the office', enabled: true }), true);
 
   const billing = read('functions/billing.js');
-  assert.match(billing, /PAYMENT_METHOD_TYPES = \['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp'\]/);
+  assert.match(billing, /PAYMENT_METHOD_TYPES = \['mobile-money', 'bank-transfer', 'cash-office', 'whatsapp', 'hosted-checkout'\]/);
   assert.match(billing, /function normalizePaymentMethod/);
   assert.match(billing, /function publicPaymentSettings/);
   assert.match(billing, /function requirePaymentSettings\(settings, methodId, scope\)/);
   assert.match(billing, /methods,\n\s*primaryMethodId/, 'saved settings must persist the methods list and its default');
 
   const give = read('give.html');
-  assert.match(give, /payment\.settings\.public/);
+  assert.match(give, /getDoc\(doc\(db, 'settings', 'payments'\)\)/);
+  assert.doesNotMatch(give, /payment\.settings\.public|firebase-functions/,
+    'the give page must read payment settings without a Cloud Function');
   assert.match(give, /paymentMethodsFor\(settings, 'give'\)/);
   assert.match(give, /methodId: method\.id/);
   assert.match(give, /method: method\.label/);
@@ -264,7 +266,8 @@ test('payment methods are configurable, scoped and never invented by a page', ()
   const adminJs = read('assets/pd-billing-admin.js');
   assert.match(admin, /paymentMethodRows/);
   assert.match(adminJs, /addPaymentMethodRow/);
-  assert.match(adminJs, /payment\.settings\.save', \{ methods: methods \}/);
+  assert.doesNotMatch(adminJs, /payment\.settings\.save/, 'payment settings must be saved to Firestore, not a callable');
+  assert.match(adminJs, /setDoc\(doc\(bridge\.db, 'settings', 'payments'\)/);
   assert.match(adminJs, /paymentMethodsFromSettings/);
 });
 

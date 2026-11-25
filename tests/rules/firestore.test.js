@@ -126,6 +126,56 @@ const assert = require('node:assert/strict');
     await assertSucceeds(getDoc(doc(member, 'wallets/member')));
     await assertFails(getDoc(doc(other, 'wallets/member')));
 
+    // Giving: public payment instructions, member-created pending offerings,
+    // and administrator-only confirmation. Nothing client-side can make a gift
+    // look received or attach card data.
+    await assertSucceeds(setDoc(doc(admin, 'settings/payments'), {
+      updatedBy: 'admin', methods: [{ id: 'mtn', type: 'mobile-money', label: 'MTN', enabled: true, number: '+260970000000' }]
+    }));
+    await assertSucceeds(getDoc(doc(guest, 'settings/payments')));
+    await assertSucceeds(getDoc(doc(member, 'settings/payments')));
+    await assertFails(setDoc(doc(member, 'settings/payments'), {
+      updatedBy: 'member', methods: []
+    }));
+    await assertFails(setDoc(doc(admin, 'settings/payments'), {
+      updatedBy: 'someone-else', methods: []
+    }));
+    const offering = {
+      organization: 'PRAYER DOME', recipient: 'PRAYER DOME',
+      purpose: 'General offering', category: 'general-offering',
+      reference: 'PDG-20260101-TEST01', currency: 'SZL',
+      donor: 'Test Giver', donorName: 'Test Giver', donorEmail: 'giver@example.com',
+      donorUid: 'member', amount: 50, method: 'MTN Mobile Money',
+      methodId: 'mtn', methodType: 'mobile-money',
+      transactionReference: 'MTN-123456', payTo: '+260970000000',
+      receiptUrl: 'https://example.com/receipt.jpg', status: 'pending'
+    };
+    await assertSucceeds(setDoc(doc(member, 'offerings/PDG-20260101-TEST01'), offering));
+    await assertFails(getDoc(doc(other, 'offerings/PDG-20260101-TEST01')));
+    await assertSucceeds(getDoc(doc(member, 'offerings/PDG-20260101-TEST01')));
+    await assertSucceeds(getDoc(doc(admin, 'offerings/PDG-20260101-TEST01')));
+    await assertFails(setDoc(doc(guest, 'offerings/PDG-20260101-GUEST'), Object.assign({}, offering, { donorUid: 'guest' })));
+    await assertFails(setDoc(doc(member, 'offerings/PDG-20260101-PAID'), Object.assign({}, offering, { reference: 'PDG-20260101-PAID', status: 'received' })));
+    await assertFails(setDoc(doc(member, 'offerings/PDG-20260101-CARD'), Object.assign({}, offering, { reference: 'PDG-20260101-CARD', cardNumber: '4242424242424242' })));
+    await assertFails(setDoc(doc(member, 'offerings/PDG-20260101-NOREF'), Object.assign({}, offering, { reference: 'PDG-20260101-NOREF', transactionReference: '' })));
+    // A member cannot overwrite another member's gift or confirm their own.
+    await assertFails(setDoc(doc(member, 'offerings/PDG-20260101-TEST01'), Object.assign({}, offering, { amount: 5000 })));
+    await assertFails(updateDoc(doc(member, 'offerings/PDG-20260101-TEST01'), { status: 'received' }));
+    await assertSucceeds(updateDoc(doc(admin, 'offerings/PDG-20260101-TEST01'), {
+      status: 'received', receivedAt: new Date(), receiptNumber: 'PD-RCPT-1'
+    }));
+    await assertFails(updateDoc(doc(admin, 'offerings/PDG-20260101-TEST01'), { amount: 9999 }));
+    await assertSucceeds(setDoc(doc(admin, 'givingAudit/entry1'), {
+      action: 'offering_received', offeringId: 'PDG-20260101-TEST01',
+      actorUid: 'admin', actorEmail: 'admin@example.com'
+    }));
+    await assertSucceeds(getDoc(doc(admin, 'givingAudit/entry1')));
+    await assertFails(getDoc(doc(member, 'givingAudit/entry1')));
+    await assertFails(setDoc(doc(member, 'givingAudit/forged'), {
+      action: 'offering_received', actorUid: 'member'
+    }));
+    await assertFails(updateDoc(doc(admin, 'givingAudit/entry1'), { action: 'changed' }));
+
     // Card verification documents contain private fields and are resolved by
     // the verifyMembership callable (Admin SDK). No public reads, not even one.
     const card = {

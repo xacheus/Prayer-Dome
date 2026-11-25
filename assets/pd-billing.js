@@ -47,7 +47,8 @@
     { id: 'mobile-money', label: 'Mobile Money' },
     { id: 'bank-transfer', label: 'Bank transfer' },
     { id: 'cash-office', label: 'Cash at the ministry office' },
-    { id: 'whatsapp', label: 'WhatsApp' }
+    { id: 'whatsapp', label: 'WhatsApp' },
+    { id: 'hosted-checkout', label: 'Hosted checkout' }
   ];
 
   /* The official number is configuration, never source code. Checkout receives
@@ -62,7 +63,8 @@
     'mobile-money': 'Mobile Money',
     'bank-transfer': 'Bank transfer',
     'cash-office': 'Cash at the ministry office',
-    whatsapp: 'WhatsApp'
+    whatsapp: 'WhatsApp',
+    'hosted-checkout': 'Hosted checkout'
   };
 
   function slug(value) {
@@ -93,12 +95,19 @@
       branchCode: String(value.branchCode || '').trim(),
       swift: String(value.swift || '').trim(),
       currency: String(value.currency || 'SZL').toUpperCase(),
+      checkoutUrl: String(value.checkoutUrl || '').trim(),
       instructions: String(value.instructions || '').trim()
     };
   }
 
+  function methodCheckoutUrl(method) {
+    var url = String(method && method.checkoutUrl || '').trim();
+    return /^https:\/\/[^\s]+$/i.test(url) ? url : '';
+  }
+
   function usablePaymentMethod(method) {
     if (!method || method.enabled === false) return false;
+    if (methodCheckoutUrl(method)) return true;
     if (method.type === 'bank-transfer') return Boolean(method.bankName && method.accountNumber);
     if (method.type === 'cash-office') return Boolean(method.instructions || method.accountName);
     return String(method.number || '').replace(/\D/g, '').length >= 9;
@@ -593,6 +602,7 @@
     usablePaymentMethod: usablePaymentMethod,
     paymentMethodsFromSettings: paymentMethodsFromSettings,
     paymentMethodsFor: paymentMethodsFor,
+    methodCheckoutUrl: methodCheckoutUrl,
     PLANS: PLANS,
     SUPPORT_PROGRAMMES: SUPPORT_PROGRAMMES,
     PROGRAM_ORDER: PROGRAM_ORDER,
