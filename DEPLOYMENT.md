@@ -115,6 +115,28 @@ later, terminate the webhook on Vercel (`api/system.js?op=…`) or another
 non-GCP-billing host, verify the provider signature and write the status with a
 server credential — never trust a browser claim.
 
+## Prayer Dome Radio
+
+Radio Studio is the administrator surface for the gospel library, recorded
+human presenter voices, playlists, the Lusaka timetable and presenter access.
+Deploy all three pieces together; a website newer than the rules can show
+controls that the server correctly refuses:
+
+```sh
+firebase deploy --only firestore:rules,storage --project <project-id>
+firebase deploy --only functions --project <project-id>
+```
+
+Radio audio is stored under `radioAudio/` in Firebase Storage and is limited to
+audio content types and files under 50 MB. Presenter requests, sessions and the
+public LIVE state are written only by the Admin SDK callables; browsers cannot
+approve themselves. `radioSessionWatchdog` uses the same Firebase
+Functions/Cloud Scheduler setup as the existing reminder and email jobs. It does
+not add a streaming server, TURN service or new paid vendor. See
+`docs/RADIO-REPORT.md` for verification status and the costs that still need
+approval (a server-side 24/7 stream and TURN/SFU for larger live audiences
+would be recurring costs).
+
 ### Support-plan billing callable
 
 The member support page and the finance console both call one callable named
