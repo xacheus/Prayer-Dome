@@ -10,6 +10,7 @@ const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
 const billingModule = require('./billing');
 const notificationModule = require('./notifications');
+const radioModule = require('./radio');
 const verificationModule = require('./verification');
 const { defineSecret } = require('firebase-functions/params');
 const { signUpload } = require('./cloudinary');
@@ -1198,6 +1199,18 @@ exports.verifyMembership = verificationModule.verifyMembership;
 exports.ensureMyCard = verificationModule.ensureMyCard;
 exports.reserveMembershipNumber = verificationModule.reserveMembershipNumber;
 exports.emailAdmin = notificationModule.emailAdmin;
+
+// Prayer Dome Radio presenter access and live-session controls.
+exports.radioPresenterRequest = radioModule.radioPresenterRequest;
+exports.radioPresenterDecision = radioModule.radioPresenterDecision;
+exports.radioPresenterStart = radioModule.radioPresenterStart;
+exports.radioPresenterHeartbeat = radioModule.radioPresenterHeartbeat;
+exports.radioPresenterEnd = radioModule.radioPresenterEnd;
+exports.radioAdminStop = radioModule.radioAdminStop;
+exports.radioPresenterStatus = radioModule.radioPresenterStatus;
+exports.radioReportIssue = radioModule.radioReportIssue;
+exports.radioAdminHealth = radioModule.radioAdminHealth;
+exports.radioSessionWatchdog = radioModule.radioSessionWatchdog;
 exports.membershipNotifications = notificationModule.membershipNotifications;
 exports.paymentNotifications = notificationModule.paymentNotifications;
 exports.subscriptionNotifications = notificationModule.subscriptionNotifications;

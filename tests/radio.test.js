@@ -111,3 +111,125 @@ test('the admin console is wired in and can approve or unpublish', () => {
   assert.match(consoleSource, /window\.unpublishRadioScript/);
   assert.match(consoleSource, /never overwrite an[\s\S]{0,20}administrator's corrections/);
 });
+
+/* ==========================================================================
+ * Prayer Dome Radio upgrade — library, recorded voices, presenter approval,
+ * LIVE takeover and automatic return. These are structural checks on the
+ * shipped implementation; the browser scenarios are exercised separately.
+ * ======================================================================== */
+
+const radioLive = fs.readFileSync('assets/pd-radio-live.js', 'utf8');
+const radioAdmin = fs.readFileSync('assets/pd-radio-admin.js', 'utf8');
+const storageRules = fs.readFileSync('storage.rules', 'utf8');
+const functionsRadio = fs.readFileSync('functions/radio.js', 'utf8');
+const functionsIndex = fs.readFileSync('functions/index.js', 'utf8');
+const notifications = fs.readFileSync('functions/notifications.js', 'utf8');
+
+test('the listener uses one shared player for automation, announcements and LIVE', () => {
+  assert.match(radioLive, /PDApp\.radio\.playUrl/);
+  assert.match(radioLive, /PDApp\.radio\.playStream/);
+  assert.doesNotMatch(radioLive, /new Audio\(/, 'the listener must never create a second player');
+  assert.match(radioLive, /playsinline|shared <audio>|<audio>/i);
+  assert.match(radioLive, /cancelCurrentPlay/);
+});
+
+test('only approved, licensed tracks can enter the automation queue', () => {
+  assert.match(radioLive, /if \(!row\.audioUrl \|\| row\.approved !== true\) return false;/);
+  assert.match(radioLive, /row\.approved === true && row\.audioUrl/);
+  assert.match(radioLive, /tracksForSlot/);
+  assert.match(radioLive, /recentTracks/);
+  assert.match(radioLive, /Least-recently-played first/);
+  assert.match(radioLive, /fallbackUrl/);
+});
+
+test('recorded human announcements are selected per programme and never generated', () => {
+  assert.match(radioLive, /chooseVoice\(slot, 'programme-intro'\)/);
+  assert.match(radioLive, /voiceLabel \|\| voice\.name/);
+  assert.match(radioLive, /recorded human announcement/);
+  assert.doesNotMatch(radioLive, /speechSynthesis|SpeechSynthesisUtterance|text-to-speech|tts/i);
+  assert.match(admin, /Genuine human recordings only/);
+  assert.match(rules, /request\.resource\.data\.humanRecorded == true/);
+});
+
+test('presenter requests, decisions and sessions are server-authoritative', () => {
+  assert.match(functionsIndex, /exports\.radioPresenterRequest = radioModule\.radioPresenterRequest/);
+  assert.match(functionsRadio, /async function requireAdmin/);
+  assert.match(functionsRadio, /if \(request\.uid !== uid\) fail\('permission-denied'/);
+  assert.match(functionsRadio, /request\.status !== 'approved'/);
+  assert.match(functionsRadio, /now < stampMs\(request\.accessStartsAt\)/);
+  assert.match(functionsRadio, /now > stampMs\(request\.accessEndsAt\)/);
+  assert.match(functionsRadio, /radioSessionWatchdog/);
+  assert.match(functionsRadio, /ACTIVE_SESSION_MS/);
+  assert.match(functionsRadio, /set\(liveRef/);
+  assert.match(rules, /match \/radioPresenterRequests\/\{requestId\} \{[\s\S]{0,220}allow write: if false;/);
+  assert.match(rules, /match \/radioPresenterSessions\/\{sessionId\} \{[\s\S]{0,220}allow write: if false;/);
+  assert.match(rules, /match \/radioLiveState\/\{stateId\} \{[\s\S]{0,120}allow write: if false;/);
+});
+
+test('the LIVE signal channel cannot be taken over by a stranger', () => {
+  assert.match(rules, /function radioSessionPresenter\(sessionId\)/);
+  assert.match(rules, /radioSessionPresenter\(sessionId\)/);
+  assert.match(rules, /allow create: if radioSessionIsLive\(sessionId\)/);
+  assert.match(functionsRadio, /radioLive/);
+  assert.match(radioLive, /RTCPeerConnection/);
+  assert.match(radioLive, /presenterCandidates/);
+  assert.match(radioLive, /The presenter audio connection dropped/);
+});
+
+test('a presenter disconnect or expiry returns the station to automation', () => {
+  assert.match(radioLive, /leaveLive\(state\.wantsPlay\)/);
+  assert.match(radioLive, /The presenter session ended\. The same player returned to scheduled automation automatically/);
+  assert.match(radioLive, /liveFallback/);
+  assert.match(radioLive, /heartbeat/i);
+  assert.match(functionsRadio, /Presenter heartbeat stopped/);
+  assert.match(functionsRadio, /Approved session window ended/);
+});
+
+test('a presenter request notifies administrators and a decision notifies the presenter', () => {
+  const events = require('../functions/notifications.js').EVENTS;
+  assert.ok(events.radio_presenter_request, 'admin request event is missing');
+  assert.ok(events.radio_presenter_decision, 'presenter decision event is missing');
+  assert.match(notifications, /radio_presenter_request/);
+  assert.match(notifications, /radio_presenter_decision/);
+  assert.match(functionsRadio, /notifyAdmins/);
+  assert.match(functionsRadio, /notifyPresenter/);
+});
+
+test('the admin Radio Studio exposes the real library, voice, timetable and presenter controls', () => {
+  for (const id of ['view-radio', 'radioAdminRequests', 'radioAdminActive', 'radioAdminTracks', 'radioAdminVoices',
+    'radioAdminPlaylists', 'radioAdminSchedule', 'radioTrackForm', 'radioVoiceForm', 'radioPlaylistForm',
+    'radioScheduleForm', 'radioSettingAutomation', 'radioTrackGenre', 'radioTrackLicence', 'radioVoiceGender']) {
+    assert.ok(admin.includes('id="' + id + '"'), 'admin is missing #' + id);
+  }
+  assert.match(admin, /getStorage/);
+  assert.match(admin, /storageRef/);
+  assert.match(admin, /radioAdminSaveTrack/);
+  assert.match(radioAdmin, /STREAMING_HOSTS/);
+  assert.match(radioAdmin, /does not scrape or rebroadcast/);
+  assert.match(radioAdmin, /uploadAudio\(file, 'tracks'/);
+  assert.match(radioAdmin, /uploadAudio\(file, 'voices'/);
+  assert.match(radioAdmin, /radioPresenterDecision/);
+  assert.match(radioAdmin, /radioAdminStop/);
+});
+
+test('radio audio and public metadata stay in Storage/Firestore safely', () => {
+  assert.match(storageRules, /match \/radioAudio\/\{kind\}\/\{fileName\}/);
+  assert.match(storageRules, /kind in \['tracks', 'voices', 'announcements', 'fallback'\]/);
+  assert.match(storageRules, /request\.resource\.contentType\.matches\('audio\/\.\*'\)/);
+  assert.match(rules, /match \/worshipSongs\/\{id\}/);
+  assert.match(radioAdmin, /licenseStatus: licenseStatus/);
+  assert.match(radioAdmin, /category: GENRES\[genre\]/);
+  assert.match(radioAdmin, /permissionConfirmed: true/);
+  assert.match(rules, /match \/radioNowPlaying\/\{stationId\}/);
+  assert.doesNotMatch(radioAdmin, /localStorage\.setItem\('pd_radio_library'/i);
+});
+
+test('the presenter studio and listener states are visible on /radio', () => {
+  for (const id of ['presenterStudioBody', 'presenterRequestForm', 'presenterRequestList', 'presenterLiveControls',
+    'presenterStartBtn', 'presenterStopBtn', 'radioNowPlaying', 'radioLiveBadge', 'radioNowTitle']) {
+    assert.ok(radio.includes('id="' + id + '"'), '/radio is missing #' + id);
+  }
+  assert.match(radio, /Africa\/Lusaka/);
+  assert.match(radio, /sign in to request a presenter session|Sign in to request a presenter session/i);
+  assert.match(radio, /same player|never need a second one/i);
+});

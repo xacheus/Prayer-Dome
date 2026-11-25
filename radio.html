@@ -228,6 +228,18 @@
         .radio-volume input { width: 100%; accent-color: #d4af37; }
         .radio-note { margin: 9px 0 0; color: rgba(255,255,255,.66); font-size: .62rem; line-height: 1.45; }
         .radio-note.is-error { color: #fecaca; }
+        .radio-now-playing { margin-top: 11px; padding: 10px 11px; border: 1px solid rgba(255,255,255,.16); border-radius: 10px; background: rgba(0,0,0,.16); display: grid; gap: 3px; position: relative; }
+        .radio-now-label { font-size: .56rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; color: #f6df8a; display: inline-flex; align-items: center; gap: 5px; }
+        .radio-now-playing strong { color: #fff; font-size: .78rem; line-height: 1.3; padding-right: 58px; }
+        .radio-now-playing #radioNowMeta { color: rgba(255,255,255,.72); font-size: .64rem; line-height: 1.4; padding-right: 58px; }
+        .radio-live-badge { position: absolute; top: 9px; right: 9px; display: inline-flex; align-items: center; gap: 5px; background: #c62828; color: #fff; border-radius: 999px; padding: 3px 8px; font-size: .58rem; font-weight: 950; letter-spacing: .08em; }
+        .radio-live-badge[hidden] { display: none; }
+        .radio-presenter { margin: 16px 20px 0; padding: clamp(16px, 3vw, 24px); border: 1px solid var(--border-color); border-radius: 22px; background: var(--bg-card); box-shadow: var(--shadow); }
+        .radio-presenter .radio-schedule-head { padding: 0 0 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 14px; }
+        .radio-presenter .panel-card { background: rgba(10,77,155,.04); }
+        body.dark-mode .radio-presenter .panel-card { background: rgba(255,255,255,.03); }
+        body.pd-radio-live .radio-hero { box-shadow: inset 0 0 0 2px rgba(198,40,40,.55); }
+        @media (max-width: 860px) { .radio-presenter { margin: 12px 12px 0; } }
         .radio-schedule { margin: 16px 20px 0; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 14px; overflow: hidden; }
         .radio-schedule-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border-color); }
         .radio-schedule-head h2 { margin: 0; font-size: 1rem; display: flex; align-items: center; gap: 7px; }
@@ -289,6 +301,7 @@
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+<script src="/assets/pd-radio-live.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
 </head>
@@ -390,6 +403,56 @@
         <button type="button" class="radio-main-toggle" id="radioMainToggle" disabled><i class="pd-i pd-i-play" aria-hidden="true"></i> <span>Play station</span></button>
         <label class="radio-volume" for="radioVolume"><i class="pd-i pd-i-volume-2" aria-hidden="true"></i><input type="range" id="radioVolume" min="0" max="100" value="80" aria-label="Radio volume"><span id="radioVolumeValue">80%</span></label>
         <p class="radio-note" id="radioStatusNote">Playback begins only when you press play. Nothing is downloaded in the background.</p>
+        <div id="radioNowPlaying" class="radio-now-playing" aria-live="polite">
+            <span class="radio-now-label"><i class="pd-i pd-i-disc-3" aria-hidden="true"></i> Now playing</span>
+            <strong id="radioNowTitle">Automation is ready</strong>
+            <span id="radioNowMeta">Approved gospel tracks from the Prayer Dome library.</span>
+            <span id="radioLiveBadge" class="radio-live-badge" hidden><span class="pd-live-dot"></span> LIVE</span>
+        </div>
+    </div>
+</section>
+
+<section class="radio-presenter" aria-labelledby="presenterStudioTitle">
+    <div class="radio-schedule-head">
+        <div>
+            <h2 id="presenterStudioTitle"><i class="pd-i pd-i-mic" aria-hidden="true"></i> Presenter Studio</h2>
+            <p>An authorised member can ask to present one programme. Nothing here gives live control until an administrator approves the request, and the approval expires when the session ends. Listeners keep the same player; they never need a second one.</p>
+        </div>
+        <span class="radio-status" id="presenterAccessState"><span class="dot" aria-hidden="true"></span><span>Checking access…</span></span>
+    </div>
+    <div id="presenterSignedOut" class="radio-briefing-empty" hidden>
+        <i class="pd-i pd-i-lock" aria-hidden="true"></i>
+        <span>Sign in to request a presenter session. <a href="/account.html?next=%2Fradio.html%23presenter-studio">Open your account</a>.</span>
+    </div>
+    <div id="presenterStudioBody" hidden>
+        <div class="panel-card" style="padding:18px;margin-bottom:16px;">
+            <h3 style="margin:0 0 10px;font-size:1rem;"><i class="pd-i pd-i-square-pen"></i> Request a programme</h3>
+            <form id="presenterRequestForm" onsubmit="PDRadioPresenter.submitRequest(event)" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;">
+                <label>Presenter name<input class="form-control" id="presenterName" required maxlength="80" autocomplete="name"></label>
+                <label>Programme title<input class="form-control" id="presenterProgrammeTitle" required maxlength="100" placeholder="Evening Praise"></label>
+                <label>Proposed start (Lusaka)<input class="form-control" id="presenterStart" type="datetime-local" required></label>
+                <label>Expected duration<select class="form-control" id="presenterDuration"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60" selected>60 minutes</option><option value="90">90 minutes</option><option value="120">2 hours</option></select></label>
+                <label style="grid-column:1/-1;">Description<textarea class="form-control" id="presenterDescription" required minlength="20" maxlength="600" rows="3" placeholder="What will you present, and who is it for?"></textarea></label>
+                <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                    <button class="btn btn-primary" type="submit"><i class="pd-i pd-i-send"></i> Send to an administrator</button>
+                    <span id="presenterRequestNote" style="font-size:.72rem;color:var(--text-sub);">Requests are reviewed by a Prayer Dome administrator. Approval opens live controls only for the approved window.</span>
+                </div>
+            </form>
+        </div>
+        <div class="panel-card" style="padding:18px;margin-bottom:16px;">
+            <h3 style="margin:0 0 10px;font-size:1rem;"><i class="pd-i pd-i-list"></i> Your requests</h3>
+            <div id="presenterRequestList" style="font-size:.8rem;color:var(--text-sub);">No requests yet.</div>
+        </div>
+        <div class="panel-card" id="presenterLiveControls" style="padding:18px;display:none;">
+            <h3 style="margin:0 0 8px;font-size:1rem;"><i class="pd-i pd-i-radio"></i> Live controls</h3>
+            <p id="presenterLiveHint" style="font-size:.78rem;color:var(--text-sub);"></p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-primary" type="button" id="presenterStartBtn" onclick="PDRadioPresenter.start()"><i class="pd-i pd-i-mic"></i> Start approved session</button>
+                <button class="btn btn-danger" type="button" id="presenterStopBtn" onclick="PDRadioPresenter.stop()" style="display:none;"><i class="pd-i pd-i-square"></i> End and return to automation</button>
+                <button class="btn btn-outline" type="button" onclick="PDRadioPresenter.reportIssue()"><i class="pd-i pd-i-triangle-alert"></i> Report an audio issue</button>
+            </div>
+            <p id="presenterLiveState" style="font-size:.78rem;margin-top:10px;color:var(--text-sub);"></p>
+        </div>
     </div>
 </section>
 
@@ -538,10 +601,35 @@
         var data = programmeForNow();
         var current = data.programme;
         var schedule = (window.PD_CONTENT && PD_CONTENT.RADIO_PROGRAMMES) || [];
+        // An administrator's timetable, when present, replaces the published
+        // default on the listener page. It is public metadata and is refreshed
+        // by the radio engine after Firestore loads.
+        var custom = window.PD_RADIO_TIMETABLE;
+        if (Array.isArray(custom) && custom.length) {
+            var nowMinutes = PD_CONTENT.radioClock ? PD_CONTENT.radioClock(new Date()).minutes : null;
+            var today = new Date().getDay();
+            try {
+                var parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Lusaka', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date()).reduce(function(acc, part) { if (part.type !== 'literal') acc[part.type] = part.value; return acc; }, {});
+                today = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts.weekday] || today;
+                nowMinutes = (Number(parts.hour) % 24) * 60 + Number(parts.minute);
+            } catch (e) {}
+            schedule = custom.map(function(slot) {
+                return Object.assign({}, slot, {
+                    days: slot.days || [0,1,2,3,4,5,6],
+                    title: slot.title || 'Prayer Dome Radio',
+                    kind: slot.type || 'music'
+                });
+            });
+            current = schedule.filter(function(slot) {
+                var days = slot.days || [0,1,2,3,4,5,6];
+                return days.indexOf(today) !== -1 && nowMinutes >= Number(slot.start) && nowMinutes < Number(slot.end);
+            })[0] || null;
+            data.clock = { label: (PD_CONTENT.radioClock ? PD_CONTENT.radioClock(new Date()).label : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })) };
+        }
         var clock = document.getElementById('radioScheduleClock');
-        if (clock) clock.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + esc(data.clock.label ? 'Lusaka ' + data.clock.label : 'Africa/Lusaka') + '</span>';
+        if (clock) clock.innerHTML = '<span class="dot" aria-hidden="true"></span><span>' + esc(data.clock && data.clock.label ? 'Lusaka ' + data.clock.label : 'Africa/Lusaka') + '</span>';
         var programme = document.getElementById('radioProgramme');
-        if (programme) programme.textContent = current ? current.title : 'Between programmes';
+        if (programme) programme.textContent = current ? current.title : (custom && custom.length ? 'Automation' : 'Between programmes');
         if (!schedule.length) {
             list.innerHTML = '<p class="radio-programme-row">No published programme schedule yet.</p>';
             return;
@@ -554,7 +642,7 @@
                 '<span class="radio-programme-time">' + esc(time) + '</span>' +
                 '<div class="radio-programme-copy"><strong>' + esc(item.title) + '</strong><span>' + esc(days + ' · ' + (item.kind || 'Programme')) + '</span></div></div>';
         }).join('');
-        renderProgrammeBriefing(current);
+        renderProgrammeBriefing(current ? Object.assign({}, current, { id: current.programmeId || current.id }) : data.programme);
     }
 
     /* ---------------------------------------------------- programme briefing
@@ -728,6 +816,10 @@
         updateRadioHero();
         var toggle = document.getElementById('radioMainToggle');
         if (toggle) toggle.addEventListener('click', function() {
+            if (window.PDRadioEngine && typeof PDRadioEngine.toggle === 'function' && PDRadioEngine.available()) {
+                PDRadioEngine.toggle();
+                return;
+            }
             if (!radioHeroState.station || !window.PDApp || !PDApp.radio) return;
             radioHeroState.error = '';
             setRadioStatus(radioHeroState.playing ? 'Pausing…' : 'Connecting…', 'idle');
@@ -746,6 +838,7 @@
         }
         if (window.PDApp) {
             PDApp.on('radio:playing', function(e) {
+                if (window.PDRadioEngine && PDRadioEngine.ownsAudio()) return;
                 if (!radioHeroState.station || !e.detail || e.detail.name !== radioHeroState.station.name) return;
                 radioHeroState.playing = true;
                 radioHeroState.error = '';
@@ -753,10 +846,12 @@
                 updateRadioHero();
             });
             PDApp.on('radio:stopped', function() {
+                if (window.PDRadioEngine && PDRadioEngine.ownsAudio()) return;
                 radioHeroState.playing = false;
                 updateRadioHero();
             });
             PDApp.on('radio:error', function(e) {
+                if (window.PDRadioEngine && PDRadioEngine.ownsAudio()) return;
                 radioHeroState.playing = false;
                 var station = radioHeroState.station;
                 if (station && station.streamUrl && radioHeroState.retries < 2) {
@@ -776,6 +871,7 @@
             });
         }
         setInterval(renderRadioSchedule, 60000);
+        window.PD_RADIO_REFRESH_SCHEDULE = renderRadioSchedule;
     }
 
     if (window.PDApp) {

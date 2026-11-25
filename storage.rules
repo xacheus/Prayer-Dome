@@ -34,6 +34,20 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    // Prayer Dome Radio audio. Administrators upload gospel tracks, recorded
+    // human presenter introductions and fallback audio; the listener needs a
+    // public read URL, but no browser can write or replace a broadcast file.
+    // Only audio content types are accepted, and the size cap keeps a single
+    // upload from exhausting the Firebase Storage allowance.
+    match /radioAudio/{kind}/{fileName} {
+      allow read: if true;
+      allow delete: if isAdmin() && kind in ['tracks', 'voices', 'announcements', 'fallback'];
+      allow create, update: if isAdmin() &&
+        kind in ['tracks', 'voices', 'announcements', 'fallback'] &&
+        request.resource.size < 50 * 1024 * 1024 &&
+        request.resource.contentType.matches('audio/.*');
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

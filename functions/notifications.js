@@ -570,6 +570,25 @@ const EVENTS = {
     inAppTitle: 'Ministry announcement',
     inAppMessage: 'A new notice from Prayer Dome.'
   },
+  /* ------------------------------------------------------------------ radio */
+  radio_presenter_request: {
+    category: 'announcement', essential: true, kind: 'news',
+    subject: 'Radio presenter request: {{title}}',
+    heading: 'A presenter has requested airtime',
+    message: '{{name}} has requested a live presenter session on Prayer Dome Radio.\nProgramme: {{title}}\nRequested start: {{date}}\nDuration: {{minutes}} minutes\n\nReview the request in Admin → Radio Studio before granting access. No presenter can take over the station until an administrator approves it.',
+    actionLabel: 'Review presenter request', actionPath: '/admin.html#radio',
+    inAppTitle: 'Radio presenter request',
+    inAppMessage: '{{name}} requested {{title}} at {{date}}.'
+  },
+  radio_presenter_decision: {
+    category: 'account', essential: true, kind: 'account',
+    subject: 'Your Prayer Dome Radio presenter request: {{status}}',
+    heading: 'Presenter request update',
+    message: 'Your request to present on Prayer Dome Radio has been updated.\nProgramme: {{title}}\nRequested start: {{date}}\nStatus: {{status}}\n{{reason}}\n\nYou can review the request in Presenter Studio on the Radio page. Live controls only become available while an approved session is inside its approved time window.',
+    actionLabel: 'Open Presenter Studio', actionPath: '/radio.html#presenter-studio',
+    inAppTitle: 'Presenter request {{status}}',
+    inAppMessage: '{{title}}: {{status}}.'
+  },
   newsletter_welcome: {
     category: 'newsletter', essential: false, kind: 'news',
     subject: 'Welcome to Prayer Dome updates',

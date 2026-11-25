@@ -2548,6 +2548,67 @@
         toast('Unable to play this stream. Check the station URL in the Admin Dashboard.', 'error');
       });
     },
+    // Start a specific source in the one shared audio element. The radio
+    // automation engine uses this for approved tracks, announcements and the
+    // fallback stream; it must never create a second player.
+    playUrl: function (url, name, meta) {
+      if (!url) return Promise.reject(new Error('Audio URL missing'));
+      var audio = radio.ensureAudio();
+      try { audio.pause(); } catch (e) {}
+      audio.srcObject = null;
+      audio.src = url;
+      radio.currentName = name || 'Prayer Dome Radio';
+      radio.currentMeta = meta || null;
+      return audio.play().then(function () {
+        radio.playing = true;
+        $$('[data-pd-radio]').forEach(function (b) {
+          b.classList.remove('pd-radio-playing');
+          var ic = b.querySelector('i');
+          if (ic) ic.className = 'pd-i pd-i-play';
+        });
+        var indicator = $('#pdRadioNow');
+        if (indicator) {
+          indicator.style.display = 'flex';
+          indicator.innerHTML = '<span class="pd-live-dot"></span> Now playing: ' + esc(radio.currentName);
+        }
+        try {
+          if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new window.MediaMetadata({
+              title: (meta && meta.title) || radio.currentName,
+              artist: (meta && meta.artist) || 'Prayer Dome Radio',
+              album: (meta && meta.album) || 'Gospel Radio & Podcasts'
+            });
+          }
+        } catch (e) {}
+        broadcast('radio:playing', { url: url, name: radio.currentName, meta: meta || null, live: false });
+        return true;
+      }).catch(function (error) {
+        radio.playing = false;
+        broadcast('radio:error', { url: url, name: radio.currentName, error: error && error.message });
+        throw error;
+      });
+    },
+    // Takeover uses the same <audio> element and switches it to the presenter's
+    // MediaStream. Listeners never see a second player or a page reload.
+    playStream: function (stream, name, meta) {
+      if (!stream) return Promise.reject(new Error('Presenter stream missing'));
+      var audio = radio.ensureAudio();
+      try { audio.pause(); } catch (e) {}
+      audio.removeAttribute('src');
+      try { audio.load(); } catch (e) {}
+      audio.srcObject = stream;
+      radio.currentName = name || 'Prayer Dome Radio — LIVE';
+      radio.currentMeta = meta || null;
+      return audio.play().then(function () {
+        radio.playing = true;
+        broadcast('radio:playing', { url: '', name: radio.currentName, meta: meta || null, live: true });
+        return true;
+      }).catch(function (error) {
+        radio.playing = false;
+        broadcast('radio:error', { url: '', name: radio.currentName, error: error && error.message, live: true });
+        throw error;
+      });
+    },
     setVolume: function (value) {
       var volume = Math.max(0, Math.min(1, Number(value)));
       if (!isFinite(volume)) volume = 0.8;
@@ -2557,7 +2618,10 @@
       return volume;
     },
     stop: function () {
-      if (radio.audio) radio.audio.pause();
+      if (radio.audio) {
+        radio.audio.pause();
+        try { radio.audio.srcObject = null; } catch (e) {}
+      }
       radio.playing = false;
       radio.currentName = '';
       var indicator = $('#pdRadioNow');

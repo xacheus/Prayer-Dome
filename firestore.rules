@@ -416,6 +416,130 @@ service cloud.firestore {
            request.resource.data.reviewedAt is string));
     }
 
+    // ==========================================
+    // Prayer Dome Radio — library, scheduling and presenter access
+    // ==========================================
+    // The gospel library is the existing public worshipSongs collection; the
+    // radio fields (genre, licence, approval) live on those same documents.
+    // Audio binaries live in Storage, never in Firestore.
+    //
+    // Recorded human presenters. A voice entry is public only after review;
+    // unapproved recordings stay administrator-only.
+    match /radioVoices/{voiceId} {
+      allow read: if resource.data.approved == true || isAdmin();
+      allow delete: if isAdmin();
+      allow write: if isAdmin() &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() > 0 &&
+        request.resource.data.voiceLabel is string &&
+        request.resource.data.gender in ['male', 'female', 'mixed'] &&
+        request.resource.data.audioUrl is string &&
+        request.resource.data.audioUrl.size() > 0 &&
+        request.resource.data.humanRecorded == true &&
+        request.resource.data.approved is bool;
+    }
+
+    match /radioPlaylists/{playlistId} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow write: if isAdmin() &&
+        request.resource.data.name is string &&
+        request.resource.data.trackIds is list;
+    }
+
+    match /radioSchedule/{slotId} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow write: if isAdmin() &&
+        request.resource.data.start is int &&
+        request.resource.data.start >= 0 &&
+        request.resource.data.start < 1440 &&
+        request.resource.data.end is int &&
+        request.resource.data.end > request.resource.data.start &&
+        request.resource.data.end < 1440 &&
+        request.resource.data.days is list;
+    }
+
+    match /radioSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Presenter requests are created and decided only by the callable. A
+    // presenter may read their own request in the app; the admin console sees
+    // all of them through its role-gated UI.
+    match /radioPresenterRequests/{requestId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow write: if false;
+    }
+
+    match /radioPresenterSessions/{sessionId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.presenterUid == request.auth.uid);
+      allow write: if false;
+    }
+
+    // Public now-playing / LIVE projection. Written only by the session
+    // service, never by a browser.
+    match /radioLiveState/{stateId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Listener-visible "now playing" projection written by the public radio
+    // engine. It contains display metadata only — never a stream credential —
+    // and is validated so a browser cannot use it to smuggle arbitrary fields.
+    match /radioNowPlaying/{stationId} {
+      allow read: if true;
+      allow create, update: if
+        request.resource.data.source in ['automation', 'announcement', 'fallback', 'live'] &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 160 &&
+        request.resource.data.artist is string &&
+        request.resource.data.artist.size() <= 160 &&
+        request.resource.data.trackId is string &&
+        request.resource.data.trackId.size() <= 160;
+      allow delete: if false;
+    }
+
+    match /radioStreamHealth/{entryId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // WebRTC signaling for the approved presenter. The parent session document
+    // is created by the server and is public so a listener can join. A viewer
+    // creates one offer; only the approved presenter can write the answer or
+    // presenter ICE candidates. A stranger cannot replace the presenter's
+    // stream or take over another session.
+    function radioSessionIsLive(sessionId) {
+      return exists(/databases/$(database)/documents/radioLive/$(sessionId)) &&
+        get(/databases/$(database)/documents/radioLive/$(sessionId)).data.status == 'live';
+    }
+    function radioSessionPresenter(sessionId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/radioLive/$(sessionId)) &&
+        get(/databases/$(database)/documents/radioLive/$(sessionId)).data.presenterUid == request.auth.uid;
+    }
+    match /radioLive/{sessionId} {
+      allow read: if true;
+      allow write: if false;   // created by radioPresenterStart
+      match /viewers/{viewerId} {
+        allow read: if true;
+        allow create: if radioSessionIsLive(sessionId) &&
+          request.resource.data.viewerId is string &&
+          request.resource.data.offer is map &&
+          request.resource.data.offer.type == 'offer';
+        allow update, delete: if radioSessionPresenter(sessionId);
+        match /presenterCandidates/{candidateId} {
+          allow read: if true;
+          allow create: if radioSessionPresenter(sessionId) &&
+            request.resource.data.candidate is map;
+          allow update, delete: if false;
+        }
+      }
+    }
+
     // Contact Messages
     match /contactMessages/{id} {
       allow read: if isAdmin();

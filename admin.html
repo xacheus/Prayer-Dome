@@ -1153,6 +1153,7 @@
                 <div class="nav-item" data-view="announcements" onclick="switchView('announcements', this)"><i class="pd-i pd-i-megaphone"></i> Notices</div>
                 <div class="nav-item" data-view="gallery" onclick="switchView('gallery', this)"><i class="pd-i pd-i-images"></i> Gallery Management</div>
                 <div class="nav-item" data-view="media" onclick="switchView('media', this)"><i class="pd-i pd-i-camera"></i> Media Upload</div>
+                <div class="nav-item" data-view="radio" onclick="switchView('radio', this)"><i class="pd-i pd-i-radio-tower"></i> Radio Studio</div>
                 <div class="nav-item" data-view="aivideo" onclick="switchView('aivideo', this)"><i class="pd-i pd-i-wand-sparkles"></i> AI Video Studio</div>
                 <div class="nav-item" data-view="content" onclick="switchView('content', this)"><i class="pd-i pd-i-message-circle-more"></i> Prayers &amp; Testimonies</div>
                 <div class="nav-item" data-view="news" onclick="switchView('news', this)"><i class="pd-i pd-i-newspaper"></i> News Center</div>
@@ -1939,6 +1940,147 @@
                         <table><thead><tr><th>Programme</th><th>Status</th><th>Briefing</th><th>Reviewed by</th><th>Actions</th></tr></thead>
                         <tbody id="radioProgrammeList"><tr><td colspan="5">Select a day and refresh.</td></tr></tbody></table>
                     </div>
+                </div>
+            </div>
+
+            <!-- RADIO STUDIO VIEW -->
+            <div id="view-radio" class="section-view">
+                <div class="page-title">
+                    <span><i class="pd-i pd-i-radio-tower"></i> Radio Studio</span>
+                    <div class="admin-actions-row">
+                        <button class="btn btn-outline" type="button" onclick="loadRadioAdmin()"><i class="pd-i pd-i-refresh-cw"></i> Refresh</button>
+                        <a class="btn btn-outline" href="/radio.html" target="_blank" rel="noopener"><i class="pd-i pd-i-external-link"></i> Open /radio</a>
+                    </div>
+                </div>
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-activity"></i> Broadcast health</h3><span id="radioAdminChecked" style="font-size:.7rem;color:var(--text-sub);">Checking…</span></div>
+                    <div id="radioAdminLiveStatus" style="padding:0 16px 8px;font-size:.85rem;">Loading the live state…</div>
+                    <div id="radioAdminCounts" style="display:flex;gap:10px;flex-wrap:wrap;padding:0 16px 16px;"></div>
+                    <div class="table-responsive" style="max-height:260px;overflow:auto;">
+                        <table><thead><tr><th>Time</th><th>Event</th><th>Detail</th><th>Actor</th></tr></thead>
+                        <tbody id="radioAdminHealthList"><tr><td colspan="4">Health events appear here.</td></tr></tbody></table>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-mic"></i> Presenter requests</h3><span style="font-size:.7rem;color:var(--text-sub);">Approval is the only way to receive live controls.</span></div>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Presenter</th><th>Programme</th><th>Requested (Lusaka)</th><th>Duration</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="radioAdminRequests"><tr><td colspan="6">Sign in as an administrator to review requests.</td></tr></tbody></table>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-radio"></i> Active presenters</h3><span style="font-size:.7rem;color:var(--text-sub);">Stop removes the LIVE overlay and returns listeners to automation.</span></div>
+                    <div id="radioAdminActive" style="padding:16px;color:var(--text-sub);font-size:.8rem;">No presenter is live.</div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-music"></i> Gospel library</h3><span style="font-size:.7rem;color:var(--text-sub);">Only approved, licensed tracks enter automation.</span></div>
+                    <form id="radioTrackForm" onsubmit="radioAdminSaveTrack(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                        <input type="hidden" id="radioTrackId">
+                        <label>Title<input class="form-control" id="radioTrackTitle" required maxlength="160"></label>
+                        <label>Artist<input class="form-control" id="radioTrackArtist" required maxlength="160"></label>
+                        <label>Album<input class="form-control" id="radioTrackAlbum" maxlength="160"></label>
+                        <label>Genre<select class="form-control" id="radioTrackGenre">
+                            <option value="gospel-worship">Gospel worship</option><option value="contemporary">Contemporary gospel</option>
+                            <option value="african">African gospel</option><option value="international">International gospel</option>
+                            <option value="traditional">Traditional gospel</option><option value="praise">Praise</option>
+                            <option value="instrumental-worship">Instrumental worship</option><option value="other-christian">Other approved Christian music</option>
+                        </select></label>
+                        <label>Source<input class="form-control" id="radioTrackSource" placeholder="Label, distributor or permission reference" maxlength="160"></label>
+                        <label>Source URL<input class="form-control" id="radioTrackSourceUrl" placeholder="Licence or permission record" maxlength="400"></label>
+                        <label>Licence<select class="form-control" id="radioTrackLicence">
+                            <option value="licensed">Licensed</option><option value="written-permission">Written permission</option>
+                            <option value="public-domain">Public domain</option><option value="original">Original recording</option>
+                        </select></label>
+                        <label>Duration (seconds)<input class="form-control" id="radioTrackDuration" type="number" min="0" max="14400"></label>
+                        <label>Audio URL<input class="form-control" id="radioTrackAudioUrl" placeholder="https://… or upload below" maxlength="600"></label>
+                        <label>Upload audio<input class="form-control" id="radioTrackFile" type="file" accept="audio/*"></label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioTrackPermission"> I have permission to broadcast this recording</label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioTrackApproved"> Approved for automation</label>
+                        <label style="grid-column:1/-1;">Notes / copyright line<input class="form-control" id="radioTrackNotes" maxlength="600"></label>
+                        <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save track</button>
+                            <button class="btn btn-outline" type="button" onclick="radioAdminResetTrack()">Clear</button>
+                            <span id="radioTrackUploadStatus" style="font-size:.75rem;color:var(--text-sub);align-self:center;"></span>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Title</th><th>Artist</th><th>Genre</th><th>Licence</th><th>Approved</th><th>Actions</th></tr></thead>
+                        <tbody id="radioAdminTracks"><tr><td colspan="6">No tracks loaded.</td></tr></tbody></table>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-users"></i> Recorded presenter voices</h3><span style="font-size:.7rem;color:var(--text-sub);">Genuine human recordings only. No generated voice is accepted.</span></div>
+                    <form id="radioVoiceForm" onsubmit="radioAdminSaveVoice(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                        <input type="hidden" id="radioVoiceId">
+                        <label>Presenter name<input class="form-control" id="radioVoiceName" required maxlength="120"></label>
+                        <label>Voice label<input class="form-control" id="radioVoiceLabel" placeholder="Voice A — morning" maxlength="120"></label>
+                        <label>Voice<select class="form-control" id="radioVoiceGender"><option value="male">Male</option><option value="female">Female</option><option value="mixed">Mixed / duo</option></select></label>
+                        <label>Programme<select class="form-control" id="radioVoiceProgramme"><option value="">Any programme</option></select></label>
+                        <label>Announcement type<select class="form-control" id="radioVoiceKind">
+                            <option value="programme-intro">Programme intro</option><option value="station-id">Station identification</option>
+                            <option value="transition">Transition</option><option value="closing">Closing</option>
+                        </select></label>
+                        <label>Audio URL<input class="form-control" id="radioVoiceAudioUrl" placeholder="https://… or upload below" maxlength="600"></label>
+                        <label>Upload recording<input class="form-control" id="radioVoiceFile" type="file" accept="audio/*"></label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioVoiceApproved"> Approved for broadcast</label>
+                        <label style="grid-column:1/-1;">Notes<input class="form-control" id="radioVoiceNotes" maxlength="600"></label>
+                        <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save voice</button>
+                            <button class="btn btn-outline" type="button" onclick="radioAdminResetVoice()">Clear</button>
+                            <span id="radioVoiceUploadStatus" style="font-size:.75rem;color:var(--text-sub);align-self:center;"></span>
+                        </div>
+                    </form>
+                    <div class="table-responsive">
+                        <table><thead><tr><th>Voice</th><th>Gender</th><th>Programme</th><th>Type</th><th>Approved</th><th>Preview / actions</th></tr></thead>
+                        <tbody id="radioAdminVoices"><tr><td colspan="6">No voices loaded.</td></tr></tbody></table>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-list"></i> Playlists &amp; rotation</h3></div>
+                    <form id="radioPlaylistForm" onsubmit="radioAdminSavePlaylist(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                        <input type="hidden" id="radioPlaylistId">
+                        <label>Name<input class="form-control" id="radioPlaylistName" required maxlength="120"></label>
+                        <label>Genre<select class="form-control" id="radioPlaylistGenre"><option value="">Mixed</option><option value="gospel-worship">Gospel worship</option><option value="contemporary">Contemporary gospel</option><option value="african">African gospel</option><option value="international">International gospel</option><option value="traditional">Traditional gospel</option><option value="praise">Praise</option><option value="instrumental-worship">Instrumental worship</option><option value="other-christian">Other approved Christian music</option></select></label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioPlaylistDefault"> Default automation playlist</label>
+                        <label style="grid-column:1/-1;">Description<input class="form-control" id="radioPlaylistDescription" maxlength="400"></label>
+                        <div style="grid-column:1/-1;"><strong style="font-size:.8rem;">Approved tracks</strong><div id="radioPlaylistTracks" style="max-height:180px;overflow:auto;border:1px solid var(--border-color);border-radius:10px;padding:8px;margin-top:6px;font-size:.8rem;"></div></div>
+                        <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save playlist</button><button class="btn btn-outline" type="button" onclick="radioAdminResetPlaylist()">Clear</button></div>
+                    </form>
+                    <div class="table-responsive"><table><thead><tr><th>Playlist</th><th>Genre</th><th>Tracks</th><th>Default</th><th>Actions</th></tr></thead><tbody id="radioAdminPlaylists"><tr><td colspan="5">No playlists loaded.</td></tr></tbody></table></div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-calendar-clock"></i> Timetable (Africa/Lusaka)</h3><span style="font-size:.7rem;color:var(--text-sub);">An empty timetable uses the published nine-programme schedule.</span></div>
+                    <form id="radioScheduleForm" onsubmit="radioAdminSaveSlot(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;">
+                        <input type="hidden" id="radioSlotId">
+                        <label>Start<input class="form-control" id="radioSlotStart" type="time" required></label>
+                        <label>End<input class="form-control" id="radioSlotEnd" type="time" required></label>
+                        <label>Title<input class="form-control" id="radioSlotTitle" required maxlength="120"></label>
+                        <label>Type<select class="form-control" id="radioSlotType"><option value="music">Music</option><option value="teaching">Bible teaching</option><option value="prayer">Prayer</option><option value="worship">Worship</option><option value="announcement">Announcement</option></select></label>
+                        <label>Playlist<select class="form-control" id="radioSlotPlaylist"><option value="">Default playlist</option></select></label>
+                        <label>Voice<select class="form-control" id="radioSlotVoice"><option value="">No recorded intro</option></select></label>
+                        <label>Days<select class="form-control" id="radioSlotDays"><option value="daily">Every day</option><option value="weekdays">Monday–Friday</option><option value="weekend">Saturday–Sunday</option></select></label>
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioSlotEnabled" checked> Enabled</label>
+                        <div style="grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save slot</button><button class="btn btn-outline" type="button" onclick="radioAdminResetSlot()">Clear</button></div>
+                    </form>
+                    <div class="table-responsive"><table><thead><tr><th>Time</th><th>Programme</th><th>Type</th><th>Playlist</th><th>Voice</th><th>Days</th><th>Actions</th></tr></thead><tbody id="radioAdminSchedule"><tr><td colspan="7">No timetable loaded.</td></tr></tbody></table></div>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-settings"></i> Automation &amp; fallback</h3></div>
+                    <form onsubmit="radioAdminSaveSettings(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioSettingAutomation"> Automation enabled</label>
+                        <label>Default playlist<select class="form-control" id="radioSettingPlaylist"><option value="">Choose a playlist</option></select></label>
+                        <label>Fallback audio URL<input class="form-control" id="radioSettingFallback" placeholder="Licensed fallback stream or recording" maxlength="600"></label>
+                        <label>Upload fallback audio<input class="form-control" id="radioSettingFallbackFile" type="file" accept="audio/*"></label>
+                        <label>Station stream URL<input class="form-control" id="radioSettingStream" placeholder="Optional licensed station stream" maxlength="600"></label>
+                        <div style="grid-column:1/-1;"><button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save automation settings</button><span style="font-size:.72rem;color:var(--text-sub);margin-left:8px;">Secrets are never stored here. Use only public stream URLs or permissioned recordings.</span></div>
+                    </form>
                 </div>
             </div>
 
@@ -3396,12 +3538,14 @@
         import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, query, where, orderBy, startAfter, serverTimestamp, increment, addDoc, limit, onSnapshot, Timestamp, writeBatch, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
+        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const cloudFunctions = getFunctions(app);
+        const storage = getStorage(app);
 
         /* ==================== MODULE BRIDGE ====================
          * The Team, Locations, Daily Challenge, Membership Card and Document
@@ -3413,6 +3557,9 @@
             auth,
             cloudFunctions,
             httpsCallable,
+            storage: {
+                storage, storageRef, uploadBytesResumable, getDownloadURL, deleteObject
+            },
             firestore: {
                 collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc,
                 deleteDoc, deleteField, query, where, orderBy, limit,
@@ -8669,7 +8816,7 @@ window.toggleDarkMode = function() {
             'care': 'Member Care', 'gallery': 'Gallery', 'finance': 'Financials',
             'support': 'Support Claims', 'financial_reports': 'Financial Reports',
             'events': 'Events', 'devotionals': 'Devotionals', 'verses': 'Daily Verses',
-            'aivideo': 'AI Video Studio', 'media': 'Media Upload', 'content': 'Prayers & Testimonies',
+            'aivideo': 'AI Video Studio', 'media': 'Media Upload', 'radio': 'Radio Studio', 'content': 'Prayers & Testimonies',
             'news': 'News Center', 'sermons': 'Sermon Center', 'banners': 'Hero Banners',
             'languages': 'Languages', 'translations': 'Translation Review',
             'notifications': 'Notifications', 'email': 'Email Delivery', 'facebook': 'Facebook Campaign', 'team': 'Team Management',
@@ -8723,7 +8870,8 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'withdrawals' && window.loadWithdrawals) await loadWithdrawals();
                 else if (viewId === 'wallet-balances' && window.loadWalletBalances) await loadWalletBalances();
                 else if (viewId === 'support-plans' && window.loadSupportPlansAdmin) await loadSupportPlansAdmin();
-                else if (viewId === 'media' && window.loadRadioProgrammes) await loadRadioProgrammes();
+                else if (viewId === 'media') { if (window.loadRadioProgrammes) await loadRadioProgrammes(); await loadAdminPodcasts(); loadAdminRadio(); if (window.loadAdminSongs) await loadAdminSongs(); }
+                else if (viewId === 'radio' && window.loadRadioAdmin) await window.loadRadioAdmin();
                 else if (viewId === 'activity' && window.loadRecentActivity) await loadRecentActivity();
                 else if (viewId === 'support') await loadSupport();
                 else if (viewId === 'events') await loadEvents();
@@ -8743,7 +8891,6 @@ window.toggleDarkMode = function() {
                 else if (viewId === 'aivideo') await loadAiVideos();
                 else if (viewId === 'banners') await loadAdminBanners();
                 else if (viewId === 'languages') await loadAdminLanguages();
-                else if (viewId === 'media') { await loadAdminPodcasts(); loadAdminRadio(); if (window.loadAdminSongs) await loadAdminSongs(); }
             } catch(e) { console.error(`Error loading ${viewId}:`, e); toast(`Error loading ${viewId} data`, 'error'); }
         };
 
