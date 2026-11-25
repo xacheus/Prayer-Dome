@@ -29,6 +29,7 @@
   let activity = [];
   let withdrawals = [];
   let paymentSettings = null;
+  let paymentMethodsDirty = false;
 
   const esc = (value) => String(value == null ? '' : value)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -891,6 +892,7 @@
   }
 
   window.addPaymentMethodRow = function () {
+    paymentMethodsDirty = true;
     const rows = collectedPaymentMethods();
     // A newly added row starts enabled so it cannot be saved as a silent
     // draft; the save step still refuses to publish it until its details are
@@ -915,6 +917,7 @@
   };
 
   window.removePaymentMethodRow = function (index) {
+    paymentMethodsDirty = true;
     const rows = collectedPaymentMethods();
     if (rows.length <= 1) return window.toast('Keep at least one payment method. Disable it instead if you are still checking it.', 'error');
     rows.splice(index, 1);
@@ -922,6 +925,7 @@
   };
 
   window.movePaymentMethodRow = function (index, delta) {
+    paymentMethodsDirty = true;
     const rows = collectedPaymentMethods();
     const target = index + delta;
     if (target < 0 || target >= rows.length) return;
@@ -934,9 +938,19 @@
     // Re-render only the heading so the label stays in step with the type.
     const row = select && select.closest ? select.closest('.payment-method-row') : null;
     if (!row) return;
+    paymentMethodsDirty = true;
     const rows = collectedPaymentMethods();
     renderPaymentMethods(rows);
   };
+
+  // Any manual edit is unsaved work. Track it at the container level so every
+  // field in every row participates without adding handlers to each input.
+  document.addEventListener('input', function (event) {
+    if (event.target && event.target.closest && event.target.closest('#paymentMethodRows')) paymentMethodsDirty = true;
+  });
+  document.addEventListener('change', function (event) {
+    if (event.target && event.target.closest && event.target.closest('#paymentMethodRows')) paymentMethodsDirty = true;
+  });
 
   window.loadPaymentSettings = async function () {
     const status = document.getElementById('paySettingsStatus');
@@ -944,6 +958,13 @@
       const snap = await getDoc(doc(bridge.db, 'settings', 'payments'));
       const row = snap.exists ? snap.data() : {};
       paymentSettings = row;
+      // A slow read must never wipe a method the administrator has just typed
+      // in. Once the form is dirty, the only way to replace it is to save or
+      // explicitly reload the page.
+      if (paymentMethodsDirty) {
+        if (status) status.textContent = 'You have unsaved payment-method changes. Save them before leaving this panel.';
+        return;
+      }
       const methods = Billing.paymentMethodsFromSettings(row);
       if (row.instructions && methods.length && !methods[0].instructions) {
         // Preserve the old single-method custom wording when it is migrated
@@ -1026,6 +1047,7 @@
         console.warn('Payment settings audit could not be written:', auditError && auditError.message);
       }
       paymentSettings = null;
+      paymentMethodsDirty = false;
       window.hideLoading();
       await window.loadPaymentSettings();
       window.toast('Payment methods saved. The give page reads them directly from Firestore.');
