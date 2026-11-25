@@ -78,10 +78,11 @@ t('gibberish search returns nothing', T.pdSearchVerses('zzzqqqxx', 'en').length 
 t('topic filter works', T.pdVersesByTopic('fear', 'en').length >= 3);
 t('unknown topic returns empty', T.pdVersesByTopic('nonsense', 'en').length === 0);
 
-// Verse of the day must be stable within a day and move between days.
-const d1 = new Date('2026-07-31T06:00:00Z');
-const d2 = new Date('2026-07-31T22:00:00Z');
-const d3 = new Date('2026-08-01T06:00:00Z');
+// Verse of the day must be stable across the UTC day and move between days.
+// Using the very edges catches a browser-local implementation in any timezone.
+const d1 = new Date('2026-07-31T00:00:01Z');
+const d2 = new Date('2026-07-31T23:59:59Z');
+const d3 = new Date('2026-08-01T00:00:01Z');
 t('verse of the day is stable across one day',
   T.pdVerseOfDay('en', d1).id === T.pdVerseOfDay('en', d2).id);
 t('verse of the day changes the next day',
