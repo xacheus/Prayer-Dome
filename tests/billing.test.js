@@ -284,3 +284,51 @@ test('the give page records the payment method the donor actually used', () => {
   assert.match(give, /Finance has not configured a payment method yet/);
   assert.match(give, /do not send money to any number that is not shown here/);
 });
+
+test('a newly added payment method is not wiped by a slow settings read', async () => {
+  const { JSDOM } = require('jsdom');
+  let resolveSettings;
+  const settingsPromise = new Promise((resolve) => { resolveSettings = resolve; });
+  let html = read('admin.html').replace(/<script[\s\S]*?<\/script>/gi, '');
+  const dom = new JSDOM(html, { runScripts: 'dangerously', url: 'https://prayerdome.net/admin.html' });
+  const window = dom.window;
+  window.PDBilling = browser;
+  window.PDAdmin = {
+    db: {},
+    auth: { currentUser: { uid: 'admin', email: 'admin@example.com' } },
+    cloudFunctions: {},
+    httpsCallable: () => async () => ({ data: {} }),
+    firestore: {
+      collection: () => ({}),
+      getDocs: async () => ({ docs: [], size: 0 }),
+      getDoc: () => settingsPromise,
+      doc: () => ({}),
+      setDoc: async () => {},
+      addDoc: async () => {},
+      serverTimestamp: () => ({}),
+      query: () => ({}),
+      orderBy: () => ({}),
+      limit: () => ({})
+    },
+    toast: () => {}
+  };
+  vm.runInContext(read('assets/pd-billing-admin.js'), dom.getInternalVMContext(), { filename: 'pd-billing-admin.js' });
+
+  const loading = window.loadPaymentSettings();
+  assert.equal(window.document.querySelectorAll('#paymentMethodRows .payment-method-row').length, 0);
+  window.addPaymentMethodRow();
+  assert.equal(window.document.querySelectorAll('#paymentMethodRows .payment-method-row').length, 1,
+    'the Add button must create a draft row immediately');
+  resolveSettings({
+    exists: () => true,
+    data: () => ({
+      methods: [{ id: 'saved-method', type: 'mobile-money', label: 'Saved', enabled: true, number: '+260970000000' }]
+    })
+  });
+  await loading;
+  const rows = window.document.querySelectorAll('#paymentMethodRows .payment-method-row');
+  assert.equal(rows.length, 1, 'the slow read must not replace the draft row');
+  assert.equal(rows[0].getAttribute('data-id'), '', 'the draft must not be replaced by the saved method');
+  assert.match(window.document.getElementById('paySettingsStatus').textContent, /unsaved payment-method changes/i);
+  dom.window.close();
+});
