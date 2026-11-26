@@ -33,10 +33,12 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = join(ROOT, 'assets', 'pd-verse-data.js');
 const OUT_DIR = join(ROOT, 'android', 'app', 'src', 'main', 'res', 'raw');
 const OUT_FILE = join(OUT_DIR, 'pd_widget_verses.json');
+const SERVER_FILE = join(ROOT, 'functions', 'verse-bank.js');
 const CHECK = process.argv.includes('--check');
 
 /** Slot boundaries used by PD_VERSES.currentSlot(): hour -> slot index. */
 const BOUNDARIES = [0, 11, 14, 18];
+const NIV_COPYRIGHT = 'NIV® — Holy Bible, New International Version®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.';
 
 const verses = require(SOURCE);
 const slots = verses.SLOTS.map((slot) => ({
@@ -105,6 +107,78 @@ const payload = {
 const serialised = JSON.stringify(payload, null, 1) + '\n';
 const relativeOut = relative(ROOT, OUT_FILE);
 
+/* ------------------------------------------------------------------ server
+ * Cloud Functions cannot import a browser global. Generate a byte-stable
+ * CommonJS mirror from the same library so push notifications quote exactly
+ * the same verse as the site, the service worker and the widget. The rotation
+ * helpers below are deliberately the same code as assets/pd-verse-data.js.
+ */
+const serverSource = `/*!
+ * Prayer Dome — GENERATED server verse bank. DO NOT EDIT BY HAND.
+ * Source of truth: assets/pd-verse-data.js
+ * Regenerate: node scripts/build-widget-verses.mjs
+ *
+ * Copyright notice for the NIV text is preserved from the source library:
+ * NIV® — Holy Bible, New International Version®. Copyright © 1973, 1978, 1984,
+ * 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.
+ */
+'use strict';
+
+const SLOTS = ${JSON.stringify(verses.SLOTS, null, 2)};
+
+const VERSES = ${JSON.stringify(verses.VERSES, null, 2)};
+
+const NIV_COPYRIGHT = ${JSON.stringify(NIV_COPYRIGHT)};
+
+/** Accept a Date or an explicit YYYY-MM-DD calendar date (used by push). */
+function asDate(value) {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') {
+    const parts = value.split('-').map(Number);
+    if (parts.length === 3 && parts.every((n) => isFinite(n))) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+  }
+  return new Date();
+}
+
+function dayIndex(date) {
+  const d = asDate(date);
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
+}
+
+function verseFor(slotId, date) {
+  const pool = VERSES[slotId] || VERSES.morning;
+  const slotIndex = Math.max(0, SLOTS.map((s) => s.id).indexOf(slotId));
+  const index = (dayIndex(date) * SLOTS.length + slotIndex) % pool.length;
+  const verse = pool[index];
+  const slot = SLOTS[slotIndex];
+  return {
+    slot: slot.id,
+    slotLabel: slot.label,
+    icon: slot.icon,
+    greeting: slot.greeting,
+    reference: verse.ref,
+    text: verse.text,
+    translation: 'NIV',
+    translationName: 'New International Version',
+    copyright: NIV_COPYRIGHT
+  };
+}
+
+function currentSlot(date) {
+  const h = asDate(date).getHours();
+  if (h < 11) return 'morning';
+  if (h < 14) return 'midday';
+  if (h < 18) return 'afternoon';
+  return 'evening';
+}
+
+module.exports = { SLOTS, VERSES, verseFor, dayIndex, currentSlot };
+`;
+const relativeServer = relative(ROOT, SERVER_FILE);
+
 if (CHECK) {
   let current = null;
   try { current = readFileSync(OUT_FILE, 'utf8'); } catch { /* missing */ }
@@ -127,12 +201,19 @@ if (CHECK) {
     console.error(`${relativeOut} is stale — run: node scripts/build-widget-verses.mjs`);
     process.exit(1);
   }
-  console.log(`${relativeOut} matches ${relative(ROOT, SOURCE)} (${checkpoints.length} checkpoints).`);
+  let currentServer = null;
+  try { currentServer = readFileSync(SERVER_FILE, 'utf8'); } catch { /* missing */ }
+  if (currentServer !== serverSource) {
+    console.error(`${relativeServer} is stale — run: node scripts/build-widget-verses.mjs`);
+    process.exit(1);
+  }
+  console.log(`${relativeOut} and ${relativeServer} match ${relative(ROOT, SOURCE)} (${checkpoints.length} checkpoints).`);
   process.exit(0);
 }
 
 mkdirSync(OUT_DIR, { recursive: true });
 writeFileSync(OUT_FILE, serialised, 'utf8');
-console.log(`Wrote ${relativeOut}: ${slots.length} slots, ` +
+writeFileSync(SERVER_FILE, serverSource, 'utf8');
+console.log(`Wrote ${relativeOut} and ${relativeServer}: ${slots.length} slots, ` +
   `${Object.values(pools).reduce((total, pool) => total + pool.length, 0)} verses, ` +
   `${checkpoints.length} checkpoints.`);

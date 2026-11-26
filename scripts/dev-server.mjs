@@ -25,7 +25,7 @@ const server = createServer(async (req, res) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   try {
     const url = new URL(req.url, 'http://preview');
-    const pathname = decodeURIComponent(url.pathname);
+    let pathname = decodeURIComponent(url.pathname);
     if (pathname.includes('\0') || pathname.includes('\\')) {
       res.writeHead(400); return res.end('Bad request');
     }
@@ -62,6 +62,11 @@ const server = createServer(async (req, res) => {
     if (!['GET', 'HEAD'].includes(req.method)) {
       res.writeHead(405, { Allow: 'GET, HEAD' }); return res.end();
     }
+    // Honour exact page rewrites (for example the PWA share target /share).
+    const pageRewrite = (VERCEL.rewrites || []).find((rule) => rule.source === pathname &&
+      String(rule.destination || '').startsWith('/') &&
+      !String(rule.destination || '').startsWith('/api/'));
+    if (pageRewrite) pathname = String(pageRewrite.destination).split('?')[0];
     const file = resolveFile(pathname === '/' ? '/index.html' : pathname);
     if (!file) {
       res.writeHead(404, { 'Content-Type': 'text/html; charset=utf-8' });

@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.RemoteViews;
@@ -90,37 +91,78 @@ final class VerseWidgetRenderer {
     }
 
     static RemoteViews build(Context context, VerseWidgetStore store, Calendar now) {
+        return build(context, store, now, null);
+    }
+
+    /**
+     * Build a card for the actual size Android gave this instance. Launchers
+     * resize widgets between 180×70dp and 460×280dp, so one fixed type scale
+     * either clips long verses on a small widget or looks tiny on a large one.
+     */
+    static RemoteViews build(Context context, VerseWidgetStore store, Calendar now, Bundle options) {
         VerseWidgetData data = VerseWidgetData.get(context);
         VerseWidgetData.Verse verse = resolveVerse(context, store, now);
         VerseWidgetData.Slot slot = data.currentSlot(now);
         Theme theme = theme(context, store.theme());
 
+        int width = option(options, AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, 320);
+        int height = option(options, AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 180);
+        boolean compact = width < 260 || height < 130;
+        boolean roomy = height >= 220 && width >= 300;
+        float scale = store.textScale();
+        float verseSp = (compact ? 13f : roomy ? 17f : 15f) * scale;
+        float refSp = (compact ? 10.5f : 12f) * scale;
+        int padDp = compact ? 10 : roomy ? 20 : 16;
+        int padding = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, padDp,
+                context.getResources().getDisplayMetrics());
+        int maxLines = compact ? 5 : roomy ? 12 : 8;
+
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.verse_widget);
         views.setInt(R.id.widgetCard, "setBackgroundResource", theme.background);
+        views.setViewPadding(R.id.widgetCard, padding, padding, padding, padding);
         views.setTextViewText(R.id.widgetVerse, verse.text);
         views.setTextViewText(R.id.widgetReference, "— " + verse.reference);
+        views.setInt(R.id.widgetVerse, "setMaxLines", maxLines);
 
-        float scale = store.textScale();
-        views.setTextViewTextSize(R.id.widgetVerse, TypedValue.COMPLEX_UNIT_SP, 15f * scale);
-        views.setTextViewTextSize(R.id.widgetReference, TypedValue.COMPLEX_UNIT_SP, 12f * scale);
+        views.setTextViewTextSize(R.id.widgetVerse, TypedValue.COMPLEX_UNIT_SP, verseSp);
+        views.setTextViewTextSize(R.id.widgetReference, TypedValue.COMPLEX_UNIT_SP, refSp);
+        views.setTextViewTextSize(R.id.widgetGreeting, TypedValue.COMPLEX_UNIT_SP, compact ? 10f : 11f);
+        views.setTextViewTextSize(R.id.widgetBrandText, TypedValue.COMPLEX_UNIT_SP, compact ? 8f : 9f);
         views.setTextColor(R.id.widgetVerse, theme.verse);
         views.setTextColor(R.id.widgetReference, theme.reference);
 
-        String greeting = store.isPinned() ? "Pinned verse" : slot.greeting;
+        String label = store.isPinned() ? store.pinnedLabel() : "";
+        String greeting = store.isPinned()
+                ? (label.isEmpty() ? "Pinned verse" : label)
+                : slot.greeting;
         views.setTextViewText(R.id.widgetGreeting, greeting);
         views.setTextColor(R.id.widgetGreeting, theme.greeting);
         views.setViewVisibility(R.id.widgetGreeting, store.showGreeting() ? View.VISIBLE : View.GONE);
         views.setViewVisibility(R.id.widgetReference, store.showReference() ? View.VISIBLE : View.GONE);
-        views.setViewVisibility(R.id.widgetBrandRow, store.showBrand() ? View.VISIBLE : View.GONE);
+        // On a very small widget the brand gives way to Scripture, but a pinned
+        // verse keeps its label because that is what the member chose to see.
+        boolean showBrand = store.showBrand() && (!compact || store.isPinned());
+        views.setViewVisibility(R.id.widgetBrandRow, showBrand ? View.VISIBLE : View.GONE);
         views.setTextColor(R.id.widgetBrandText, theme.brand);
         views.setImageViewResource(R.id.widgetBrandIcon, R.mipmap.ic_launcher);
 
-        // Tapping the card opens the app at the lock-screen verse studio; tapping
-        // the refresh icon re-reads the clock and redraws without leaving the
-        // lock screen.
+        // Screen readers should hear the reference as well as the text.
+        views.setCharSequence(R.id.widgetVerse, "setContentDescription",
+                "Scripture " + verse.reference + ": " + verse.text);
+        views.setCharSequence(R.id.widgetCard, "setContentDescription",
+                "Prayer Dome daily verse. Tap to open the verse studio.");
+
+        // Tapping the card opens the app at the verse studio; the refresh icon
+        // re-reads the clock and redraws without leaving the lock screen.
         views.setOnClickPendingIntent(R.id.widgetCard, openApp(context));
         views.setOnClickPendingIntent(R.id.widgetRefresh, refresh(context));
         return views;
+    }
+
+    private static int option(Bundle options, String key, int fallback) {
+        if (options == null) return fallback;
+        int value = options.getInt(key, fallback);
+        return value > 0 ? value : fallback;
     }
 
     private static PendingIntent openApp(Context context) {
@@ -146,7 +188,10 @@ final class VerseWidgetRenderer {
         int[] ids = manager.getAppWidgetIds(new android.content.ComponentName(context, VerseWidgetProvider.class));
         if (ids.length == 0) return;
         VerseWidgetStore store = VerseWidgetStore.get(context);
-        RemoteViews views = build(context, store, Calendar.getInstance());
-        for (int id : ids) manager.updateAppWidget(id, views);
+        Calendar now = Calendar.getInstance();
+        for (int id : ids) {
+            Bundle options = manager.getAppWidgetOptions(id);
+            manager.updateAppWidget(id, build(context, store, now, options));
+        }
     }
 }

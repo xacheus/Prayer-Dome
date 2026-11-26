@@ -1,8 +1,11 @@
 /*!
- * Prayer Dome — server-side verse bank for push dispatch.
- * A small mirror of the four daily slots in assets/pd-verse-data.js so the
- * scheduled Cloud Function can send the same kind of verse when the app is
- * closed. Admin overrides come from Firestore `verseSchedule/{YYYY-MM-DD}`.
+ * Prayer Dome — GENERATED server verse bank. DO NOT EDIT BY HAND.
+ * Source of truth: assets/pd-verse-data.js
+ * Regenerate: node scripts/build-widget-verses.mjs
+ *
+ * Copyright notice for the NIV text is preserved from the source library:
+ * NIV® — Holy Bible, New International Version®. Copyright © 1973, 1978, 1984,
+ * 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.
  */
 'use strict';
 
@@ -10,24 +13,28 @@ const SLOTS = [
   {
     "id": "morning",
     "label": "Morning Verse",
+    "icon": "pd-i-sunrise",
     "defaultTime": "06:30",
     "greeting": "Good morning"
   },
   {
     "id": "midday",
     "label": "Midday Verse",
+    "icon": "pd-i-sun",
     "defaultTime": "12:00",
     "greeting": "Grace for midday"
   },
   {
     "id": "afternoon",
     "label": "Afternoon Verse",
+    "icon": "pd-i-cloud-sun",
     "defaultTime": "15:30",
     "greeting": "Strength this afternoon"
   },
   {
     "id": "evening",
     "label": "Evening Verse",
+    "icon": "pd-i-moon",
     "defaultTime": "20:00",
     "greeting": "Rest well tonight"
   }
@@ -36,105 +43,379 @@ const SLOTS = [
 const VERSES = {
   "morning": [
     {
+      "ref": "Lamentations 3:22-23",
+      "text": "Because of the LORD’s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness."
+    },
+    {
+      "ref": "Psalm 5:3",
+      "text": "In the morning, LORD, you hear my voice; in the morning I lay my requests before you and wait expectantly."
+    },
+    {
+      "ref": "Psalm 143:8",
+      "text": "Let the morning bring me word of your unfailing love, for I have put my trust in you. Show me the way I should go, for to you I entrust my life."
+    },
+    {
+      "ref": "Psalm 118:24",
+      "text": "The LORD has done it this very day; let us rejoice today and be glad."
+    },
+    {
       "ref": "Isaiah 40:31",
       "text": "But those who hope in the LORD will renew their strength. They will soar on wings like eagles; they will run and not grow weary, they will walk and not be faint."
+    },
+    {
+      "ref": "Psalm 90:14",
+      "text": "Satisfy us in the morning with your unfailing love, that we may sing for joy and be glad all our days."
+    },
+    {
+      "ref": "Proverbs 3:5-6",
+      "text": "Trust in the LORD with all your heart and lean not on your own understanding; in all your ways submit to him, and he will make your paths straight."
+    },
+    {
+      "ref": "Mark 1:35",
+      "text": "Very early in the morning, while it was still dark, Jesus got up, left the house and went off to a solitary place, where he prayed."
     },
     {
       "ref": "Psalm 59:16",
       "text": "But I will sing of your strength, in the morning I will sing of your love; for you are my fortress, my refuge in times of trouble."
     },
     {
+      "ref": "Joshua 1:9",
+      "text": "Have I not commanded you? Be strong and courageous. Do not be afraid; do not be discouraged, for the LORD your God will be with you wherever you go."
+    },
+    {
+      "ref": "Philippians 4:13",
+      "text": "I can do all this through him who gives me strength."
+    },
+    {
+      "ref": "Psalm 37:5",
+      "text": "Commit your way to the LORD; trust in him and he will do this."
+    },
+    {
       "ref": "Isaiah 41:10",
       "text": "So do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you; I will uphold you with my righteous right hand."
+    },
+    {
+      "ref": "Jeremiah 29:11",
+      "text": "“For I know the plans I have for you,” declares the LORD, “plans to prosper you and not to harm you, plans to give you hope and a future.”"
+    },
+    {
+      "ref": "Matthew 6:33",
+      "text": "But seek first his kingdom and his righteousness, and all these things will be given to you as well."
+    },
+    {
+      "ref": "Psalm 63:1",
+      "text": "You, God, are my God, earnestly I seek you; I thirst for you, my whole being longs for you, in a dry and parched land where there is no water."
     },
     {
       "ref": "Deuteronomy 31:6",
       "text": "Be strong and courageous. Do not be afraid or terrified because of them, for the LORD your God goes with you; he will never leave you nor forsake you."
     },
     {
-      "ref": "Lamentations 3:22-23",
-      "text": "Because of the LORD’s great love we are not consumed, for his compassions never fail. They are new every morning; great is your faithfulness."
+      "ref": "Psalm 19:14",
+      "text": "May these words of my mouth and this meditation of my heart be pleasing in your sight, LORD, my Rock and my Redeemer."
+    },
+    {
+      "ref": "2 Corinthians 5:17",
+      "text": "Therefore, if anyone is in Christ, the new creation has come: The old has gone, the new is here!"
+    },
+    {
+      "ref": "Psalm 121:1-2",
+      "text": "I lift up my eyes to the mountains — where does my help come from? My help comes from the LORD, the Maker of heaven and earth."
     }
   ],
   "midday": [
     {
+      "ref": "Matthew 11:28",
+      "text": "“Come to me, all you who are weary and burdened, and I will give you rest.”"
+    },
+    {
+      "ref": "Psalm 46:1",
+      "text": "God is our refuge and strength, an ever-present help in trouble."
+    },
+    {
+      "ref": "Isaiah 26:3",
+      "text": "You will keep in perfect peace those whose minds are steadfast, because they trust in you."
+    },
+    {
+      "ref": "Colossians 3:23",
+      "text": "Whatever you do, work at it with all your heart, as working for the Lord, not for human masters."
+    },
+    {
+      "ref": "Psalm 55:22",
+      "text": "Cast your cares on the LORD and he will sustain you; he will never let the righteous be shaken."
+    },
+    {
       "ref": "1 Peter 5:7",
       "text": "Cast all your anxiety on him because he cares for you."
+    },
+    {
+      "ref": "Nehemiah 8:10",
+      "text": "Do not grieve, for the joy of the LORD is your strength."
+    },
+    {
+      "ref": "Psalm 27:1",
+      "text": "The LORD is my light and my salvation — whom shall I fear? The LORD is the stronghold of my life — of whom shall I be afraid?"
+    },
+    {
+      "ref": "Galatians 6:9",
+      "text": "Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up."
     },
     {
       "ref": "2 Corinthians 12:9",
       "text": "But he said to me, “My grace is sufficient for you, for my power is made perfect in weakness.”"
     },
     {
+      "ref": "Psalm 34:8",
+      "text": "Taste and see that the LORD is good; blessed is the one who takes refuge in him."
+    },
+    {
+      "ref": "Romans 8:28",
+      "text": "And we know that in all things God works for the good of those who love him, who have been called according to his purpose."
+    },
+    {
+      "ref": "Proverbs 16:3",
+      "text": "Commit to the LORD whatever you do, and he will establish your plans."
+    },
+    {
       "ref": "Psalm 119:105",
       "text": "Your word is a lamp for my feet, a light on my path."
+    },
+    {
+      "ref": "Hebrews 4:16",
+      "text": "Let us then approach God’s throne of grace with confidence, so that we may receive mercy and find grace to help us in our time of need."
+    },
+    {
+      "ref": "James 1:5",
+      "text": "If any of you lacks wisdom, you should ask God, who gives generously to all without finding fault, and it will be given to you."
+    },
+    {
+      "ref": "Philippians 4:19",
+      "text": "And my God will meet all your needs according to the riches of his glory in Christ Jesus."
     },
     {
       "ref": "Psalm 145:18",
       "text": "The LORD is near to all who call on him, to all who call on him in truth."
     },
     {
-      "ref": "Psalm 46:1",
-      "text": "God is our refuge and strength, an ever-present help in trouble."
+      "ref": "Isaiah 43:2",
+      "text": "When you pass through the waters, I will be with you; and when you pass through the rivers, they will not sweep over you."
+    },
+    {
+      "ref": "Matthew 5:16",
+      "text": "In the same way, let your light shine before others, that they may see your good deeds and glorify your Father in heaven."
     }
   ],
   "afternoon": [
     {
+      "ref": "Psalm 23:1-3",
+      "text": "The LORD is my shepherd, I lack nothing. He makes me lie down in green pastures, he leads me beside quiet waters, he refreshes my soul."
+    },
+    {
+      "ref": "John 14:27",
+      "text": "Peace I leave with you; my peace I give you. I do not give to you as the world gives. Do not let your hearts be troubled and do not be afraid."
+    },
+    {
+      "ref": "Philippians 4:6-7",
+      "text": "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus."
+    },
+    {
+      "ref": "Psalm 138:8",
+      "text": "The LORD will vindicate me; your love, LORD, endures forever — do not abandon the works of your hands."
+    },
+    {
+      "ref": "Romans 15:13",
+      "text": "May the God of hope fill you with all joy and peace as you trust in him, so that you may overflow with hope by the power of the Holy Spirit."
+    },
+    {
+      "ref": "Psalm 62:5-6",
+      "text": "Yes, my soul, find rest in God; my hope comes from him. Truly he is my rock and my salvation; he is my fortress, I shall not be shaken."
+    },
+    {
       "ref": "Isaiah 30:15",
       "text": "In repentance and rest is your salvation, in quietness and trust is your strength."
+    },
+    {
+      "ref": "2 Timothy 1:7",
+      "text": "For the Spirit God gave us does not make us timid, but gives us power, love and self-discipline."
+    },
+    {
+      "ref": "Psalm 31:24",
+      "text": "Be strong and take heart, all you who hope in the LORD."
+    },
+    {
+      "ref": "Hebrews 13:5",
+      "text": "Never will I leave you; never will I forsake you."
     },
     {
       "ref": "Psalm 73:26",
       "text": "My flesh and my heart may fail, but God is the strength of my heart and my portion forever."
     },
     {
+      "ref": "Isaiah 55:11",
+      "text": "So is my word that goes out from my mouth: It will not return to me empty, but will accomplish what I desire and achieve the purpose for which I sent it."
+    },
+    {
+      "ref": "Ephesians 3:20",
+      "text": "Now to him who is able to do immeasurably more than all we ask or imagine, according to his power that is at work within us."
+    },
+    {
+      "ref": "Psalm 91:1-2",
+      "text": "Whoever dwells in the shelter of the Most High will rest in the shadow of the Almighty. I will say of the LORD, “He is my refuge and my fortress, my God, in whom I trust.”"
+    },
+    {
       "ref": "John 15:5",
       "text": "“I am the vine; you are the branches. If you remain in me and I in you, you will bear much fruit; apart from me you can do nothing.”"
+    },
+    {
+      "ref": "Psalm 32:8",
+      "text": "I will instruct you and teach you in the way you should go; I will counsel you with my loving eye on you."
+    },
+    {
+      "ref": "Micah 6:8",
+      "text": "He has shown you, O mortal, what is good. And what does the LORD require of you? To act justly and to love mercy and to walk humbly with your God."
+    },
+    {
+      "ref": "Psalm 103:2-3",
+      "text": "Praise the LORD, my soul, and forget not all his benefits — who forgives all your sins and heals all your diseases."
     },
     {
       "ref": "Romans 12:12",
       "text": "Be joyful in hope, patient in affliction, faithful in prayer."
     },
     {
-      "ref": "Philippians 4:6-7",
-      "text": "Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus."
+      "ref": "Psalm 46:10",
+      "text": "He says, “Be still, and know that I am God; I will be exalted among the nations, I will be exalted in the earth.”"
     }
   ],
   "evening": [
     {
+      "ref": "Psalm 4:8",
+      "text": "In peace I will lie down and sleep, for you alone, LORD, make me dwell in safety."
+    },
+    {
+      "ref": "Psalm 127:2",
+      "text": "In vain you rise early and stay up late, toiling for food to eat — for he grants sleep to those he loves."
+    },
+    {
+      "ref": "Proverbs 3:24",
+      "text": "When you lie down, you will not be afraid; when you lie down, your sleep will be sweet."
+    },
+    {
+      "ref": "Psalm 63:6",
+      "text": "On my bed I remember you; I think of you through the watches of the night."
+    },
+    {
+      "ref": "Matthew 11:29",
+      "text": "Take my yoke upon you and learn from me, for I am gentle and humble in heart, and you will find rest for your souls."
+    },
+    {
+      "ref": "Psalm 3:5",
+      "text": "I lie down and sleep; I wake again, because the LORD sustains me."
+    },
+    {
+      "ref": "Psalm 141:2",
+      "text": "May my prayer be set before you like incense; may the lifting up of my hands be like the evening sacrifice."
+    },
+    {
       "ref": "Psalm 42:8",
       "text": "By day the LORD directs his love, at night his song is with me — a prayer to the God of my life."
+    },
+    {
+      "ref": "1 Thessalonians 5:17-18",
+      "text": "Pray continually, give thanks in all circumstances; for this is God’s will for you in Christ Jesus."
+    },
+    {
+      "ref": "Psalm 34:1",
+      "text": "I will extol the LORD at all times; his praise will always be on my lips."
+    },
+    {
+      "ref": "Psalm 136:1",
+      "text": "Give thanks to the LORD, for he is good. His love endures forever."
     },
     {
       "ref": "Ephesians 4:26",
       "text": "“In your anger do not sin”: Do not let the sun go down while you are still angry."
     },
     {
+      "ref": "Psalm 16:7-8",
+      "text": "I will praise the LORD, who counsels me; even at night my heart instructs me. I keep my eyes always on the LORD. With him at my right hand, I will not be shaken."
+    },
+    {
+      "ref": "Isaiah 26:9",
+      "text": "My soul yearns for you in the night; in the morning my spirit longs for you."
+    },
+    {
+      "ref": "Psalm 77:6",
+      "text": "I remembered my songs in the night. My heart meditated and my spirit asked."
+    },
+    {
       "ref": "Numbers 6:24-26",
       "text": "The LORD bless you and keep you; the LORD make his face shine on you and be gracious to you; the LORD turn his face toward you and give you peace."
     },
     {
-      "ref": "Zephaniah 3:17",
-      "text": "The LORD your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing."
+      "ref": "Psalm 30:5",
+      "text": "For his anger lasts only a moment, but his favor lasts a lifetime; weeping may stay for the night, but rejoicing comes in the morning."
     },
     {
-      "ref": "Psalm 63:6",
-      "text": "On my bed I remember you; I think of you through the watches of the night."
+      "ref": "John 3:16",
+      "text": "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life."
+    },
+    {
+      "ref": "Psalm 139:9-10",
+      "text": "If I rise on the wings of the dawn, if I settle on the far side of the sea, even there your hand will guide me, your right hand will hold me fast."
+    },
+    {
+      "ref": "Zephaniah 3:17",
+      "text": "The LORD your God is with you, the Mighty Warrior who saves. He will take great delight in you; in his love he will no longer rebuke you, but will rejoice over you with singing."
     }
   ]
 };
 
+const NIV_COPYRIGHT = "NIV® — Holy Bible, New International Version®. Copyright © 1973, 1978, 1984, 2011 by Biblica, Inc.® Used by permission. All rights reserved worldwide.";
+
+/** Accept a Date or an explicit YYYY-MM-DD calendar date (used by push). */
+function asDate(value) {
+  if (value instanceof Date) return value;
+  if (typeof value === 'string') {
+    const parts = value.split('-').map(Number);
+    if (parts.length === 3 && parts.every((n) => isFinite(n))) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+  }
+  return new Date();
+}
+
 function dayIndex(date) {
-  const start = Date.UTC(2024, 0, 1);
-  return Math.floor((Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) - start) / 86400000);
+  const d = asDate(date);
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
 }
 
 function verseFor(slotId, date) {
-  const slotIndex = Math.max(0, SLOTS.findIndex((s) => s.id === slotId));
-  const pool = VERSES[SLOTS[slotIndex].id] || VERSES.morning;
-  const verse = pool[Math.abs(dayIndex(date || new Date())) % pool.length];
+  const pool = VERSES[slotId] || VERSES.morning;
+  const slotIndex = Math.max(0, SLOTS.map((s) => s.id).indexOf(slotId));
+  const index = (dayIndex(date) * SLOTS.length + slotIndex) % pool.length;
+  const verse = pool[index];
   const slot = SLOTS[slotIndex];
-  return { slot: slot.id, slotLabel: slot.label, reference: verse.ref, text: verse.text, translation: 'NIV' };
+  return {
+    slot: slot.id,
+    slotLabel: slot.label,
+    icon: slot.icon,
+    greeting: slot.greeting,
+    reference: verse.ref,
+    text: verse.text,
+    translation: 'NIV',
+    translationName: 'New International Version',
+    copyright: NIV_COPYRIGHT
+  };
 }
 
-module.exports = { SLOTS, VERSES, verseFor };
+function currentSlot(date) {
+  const h = asDate(date).getHours();
+  if (h < 11) return 'morning';
+  if (h < 14) return 'midday';
+  if (h < 18) return 'afternoon';
+  return 'evening';
+}
+
+module.exports = { SLOTS, VERSES, verseFor, dayIndex, currentSlot };

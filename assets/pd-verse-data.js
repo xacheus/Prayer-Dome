@@ -122,8 +122,20 @@
         ]
     };
 
+    /** Accept a Date or an explicit YYYY-MM-DD calendar date (used by push). */
+    function asDate(value) {
+        if (value instanceof Date) return value;
+        if (typeof value === 'string') {
+            var parts = value.split('-').map(Number);
+            if (parts.length === 3 && parts.every(function (n) { return isFinite(n); })) {
+                return new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+        }
+        return new Date();
+    }
+
     function dayIndex(date) {
-        var d = date || new Date();
+        var d = asDate(date);
         var start = new Date(d.getFullYear(), 0, 0);
         return Math.floor((d - start) / 86400000);
     }
@@ -161,7 +173,7 @@
         },
         /** Which slot are we in right now (used by widgets and catch-up sends)? */
         currentSlot: function (date) {
-            var h = (date || new Date()).getHours();
+            var h = asDate(date).getHours();
             if (h < 11) return 'morning';
             if (h < 14) return 'midday';
             if (h < 18) return 'afternoon';

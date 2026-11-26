@@ -228,15 +228,9 @@
             pointer-events: none;
             z-index: 1;
         }
-        .hero::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://www.transparenttextures.com/patterns/stardust.png');
-            opacity: 0.18;
-            pointer-events: none;
-            z-index: 1;
-        }
+        /* The old stardust texture came from a third-party host and is no
+           longer requested. The cinematic gradients below provide the depth. */
+        .hero::after { content: none; }
         .hero-brand {
             position: relative;
             z-index: 2;
@@ -333,26 +327,28 @@
         }
 
         /* --- Cinematic prayer hero ---------------------------------------------
-           Real photographs, a slow crossfade and a gentle pan. No controls, no
-           audio and no parallax listener. Height is capped so the page below
-           stays close on a phone and on a large desktop. */
+           A true full-bleed photograph: edge to edge, no card, no sides, no
+           rounded corners. Height is capped per breakpoint so the photograph
+           stays horizontal instead of becoming a tall portrait crop. */
         .hero {
-            min-height: clamp(430px, 46vw, 600px);
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: clamp(34px, 5vw, 58px) 20px clamp(42px, 5.5vw, 66px);
-            border-radius: 0 0 36px 36px;
-            background: #07244d;
-            isolation: isolate;
+            position: relative; width: 100%; height: clamp(420px, 42vw, 600px);
+            min-height: 0; margin: 0; border-radius: 0;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: clamp(26px, 4vw, 56px) clamp(16px, 5vw, 48px);
+            color: #fff; text-align: center; background: #07244d;
+            overflow: hidden; isolation: isolate;
+            box-shadow: inset 0 -70px 90px -70px rgba(7,36,77,.9);
         }
+        .hero::before {
+            content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+            background: radial-gradient(ellipse at 50% 20%, rgba(255,240,190,.12), transparent 55%);
+        }
+        .hero::after { content: none; }
         .hero-cinema { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
         .hero-cinema-layer {
             position: absolute; inset: -2%;
             width: 104%; height: 104%;
-            object-fit: cover; object-position: center 42%;
+            object-fit: cover; object-position: center 45%;
             will-change: opacity, transform;
         }
         .hero-cinema-a { animation: pdHeroPan 34s ease-in-out infinite alternate, pdHeroFadeA 26s ease-in-out infinite; }
@@ -360,36 +356,59 @@
         .hero-cinema-shade {
             position: absolute; inset: 0;
             background:
-              linear-gradient(180deg, rgba(5,24,52,.62) 0%, rgba(5,24,52,.38) 30%, rgba(5,24,52,.55) 65%, rgba(5,24,52,.9) 100%),
+              linear-gradient(180deg, rgba(5,24,52,.58) 0%, rgba(5,24,52,.3) 34%, rgba(5,24,52,.52) 68%, rgba(5,24,52,.92) 100%),
+              linear-gradient(90deg, rgba(5,24,52,.42) 0%, transparent 24%, transparent 76%, rgba(5,24,52,.42) 100%),
               radial-gradient(ellipse 62% 60% at 50% 42%, rgba(212,175,55,.2) 0%, transparent 66%);
         }
         .hero-cinema-glow {
             position: absolute; inset: 0;
-            background: radial-gradient(circle at 50% 18%, rgba(255,240,190,.16), transparent 46%);
+            background: radial-gradient(circle at 50% 16%, rgba(255,240,190,.16), transparent 46%);
             mix-blend-mode: screen;
         }
         @keyframes pdHeroPan { from { transform: scale(1.02) translate3d(0,0,0); } to { transform: scale(1.09) translate3d(-1.2%,-1.4%,0); } }
         @keyframes pdHeroPanAlt { from { transform: scale(1.08) translate3d(1%,-1%,0); } to { transform: scale(1.02) translate3d(0,0,0); } }
         @keyframes pdHeroFadeA { 0%, 42% { opacity: 1; } 52%, 90% { opacity: 0; } 100% { opacity: 0; } }
         @keyframes pdHeroFadeB { 0%, 42% { opacity: 0; } 52%, 90% { opacity: 1; } 100% { opacity: 0; } }
-        .hero .hero-brand, .hero h1, .hero p, .hero .hero-cta { position: relative; z-index: 2; }
-        .hero h1 { min-height: 0; margin-bottom: 10px; text-shadow: 0 4px 28px rgba(0,0,0,.5); }
-        .hero > p { text-shadow: 0 2px 16px rgba(0,0,0,.5); }
+        @keyframes pdHeroEntrance { from { opacity: 0; transform: translate3d(0,12px,0); } to { opacity: 1; transform: none; } }
+        .hero .hero-brand, .hero h1, .hero > p, .hero .hero-cta { position: relative; z-index: 2; }
+        .hero-brand { animation: pdHeroEntrance .7s ease both; }
+        .hero h1 {
+            min-height: 0; margin-bottom: 8px;
+            text-shadow: 0 4px 28px rgba(0,0,0,.55);
+            animation: pdHeroEntrance .75s .12s ease both;
+        }
+        .hero > p {
+            text-shadow: 0 2px 16px rgba(0,0,0,.55);
+            animation: pdHeroEntrance .75s .22s ease both;
+        }
+        .hero-cta { animation: pdHeroEntrance .75s .32s ease both; }
+        .hero > p { max-width: min(560px, 92vw); }
         .hero-brand .hero-logo { background: rgba(255,255,255,.96); }
         @media (max-width: 640px) {
-            .hero { min-height: 405px; padding: 30px 16px 40px; border-radius: 0 0 26px 26px; }
-            .hero-brand .hero-logo { width: 62px; height: 62px; margin-bottom: 10px; }
+            .hero { height: clamp(360px, 108vw, 420px); padding: 24px 16px 34px; }
+            .hero-cinema-layer { object-position: 58% center; }
+            .hero-cinema-shade { background: linear-gradient(180deg, rgba(5,24,52,.55) 0%, rgba(5,24,52,.34) 32%, rgba(5,24,52,.58) 66%, rgba(5,24,52,.94) 100%); }
+            .hero-brand .hero-logo { width: 62px; height: 62px; margin-bottom: 8px; }
             .hero-brand .hero-wordmark { font-size: 1.45rem; }
-            .hero-brand .hero-rule { margin: 10px auto 8px; }
-            .hero h1 { font-size: clamp(1.12rem, 5.2vw, 1.45rem); }
-            .hero > p { font-size: .9rem; }
-            .hero-cta { margin-top: 16px; gap: 8px; }
-            .hero-cta a { padding: 10px 15px; font-size: .76rem; }
+            .hero-brand .hero-rule { margin: 8px auto 6px; }
+            .hero h1 { font-size: clamp(1.12rem, 5.2vw, 1.45rem); line-height: 1.25; }
+            .hero > p { font-size: .88rem; line-height: 1.5; }
+            .hero-cta { margin-top: 14px; gap: 8px; }
+            .hero-cta a { padding: 10px 14px; font-size: .76rem; }
+        }
+        @media (min-width: 641px) and (max-width: 1024px) {
+            .hero { height: clamp(440px, 52vw, 520px); }
+            .hero-cinema-layer { object-position: center 50%; }
+        }
+        @media (min-width: 1025px) {
+            .hero { height: clamp(500px, 38vw, 600px); }
         }
         @media (prefers-reduced-motion: reduce) {
-            .hero-cinema-a, .hero-cinema-b { animation: none; }
+            .hero-cinema-a, .hero-cinema-b,
+            .hero-brand, .hero h1, .hero > p, .hero-cta { animation: none; }
             .hero-cinema-a { opacity: 1; transform: none; }
             .hero-cinema-b { opacity: 0; }
+            .hero-brand, .hero h1, .hero > p, .hero-cta { opacity: 1; transform: none; }
         }
 
         .typing-cursor {
@@ -562,7 +581,7 @@
             .portal-item { padding: 6px 1px; }
             .portal-icon { width: 100%; max-width: 52px; font-size: 1.15rem; border-radius: 16px; margin-bottom: 7px; }
             .portal-item span { font-size: 0.62rem; letter-spacing: 0; margin-top: 4px; line-height: 1.2; }
-            .hero h1 { min-height: 56px; font-size: 1.15rem; }
+            .hero h1 { min-height: 0; font-size: 1.15rem; }
             .hero-brand .hero-wordmark { letter-spacing: .1em; }
             .hero-cta a { padding: 10px 16px; font-size: .78rem; }
             .verse-text { font-size: 1rem; }
@@ -771,18 +790,6 @@
         </div>
     </div>
     <div id="pdNotifList"></div>
-    <div class="pd-notif-head" style="border-top: 1px solid var(--border-color); border-radius: 0;">
-        <h3><i class="pd-i pd-i-megaphone"></i> Announcements</h3>
-        <div class="pd-notif-head-actions">
-            <button title="Delete all" onclick="deleteAllNotifications()"><i class="pd-i pd-i-trash"></i></button>
-        </div>
-    </div>
-    <div id="notificationList">
-        <div class="empty-notifications">
-            <i class="pd-i pd-i-bell-off" style="font-size: 3rem; opacity: 0.3; margin-bottom: 10px; display: block;"></i>
-            <p>No announcements yet</p>
-        </div>
-    </div>
 </div>
 
 <!-- Hero — cinematic prayer animation with the brand mark and typing welcome.
@@ -791,8 +798,8 @@
      banner can still replace this hero with its own image or muted video. -->
 <div class="hero" data-pd-hero>
     <div class="hero-cinema" aria-hidden="true">
-        <img class="hero-cinema-layer hero-cinema-a" src="/assets/hero-prayer.jpg" alt="" width="1536" height="864" fetchpriority="high" decoding="async">
-        <img class="hero-cinema-layer hero-cinema-b" src="/assets/hero-worship.jpg" alt="" width="1568" height="882" loading="lazy" decoding="async">
+        <img class="hero-cinema-layer hero-cinema-a" src="/assets/hero-prayer.jpg" alt="" width="1376" height="768" fetchpriority="high" decoding="async">
+        <img class="hero-cinema-layer hero-cinema-b" src="/assets/hero-worship.jpg" alt="" width="1672" height="941" loading="lazy" decoding="async">
         <div class="hero-cinema-shade"></div>
         <div class="hero-cinema-glow"></div>
     </div>
@@ -1107,8 +1114,6 @@
     })();
 
     let currentUser = null;
-    let notifications = [];
-    let unreadCount = 0;
     let currentRating = 5;
     let countdownInterval = null;
     let userLocation = null;
@@ -1527,94 +1532,11 @@
         });
     }
 
-    // ==================== NOTIFICATION FUNCTIONS ====================
-    
-    async function loadNotifications() {
-        if (!currentUser) return;
-        try {
-            const notifQuery = query(collection(db, "notifications"), orderBy("createdAt", "desc"), limit(30));
-            const snapshot = await getDocs(notifQuery);
-            notifications = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                const isRead = localStorage.getItem(`notif_read_${doc.id}`) === 'true';
-                notifications.push({
-                    id: doc.id,
-                    title: data.title,
-                    message: data.message,
-                    time: moment(data.createdAt?.toDate()).format('MMM D, h:mm A'),
-                    read: isRead
-                });
-            });
-            unreadCount = notifications.filter(n => !n.read).length;
-            updateNotificationBadge();
-            renderNotifications();
-        } catch (error) { console.error("Error loading notifications:", error); }
-    }
-
-    function updateNotificationBadge() {
-        // The premium layer owns the shared bell badge; it combines this
-        // legacy unread count with its own instant-notification count.
-        if (window.PDApp) { PDApp.notifications.syncBadge(); return; }
-        const badge = document.getElementById('notifBadge') || document.querySelector('.pd-bell-badge');
-        if (!badge) return;
-        if (unreadCount > 0) {
-            badge.style.display = 'flex';
-            badge.innerText = unreadCount > 9 ? '9+' : unreadCount;
-        } else {
-            badge.style.display = 'none';
-        }
-    }
-
-    function renderNotifications() {
-        const container = document.getElementById('notificationList');
-        if (!container) return;
-        if (notifications.length === 0) {
-            container.innerHTML = `<div class="empty-notifications"><i class="pd-i pd-i-bell-off" style="font-size: 3rem; opacity: 0.3;"></i><p>No announcements yet</p></div>`;
-            return;
-        }
-        container.innerHTML = notifications.map(notif => `
-            <div class="notification-item ${!notif.read ? 'unread' : ''}">
-                <div class="notification-content" onclick="markNotificationRead('${notif.id}')">
-                    <div class="notification-title">${escapeHtml(notif.title)}</div>
-                    <div class="notification-message">${escapeHtml(notif.message)}</div>
-                    <span class="notification-time"><i class="pd-i pd-i-clock"></i> ${notif.time}</span>
-                </div>
-                <button class="delete-notif-btn" onclick="event.stopPropagation(); deleteNotification('${notif.id}')" aria-label="Delete notification"><i class="pd-i pd-i-trash"></i></button>
-            </div>
-        `).join('');
-    }
-
-    window.markNotificationRead = (id) => {
-        const notif = notifications.find(n => n.id === id);
-        if (notif && !notif.read) {
-            notif.read = true;
-            unreadCount--;
-            localStorage.setItem(`notif_read_${id}`, 'true');
-            updateNotificationBadge();
-            renderNotifications();
-        }
-    };
-
-    window.deleteNotification = (id) => {
-        notifications = notifications.filter(n => n.id !== id);
-        localStorage.removeItem(`notif_read_${id}`);
-        unreadCount = notifications.filter(n => !n.read).length;
-        updateNotificationBadge();
-        renderNotifications();
-        showToast("Notification deleted", "success");
-    };
-
-    window.deleteAllNotifications = () => {
-        if (confirm("Delete all notifications?")) {
-            notifications.forEach(n => localStorage.removeItem(`notif_read_${n.id}`));
-            notifications = [];
-            unreadCount = 0;
-            updateNotificationBadge();
-            renderNotifications();
-            showToast("All notifications deleted", "success");
-        }
-    };
+    // All notification and announcement rendering is owned by PDApp.notifications.
+    // The legacy Firestore "notifications" list was removed: token-bearing push
+    // records are admin-only, so ordinary members could never read it and the
+    // panel showed a permanently empty second list. The shared bell reads the
+    // publicNotifications mirror and each member's userNotifications instead.
 
     window.toggleNotificationPanel = () => {
         // The premium layer owns the shared notification panel (#pdNotifPanel).
@@ -1846,7 +1768,6 @@
             // once and Firestore confirms in the background, so a slow role
             // check never delays the rest of the home page.
             checkAndShowAdminTab(user);
-            await loadNotifications();
             if (window.PDDaily && typeof window.PDDaily.refresh === 'function') window.PDDaily.refresh();
             if (window.PDChallenge && PDChallenge.weekKey) PDChallenge.syncFromCloud();
         }

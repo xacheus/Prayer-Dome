@@ -878,9 +878,10 @@ body.dark-mode .pd-location-retry { color: #93c5fd; background: rgba(255,255,255
 .pd-hero-managed {
   position: relative; overflow: hidden; color: #fff;
   display: flex; align-items: center; justify-content: center; text-align: center;
-  min-height: 320px; padding: 66px 22px 96px;
+  width: 100%; height: clamp(420px, 42vw, 600px); min-height: 0; margin: 0;
+  padding: clamp(26px, 4vw, 56px) clamp(16px, 5vw, 48px);
+  border-radius: 0;
   background: linear-gradient(160deg, var(--pd-blue-deep) 0%, var(--pd-blue) 55%, var(--pd-navy) 100%);
-  border-radius: 0 0 44px 44px;
 }
 .pd-hero-video, .pd-hero-img {
   position: absolute; inset: 0; width: 100%; height: 100%;
@@ -928,6 +929,12 @@ body.dark-mode .pd-location-retry { color: #93c5fd; background: rgba(255,255,255
 .pd-live-dot {
   width: 8px; height: 8px; border-radius: 50%; background: #fff; flex-shrink: 0;
   animation: pd-live-blink 1.1s ease infinite;
+}
+@media (min-width: 641px) and (max-width: 1024px) {
+  .pd-hero-managed { height: clamp(440px, 52vw, 520px); }
+}
+@media (min-width: 1025px) {
+  .pd-hero-managed { height: clamp(500px, 38vw, 600px); }
 }
 @keyframes pd-live-blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
@@ -1340,6 +1347,44 @@ body.dark-mode .pd-notif-icon {
   color: #07244d; font-weight: 800; font-size: .78rem;
 }
 body.dark-mode .pd-notif-alerts { color: #eaf2ff; }
+
+/* --- Notification sound preference ----------------------------------------- */
+.pd-notif-sound {
+  display: flex; align-items: center; gap: 9px;
+  margin: 8px 14px; padding: 8px 10px;
+  border-radius: 12px; font-size: .78rem; font-weight: 700;
+  color: var(--text-sub, #64748b); cursor: pointer;
+}
+.pd-notif-sound input { accent-color: var(--pd-gold, #d4af37); width: 16px; height: 16px; }
+.pd-notif-sound:hover { background: rgba(10, 77, 155, .06); }
+body.dark-mode .pd-notif-sound { color: #dbe7ff; }
+
+/* --- Appearance preference inside the notification centre ------------------ */
+.pd-theme-options {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 10px 14px; padding: 9px 10px;
+  border: 1px solid rgba(10, 77, 155, .14); border-radius: 14px;
+  background: rgba(10, 77, 155, .045);
+  font-size: .72rem; color: var(--text-sub, #64748b);
+}
+.pd-theme-options > span { font-weight: 800; letter-spacing: .02em; margin-right: auto; }
+.pd-theme-options button {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  border: 1px solid transparent; border-radius: 999px;
+  padding: 5px 9px; background: transparent; color: inherit;
+  font: inherit; font-weight: 700;
+}
+.pd-theme-options button:hover { background: rgba(10, 77, 155, .08); }
+.pd-theme-options button[aria-pressed="true"] {
+  background: var(--pd-blue, #0A4D9B); border-color: var(--pd-blue, #0A4D9B); color: #fff;
+}
+.pd-theme-options button i { font-size: .9rem; line-height: 1; }
+body.dark-mode .pd-theme-options {
+  border-color: rgba(212, 175, 55, .22); background: rgba(212, 175, 55, .06); color: #dbe7ff;
+}
+body.dark-mode .pd-theme-options button[aria-pressed="true"] {
+  background: var(--pd-gold, #d4af37); border-color: var(--pd-gold, #d4af37); color: #07244d;
+}
 
 /* --- Toasts ---------------------------------------------------------------- */
 .pd-toast-container {
@@ -3043,18 +3088,28 @@ button, input, select, textarea { max-width: 100%; }
   .bottom-ui-system .nav-link span { font-size: .65rem; font-weight: 600; text-transform: none; letter-spacing: 0; }
   .bottom-ui-system .nav-link.active { background: var(--pd-mobile-tint); color: var(--pd-mobile-ink); }
 
-  /* Homepage: balanced reading measure and consistent 16px gutters. */
-  .pd-home .hero { padding: 32px 24px 38px; border-radius: 24px; margin: 0 16px; min-height: 0; }
-  .pd-home .hero::before, .pd-home .hero::after { display: none; }
-  .pd-home .hero h1 { font-family: var(--pd-font-display); font-size: clamp(1.65rem, 7vw, 2rem); min-height: 0; line-height: 1.2; margin: 12px 0; letter-spacing: -.035em; text-shadow: none; }
-  .pd-home .hero p { font-size: .95rem; line-height: 1.65; }
+  /* Homepage: full-bleed cinematic hero, never a rounded card. The earlier
+     mobile rule added 16px sides and a 24px radius, which defeated the design;
+     these declarations intentionally re-state the edge-to-edge geometry. */
+  .pd-home .hero, .pd-home .pd-hero-managed {
+    width: 100%; height: clamp(360px, 108vw, 420px); min-height: 0;
+    margin: 0; border-radius: 0; padding: 24px 16px 34px;
+  }
+  .pd-home .hero::after { display: none; }
+  .pd-home .hero h1, .pd-home .pd-hero-headline {
+    font-family: var(--pd-font-display); font-size: clamp(1.45rem, 6.2vw, 1.85rem);
+    min-height: 0; line-height: 1.2; margin: 10px 0; letter-spacing: -.02em;
+    text-shadow: 0 3px 18px rgba(0,0,0,.55);
+  }
+  .pd-home .hero p, .pd-home .pd-hero-subtext { font-size: .9rem; line-height: 1.55; text-shadow: 0 2px 12px rgba(0,0,0,.5); }
   .pd-home .hero .pd-hero-eyebrow { font-size: .72rem; letter-spacing: .16em; }
   .pd-home .hero-logo, .pd-home .pd-hero-logo { width: 60px; height: 60px; border-radius: 18px; box-shadow: 0 6px 18px #07244d40; }
-  .pd-home .pd-hero-shade { background: linear-gradient(180deg, #07244dc4, #07244d99 50%, #07244df0); }
-  .pd-home .pd-hero-img { animation: none; }
+  .pd-home .pd-hero-shade { background: linear-gradient(180deg, rgba(5,24,52,.58), rgba(5,24,52,.34) 34%, rgba(5,24,52,.62) 68%, rgba(5,24,52,.94)); }
+  .pd-home .pd-hero-img, .pd-home .hero-cinema-layer { animation-duration: 46s; }
   .pd-home .hero-cta { gap: 8px; }
-  .pd-home .hero-cta a, .pd-home .hero .pd-btn { min-height: 48px; border-radius: 12px; font-size: .9rem; box-shadow: none; }
+  .pd-home .hero-cta a, .pd-home .hero .pd-btn { min-height: 46px; border-radius: 999px; font-size: .82rem; box-shadow: none; }
   .pd-home .hero .pd-btn { text-decoration: none; background: var(--pd-gold-soft); color: #07244d; }
+  .pd-home .pd-hero-live { bottom: 14px; }
   .pd-home .glass-card { margin: 24px 16px; }
   .pd-home .founder-card { padding: 24px 20px; margin-top: 24px; }
   .pd-home .founder-img-wrapper { width: 96px; height: 96px; border-width: 2px; box-shadow: none; }

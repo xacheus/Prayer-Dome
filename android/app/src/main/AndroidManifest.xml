@@ -35,7 +35,7 @@
                 android:resource="@color/colorAccent" />
             <meta-data
                 android:name="com.google.firebase.messaging.default_notification_channel_id"
-                android:value="prayer_dome_general" />
+                android:value="prayer_dome_general_v2" />
 
             <!-- Open canonical Prayer Dome HTTPS links in this native app.
                  Digital Asset Links currently verifies www.prayerdome.net;

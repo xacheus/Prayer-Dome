@@ -27,6 +27,10 @@
     "trailingSlash": false,
     "rewrites": [
       {
+        "source": "/share",
+        "destination": "/share-intake.html"
+      },
+      {
         "source": "/news/**",
         "function": "share"
       },

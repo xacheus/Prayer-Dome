@@ -402,6 +402,14 @@
                     <input type="range" id="vwScale" min="0.85" max="1.35" step="0.05" value="1">
                 </div>
                 <div class="vw-control">
+                    <label for="vwSize">Preview widget size</label>
+                    <select id="vwSize">
+                        <option value="compact">Small — 180×70dp</option>
+                        <option value="standard" selected>Standard — 250×110dp</option>
+                        <option value="roomy">Large — 460×280dp</option>
+                    </select>
+                </div>
+                <div class="vw-control">
                     <label for="vwSlot">Preview a time of day</label>
                     <select id="vwSlot">
                         <option value="now">Right now</option>
@@ -640,7 +648,8 @@
     function renderPreview() {
         var host = $('pdWidgetPreview');
         if (!host) return;
-        widget().renderCard(host, previewVerse(), state.prefs);
+        var size = $('vwSize') ? $('vwSize').value : 'standard';
+        widget().renderCard(host, previewVerse(), state.prefs, size);
     }
 
     /* ------------------------------------------------------ verse library */
@@ -947,6 +956,9 @@
             var el = $(id);
             if (el) el.addEventListener('change', savePreferences);
         });
+
+        var size = $('vwSize');
+        if (size) size.addEventListener('change', renderPreview);
 
         var slot = $('vwSlot');
         if (slot) {

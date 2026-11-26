@@ -151,16 +151,19 @@ t('the Android manifest declares the notification permission',
   androidManifest.includes('android.permission.POST_NOTIFICATIONS'));
 t('the Android manifest sets a branded status-bar notification icon',
   androidManifest.includes('default_notification_icon') && androidManifest.includes('ic_notification'));
-t('the app creates per-category Android notification channels',
-  app.includes('prayer_dome_general') && app.includes('createChannel'));
-t('foreground Android pushes are drawn natively through their channel',
-  app.includes('pushNotificationReceived') && app.includes('showNative'));
+t('the app creates per-category Android channels in branded and silent variants',
+  app.includes("CHANNEL_VERSION = 'v2'") && app.includes("CHANNEL_SOUND = 'pd_notification_chime'") &&
+  app.includes('channelDefinition(base, false)') && app.includes('channelDefinition(base, true)') &&
+  app.includes('createChannel'));
+t('foreground pushes land in the in-app centre without an unused local plugin',
+  app.includes('pushNotificationReceived') && !app.includes('LocalNotifications') &&
+  app.includes('notifications.push(item, { localOnly: true, silent: true })'));
 t('notification taps route to the page they belong to',
   app.includes('pushNotificationActionPerformed'));
 const pushFn = read('functions/index.js');
-t('background pushes use the same per-category channels as the app',
-  pushFn.includes('ANDROID_CHANNELS') && pushFn.includes("prayer_dome_general") &&
-  pushFn.includes("channelId: ANDROID_CHANNELS[normaliseKind(kind)]"));
+t('background pushes use the same versioned channels as the app',
+  pushFn.includes('ANDROID_CHANNELS') && pushFn.includes('prayer_dome_general_v2') &&
+  pushFn.includes("(ANDROID_CHANNELS[normaliseKind(kind)] || 'prayer_dome_general_v2') + (quiet ? '_quiet' : '')"));
 t('background pushes name the branded notification icon that exists',
   pushFn.includes("icon: 'ic_notification'"));
 

@@ -214,30 +214,38 @@
      * The markup mirrors android/app/src/main/res/layout/verse_widget.xml: the
      * greeting line, the Scripture, the reference and the brand credit.
      */
-    function renderCard(host, verse, prefs) {
+    function renderCard(host, verse, prefs, size) {
         var el = typeof host === 'string' ? document.querySelector(host) : host;
         if (!el) return null;
         var settings = normalise(prefs);
         var palette = theme(settings.theme);
         var data = verse || todaysVerse();
         var scale = settings.textScale;
+        // Android gives each placed widget a different size. The native card
+        // adapts its type and padding to those dimensions; the studio mirrors
+        // that behaviour so the preview is honest.
+        var base = size === 'compact' ? 13 : size === 'roomy' ? 17 : 15;
+        var refBase = size === 'compact' ? 10.5 : 12;
+        var padding = size === 'compact' ? 10 : size === 'roomy' ? 20 : 16;
+        var showBrand = settings.showBrand && !(size === 'compact' && String(data.slot || '') !== 'pinned');
 
         el.className = 'pd-vw-card';
         el.setAttribute('style',
             'background:' + palette.background + ';' +
-            'border:1.5px solid ' + palette.border + ';');
+            'border:1.5px solid ' + palette.border + ';' +
+            'padding:' + padding + 'px;');
         el.innerHTML =
             (settings.showGreeting
                 ? '<div class="pd-vw-greeting" style="color:' + palette.greeting + ';font-size:' + (11 * scale).toFixed(1) + 'px;">' +
                     esc(data.slotLabel === 'Pinned verse' ? 'Pinned verse' : (data.greeting || data.slotLabel)) + '</div>'
                 : '') +
-            '<div class="pd-vw-verse" style="color:' + palette.verse + ';font-size:' + (15 * scale).toFixed(1) + 'px;">' +
+            '<div class="pd-vw-verse" style="color:' + palette.verse + ';font-size:' + (base * scale).toFixed(1) + 'px;">' +
                 esc(data.text) + '</div>' +
             (settings.showReference
-                ? '<div class="pd-vw-ref" style="color:' + palette.reference + ';font-size:' + (12 * scale).toFixed(1) + 'px;">— ' +
+                ? '<div class="pd-vw-ref" style="color:' + palette.reference + ';font-size:' + (refBase * scale).toFixed(1) + 'px;">— ' +
                     esc(data.reference) + ' (NIV)</div>'
                 : '') +
-            (settings.showBrand
+            (showBrand
                 ? '<div class="pd-vw-brand" style="color:' + palette.brand + ';font-size:' + (9 * scale).toFixed(1) + 'px;">' +
                     '<img src="/assets/logo-192.png" alt="" width="16" height="16"> PRAYER DOME · PRAYERDOME.NET</div>'
                 : '');
