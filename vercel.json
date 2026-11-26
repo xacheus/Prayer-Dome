@@ -16,7 +16,7 @@
   },
   "functions": {
     "api/*.js": {
-      "includeFiles": "{assets/pd-academy-data.js,assets/pd-content-data.js,functions/brevo.js,functions/email-design.js,functions/share.js,functions/translate.js,sermons-data.js}",
+      "includeFiles": "{assets/pd-academy-data.js,assets/pd-content-data.js,assets/pd-radio-discovery.js,assets/pd-radio-announcements.js,functions/brevo.js,functions/email-design.js,functions/r2.js,functions/share.js,functions/translate.js,sermons-data.js}",
       "maxDuration": 10
     }
   },

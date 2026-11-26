@@ -450,14 +450,78 @@ service cloud.firestore {
     match /radioSchedule/{slotId} {
       allow read: if true;
       allow delete: if isAdmin();
+      // end <= start wraps past midnight (e.g. 20:30–05:00 night programme).
       allow write: if isAdmin() &&
         request.resource.data.start is int &&
         request.resource.data.start >= 0 &&
         request.resource.data.start < 1440 &&
         request.resource.data.end is int &&
-        request.resource.data.end > request.resource.data.start &&
+        request.resource.data.end >= 0 &&
         request.resource.data.end < 1440 &&
+        request.resource.data.start != request.resource.data.end &&
         request.resource.data.days is list;
+    }
+
+    // Editable programme definitions (override the built-in timetable).
+    // Public read so listeners can name the current programme; admin write.
+    match /radioProgrammes/{programmeId} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow write: if isAdmin() &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() > 0 &&
+        request.resource.data.title.size() <= 120;
+    }
+
+    // Music categories and artists are reference data for discovery and
+    // playlists. Public read; admin write. Audio itself lives in R2/Storage.
+    match /radioCategories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /radioArtists/{artistId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Generated AI announcements: text + cache key + R2 audio reference.
+    // Public read (listeners may fetch the cached audio URL); admin write.
+    // No audio binary is stored in Firestore.
+    match /radioAnnouncements/{announcementId} {
+      allow read: if true;
+      allow delete: if isAdmin();
+      allow write: if isAdmin() &&
+        request.resource.data.text is string &&
+        request.resource.data.text.size() > 0 &&
+        request.resource.data.text.size() <= 2000 &&
+        request.resource.data.personaId is string;
+    }
+
+    // Playback history: the listener engine appends one small document per
+    // track (best effort). Admins read it; nobody can edit or delete it
+    // from the browser except an administrator.
+    match /radioPlaybackHistory/{entryId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn() &&
+        request.resource.data.trackId is string &&
+        request.resource.data.trackId.size() > 0 &&
+        request.resource.data.trackId.size() <= 160 &&
+        request.resource.data.title is string &&
+        request.resource.data.title.size() <= 160;
+      allow update, delete: if isAdmin();
+    }
+
+    // Stream status projection (server-written, public read).
+    match /radioStreamStatus/{statusId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Activity log: server-written audit trail, admin read only.
+    match /radioActivityLogs/{entryId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
 
     match /radioSettings/{settingId} {

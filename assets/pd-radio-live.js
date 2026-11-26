@@ -94,6 +94,71 @@
     var badge = $('radioLiveBadge');
     if (badge) badge.hidden = !(live || (state.live && state.liveFallbackMode));
     document.body.classList.toggle('pd-radio-live', !!(live || (state.live && state.liveFallbackMode)));
+    updateTicker();
+  }
+
+  /* Continuous station ticker: programme · presenter · song · artist.
+   * The track is duplicated once for a seamless loop; CSS honours
+   * prefers-reduced-motion. It lives below the player, never over it. */
+  function tickerText() {
+    var parts = ['Prayer Dome Radio'];
+    if (state.live) {
+      parts.push('LIVE: ' + (state.live.programmeTitle || 'Presenter programme'));
+      if (state.live.presenterName) parts.push(state.live.presenterName);
+    } else if (state.slot && state.slot.title) {
+      parts.push(state.slot.title);
+    }
+    if (state.currentTrack) {
+      parts.push('Now playing: ' + (state.currentTrack.title || ''));
+      if (state.currentTrack.artist) parts.push(state.currentTrack.artist);
+    } else if (state.currentVoice) {
+      parts.push(state.currentVoice.voiceLabel || state.currentVoice.name || 'Announcement');
+    }
+    parts.push('A house of prayer for all nations');
+    return parts.filter(Boolean).join('  •  ');
+  }
+
+  function updateTicker() {
+    var track = $('radioTickerTrack');
+    if (!track) return;
+    var text = tickerText();
+    if (track.getAttribute('data-text') === text) return;
+    track.setAttribute('data-text', text);
+    var group = '<span class="radio-ticker-group">' + esc(text) + '</span>';
+    track.innerHTML = group + group;
+  }
+
+  /* Resolve a track's audio: direct URL first, then its R2 object through
+   * the public base URL or the /api/radio proxy. Broken tracks are skipped
+   * by playNext — they are never substituted with scraped audio. */
+  function audioUrlFor(row) {
+    if (!row) return '';
+    if (row.audioUrl) return row.audioUrl;
+    var key = row.r2Key || row.storageKey || '';
+    if (!key) return '';
+    var base = state.settings.r2PublicBaseUrl || '';
+    if (base) return String(base).replace(/\/$/, '') + '/' + String(key).split('/').map(encodeURIComponent).join('/');
+    return '/api/radio?op=r2-get&key=' + encodeURIComponent(key);
+  }
+
+  function announcementsEnabled() {
+    return state.settings.announcementsEnabled !== false && state.settings.aiVoicesEnabled !== false;
+  }
+
+  function logPlayback(track, slot) {
+    var fb = state.fb;
+    if (!fb || !track || !track.id) return;
+    try {
+      fb.setDoc(fb.doc(fb.db, 'radioPlaybackHistory', 'h-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)), {
+        trackId: track.id,
+        title: track.title || '',
+        artist: track.artist || '',
+        genre: track.genre || '',
+        programmeId: (slot && slot.programmeId) || '',
+        programmeTitle: (slot && slot.title) || '',
+        playedAt: fb.serverTimestamp()
+      }).catch(function () { /* history is best effort; audio comes first */ });
+    } catch (e) { /* never interrupt audio for history */ }
   }
   function updateToggle() {
     var toggle = $('radioMainToggle');
@@ -166,7 +231,11 @@
       state.playlists = reads[2].docs.map(function (entry) { return Object.assign({ id: entry.id }, entry.data()); })
         .filter(function (row) { return row.approved !== false; });
       state.schedule = reads[3].docs.map(function (entry) { return Object.assign({ id: entry.id }, entry.data()); })
-        .filter(function (row) { return row.enabled !== false && Number(row.end) > Number(row.start); })
+        .filter(function (row) {
+          // end <= start means the slot wraps past midnight (e.g. 20:30–05:00).
+          return row.enabled !== false && Number(row.start) >= 0 && Number(row.start) < 1440 &&
+            Number(row.end) >= 0 && Number(row.end) < 1440 && Number(row.start) !== Number(row.end);
+        })
         .sort(function (a, b) { return Number(a.start) - Number(b.start); });
       state.settings = reads[4].exists && reads[4].exists() ? (reads[4].data() || {}) : {};
       global.PD_RADIO_TIMETABLE = state.schedule;
@@ -215,7 +284,11 @@
         var slot = custom[i];
         var days = Array.isArray(slot.days) && slot.days.length ? slot.days : [0, 1, 2, 3, 4, 5, 6];
         if (days.indexOf(clock.weekday) === -1) continue;
-        if (clock.minutes < Number(slot.start) || clock.minutes >= Number(slot.end)) continue;
+        var start = Number(slot.start), end = Number(slot.end);
+        var inSlot = end > start
+          ? (clock.minutes >= start && clock.minutes < end)
+          : (clock.minutes >= start || clock.minutes < end);
+        if (!inSlot) continue;
         return Object.assign({}, slot, {
           programmeId: slot.programmeId || slot.id,
           type: slot.type || 'music',
@@ -354,6 +427,7 @@
     nowPlaying(track.title || 'Prayer Dome Radio', [track.artist, track.album, GENRE_LABEL[track.genre] || track.genre].filter(Boolean).join(' · '), false);
     setText('radioProgramme', (slot && slot.title) || 'Prayer Dome Radio');
     reportNowPlaying('automation', track, slot);
+    logPlayback(track, slot);
     updateToggle();
     try {
       if ('mediaSession' in navigator && global.MediaMetadata) {
@@ -363,7 +437,7 @@
         });
       }
     } catch (e) {}
-    await playOne(track.audioUrl, track.title || 'Prayer Dome Radio', {
+    await playOne(audioUrlFor(track), track.title || 'Prayer Dome Radio', {
       title: track.title, artist: track.artist, album: track.album, genre: track.genre, licence: track.licenseStatus
     });
   }
@@ -394,13 +468,85 @@
     setStatus('Announcement', 'playing');
     reportNowPlaying('announcement', voice, slot);
     try {
-      await playOne(voice.audioUrl, voice.voiceLabel || voice.name || 'Prayer Dome Radio', {
+      await playOne(audioUrlFor(voice), voice.voiceLabel || voice.name || 'Prayer Dome Radio', {
         title: voice.voiceLabel || voice.name, artist: voice.name, album: 'Recorded announcement'
       });
       return true;
     } catch (error) {
       return false;
     }
+  }
+
+  /* --- AI presenter announcements (free TTS, gated by the admin) -------- */
+  function aiAnnouncementText(slot, kind) {
+    var helper = global.PD_RADIO_ANNOUNCEMENTS;
+    if (!helper) return null;
+    var clock = lusakaClock();
+    var programme = slot || {};
+    if (global.PD_CONTENT && global.PD_CONTENT.RADIO_PROGRAMMES) {
+      var found = global.PD_CONTENT.RADIO_PROGRAMMES.filter(function (p) { return p.id === (slot && slot.programmeId); })[0];
+      if (found) programme = found;
+    }
+    var persona = helper.personaForProgramme(programme.id || (slot && slot.programmeId), slot && slot.personaId);
+    var text = helper.announcementText({
+      kind: kind || 'programme-intro',
+      programme: programme,
+      hour: Math.floor(clock.minutes / 60),
+      day: clock.weekday,
+      seed: Math.floor(clock.minutes / 60) * 7 + clock.weekday,
+      track: state.currentTrack
+    });
+    return { text: text, persona: persona, key: helper.cacheKey(text, persona.id) };
+  }
+
+  function speakWithBrowserVoice(text, personaId) {
+    return new Promise(function (resolve) {
+      try {
+        if (!('speechSynthesis' in window) || !window.SpeechSynthesisUtterance) return resolve(false);
+        var helper = global.PD_RADIO_ANNOUNCEMENTS;
+        var utterance = new window.SpeechSynthesisUtterance(text);
+        utterance.rate = 0.98;
+        utterance.pitch = 1;
+        var voices = window.speechSynthesis.getVoices ? window.speechSynthesis.getVoices() : [];
+        var voice = helper && typeof helper.pickBrowserVoice === 'function'
+          ? helper.pickBrowserVoice(voices, personaId) : (voices[0] || null);
+        if (voice) utterance.voice = voice;
+        var done = false;
+        var finish = function (ok) { if (!done) { done = true; resolve(ok); } };
+        utterance.onend = function () { finish(true); };
+        utterance.onerror = function () { finish(false); };
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+        setTimeout(function () { finish(true); }, Math.max(4000, text.length * 90));
+      } catch (e) { resolve(false); }
+    });
+  }
+
+  /* Order: cached Piper audio in R2 → browser TTS → silence (music only).
+   * A TTS failure never stops the broadcast. */
+  async function playAiAnnouncement(slot, kind) {
+    if (!announcementsEnabled()) return false;
+    var generated = aiAnnouncementText(slot, kind);
+    if (!generated || !generated.text) return false;
+    state.mode = 'automation';
+    state.playing = true;
+    nowPlaying((kind === 'station-id' ? 'Station identification' : (slot && slot.title) || 'Prayer Dome Radio'),
+      generated.persona.label + ' · AI presenter voice', false);
+    setStatus('Announcement', 'playing');
+    reportNowPlaying('announcement', { title: generated.text.slice(0, 80), artist: generated.persona.label }, slot);
+    var base = state.settings.r2PublicBaseUrl || '';
+    var cachedUrl = base
+      ? String(base).replace(/\/$/, '') + '/' + generated.key.split('/').map(encodeURIComponent).join('/')
+      : '/api/radio?op=r2-get&key=' + encodeURIComponent(generated.key);
+    try {
+      await playOne(cachedUrl, generated.persona.label + ' announcement', { title: 'Announcement', artist: generated.persona.label });
+      return true;
+    } catch (error) {
+      /* No cached Piper file yet — fall back to the free browser voice. */
+    }
+    if (!state.wantsPlay || state.live) return false;
+    var spoken = await speakWithBrowserVoice(generated.text, generated.persona.id);
+    return spoken;
   }
 
   async function playFallback(slot, reason) {
@@ -449,6 +595,7 @@
       if (changed && !force) {
         var intro = chooseVoice(slot, 'programme-intro');
         if (intro) await playAnnouncement(intro, slot, 'programme-intro');
+        else if (announcementsEnabled()) await playAiAnnouncement(slot, 'programme-intro');
         if (!state.wantsPlay || state.live) return;
       }
       if (!state.queue.length || force) state.queue = buildQueue(slot);
@@ -459,11 +606,14 @@
       }
       await playTrack(track, slot);
       if (!state.wantsPlay || state.live) return;
-      // A station identification is optional and only plays when a genuine
-      // human recording exists. It is never synthesised.
-      if (state.currentTrack && Math.random() < 0.18) {
+      // A station identification is optional: a human recording first, then
+      // the gated AI voice. Frequency is admin-controlled (default ~1 in 5).
+      var stationRate = Number(state.settings.announcementFrequency);
+      var stationChance = stationRate > 0 ? Math.min(0.5, 1 / stationRate) : 0.18;
+      if (state.currentTrack && Math.random() < stationChance) {
         var stationVoice = chooseVoice(slot, 'station-id');
         if (stationVoice) await playAnnouncement(stationVoice, slot, 'station-id');
+        else if (announcementsEnabled()) await playAiAnnouncement(slot, 'station-id');
       }
       state.transitioning = false;
       if (state.wantsPlay && !state.live) playNext(false);
@@ -1030,10 +1180,32 @@
     });
   }
 
+  function bindReconnect() {
+    var note = function () {
+      var el = $('radioReconnectNote');
+      if (!el) return;
+      if (!navigator.onLine) {
+        el.hidden = false;
+        el.textContent = 'You are offline. The radio will reconnect automatically when the connection returns.';
+      } else {
+        el.hidden = true;
+        el.textContent = '';
+      }
+    };
+    window.addEventListener('offline', note);
+    window.addEventListener('online', function () {
+      note();
+      if (state.wantsPlay && !state.live && !state.playing) playNext(true);
+    });
+    note();
+  }
+
   async function boot() {
     if (!$('radioNowPlaying')) return;
     bindPresenter();
     bindAudioEvents();
+    bindReconnect();
+    updateTicker();
     try {
       await loadLibrary();
     } catch (error) {

@@ -142,13 +142,114 @@ test('only approved, licensed tracks can enter the automation queue', () => {
   assert.match(radioLive, /fallbackUrl/);
 });
 
-test('recorded human announcements are selected per programme and never generated', () => {
+test('recorded human announcements still take priority over AI voices', () => {
   assert.match(radioLive, /chooseVoice\(slot, 'programme-intro'\)/);
   assert.match(radioLive, /voiceLabel \|\| voice\.name/);
   assert.match(radioLive, /recorded human announcement/);
-  assert.doesNotMatch(radioLive, /speechSynthesis|SpeechSynthesisUtterance|text-to-speech|tts/i);
   assert.match(admin, /Genuine human recordings only/);
   assert.match(rules, /request\.resource\.data\.humanRecorded == true/);
+  // A human recording is always tried first; the AI voice is the fallback.
+  assert.match(radioLive, /if \(intro\) await playAnnouncement\(intro, slot, 'programme-intro'\);\s*\n\s*else if \(announcementsEnabled\(\)\) await playAiAnnouncement/);
+});
+
+test('AI announcements are admin-gated, cached in R2 and never block the music', () => {
+  // The admin switch controls everything; off means silent automation only.
+  assert.match(radioLive, /function announcementsEnabled/);
+  assert.match(radioLive, /if \(!announcementsEnabled\(\)\) return false;/);
+  // Cached Piper audio from R2 is tried before any browser synthesis.
+  assert.match(radioLive, /radio\/announcements|cacheKey|generated\.key/);
+  assert.match(radioLive, /speakWithBrowserVoice/);
+  // A TTS failure resolves false and playNext continues with music.
+  assert.match(radioLive, /A TTS failure never stops the broadcast/);
+  const announcements = require('../assets/pd-radio-announcements.js');
+  assert.ok(announcements.PERSONAS.length >= 6, 'six presenter personas are required');
+  const genders = new Set(announcements.PERSONAS.map((p) => p.gender));
+  assert.ok(genders.has('female') && genders.has('male'), 'both male and female voices are required');
+  const text = announcements.announcementText({
+    kind: 'programme-intro',
+    programme: { title: 'Morning Prayer', description: 'morning prayer and Bible inspiration' },
+    hour: 7, day: 1, seed: 3
+  });
+  assert.ok(text.length > 40, 'announcements must be natural sentences');
+  assert.match(text, /Prayer Dome Radio/);
+  const other = announcements.announcementText({
+    kind: 'programme-intro',
+    programme: { title: 'Morning Prayer', description: 'morning prayer and Bible inspiration' },
+    hour: 7, day: 1, seed: 4
+  });
+  assert.notEqual(text, other, 'consecutive announcements must vary');
+  const key = announcements.cacheKey(text, 'warm-female');
+  assert.match(key, /^radio\/announcements\/warm-female\/[a-z0-9]+\.mp3$/);
+  assert.equal(key, announcements.cacheKey(text, 'warm-female'), 'cache keys must be deterministic for reuse');
+});
+
+test('music discovery only auto-approves verifiable free licences', () => {
+  const discovery = require('../assets/pd-radio-discovery.js');
+  assert.ok(Object.keys(discovery.CATEGORIES).length >= 11, 'all 11 music categories are required');
+  for (const id of ['african-gospel', 'zambian-gospel', 'south-african-gospel', 'nigerian-gospel',
+    'international-gospel', 'contemporary', 'traditional', 'praise', 'gospel-worship',
+    'instrumental-worship', 'inspirational']) {
+    assert.ok(discovery.CATEGORIES[id], `category ${id} is missing`);
+  }
+  assert.equal(discovery.isAutoApprovable('public domain'), true);
+  assert.equal(discovery.isAutoApprovable('CC0'), true);
+  assert.equal(discovery.isAutoApprovable('CC-BY-4.0'), true);
+  assert.equal(discovery.isAutoApprovable('CC-BY-NC-4.0'), false, 'non-commercial licences need review');
+  assert.equal(discovery.isAutoApprovable('CC-BY-ND-4.0'), false, 'no-derivatives licences need review');
+  assert.equal(discovery.isAutoApprovable('all rights reserved'), false);
+  assert.equal(discovery.isAutoApprovable(''), false, 'unknown rights are never auto-approved');
+  // No scraping of copyrighted platforms anywhere in the discovery engine.
+  const discoverySource = fs.readFileSync('assets/pd-radio-discovery.js', 'utf8');
+  assert.doesNotMatch(discoverySource, /youtube\.com|spotify\.com/i);
+  // The server mirror stays in sync with the browser module.
+  const mirror = fs.readFileSync('functions/discovery.js', 'utf8');
+  assert.ok(mirror.includes('GENERATED COPY'), 'functions/discovery.js must declare itself a mirror');
+  assert.ok(mirror.includes(discoverySource), 'run npm run sync:radio after editing assets/pd-radio-discovery.js');
+  assert.match(functionsRadio, /runDiscoverySync/);
+  assert.match(functionsRadio, /radioDiscoveryScheduler/);
+  assert.match(functionsIndex, /exports\.radioDiscoverySync = radioModule\.radioDiscoverySync/);
+});
+
+test('R2 access is server-side only with validated keys and no secrets in the client', () => {
+  const r2 = fs.readFileSync('functions/r2.js', 'utf8');
+  assert.match(r2, /R2_ACCESS_KEY_ID/);
+  assert.match(r2, /R2_SECRET_ACCESS_KEY/);
+  assert.match(r2, /radio\/music\//);
+  assert.match(r2, /radio\/announcements\//);
+  const api = fs.readFileSync('api/radio.js', 'utf8');
+  assert.match(api, /op=r2-upload|'r2-upload'/);
+  assert.match(api, /requireAdmin|RADIO_ADMIN_TOKEN/);
+  // Secrets must never reach the browser bundles.
+  for (const file of ['assets/pd-radio-live.js', 'assets/pd-radio-admin.js', 'assets/pd-radio-announcements.js', 'assets/pd-radio-discovery.js']) {
+    const source = fs.readFileSync(file, 'utf8');
+    assert.doesNotMatch(source, /R2_SECRET_ACCESS_KEY|R2_ACCESS_KEY_ID/, `${file} must not reference R2 credentials`);
+  }
+});
+
+test('playback history and the continuous ticker are wired in', () => {
+  assert.match(radioLive, /radioPlaybackHistory/);
+  assert.match(radioLive, /function logPlayback/);
+  assert.match(radioLive, /function updateTicker/);
+  assert.match(radio, /id="radioTickerTrack"/);
+  assert.match(radio, /prefers-reduced-motion/);
+  assert.match(rules, /match \/radioPlaybackHistory\/\{entryId\} \{/);
+  const indexes = JSON.parse(fs.readFileSync('firestore.indexes.json', 'utf8'));
+  assert.ok(indexes.indexes.some((row) => row.collectionGroup === 'radioPlaybackHistory'), 'playback history needs its index');
+});
+
+test('the self-hosted streaming stack and TTS service ship with honest limits documented', () => {
+  const compose = fs.readFileSync('radio/server/docker-compose.yml', 'utf8');
+  assert.match(compose, /icecast/i);
+  assert.match(compose, /liquidsoap/i);
+  assert.doesNotMatch(compose, /password\s*[:=]\s*['"]?[a-z0-9]{8}/i, 'no real passwords in the compose file');
+  const liq = fs.readFileSync('radio/server/station.liq', 'utf8');
+  assert.match(liq, /input\.harbor/);
+  assert.match(liq, /fallback/);
+  const serverDocs = fs.readFileSync('radio/server/README.md', 'utf8');
+  assert.match(serverDocs, /Vercel cannot host this/i);
+  const tts = fs.readFileSync('radio/tts/server.py', 'utf8');
+  assert.match(tts, /piper/i);
+  assert.doesNotMatch(tts, /api[_-]?key\s*=\s*['"][A-Za-z0-9]/, 'the TTS service must not embed API keys');
 });
 
 test('presenter requests, decisions and sessions are server-authoritative', () => {

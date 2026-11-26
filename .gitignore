@@ -51,3 +51,8 @@ __pycache__/
 scripts/new_live_js.js
 scripts/inject_live_js.py
 scripts/upgrade_live.py
+
+# Radio server: local audio mirrors synced from R2 (never committed)
+radio/server/music/
+radio/server/announcements/
+radio/server/fallback/

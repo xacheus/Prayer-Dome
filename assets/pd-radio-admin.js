@@ -13,7 +13,7 @@
     console.error('Radio admin module: PDAdmin bridge is missing.');
     return;
   }
-  const { collection, getDocs, getDoc, doc, setDoc, deleteDoc, writeBatch, serverTimestamp, query, where } = bridge.firestore;
+  const { collection, getDocs, getDoc, doc, setDoc, deleteDoc, writeBatch, serverTimestamp, query, where, orderBy, limit } = bridge.firestore;
   const Billing = window.PDBilling;
   const Scripts = window.PD_RADIO_SCRIPTS;
   const PROGRAMMES = (window.PD_CONTENT && window.PD_CONTENT.RADIO_PROGRAMMES) || [];
@@ -898,6 +898,11 @@
     if (fallback) fallback.value = (row && row.fallbackUrl) || '';
     const stream = $id('radioSettingStream');
     if (stream) stream.value = (row && row.streamUrl) || '';
+    const announcements = $id('radioSettingAnnouncements');
+    if (announcements) announcements.checked = row ? row.announcementsEnabled !== false : true;
+    const frequency = $id('radioSettingAnnouncementFrequency');
+    if (frequency) frequency.value = (row && row.announcementFrequency) || 5;
+    renderPersonas();
     fillPlaylistSelects();
     if (playlist) playlist.value = (row && row.defaultPlaylistId) || '';
   }
@@ -939,6 +944,170 @@
     }
   };
 
+  /* --- Automatic discovery, AI voices, R2 and history ------------------- */
+  let discovered = [];
+
+  function renderPersonas() {
+    const host = $id('radioAiPersonas');
+    if (!host) return;
+    const helper = window.PD_RADIO_ANNOUNCEMENTS;
+    const personas = (helper && helper.PERSONAS) || [];
+    host.innerHTML = personas.length ? personas.map(function (p) {
+      const programmes = PROGRAMMES.filter(function (row) { return row.personaId === p.id; })
+        .map(function (row) { return row.title; }).join(', ') || '—';
+      return '<tr><td><strong>' + esc(p.label) + '</strong></td><td>' + esc(p.gender) + '</td><td style="font-size:.72rem;">' + esc(p.piper) + '</td><td style="font-size:.72rem;">' + esc(programmes) + '</td></tr>';
+    }).join('') : '<tr><td colspan="4">Voice personas unavailable.</td></tr>';
+  }
+
+  window.radioAdminDiscover = async function () {
+    const category = $id('radioDiscoverCategory') ? $id('radioDiscoverCategory').value : 'gospel-worship';
+    const source = $id('radioDiscoverSource') ? $id('radioDiscoverSource').value : 'all';
+    const status = $id('radioDiscoverStatus');
+    const body = $id('radioDiscoverResults');
+    if (status) status.textContent = 'Searching free catalogues…';
+    try {
+      const response = await fetch('/api/radio?op=discover&category=' + encodeURIComponent(category) + '&source=' + encodeURIComponent(source) + '&rows=20');
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Discovery failed.');
+      discovered = data.tracks || [];
+      if (body) body.innerHTML = discovered.length ? discovered.map(function (row, index) {
+        return '<tr><td><input type="checkbox" class="radio-discover-check" value="' + index + '"' + (row.approved ? ' checked' : '') + '></td>' +
+          '<td><strong>' + esc(row.title) + '</strong></td><td>' + esc(row.artist) + '</td><td>' + esc(row.source) + '</td>' +
+          '<td style="font-size:.72rem;">' + esc(row.license || row.licenseStatus) + '</td>' +
+          '<td>' + (row.approved ? '<span class="badge badge-success">Auto-approved (PD/CC)</span>' : '<span class="badge badge-warning">Review required</span>') + '</td></tr>';
+      }).join('') : '<tr><td colspan="6">No eligible tracks found in the free catalogues.</td></tr>';
+      if (status) status.textContent = 'Found ' + discovered.length + ' track(s): ' + data.autoApprovable + ' auto-approved (public domain / CC), ' + data.reviewRequired + ' need review.' +
+        (data.sourceErrors && data.sourceErrors.length ? ' ' + data.sourceErrors.join(' ') : '');
+    } catch (error) {
+      if (status) status.textContent = 'Discovery could not run: ' + (error.message || 'unknown error') + '. The free catalogues may be unreachable right now; try again shortly.';
+    }
+  };
+
+  window.radioAdminImportDiscovered = async function () {
+    const checks = Array.from(document.querySelectorAll('.radio-discover-check:checked'));
+    if (!checks.length) return window.toast('Select at least one discovered track to import.', 'error');
+    if (window.showLoading) window.showLoading('Importing discovered music…');
+    let imported = 0;
+    try {
+      for (const check of checks) {
+        const row = discovered[Number(check.value)];
+        if (!row || !row.audioUrl) continue;
+        await setDoc(doc(collection(bridge.db, 'worshipSongs')), {
+          title: row.title.slice(0, 160), artist: row.artist.slice(0, 160), album: (row.album || '').slice(0, 160),
+          genre: row.genre, category: row.genre, audioUrl: row.audioUrl.slice(0, 600),
+          source: row.source, sourceUrl: (row.sourceUrl || '').slice(0, 400),
+          licenseStatus: row.licenseStatus, rights: row.license || row.licenseStatus,
+          rightsHolder: row.source, permissionConfirmed: row.permissionConfirmed === true,
+          approved: row.approved === true, durationSeconds: Number(row.durationSeconds || 0),
+          discoveredBy: row.discoveredBy || row.source, notes: (row.notes || '').slice(0, 600),
+          createdAt: serverTimestamp(), updatedAt: serverTimestamp()
+        });
+        imported += 1;
+      }
+      if (window.hideLoading) window.hideLoading();
+      window.toast(imported + ' track(s) imported to the gospel library. Auto-approved tracks join automation; review-required tracks stay unapproved.');
+      await loadTracks();
+    } catch (error) {
+      if (window.hideLoading) window.hideLoading();
+      window.toast(error.message || 'Import failed.', 'error');
+    }
+  };
+
+  window.radioAdminSaveAiSettings = async function (event) {
+    if (event && event.preventDefault) event.preventDefault();
+    const enabled = $id('radioSettingAnnouncements') ? $id('radioSettingAnnouncements').checked : true;
+    const frequency = Math.min(50, Math.max(2, Number($id('radioSettingAnnouncementFrequency') ? $id('radioSettingAnnouncementFrequency').value : 5) || 5));
+    try {
+      await setDoc(doc(bridge.db, 'radioSettings', 'main'), {
+        announcementsEnabled: enabled, aiVoicesEnabled: enabled, announcementFrequency: frequency,
+        updatedBy: who(), updatedAt: serverTimestamp()
+      }, { merge: true });
+      window.toast('AI voice settings saved. Announcements ' + (enabled ? 'enabled' : 'disabled') + '; station ID every ' + frequency + ' tracks.');
+      await loadSettings();
+    } catch (error) {
+      window.toast(error.message || 'Voice settings could not be saved.', 'error');
+    }
+  };
+
+  window.radioAdminPreviewAiVoice = async function () {
+    const personaId = $id('radioAiPreviewPersona') ? $id('radioAiPreviewPersona').value : 'warm-female';
+    const helper = window.PD_RADIO_ANNOUNCEMENTS;
+    if (!helper) return window.toast('Voice engine unavailable.', 'error');
+    const programme = PROGRAMMES[0] || { title: 'Morning Prayer', description: 'morning prayer and Bible inspiration' };
+    const text = helper.announcementText({ kind: 'programme-intro', programme: programme, hour: 7, day: 1, seed: 3 });
+    try {
+      const response = await fetch('/api/radio?op=announce&kind=programme-intro&programmeId=' + encodeURIComponent(programme.id || 'morning-prayer') + '&personaId=' + encodeURIComponent(personaId));
+      const data = await response.json();
+      const line = (data && data.text) || text;
+      const status = $id('radioAiStatus');
+      if (status) status.textContent = 'Preview (' + personaId + '): “' + line + '”' + (data && data.cachedAudioUrl ? ' Cached Piper audio: ' + data.cacheKey : ' (browser voice preview; Piper cache not generated yet.)');
+      if ('speechSynthesis' in window && window.SpeechSynthesisUtterance) {
+        const utterance = new window.SpeechSynthesisUtterance(line);
+        const voice = helper.pickBrowserVoice(window.speechSynthesis.getVoices(), personaId);
+        if (voice) utterance.voice = voice;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utterance);
+      }
+    } catch (error) {
+      window.toast(error.message || 'Voice preview failed.', 'error');
+    }
+  };
+
+  async function loadR2Status() {
+    const host = $id('radioR2Status');
+    if (!host) return;
+    try {
+      const response = await fetch('/api/radio?op=r2-status');
+      const data = await response.json();
+      const r2 = (data && data.r2) || {};
+      host.textContent = r2.configured
+        ? 'R2 connected · bucket ' + (r2.bucket || 'prayer-dome') + (r2.publicBaseConfigured ? ' · public playback enabled' : ' · playback via /api/radio proxy')
+        : 'R2 not configured yet — set R2 keys in Vercel (see docs/RADIO-24-7.md). Firebase Storage remains the fallback.';
+    } catch (error) {
+      host.textContent = 'R2 status unavailable.';
+    }
+  }
+
+  window.radioAdminUploadR2 = async function () {
+    const file = $id('radioR2File') && $id('radioR2File').files && $id('radioR2File').files[0];
+    const prefix = $id('radioR2Prefix') ? $id('radioR2Prefix').value : 'radio/music/';
+    const note = $id('radioR2Note');
+    if (!file) return window.toast('Choose an audio file first.', 'error');
+    if (!/^audio\//i.test(file.type || '')) return window.toast('Only audio files can be uploaded to R2.', 'error');
+    const key = prefix + Date.now().toString(36) + '-' + String(file.name || 'audio.mp3').replace(/[^a-zA-Z0-9._-]/g, '_');
+    if (window.showLoading) window.showLoading('Uploading to Cloudflare R2…');
+    try {
+      const token = bridge.auth && bridge.auth.currentUser ? await bridge.auth.currentUser.getIdToken() : '';
+      const response = await fetch('/api/radio?op=r2-upload', {
+        method: 'POST',
+        headers: { 'x-r2-key': key, 'x-r2-content-type': file.type || 'audio/mpeg', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+        body: file
+      });
+      const data = await response.json();
+      if (!data.success) throw new Error(data.error || 'R2 upload failed.');
+      if (window.hideLoading) window.hideLoading();
+      if (note) note.textContent = 'Uploaded to R2: ' + data.key + (data.publicUrl ? ' · ' + data.publicUrl : ' · play via /api/radio?op=r2-get');
+      window.toast('Audio uploaded to Cloudflare R2.');
+    } catch (error) {
+      if (window.hideLoading) window.hideLoading();
+      window.toast(error.message || 'R2 upload failed.', 'error');
+    }
+  };
+
+  async function loadHistory() {
+    const body = $id('radioAdminHistory');
+    if (!body) return;
+    try {
+      const snapshot = await getDocs(query(collection(bridge.db, 'radioPlaybackHistory'), orderBy('playedAt', 'desc'), limit(30)));
+      const rows = snapshot.docs.map(function (entry) { return Object.assign({ id: entry.id }, entry.data()); });
+      body.innerHTML = rows.length ? rows.map(function (row) {
+        return '<tr><td style="font-size:.72rem;">' + esc(lusaka(row.playedAt)) + '</td><td><strong>' + esc(row.title || '—') + '</strong></td><td>' + esc(row.artist || '—') + '</td><td>' + esc(row.programmeTitle || '—') + '</td></tr>';
+      }).join('') : '<tr><td colspan="4">No playback history yet. Play the station on /radio to record history.</td></tr>';
+    } catch (error) {
+      body.innerHTML = '<tr><td colspan="4">Playback history unavailable: ' + esc(error.message || 'unknown error') + '</td></tr>';
+    }
+  }
+
   window.loadRadioAdmin = async function () {
     if (!$id('view-radio')) return;
     try {
@@ -958,6 +1127,7 @@
     await loadPlaylists();
     await loadSchedule();
     await loadSettings();
+    await Promise.allSettled([loadR2Status(), loadHistory()]);
   };
 
   // Fill programme choices as soon as the console opens, even before the radio

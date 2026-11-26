@@ -30,6 +30,8 @@ functions/*
 !functions/share.js
 !functions/brevo.js
 !functions/translate.js
+!functions/email-design.js
+!functions/r2.js
 
 # Only the public-bundle builder and the postinstall hook are needed during
 # the Vercel build. Vercel still runs `npm install` for the deployment even

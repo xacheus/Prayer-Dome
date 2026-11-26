@@ -1084,6 +1084,8 @@
     <script src="/assets/pd-motion.js" defer></script>
     <script src="/assets/pd-content-data.js" defer></script>
 <script src="/assets/pd-radio-scripts.js" defer></script>
+    <script src="/assets/pd-radio-announcements.js" defer></script>
+    <script src="/assets/pd-radio-discovery.js" defer></script>
     <script src="/assets/pd-verse-data.js" defer></script>
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-team-store.js" defer></script>
@@ -2081,6 +2083,61 @@
                         <label>Station stream URL<input class="form-control" id="radioSettingStream" placeholder="Optional licensed station stream" maxlength="600"></label>
                         <div style="grid-column:1/-1;"><button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save automation settings</button><span style="font-size:.72rem;color:var(--text-sub);margin-left:8px;">Secrets are never stored here. Use only public stream URLs or permissioned recordings.</span></div>
                     </form>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-search"></i> Automatic music discovery</h3><span style="font-size:.7rem;color:var(--text-sub);">Free catalogues only: Internet Archive + Wikimedia Commons (public domain / CC). Jamendo needs review.</span></div>
+                    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+                        <label>Category<select class="form-control" id="radioDiscoverCategory">
+                            <option value="african-gospel">African gospel</option><option value="zambian-gospel">Zambian gospel</option>
+                            <option value="south-african-gospel">South African gospel</option><option value="nigerian-gospel">Nigerian gospel</option>
+                            <option value="international-gospel">International gospel</option><option value="contemporary">Contemporary Christian music</option>
+                            <option value="traditional">Traditional gospel</option><option value="praise">Gospel praise</option>
+                            <option value="gospel-worship">Gospel worship</option><option value="instrumental-worship">Instrumental worship</option>
+                            <option value="inspirational">Christian inspirational music</option>
+                        </select></label>
+                        <label>Source<select class="form-control" id="radioDiscoverSource"><option value="all">All free sources</option><option value="archive">Internet Archive</option><option value="commons">Wikimedia Commons</option><option value="jamendo">Jamendo (review)</option></select></label>
+                        <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
+                            <button class="btn btn-primary" type="button" onclick="radioAdminDiscover()"><i class="pd-i pd-i-search"></i> Discover music</button>
+                            <button class="btn btn-outline" type="button" onclick="radioAdminImportDiscovered()"><i class="pd-i pd-i-download"></i> Import selected</button>
+                        </div>
+                        <p id="radioDiscoverStatus" style="grid-column:1/-1;font-size:.75rem;color:var(--text-sub);margin:0;">Discovery searches free catalogues automatically. Public-domain / CC tracks are approved on import; everything else stays unapproved until you review it. Broken audio is skipped by the player.</p>
+                    </div>
+                    <div class="table-responsive"><table><thead><tr><th></th><th>Title</th><th>Artist</th><th>Source</th><th>Licence</th><th>Broadcast</th></tr></thead><tbody id="radioDiscoverResults"><tr><td colspan="6">No discovery results yet.</td></tr></tbody></table></div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-mic"></i> AI presenter voices</h3><span style="font-size:.7rem;color:var(--text-sub);">Free Piper TTS (cached in R2) with browser-voice fallback. Music continues if TTS is unavailable.</span></div>
+                    <form onsubmit="radioAdminSaveAiSettings(event)" style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                        <label style="display:flex;align-items:center;gap:8px;margin-top:22px;"><input type="checkbox" id="radioSettingAnnouncements"> AI announcements enabled</label>
+                        <label>Station ID every N tracks<input class="form-control" id="radioSettingAnnouncementFrequency" type="number" min="2" max="50" value="5"></label>
+                        <label>Preview persona<select class="form-control" id="radioAiPreviewPersona">
+                            <option value="warm-female">Warm female</option><option value="energetic-male">Energetic male</option>
+                            <option value="friendly-female">Friendly female</option><option value="calm-male">Calm male</option>
+                            <option value="gentle-female">Gentle female</option><option value="deep-male">Deep male</option>
+                        </select></label>
+                        <div style="display:flex;gap:8px;align-items:end;flex-wrap:wrap;">
+                            <button class="btn btn-primary" type="submit"><i class="pd-i pd-i-save"></i> Save voice settings</button>
+                            <button class="btn btn-outline" type="button" onclick="radioAdminPreviewAiVoice()"><i class="pd-i pd-i-play"></i> Preview voice</button>
+                        </div>
+                        <p id="radioAiStatus" style="grid-column:1/-1;font-size:.75rem;color:var(--text-sub);margin:0;">Assign a persona to each programme in the timetable editor (Voice column). Generated audio is cached by text + voice, so it is generated once and reused.</p>
+                    </form>
+                    <div class="table-responsive"><table><thead><tr><th>Persona</th><th>Voice</th><th>Piper model</th><th>Programmes</th></tr></thead><tbody id="radioAiPersonas"><tr><td colspan="4">Loading personas…</td></tr></tbody></table></div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-database"></i> Cloudflare R2 storage</h3><span id="radioR2Status" style="font-size:.7rem;color:var(--text-sub);">Checking R2…</span></div>
+                    <div style="padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+                        <label>Upload to R2 (admin)<input class="form-control" id="radioR2File" type="file" accept="audio/*"></label>
+                        <label>Folder<select class="form-control" id="radioR2Prefix"><option value="radio/music/">radio/music/</option><option value="radio/announcements/">radio/announcements/</option><option value="radio/sermons/">radio/sermons/</option><option value="radio/bible-readings/">radio/bible-readings/</option><option value="radio/prayers/">radio/prayers/</option><option value="radio/archives/">radio/archives/</option></select></label>
+                        <div style="display:flex;gap:8px;align-items:end;"><button class="btn btn-primary" type="button" onclick="radioAdminUploadR2()"><i class="pd-i pd-i-upload"></i> Upload to R2</button></div>
+                        <p id="radioR2Note" style="grid-column:1/-1;font-size:.75rem;color:var(--text-sub);margin:0;">R2 keys are configured in Vercel (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY) and never appear in this page. Without R2, uploads use Firebase Storage as before.</p>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-clock"></i> Playback history</h3><span style="font-size:.7rem;color:var(--text-sub);">Most recent automation plays (best effort).</span></div>
+                    <div class="table-responsive"><table><thead><tr><th>Time</th><th>Track</th><th>Artist</th><th>Programme</th></tr></thead><tbody id="radioAdminHistory"><tr><td colspan="4">No playback history yet.</td></tr></tbody></table></div>
                 </div>
             </div>
 

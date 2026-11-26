@@ -90,7 +90,7 @@ try {
 // v53 — the manifest now records home-screen launches and the app shell only
 // treats a real standalone/fullscreen launch as installed. A new cache name
 // retires the old shell so the corrected launch and email-admin assets load.
-const CACHE_NAME = 'prayer-dome-v55';
+const CACHE_NAME = 'prayer-dome-v56';
 
 // Shell assets worth having available offline.
 const PRECACHE = [
@@ -198,6 +198,8 @@ const PRECACHE = [
     '/assets/pd-radio-scripts.js',
     '/assets/pd-radio-admin.js',
     '/assets/pd-radio-live.js',
+    '/assets/pd-radio-announcements.js',
+    '/assets/pd-radio-discovery.js',
     '/assets/hero-worship.jpg',
     '/assets/hero-prayer.jpg',
     '/assets/testimonies/hero-praise.jpg',

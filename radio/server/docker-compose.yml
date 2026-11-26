@@ -1,0 +1,52 @@
+# Prayer Dome Radio — self-hosted 24/7 streaming stack (free, open source)
+# ---------------------------------------------------------------------------
+# Icecast (the public stream server) + Liquidsoap (the AutoDJ) in two small
+# containers. Runs on any machine with Docker: a church PC that stays on, a
+# free Oracle Cloud "Always Free" VM, or any VPS you already have.
+#
+# Vercel CANNOT run this — serverless functions stop after each request, so a
+# permanent stream server must live on a real machine. Until one is available,
+# the website's listener-side automation (assets/pd-radio-live.js) IS the
+# radio: every listener's browser plays the same scheduled programmes.
+#
+# Usage:
+#   1. cp .env.example .env            (then set strong passwords)
+#   2. docker compose up -d
+#   3. Set the public stream URL in Admin → Radio Studio → Station stream URL:
+#      http://YOUR_HOST:8000/prayerdome
+#
+# Zero budget: both images are free and open source. The only requirement is
+# a machine that stays on — which no provider gives away with a guaranteed
+# 24/7 SLA. See docs/RADIO-24-7.md for the honest options.
+
+services:
+  icecast:
+    image: libretime/icecast:2.4.4
+    container_name: pd-radio-icecast
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD}
+      - ICECAST_ADMIN_PASSWORD=${ICECAST_ADMIN_PASSWORD}
+      - ICECAST_RELAY_PASSWORD=${ICECAST_RELAY_PASSWORD}
+      - ICECAST_HOSTNAME=${ICECAST_HOSTNAME:-localhost}
+      - ICECAST_MAX_CLIENTS=250
+      - ICECAST_MAX_SOURCES=3
+
+  liquidsoap:
+    image: savonet/liquidsoap:v2.2.5
+    container_name: pd-radio-liquidsoap
+    restart: unless-stopped
+    depends_on:
+      - icecast
+    command: ["liquidsoap", "/radio/station.liq"]
+    environment:
+      - ICECAST_SOURCE_PASSWORD=${ICECAST_SOURCE_PASSWORD}
+      - PD_API_BASE=${PD_API_BASE:-https://prayerdome.net}
+      - PD_RADIO_TOKEN=${PD_RADIO_TOKEN}
+    volumes:
+      - ./station.liq:/radio/station.liq:ro
+      - ./music:/radio/music:ro
+      - ./announcements:/radio/announcements:ro
+      - ./fallback:/radio/fallback:ro
