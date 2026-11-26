@@ -90,7 +90,7 @@ try {
 // v53 — the manifest now records home-screen launches and the app shell only
 // treats a real standalone/fullscreen launch as installed. A new cache name
 // retires the old shell so the corrected launch and email-admin assets load.
-const CACHE_NAME = 'prayer-dome-v55';
+const CACHE_NAME = 'prayer-dome-v56';
 
 // Shell assets worth having available offline.
 const PRECACHE = [

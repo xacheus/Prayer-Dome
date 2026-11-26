@@ -939,8 +939,42 @@
     }
   };
 
+  async function loadInfrastructure() {
+    const summary = $id('radioInfraSummary');
+    const groups = $id('radioInfraGroups');
+    const checked = $id('radioInfraChecked');
+    if (!summary || !groups) return;
+    try {
+      const response = await fetch('/api/radio?view=status', { cache: 'no-store', headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error('Status endpoint returned ' + response.status + '.');
+      const payload = await response.json();
+      const infrastructure = payload.infrastructure || {};
+      const items = Array.isArray(infrastructure.groups) ? infrastructure.groups : [];
+      const ready = items.filter((item) => item.ready).length;
+      summary.innerHTML = infrastructure.ready
+        ? '<span class="badge badge-success">Configured</span> All required environment names are present. This is not a connection test: confirm each service with a real connection and playback test before claiming the station is live.'
+        : '<span class="badge badge-warning">Not ready</span> ' + esc(String(ready)) + ' of ' + esc(String(items.length)) + ' infrastructure groups are configured. The station cannot honestly claim 24/7 automation until the missing items below are provisioned.';
+      groups.innerHTML = items.map((item) => {
+        const missing = (item.missing || []).map((name) => '<code>' + esc(name) + '</code>').join(', ');
+        const notes = (item.notes || []).map((note) => '<div style="font-size:.7rem;color:var(--text-sub);margin-top:4px;">' + esc(note) + '</div>').join('');
+        return '<div style="border:1px solid var(--border-color);border-radius:10px;padding:9px 11px;background:var(--bg-card);">' +
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"><strong style="font-size:.8rem;">' + esc(item.label) + '</strong>' +
+          (item.ready ? '<span class="badge badge-success">Names present</span>' : '<span class="badge badge-warning">Missing</span>') + '</div>' +
+          (missing ? '<div style="font-size:.72rem;margin-top:5px;">Missing: ' + missing + '</div>' : '') +
+          notes + '</div>';
+      }).join('');
+      if (checked) checked.textContent = 'Checked ' + (infrastructure.checkedAt ? lusaka(infrastructure.checkedAt) : 'just now');
+    } catch (error) {
+      summary.innerHTML = '<span class="badge badge-danger">Status unavailable</span> ' + esc(error.message || 'The deployment status endpoint could not be reached.');
+      groups.innerHTML = '';
+      if (checked) checked.textContent = 'Check failed';
+    }
+  }
+  window.loadRadioInfrastructure = loadInfrastructure;
+
   window.loadRadioAdmin = async function () {
     if (!$id('view-radio')) return;
+    loadInfrastructure().catch(() => {});
     try {
       const health = (await callRadio('radioAdminHealth')).data || {};
       renderHealth(health);

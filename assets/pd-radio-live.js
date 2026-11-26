@@ -40,7 +40,8 @@
     currentVoice: null, wantsPlay: false, playing: false, mode: 'idle',
     live: null, liveSessionId: '', livePc: null, liveUnsubs: [], joiningLive: false,
     liveFailed: false, liveFallbackMode: false, queue: [], recentTracks: [], recentVoices: [], transitioning: false,
-    cancelPlay: null, errorCount: 0, lastNowKey: ''
+    cancelPlay: null, errorCount: 0, lastNowKey: '',
+    nowTitle: '', nowMeta: '', nowLive: false
   };
   var presenter = {
     user: null, status: null, active: null, stream: null, pcs: [], unsubs: [],
@@ -89,11 +90,54 @@
     node.classList.toggle('is-error', !!isError);
   }
   function nowPlaying(title, meta, live) {
-    setText('radioNowTitle', title || 'Prayer Dome Radio');
-    setText('radioNowMeta', meta || '');
+    state.nowTitle = title || 'Prayer Dome Radio';
+    state.nowMeta = meta || '';
+    state.nowLive = !!(live || (state.live && state.liveFallbackMode));
+    setText('radioNowTitle', state.nowTitle);
+    setText('radioNowMeta', state.nowMeta);
     var badge = $('radioLiveBadge');
-    if (badge) badge.hidden = !(live || (state.live && state.liveFallbackMode));
-    document.body.classList.toggle('pd-radio-live', !!(live || (state.live && state.liveFallbackMode)));
+    if (badge) badge.hidden = !state.nowLive;
+    document.body.classList.toggle('pd-radio-live', state.nowLive);
+    updateTicker();
+  }
+
+  /**
+   * A continuously moving station ticker. It is a real reflection of the
+   * current programme/Now Playing/LIVE state, not a second decorative strip
+   * that disappears after a few seconds. The text is repeated once so the
+   * marquee can loop without a gap, and `prefers-reduced-motion` turns it into
+   * a static, readable line.
+   */
+  function updateTicker() {
+    var track = $('radioTickerTrack');
+    if (!track) return;
+    var parts = [];
+    function add(value) {
+      var text = String(value == null ? '' : value).trim();
+      if (text && parts.indexOf(text) === -1) parts.push(text);
+    }
+    add('Prayer Dome Radio');
+    var slot = state.slot || slotForNow();
+    if (slot && slot.title) add(slot.title);
+    if (state.live && state.live.status === 'live') {
+      add('LIVE');
+      if (state.live.presenterName) add('with ' + state.live.presenterName);
+      if (state.live.programmeTitle) add(state.live.programmeTitle);
+    } else if (state.currentTrack) {
+      add(state.currentTrack.title);
+      if (state.currentTrack.artist) add(state.currentTrack.artist);
+    } else if (state.nowTitle) {
+      add(state.nowTitle);
+      if (state.nowMeta) add(state.nowMeta);
+    }
+    if (state.currentVoice) add((state.currentVoice.voiceLabel || state.currentVoice.name || 'Announcement'));
+    if (state.settings && state.settings.stationTagline) add(state.settings.stationTagline);
+    add('Africa/Lusaka');
+    var text = parts.join(' • ');
+    if (track.getAttribute('data-ticker-text') === text) return;
+    track.setAttribute('data-ticker-text', text);
+    track.setAttribute('aria-label', text);
+    track.innerHTML = '<span>' + esc(text) + '</span><span aria-hidden="true">' + esc(text) + '</span>';
   }
   function updateToggle() {
     var toggle = $('radioMainToggle');
@@ -175,6 +219,7 @@
       try { state.recentVoices = JSON.parse(localStorage.getItem('pd_radio_recent_voices') || '[]'); } catch (e) { state.recentVoices = []; }
       state.ready = true;
       updateReadyUI();
+      updateTicker();
       return state;
     })().finally(function () { state.loading = null; });
     return state.loading;
@@ -345,6 +390,7 @@
 
   async function playTrack(track, slot) {
     state.currentTrack = track;
+    state.currentVoice = null;
     state.mode = 'automation';
     state.playing = true;
     remember('track', track.id, 12);
@@ -417,6 +463,7 @@
     state.mode = 'automation';
     state.playing = true;
     state.currentTrack = null;
+    state.currentVoice = null;
     setStatus('Fallback audio', 'playing');
     setNote('The scheduled playlist is unavailable. A licensed fallback is playing instead.', false);
     nowPlaying('Fallback audio', 'Licensed fallback for Prayer Dome Radio', false);
@@ -573,7 +620,9 @@
     state.live = null;
     state.liveSessionId = '';
     state.liveFallbackMode = false;
+    state.nowLive = false;
     state.transitioning = false;
+    updateTicker();
     if (state.mode === 'live') state.mode = state.wantsPlay ? 'automation' : 'idle';
     var badge = $('radioLiveBadge');
     if (badge) badge.hidden = true;
@@ -601,6 +650,10 @@
     setNote('Joining the approved presenter on the same station player. Automation resumes automatically when the session ends.', false);
     setText('radioNowTitle', live.programmeTitle || 'Prayer Dome Radio');
     setText('radioNowMeta', (live.presenterName || 'Presenter') + ' · connecting live audio…');
+    state.nowTitle = live.programmeTitle || 'Prayer Dome Radio';
+    state.nowMeta = (live.presenterName || 'Presenter') + ' · connecting live audio…';
+    state.nowLive = true;
+    updateTicker();
     var badge = $('radioLiveBadge');
     if (badge) badge.hidden = false;
     document.body.classList.add('pd-radio-live');
@@ -1046,6 +1099,7 @@
     });
     refreshPresenter();
     setInterval(function () {
+      updateTicker();
       if (!state.wantsPlay || state.live) return;
       var slot = slotForNow();
       if (slot && state.slot && slot.id !== state.slot.id) {

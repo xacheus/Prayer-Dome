@@ -194,8 +194,13 @@
         .nav-link i { font-size: 1.15rem; }
         .nav-link.active, .nav-link:hover { color: var(--accent-green); }
         .ticker-bar { background: linear-gradient(90deg, var(--accent-green), #0a3d7a); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: 1px; padding: 7px 10px; text-align: center; white-space: nowrap; overflow: hidden; }
-        .ticker-bar .ticker-track { display: inline-block; animation: ticker 30s linear infinite; padding-left: 100%; }
-        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .ticker-bar .ticker-track { display: inline-flex; white-space: nowrap; animation: ticker 42s linear infinite; will-change: transform; }
+        .ticker-bar .ticker-track span { display: inline-block; padding-right: 42px; }
+        @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) {
+            .ticker-bar .ticker-track { animation: none; padding-left: 0; justify-content: center; width: 100%; }
+            .ticker-bar .ticker-track span[aria-hidden="true"] { display: none; }
+        }
         /* ---- Radio welcome & player ---- */
         .radio-hero {
             margin: 10px 20px 0; padding: clamp(18px, 3.5vw, 30px);
@@ -509,7 +514,7 @@
 <div class="bottom-ui-system">
     <nav class="nav-bar pd-nav-bar" aria-label="Primary navigation"><a class="nav-link pd-nav-link" href="/" data-pd-nav="/"><i class="pd-i pd-i-house" aria-hidden="true"></i><span data-pd-t="nav.home">Home</span></a><a class="nav-link pd-nav-link" href="/bible" data-pd-nav="/bible"><i class="pd-i pd-i-book-open" aria-hidden="true"></i><span data-pd-t="nav.bible">Bible</span></a><a class="nav-link pd-nav-link" href="/lessons" data-pd-nav="/lessons"><i class="pd-i pd-i-graduation-cap" aria-hidden="true"></i><span data-pd-t="nav.teaching">Learn</span></a><a class="nav-link pd-nav-link" href="/game" data-pd-nav="/game"><i class="pd-i pd-i-gamepad-2" aria-hidden="true"></i><span>Play</span></a><a class="nav-link pd-nav-link" href="/prayer" data-pd-nav="/prayer"><i class="pd-i pd-i-hands-praying" aria-hidden="true"></i><span data-pd-t="nav.pray">Pray</span></a><a class="nav-link pd-nav-link" href="/account" data-pd-nav="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i><span data-pd-t="nav.account">Account</span></a></nav>
 
-    <div class="ticker-bar"><div class="ticker-track">“A HOUSE OF PRAYER FOR ALL NATIONS” • <i class="pd-i pd-i-latin-cross"></i> “HE DOES EVERYTHING BLAMELESSLY” — MARK 7:37 • <i class="pd-i pd-i-earth"></i> WORSHIP ANYTIME, ANYWHERE</div></div>
+    <div class="ticker-bar" aria-label="Prayer Dome Radio station ticker"><div class="ticker-track" id="radioTickerTrack"><span>Prayer Dome Radio • Connecting to the station…</span><span aria-hidden="true">Prayer Dome Radio • Connecting to the station…</span></div></div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>

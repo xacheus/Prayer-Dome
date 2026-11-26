@@ -1962,6 +1962,13 @@
                     </div>
                 </div>
 
+                <div class="panel-card" id="radioInfrastructurePanel" style="margin-bottom:16px;">
+                    <div class="panel-header"><h3><i class="pd-i pd-i-server"></i> Broadcast infrastructure</h3><span id="radioInfraChecked" style="font-size:.7rem;color:var(--text-sub);">Checking configuration…</span></div>
+                    <div id="radioInfraSummary" style="padding:0 16px 8px;font-size:.82rem;">Checking the server environment…</div>
+                    <div id="radioInfraGroups" style="display:grid;gap:8px;padding:0 16px 12px;"></div>
+                    <p style="padding:0 16px 16px;margin:0;font-size:.7rem;line-height:1.55;color:var(--text-sub);">This checks which server environment names exist. It never receives a secret value and it is not a connection test: a configured name can still be unreachable. TiDB, R2, AzuraCast, the approved voice provider and a licensed discovery source must all be provisioned before a 24/7 launch is claimed.</p>
+                </div>
+
                 <div class="panel-card" style="margin-bottom:16px;">
                     <div class="panel-header"><h3><i class="pd-i pd-i-mic"></i> Presenter requests</h3><span style="font-size:.7rem;color:var(--text-sub);">Approval is the only way to receive live controls.</span></div>
                     <div class="table-responsive">

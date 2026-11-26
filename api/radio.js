@@ -12,6 +12,7 @@ const CONTENT = (typeof window !== 'undefined' && window.PD_CONTENT)
   : require('../assets/pd-content-data.js');
 const DEFAULT_RADIO = Array.isArray(CONTENT.DEFAULT_RADIO) ? CONTENT.DEFAULT_RADIO : [];
 const DEFAULT_PODCASTS = Array.isArray(CONTENT.DEFAULT_PODCASTS) ? CONTENT.DEFAULT_PODCASTS : [];
+const { readRadioConfig } = require('../server/radio/config.js');
 
 function getRadio() {
   if (typeof window === 'undefined') return DEFAULT_RADIO;
@@ -53,16 +54,22 @@ function serializePodcast(item) {
   };
 }
 
-function send(res, status, payload, method) {
+function send(res, status, payload, method, privateResponse) {
   const body = JSON.stringify(payload, null, 2);
   if (!res) return body;
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', status === 200
-    ? 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600'
-    : 'no-store');
+  res.setHeader('Cache-Control', privateResponse || status !== 200
+    ? 'no-store'
+    : 'public, max-age=0, s-maxage=300, stale-while-revalidate=3600');
   if (method === 'HEAD') return res.end();
   return res.end(body);
+}
+
+function queryOf(req) {
+  if (req && req.query && typeof req.query === 'object') return req.query;
+  try { return Object.fromEntries(new URL(req.url || '/', 'http://preview').searchParams); }
+  catch (error) { return {}; }
 }
 
 function handler(req, res) {
@@ -70,6 +77,17 @@ function handler(req, res) {
   if (method !== 'GET' && method !== 'HEAD') {
     if (res && res.setHeader) res.setHeader('Allow', 'GET, HEAD');
     return send(res, 405, { success: false, error: 'Method not allowed' }, method);
+  }
+
+  const query = queryOf(req);
+  if (query.view === 'status') {
+    // Environment names only. No credential, connection string or secret value
+    // is sent to the browser, and this is not a broadcast-health claim.
+    return send(res, 200, {
+      success: true,
+      view: 'status',
+      infrastructure: readRadioConfig(process.env)
+    }, method, true);
   }
 
   const radio = getRadio().map(serializeRadio);
