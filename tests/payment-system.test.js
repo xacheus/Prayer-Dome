@@ -452,7 +452,9 @@ test('support and admin pages no longer call a Google Cloud Function for money',
     rule.destination === '/api/system?op=billing'));
   assert.ok(vercel.rewrites.some((rule) => rule.source === '/api/payment-webhook' &&
     rule.destination === '/api/system?op=payment-webhook'));
-  assert.match(vercel.functions['api/*.js'].includeFiles, /functions\/billing\.js/);
+  assert.match(vercel.functions['api/*.js'].includeFiles, /functions\/billing\*\.js/);
+  assert.ok(vercel.functions['api/*.js'].includeFiles.length <= 256,
+    'Vercel rejects includeFiles patterns longer than 256 characters');
   const files = fs.readdirSync(path.join(ROOT, 'api')).filter((name) => name.endsWith('.js'));
   assert.ok(files.length <= 12, 'Vercel Hobby deployments allow 12 serverless functions');
 });

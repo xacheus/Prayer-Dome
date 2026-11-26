@@ -57,7 +57,8 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
     config.functions && config.functions['api/*.js'] &&
     config.functions['api/*.js'].maxDuration === 20 &&
     config.functions['api/*.js'].includeFiles.includes('pd-content-data.js') &&
-    config.functions['api/*.js'].includeFiles.includes('functions/billing.js'));
+    config.functions['api/*.js'].includeFiles.includes('functions/billing*.js') &&
+    config.functions['api/*.js'].includeFiles.length <= 256);
 
   const apiFunctions = fs.readdirSync(path.join(ROOT, 'api')).filter(name => name.endsWith('.js'));
   test('the API stays within the 12-function Hobby plan limit',
