@@ -48,8 +48,7 @@ const MODULE_SOURCE = (() => {
     [/^\s*import \{([^}]+)\} from "[^"]*firebase-app\.js";/m, 'const {$1} = window.__fb.app;'],
     [/^\s*import \{([^}]+)\} from "[^"]*firebase-firestore\.js";/m, 'const {$1} = window.__fb.firestore;'],
     [/^\s*import \{([^}]+)\} from "[^"]*firebase-auth\.js";/m, 'const {$1} = window.__fb.auth;'],
-    [/^\s*import \{([^}]+)\} from "[^"]*firebase-functions\.js";/m, 'const {$1} = window.__fb.functions;'],
-    [/^\s*import \{ getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject \} from "[^"]*firebase-storage\.js";/m, 'const { getStorage, ref: storageRef, uploadBytesResumable, getDownloadURL, deleteObject } = window.__fb.storage;']
+    [/^\s*import \{([^}]+)\} from "[^"]*firebase-functions\.js";/m, 'const {$1} = window.__fb.functions;']
   ];
   let transformed = code;
   for (const [pattern, replacement] of replacements) {
@@ -164,14 +163,7 @@ async function bootConsole(options = {}) {
       browserLocalPersistence: 'local',
       signOut: () => { calls.signedOut += 1; return Promise.resolve(); }
     },
-    functions: { getFunctions: () => ({}), httpsCallable: () => (() => Promise.resolve({ data: {} })) },
-    storage: {
-      getStorage: () => ({}),
-      ref: (storage, path) => ({ storage, path }),
-      uploadBytesResumable: () => ({ on() {}, snapshot: { ref: {} } }),
-      getDownloadURL: () => Promise.resolve('https://example.test/audio.mp3'),
-      deleteObject: () => Promise.resolve()
-    }
+    functions: { getFunctions: () => ({}), httpsCallable: () => (() => Promise.resolve({ data: {} })) }
   };
 
   // Re-stub getAuth so auth.currentUser follows the scenario as it changes.

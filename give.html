@@ -138,6 +138,7 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="/assets/pd-billing.js"></script>
+    <script src="/assets/pd-upload.js"></script>
 
     <style>
         :root {
@@ -765,20 +766,17 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { 
             apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", 
             authDomain: "prayer-dome.firebaseapp.com", 
             projectId: "prayer-dome", 
-            storageBucket: "prayer-dome.firebasestorage.app", 
             messagingSenderId: "198295153196", 
             appId: "1:198295153196:web:1222b31948d7974ba3bf89" 
         };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
 
         let currentUser = null;
         let uploadedReceiptUrl = null;
@@ -1292,13 +1290,10 @@
             const label = document.getElementById('upLabel');
             if (label) label.innerHTML = '<i class="pd-i pd-i-loader-circle pd-i-spin"></i> UPLOADING…';
             try {
-                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
-                const path = 'givingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
-                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
-                const url = await getDownloadURL(storageRef(storage, path));
-                uploadedReceiptUrl = url;
-                document.getElementById('receiptUrl').value = url;
-                document.getElementById('receiptPath').value = path;
+                const uploaded = await window.PDUpload.uploadPrivate(file, 'givingEvidence');
+                uploadedReceiptUrl = uploaded.url;
+                document.getElementById('receiptUrl').value = uploaded.url;
+                document.getElementById('receiptPath').value = uploaded.publicId || '';
                 if (label) {
                     label.innerHTML = '<i class="pd-i pd-i-circle-check" aria-hidden="true"></i> RECEIPT ATTACHED';
                     label.style.color = '#3b82f6';

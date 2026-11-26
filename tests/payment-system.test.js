@@ -254,7 +254,7 @@ test('a member can create, submit and verify a deposit exactly once', async () =
   assert.equal(db.count('paymentRequests/'), 1);
 
   const evidence = await call('checkout.evidence', {
-    reference, evidencePath: 'billingEvidence/member-1/receipt.png', evidenceName: 'receipt.png'
+    reference, evidenceUrl: 'https://res.cloudinary.com/prayerdome/image/upload/billingEvidence/receipt.png', evidenceName: 'receipt.png'
   });
   assert.equal(evidence.status, 200, JSON.stringify(evidence.body));
 

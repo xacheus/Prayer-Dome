@@ -27,7 +27,7 @@ The upgrade reuses:
 - Approved genres: gospel worship, contemporary gospel, African gospel, international gospel, traditional gospel, praise, instrumental worship, other approved Christian music.
 - Licence bases: licensed, written permission, public domain, original recording.
 - The admin form refuses a YouTube/Spotify/SoundCloud/Apple Music/Deezer/Tidal/Amazon Music URL as a source or stream and explains that Prayer Dome does not scrape or rebroadcast those services. A permission reference or authorised distributor is required.
-- Audio is uploaded to Firebase Storage under `radioAudio/tracks/` (metadata only in Firestore), or an existing URL can be used.
+- Audio is uploaded to the Cloudinary media library under `radioAudio/tracks/` (metadata only in Firestore), or an existing URL can be used.
 - The listener engine reads only rows with `approved === true`, a playable `audioUrl`, and a valid licence basis. Unapproved rows never enter the rotation.
 - Rotation is least-recently-played first, then shuffled; the last 12 track IDs are remembered per device so a short library does not open with the same song each time.
 - **Now Playing** shows the track title, artist, album and genre, and updates the lock-screen Media Session metadata.
@@ -124,12 +124,12 @@ Structural tests added for:
 - rules denying browser writes to requests, sessions and LIVE state;
 - WebRTC signalling restricted to the approved presenter;
 - automatic return/fallback wording and watchdog;
-- admin Radio Studio wiring, Storage uploads and streaming-platform rejection;
-- Storage `radioAudio/` path and audio MIME/size rules;
+- admin Radio Studio wiring, Cloudinary uploads and streaming-platform rejection;
+- Cloudinary `radioAudio/` folder and audio MIME/size checks;
 - the two new notification events;
 - presenter/now-playing/LIVE UI IDs and the single-player wording.
 
-**Not verified in this sandbox:** real Firebase authentication, Firestore, Storage uploads, Brevo email delivery, two-device WebRTC audio and installed-PWA audio. Those need the user's Firebase project and devices. The code paths are present; they should be exercised after deploying the rules/functions. `npm test` cannot prove audio actually reaches a second device.
+**Not verified in this sandbox:** real Firebase authentication, Firestore, media uploads, Brevo email delivery, two-device WebRTC audio and installed-PWA audio. Those need the user's Firebase project and devices. The code paths are present; they should be exercised after deploying the rules/functions. `npm test` cannot prove audio actually reaches a second device.
 
 ## 4. Deployment needed
 
@@ -150,7 +150,7 @@ After deployment:
 
 ## 5. Costs and limitations requiring approval
 
-- **No new paid vendor was added.** Audio is in the existing Firebase Storage bucket; functions use the existing Firebase project. The repository already deploys scheduled Firebase functions (billing expiry, reminders, email retry), so the radio watchdog adds one more schedule to that existing setup; it does not create a new billing account.
+- **No new paid vendor was added.** Audio is in the ministry's existing Cloudinary media library (or optional R2 bucket); functions use the existing Firebase project. The repository already deploys scheduled Firebase functions (billing expiry, reminders, email retry), so the radio watchdog adds one more schedule to that existing setup; it does not create a new billing account.
 - **No AzuraCast/Liquidsoap/Icecast server was added.** A true always-on server-side 24/7 stream would need a media server (or a paid managed streaming provider) and a recurring hosting bill. This implementation runs the schedule and rotation in each listener's page and uses WebRTC for live presenters; it is continuous while a listener has the page open, but it is not a single server-side stream when nobody is listening. This is the main limitation to discuss before claiming a full broadcast station.
 - **WebRTC is peer-to-peer mesh.** It is suitable for a small number of simultaneous listeners. The reception path has a 30-peer cap and falls back to automation if a connection fails. A larger audience or listeners behind restrictive mobile NATs need a TURN relay and/or an SFU/HLS media server. `/api/live-ice` can mint TURN credentials when configured, but a TURN service is a recurring cost and must be approved before it is added. No TURN secret is committed.
 - **Recorded announcements are fixed audio.** Dynamic time insertion would require editing/recording per slot or a TTS service; generated voices are deliberately not used. The programme/time is displayed on screen and must be spoken in the human recording.

@@ -2132,7 +2132,7 @@
                         <label>Upload to R2 (admin)<input class="form-control" id="radioR2File" type="file" accept="audio/*"></label>
                         <label>Folder<select class="form-control" id="radioR2Prefix"><option value="radio/music/">radio/music/</option><option value="radio/announcements/">radio/announcements/</option><option value="radio/sermons/">radio/sermons/</option><option value="radio/bible-readings/">radio/bible-readings/</option><option value="radio/prayers/">radio/prayers/</option><option value="radio/archives/">radio/archives/</option></select></label>
                         <div style="display:flex;gap:8px;align-items:end;"><button class="btn btn-primary" type="button" onclick="radioAdminUploadR2()"><i class="pd-i pd-i-upload"></i> Upload to R2</button></div>
-                        <p id="radioR2Note" style="grid-column:1/-1;font-size:.75rem;color:var(--text-sub);margin:0;">R2 keys are configured in Vercel (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY) and never appear in this page. Without R2, uploads use Firebase Storage as before.</p>
+                        <p id="radioR2Note" style="grid-column:1/-1;font-size:.75rem;color:var(--text-sub);margin:0;">R2 keys are configured in Vercel (R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY) and never appear in this page. Radio audio uploads use Cloudinary; R2 is the optional broadcast bucket.</p>
                     </div>
                 </div>
 
@@ -3619,14 +3619,12 @@
         import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, setDoc, deleteDoc, deleteField, query, where, orderBy, startAfter, serverTimestamp, increment, addDoc, limit, onSnapshot, Timestamp, writeBatch, getCountFromServer } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
         import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
-        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
+        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const cloudFunctions = getFunctions(app);
-        const storage = getStorage(app);
         // Billing actions are HTTP requests to Vercel with a verified Firebase
         // ID token. Non-money admin features below still use their callables.
         if (window.PDBillingClient) {
@@ -3643,9 +3641,6 @@
             auth,
             cloudFunctions,
             httpsCallable,
-            storage: {
-                storage, storageRef, uploadBytesResumable, getDownloadURL, deleteObject
-            },
             firestore: {
                 collection, getDocs, getDoc, doc, setDoc, addDoc, updateDoc,
                 deleteDoc, deleteField, query, where, orderBy, limit,

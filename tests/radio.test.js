@@ -120,7 +120,6 @@ test('the admin console is wired in and can approve or unpublish', () => {
 
 const radioLive = fs.readFileSync('assets/pd-radio-live.js', 'utf8');
 const radioAdmin = fs.readFileSync('assets/pd-radio-admin.js', 'utf8');
-const storageRules = fs.readFileSync('storage.rules', 'utf8');
 const functionsRadio = fs.readFileSync('functions/radio.js', 'utf8');
 const functionsIndex = fs.readFileSync('functions/index.js', 'utf8');
 const notifications = fs.readFileSync('functions/notifications.js', 'utf8');
@@ -302,8 +301,8 @@ test('the admin Radio Studio exposes the real library, voice, timetable and pres
     'radioScheduleForm', 'radioSettingAutomation', 'radioTrackGenre', 'radioTrackLicence', 'radioVoiceGender']) {
     assert.ok(admin.includes('id="' + id + '"'), 'admin is missing #' + id);
   }
-  assert.match(admin, /getStorage/);
-  assert.match(admin, /storageRef/);
+  assert.match(admin, /pd-upload\.js/);
+  assert.doesNotMatch(admin, /firebase-storage\.js|getStorage|storageRef/);
   assert.match(admin, /radioAdminSaveTrack/);
   assert.match(radioAdmin, /STREAMING_HOSTS/);
   assert.match(radioAdmin, /does not scrape or rebroadcast/);
@@ -313,10 +312,10 @@ test('the admin Radio Studio exposes the real library, voice, timetable and pres
   assert.match(radioAdmin, /radioAdminStop/);
 });
 
-test('radio audio and public metadata stay in Storage/Firestore safely', () => {
-  assert.match(storageRules, /match \/radioAudio\/\{kind\}\/\{fileName\}/);
-  assert.match(storageRules, /kind in \['tracks', 'voices', 'announcements', 'fallback'\]/);
-  assert.match(storageRules, /request\.resource\.contentType\.matches\('audio\/\.\*'\)/);
+test('radio audio uploads to Cloudinary and public metadata stays in Firestore safely', () => {
+  assert.match(radioAdmin, /PDUpload\.uploadPrivate\(file, 'radioAudio\/' \+ kind/);
+  assert.match(radioAdmin, /preset: 'live_streams'/);
+  assert.doesNotMatch(radioAdmin, /bridge\.storage|deleteObject/);
   assert.match(rules, /match \/worshipSongs\/\{id\}/);
   assert.match(radioAdmin, /licenseStatus: licenseStatus/);
   assert.match(radioAdmin, /category: GENRES\[genre\]/);

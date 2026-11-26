@@ -608,6 +608,7 @@
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+<script src="/assets/pd-upload.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
 </head>
@@ -721,13 +722,11 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, query, where, orderBy, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
+        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const storage = getStorage(app);
 
         let currentUser = null;
         let events = [];
@@ -887,9 +886,8 @@
             try {
                 let imageUrl = null;
                 if (eventImage) {
-                    const storageRef = ref(storage, `events/${Date.now()}_${eventImage.name}`);
-                    await uploadBytes(storageRef, eventImage);
-                    imageUrl = await getDownloadURL(storageRef);
+                    const uploaded = await window.PDUpload.upload(eventImage, { preset: 'news_images', folder: 'events' });
+                    imageUrl = uploaded.url;
                 }
                 await addDoc(collection(db, "events"), { title, date: Timestamp.fromDate(new Date(dateTime)), duration, location, category, speaker: speaker || 'Prayer Dome Team', description: description || '', maxAttendees: maxAttendees || 0, imageUrl, attendees: [], attendeeCount: 0, createdBy: currentUser.uid, createdByEmail: currentUser.email, createdAt: Timestamp.now(), status: 'published' });
                 showToast('Event created!', 'success');

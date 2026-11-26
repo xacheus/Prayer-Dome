@@ -18,7 +18,7 @@
 | Admin actions | **Approve**, **Reject** (with reason), **Mark received**. Receipts are generated only for received gifts. |
 | Totals | The confirmed total is calculated from `received` rows only. Pending and approved rows are shown as counts, never as income. |
 | Audit | `givingAudit` is append-only for administrators: approvals, rejections, received marks and payment-setting changes. |
-| Receipt privacy | Files upload to `givingEvidence/{uid}/…`; only the giver and Finance can read the object. No public Cloudinary preset is used by giving any more. |
+| Receipt privacy | Files upload to the `givingEvidence` Cloudinary folder with a random public id; the unguessable https link is the only reference stored on the record. No Firebase Storage bucket is used. |
 | Card data | No card fields exist in the pages or rules. The Firestore rules explicitly reject `cardNumber`, `cardCvv`, `cvv`, `cvc`, `pan` and `cardExpiry`. |
 | Existing features | Authentication, notifications, news, live, membership cards and the other Firebase features are untouched. All existing tests still run. |
 
@@ -45,7 +45,6 @@ pending  ──approve──▶  approved  ──mark received──▶  receive
 - `assets/pd-billing-admin.js` — payment methods now saved to Firestore directly, with hosted checkout URL support.
 - `assets/pd-billing.js` — shared method model accepts `hosted-checkout` and `checkoutUrl`.
 - `firestore.rules` — public read / admin write for payment settings, validated pending offering creation, admin-only transitions, append-only audit.
-- `storage.rules` — private `givingEvidence` path.
 - `functions/billing.js` — runtime-independent transaction logic shared by the Vercel billing API.
 - `DEPLOYMENT.md` — Firestore-only giving deployment section.
 - `tests/giving.test.js`, `tests/rules/firestore.test.js`, `tests/billing.test.js`, `tests/id-verification.test.js`, `tests/layout.test.js`, `tests/upgrade.test.js`.
@@ -64,9 +63,9 @@ pending  ──approve──▶  approved  ──mark received──▶  receive
 - `givingAudit`: administrator read/create; no update or delete.
 - `settings/payments` write can only be performed by `isAdmin()`; the callable is not needed for finance configuration.
 
-### Storage
+### Media
 
-`givingEvidence/{uid}/{fileName}` is readable only by that uid or an administrator, writable only by that uid on create, under 5 MB and image/PDF only. Files cannot be replaced or deleted.
+Giving receipts use `PDUpload.uploadPrivate(file, 'givingEvidence')`, which uploads an image or PDF to the existing Cloudinary media service with a random public id. The returned https URL is stored on the offering; no Firebase Storage rules or bucket are required. The Cloudinary upload preset must remain unsigned for browser uploads; no secret is shipped to the page.
 
 ### What the browser cannot do
 
@@ -116,8 +115,8 @@ npm test
 npm run lint
 npm run functions:verify
 
-# 2. Deploy the Firestore and Storage rules (no functions, no Cloud billing)
-firebase deploy --only firestore:rules,storage --project prayer-dome
+# 2. Deploy the Firestore rules (no functions, no Cloud billing)
+firebase deploy --only firestore:rules --project prayer-dome
 
 # 3. Website
 #    Merge/deploy the branch through Vercel as usual.

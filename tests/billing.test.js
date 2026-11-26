@@ -155,20 +155,18 @@ test('payment collections are server-write-only', () => {
   assert.match(rules, /match \/wallets\/\{userId\}[\s\S]{0,700}balance == 0/);
 });
 
-test('receipts upload to private Storage and are opened through a signed URL', () => {
-  const rules = read('storage.rules');
-  assert.match(rules, /match \/billingEvidence\/\{uid\}\/\{fileName\}/);
-  assert.match(rules, /allow read:[\s\S]{0,160}request\.auth\.uid == uid/);
-  assert.match(rules, /match \/\{allPaths=\*\*\}/);
-  assert.match(rules, /allow read, write: if false/);
+test('receipts upload to Cloudinary with unguessable ids and no Firebase Storage', () => {
   const support = read('support.html');
-  assert.match(support, /uploadBytes\(storageRef\(storage, path\)/);
-  assert.match(support, /billingEvidence\//);
-  assert.match(support, /evidence\.signedUrl/);
-  assert.doesNotMatch(support, /preset: 'gallery_uploads',\s*\n\s*maxBytes: 5000000[\s\S]{0,120}evidenceUrl/);
+  assert.match(support, /PDUpload\.uploadPrivate\(file, 'billingEvidence'\)/);
+  assert.match(support, /PDUpload\.uploadPrivate\(file, 'givingEvidence'\)/);
+  assert.match(support, /payload\.evidenceUrl = checkoutEvidence\.url/);
+  assert.doesNotMatch(support, /uploadBytes|getDownloadURL|firebase-storage\.js|evidence\.signedUrl/);
+  const uploader = read('assets/pd-upload.js');
+  assert.match(uploader, /uploadPrivate: function/);
+  assert.match(uploader, /form\.append\('public_id', opts\.publicId\)/);
   const billing = read('functions/billing.js');
-  assert.match(billing, /getSignedUrl\(/);
-  assert.match(billing, /evidencePath/);
+  assert.doesNotMatch(billing, /admin\.storage\(\)|getSignedUrl\(/);
+  assert.match(billing, /retired Firebase Storage bucket/);
 });
 
 test('the support page loads the shared billing catalogue and confirmations', () => {
@@ -179,7 +177,7 @@ test('the support page loads the shared billing catalogue and confirmations', ()
   assert.match(support, /paymentRequests/);
   assert.match(support, /financial/i);
   assert.match(support, /Cancel plan/);
-  assert.match(support, /evidence\.signedUrl/);
+  assert.match(support, /PDUpload\.uploadPrivate\(file, 'billingEvidence'\)/);
 });
 
 test('the admin console exposes every billing workspace', () => {

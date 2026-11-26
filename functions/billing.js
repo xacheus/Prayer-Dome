@@ -740,13 +740,13 @@ async function submitEvidence(data, context) {
   const evidencePath = text(data.evidencePath, 320);
   const evidenceUrl = text(data.evidenceUrl, 1200);
   if (evidencePath) {
-    // New receipts live in private Storage under the member's own folder. A
-    // member can only attach a path they own; the browser never mints a
-    // public URL, and administrators read it through a short-lived signed URL.
-    if (!new RegExp('^billingEvidence/' + uid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '/[A-Za-z0-9._-]{1,140}$').test(evidencePath)) {
-      fail('permission-denied', 'That receipt does not belong to your account.');
-    }
-  } else if (!/^https:\/\//i.test(evidenceUrl)) {
+    // Firebase Storage is retired. A handful of old rows still carry a bucket
+    // path; Finance can open those in the Firebase console while reviewing the
+    // request, but a new submission must carry the Cloudinary https URL.
+    fail('failed-precondition',
+      'That receipt was uploaded to the retired Firebase Storage bucket. Attach a new receipt and submit it again.');
+  }
+  if (!/^https:\/\//i.test(evidenceUrl)) {
     fail('invalid-argument', 'Upload the payment evidence before submitting.');
   }
   const db = admin.firestore();
@@ -1888,29 +1888,12 @@ async function savePaymentSettings(data, context) {
 }
 
 async function signedEvidenceUrl(data, context) {
-  const uid = requireAuth(context);
-  const path = text(data.path, 320);
-  if (!/^billingEvidence\/[A-Za-z0-9_-]{1,128}\/[A-Za-z0-9._-]{1,140}$/.test(path)) {
-    fail('invalid-argument', 'That receipt path is not valid.');
-  }
-  const segments = path.split('/');
-  if (segments[1] !== uid && !(await isAdmin(uid))) {
-    fail('permission-denied', 'Only the owner or an administrator can open this receipt.');
-  }
-  try {
-    const file = admin.storage().bucket().file(path);
-    const [exists] = await file.exists();
-    if (!exists) fail('not-found', 'The receipt file could not be found.');
-    const [url] = await file.getSignedUrl({
-      action: 'read',
-      expires: Date.now() + 15 * 60 * 1000
-    });
-    return { url, expiresIn: 900 };
-  } catch (error) {
-    if (error && error.code && String(error.code).indexOf('not-found') !== -1) throw error;
-    console.error('Signed receipt URL failed:', error.message);
-    fail('unavailable', 'The private receipt could not be opened right now.');
-  }
+  requireAuth(context);
+  // Kept as a no-op compatibility action so an old browser tab gets a clear
+  // answer instead of an opaque error. No Firebase Storage SDK or bucket is
+  // contacted: new receipts are Cloudinary https links stored on the request.
+  fail('failed-precondition',
+    'Private Storage receipts are retired. Open legacy receipts in the Firebase console; new receipts use the attached link.');
 }
 
 async function routeBilling(data, context) {

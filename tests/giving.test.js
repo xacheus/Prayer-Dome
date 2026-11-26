@@ -21,7 +21,6 @@ const admin = read('admin.html');
 const givingAdmin = read('assets/pd-giving-admin.js');
 const billing = read('assets/pd-billing.js');
 const rules = read('firestore.rules');
-const storage = read('storage.rules');
 
 // ---- give page ------------------------------------------------------------
 assert.doesNotMatch(give, /firebase-functions|httpsCallable|getFunctions/,
@@ -39,7 +38,7 @@ assert.doesNotMatch(give, /status:\s*'received'|status:\s*'approved'/,
 for (const category of ['church-support', 'general-offering', 'missions', 'evangelism', 'building-projects', 'other']) {
   assert.ok(give.includes(`value="${category}"`), 'missing giving category: ' + category);
 }
-assert.match(give, /givingEvidence\//, 'receipts must go to the private giving evidence path');
+assert.match(give, /PDUpload\.uploadPrivate\(file, 'givingEvidence'\)/, 'receipts must go to the unguessable giving evidence folder');
 assert.doesNotMatch(give, /cardNumber|cardCvv|cardExpiry/,
   'the give page must never collect or store card details');
 assert.match(give, /Billing\.methodCheckoutUrl/,
@@ -53,7 +52,7 @@ assert.match(support, /setDoc\(doc\(db, 'offerings', reference\)/,
   'member giving must write the offering directly to Firestore');
 assert.match(support, /transactionReference: transactionReference/);
 assert.match(support, /status: 'pending'/);
-assert.match(support, /givingEvidence\//);
+assert.match(support, /PDUpload\.uploadPrivate\(file, 'givingEvidence'\)/);
 assert.doesNotMatch(support, /cardNumber|cardCvv|cardExpiry/);
 
 // ---- admin console --------------------------------------------------------
@@ -81,8 +80,10 @@ assert.match(rules, /cardNumber|cardCvv/,
 assert.match(rules, /match \/givingAudit\/\{id\}/);
 assert.match(rules, /match \/settings\/payments \{\s*allow read: if true;/,
   'payment settings must be readable before sign-in');
-assert.match(storage, /match \/givingEvidence\/\{uid\}\/\{fileName\}/,
-  'giving receipts need a private storage rule');
+assert.match(give, /PDUpload\.uploadPrivate\(file, 'givingEvidence'\)/,
+  'giving receipts upload through the shared Cloudinary service');
+assert.doesNotMatch(give, /firebase-storage\.js|uploadBytes|getDownloadURL/,
+  'the giving page must not use Firebase Storage');
 
 // ---- hosted checkout model ------------------------------------------------
 assert.match(billing, /hosted-checkout/);

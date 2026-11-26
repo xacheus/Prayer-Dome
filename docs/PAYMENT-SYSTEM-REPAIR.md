@@ -85,7 +85,7 @@ an administrator in **Payment Verification → Payment methods**.
   all passing. The preview uses the same page markup on desktop and mobile
   widths.
 * `npm run test:rules` could not run here: the sandbox has no Java runtime for
-  the Firestore emulator. Firestore/Storage rules were reviewed and their static
+  the Firestore emulator. Firestore rules were reviewed and their static
   acceptance tests pass.
 
 ## Remaining external configuration
@@ -100,7 +100,7 @@ an administrator in **Payment Verification → Payment methods**.
    webhooks fail closed and Finance verification remains the confirmation path.
 3. Configure real payment methods in the admin console. No phone numbers, bank
    accounts or gateway keys are present in source control.
-4. Deploy Firestore rules and indexes and Storage rules from a signed-in
+4. Deploy Firestore rules and indexes from a signed-in
    machine; Vercel does not deploy them. No `firebase deploy --only functions`
    step is required for payments.
 5. Run one small live transaction through the configured provider after the

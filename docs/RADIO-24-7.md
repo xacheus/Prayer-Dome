@@ -119,8 +119,7 @@ TTS_SERVICE_URL=<optional, e.g. http://host:5005>
 JAMENDO_CLIENT_ID=<optional, free registration>
 ```
 
-Without the R2 keys, everything still works through Firebase Storage as
-before — R2 simply stays "not configured" in the admin panel.
+Without the R2 keys, studio audio uploads still work through the existing Cloudinary media service — R2 simply stays "not configured" in the admin panel.
 
 ## 5. The honest 24/7 streaming limitation
 

@@ -1159,11 +1159,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
-        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
+        const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
         const app = initializeApp(firebaseConfig);
-        const storage = getStorage(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
         const Billing = window.PDBilling;
@@ -1203,7 +1201,7 @@
             esc(Billing.statusLabel(status)) + '</span>';
         const planFor = (id) => billingPlans.filter(plan => plan.id === id)[0] || (Billing.planById ? Billing.planById(id) : null);
 
-        const RETRYABLE_BILLING_ACTIONS = ['plans.list', 'payment.settings.public', 'checkout.create', 'withdrawal.request', 'evidence.signedUrl'];
+        const RETRYABLE_BILLING_ACTIONS = ['plans.list', 'payment.settings.public', 'checkout.create', 'withdrawal.request'];
 
         async function callBilling(action, payload) {
             let lastError = null;
@@ -1563,11 +1561,13 @@
             if (label) label.textContent = 'Uploading…';
             showLoading('Uploading receipt securely…');
             try {
-                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
-                const path = 'givingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
-                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
-                const url = await getDownloadURL(storageRef(storage, path));
-                supportGivingProof = { path: path, url: url, name: file.name || 'Payment receipt', type: file.type };
+                const uploaded = await window.PDUpload.uploadPrivate(file, 'givingEvidence');
+                supportGivingProof = {
+                    url: uploaded.url,
+                    publicId: uploaded.publicId,
+                    name: file.name || 'Payment receipt',
+                    type: file.type
+                };
                 if (label) label.textContent = 'Receipt attached';
                 toast('Receipt attached securely.', 'success');
             } catch (error) {
@@ -1633,7 +1633,7 @@
                     transactionReference: transactionReference,
                     payTo: String(method.type === 'bank-transfer' ? method.accountNumber : method.number || '').trim(),
                     receiptUrl: supportGivingProof ? supportGivingProof.url : '',
-                    receiptPath: supportGivingProof ? supportGivingProof.path : '',
+                    receiptPath: supportGivingProof ? supportGivingProof.publicId : '',
                     note: String(noteNode && noteNode.value || '').slice(0, 500),
                     timestamp: serverTimestamp(),
                     createdAt: serverTimestamp(),
@@ -2115,15 +2115,14 @@
             if (!currentUser) return toast('Sign in again before attaching a receipt.', 'error');
             showLoading('Uploading receipt securely…');
             try {
-                const safeName = String(file.name || 'receipt').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80);
-                const path = 'billingEvidence/' + currentUser.uid + '/' + Date.now() + '-' + safeName;
-                await uploadBytes(storageRef(storage, path), file, { contentType: file.type, customMetadata: { owner: currentUser.uid } });
+                const uploaded = await window.PDUpload.uploadPrivate(file, 'billingEvidence');
                 checkoutEvidence = {
-                    path,
+                    url: uploaded.url,
+                    publicId: uploaded.publicId,
                     name: file.name || 'Payment receipt',
                     type: file.type || 'file',
-                    // A local object URL keeps the preview instant; the stored
-                    // path is what the callable and the admin signed URL use.
+                    // A local object URL keeps the preview instant; the https
+                    // URL is what the billing API and Finance use.
                     previewUrl: URL.createObjectURL(file)
                 };
                 renderCheckoutEvidence();
@@ -2180,12 +2179,10 @@
                     evidenceName: checkoutEvidence.name,
                     evidenceType: checkoutEvidence.type
                 };
-                if (checkoutEvidence.path) payload.evidencePath = checkoutEvidence.path;
-                else payload.evidenceUrl = checkoutEvidence.url;
+                payload.evidenceUrl = checkoutEvidence.url;
                 await callBilling('checkout.evidence', payload);
                 currentCheckout.status = 'pending_verification';
-                if (checkoutEvidence.path) currentCheckout.evidencePath = checkoutEvidence.path;
-                else currentCheckout.evidenceUrl = checkoutEvidence.url;
+                currentCheckout.evidenceUrl = checkoutEvidence.url;
                 checkoutEvidence = null;
                 // Rebuild the whole checkout, not just the buttons: the status
                 // chip, paybox and confirmation banner must all move to
@@ -2223,15 +2220,12 @@
             if (!body || !source) return;
             let url = source;
             if (source.indexOf('billingEvidence/') === 0) {
-                body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-sub);">Preparing the private receipt…</div>';
+                // A few older receipts were stored privately in Firebase
+                // Storage. That bucket is no longer used by this app; Finance
+                // can open those rows from the Firebase console by reference.
+                body.innerHTML = '<p style="padding:20px;color:var(--text-sub);">This is an older receipt from the retired Firebase Storage bucket. Finance can open it from the Firebase console using this reference: <strong>' + esc(source) + '</strong></p>';
                 document.getElementById('modalReceiptPreview').style.display = 'flex';
-                try {
-                    const signed = await callBilling('evidence.signedUrl', { path: source });
-                    url = signed.url;
-                } catch (error) {
-                    body.innerHTML = '<p style="padding:20px;color:var(--pd-red);">' + esc(error.message) + '</p>';
-                    return;
-                }
+                return;
             }
             const safe = esc(url);
             const isPdf = /\.pdf($|\?)/i.test(source) || (currentCheckout && /pdf/i.test(currentCheckout.evidenceType || ''));

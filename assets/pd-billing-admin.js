@@ -300,17 +300,13 @@
       return;
     }
 
-    // Receipts uploaded through Storage have a private path, not a public URL.
-    // Ask the billing API for a 15-minute signed URL; never guess one.
-    let evidenceSource = row.evidenceUrl || '';
+    // New receipts carry a Cloudinary https URL on the payment row. A few old
+    // rows still point at the retired Firebase Storage bucket; those are
+    // opened manually in the Firebase console, never from a guessed link.
+    const evidenceSource = row.evidenceUrl || '';
     let evidenceError = '';
     if (!evidenceSource && row.evidencePath) {
-      try {
-        const signed = await callBilling('evidence.signedUrl', { path: row.evidencePath });
-        evidenceSource = signed.url || '';
-      } catch (error) {
-        evidenceError = error.message;
-      }
+      evidenceError = 'Legacy Firebase Storage receipt (' + row.evidencePath + '). Open it in the Firebase console to review it.';
     }
     const evidenceType = row.evidenceType || (/\.pdf($|\?)/i.test(String(row.evidencePath || evidenceSource)) ? 'application/pdf' : 'image');
     const evidence = evidenceSource

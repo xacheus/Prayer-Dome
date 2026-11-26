@@ -73,7 +73,7 @@
             '.pdu-head{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px solid #eef1f6;position:sticky;top:0;background:#fff;border-radius:22px 22px 0 0}' +
             '.pdu-head img{width:30px;height:30px;border-radius:8px;object-fit:contain}' +
             '.pdu-head h3{margin:0;font-size:.98rem;font-weight:800;flex:1;color:#0A4D9B}' +
-            '.pdu-close{border:0;background:#f1f4f9;width:32px;height:32px;border-radius:50%;cursor:pointer;color:#475569;font-size:.9rem}' +
+            '.pdu-close{border:0;background:#f1f4f9;width:40px;height:40px;border-radius:50%;cursor:pointer;color:#475569;font-size:1rem}' +
             '.pdu-body{padding:16px 18px}' +
             '.pdu-preview{border-radius:16px;overflow:hidden;background:#0b1830;margin-bottom:14px;display:flex;align-items:center;justify-content:center;min-height:140px;max-height:260px}' +
             '.pdu-preview img{width:100%;height:100%;object-fit:contain;max-height:260px}' +
@@ -81,13 +81,13 @@
             '.pdu-filemeta{display:flex;align-items:center;gap:10px;background:#f6f8fc;border-radius:14px;padding:10px 14px;margin-bottom:14px;font-size:.82rem;color:#334155}' +
             '.pdu-filemeta i{color:#0A4D9B}' +
             '.pdu-filemeta .pdu-size{margin-left:auto;color:#64748b;font-weight:700;white-space:nowrap}' +
-            '.pdu-progress{height:10px;border-radius:50px;background:#e8edf5;overflow:hidden;margin:6px 0 6px}' +
+            '.pdu-progress{height:12px;border-radius:50px;background:#e8edf5;overflow:hidden;margin:8px 0 6px;box-shadow:inset 0 1px 3px rgba(7,36,77,.08)}' +
             '.pdu-progress>div{height:100%;width:0;border-radius:50px;background:linear-gradient(90deg,#0A4D9B,#3b82f6);transition:width .25s ease}' +
-            '.pdu-progress-label{display:flex;justify-content:space-between;font-size:.78rem;color:#64748b;margin-bottom:14px;font-weight:600}' +
+            '.pdu-progress-label{display:flex;justify-content:space-between;gap:12px;font-size:.8rem;color:#475569;margin-bottom:14px;font-weight:700}' +
             '.pdu-error{display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:12px;padding:10px 12px;font-size:.82rem;margin-bottom:12px}' +
             '.pdu-error.show{display:block}' +
             '.pdu-actions{display:flex;gap:10px;padding:0 18px 18px}' +
-            '.pdu-btn{flex:1;border:0;border-radius:14px;padding:13px 16px;font-weight:800;font-size:.88rem;cursor:pointer;font-family:inherit;transition:transform .15s ease,box-shadow .15s ease}' +
+            '.pdu-btn{flex:1;min-height:48px;border:0;border-radius:14px;padding:13px 16px;font-weight:800;font-size:.92rem;cursor:pointer;font-family:inherit;transition:transform .15s ease,box-shadow .15s ease}' +
             '.pdu-btn:active{transform:scale(.97)}' +
             '.pdu-btn-primary{background:linear-gradient(135deg,#0A4D9B,#1257ac);color:#fff;box-shadow:0 8px 22px rgba(10,77,155,.35)}' +
             '.pdu-btn-ghost{background:#f1f4f9;color:#0A4D9B}' +
@@ -95,7 +95,7 @@
             '.pdu-brand{display:flex;align-items:center;justify-content:center;gap:6px;font-size:.68rem;color:#94a3b8;padding:0 0 14px;font-weight:600;letter-spacing:.4px}' +
             '.pdu-badge{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#07244d;color:#fff;padding:10px 18px;border-radius:50px;font-size:.8rem;font-weight:700;z-index:99998;box-shadow:0 12px 30px rgba(0,0,0,.35);display:flex;align-items:center;gap:8px;animation:pduPop .25s ease;font-family:Inter,system-ui,sans-serif}' +
             '.pdu-badge i{color:#4DA3FF}' + (global.matchMedia && global.matchMedia('(prefers-color-scheme: dark)').matches ?
-                '.pdu-card{background:#0d1b33;color:#e6eefb}.pdu-head{background:#0d1b33;border-color:#1c2c4d}.pdu-head h3{color:#9cc3f7}.pdu-close{background:#16253f;color:#b6c6e2}.pdu-filemeta{background:#13223c;color:#c7d5ec}.pdu-progress{background:#1a2a47}.pdu-progress-label,.pdu-size{color:#8fa3c4!important}.pdu-btn-ghost{background:#16253f;color:#9cc3f7}' : '');
+                '.pdu-card{background:#0d1b33;color:#e6eefb}.pdu-head{background:#0d1b33;border-color:#1c2c4d}.pdu-head h3{color:#9cc3f7}.pdu-close{background:#16253f;color:#b6c6e2}.pdu-filemeta{background:#13223c;color:#c7d5ec}.pdu-progress{background:#1a2a47}.pdu-progress-label,.pdu-size{color:#8fa3c4!important}.pdu-error{background:#3b1417;border-color:#7f1d1d;color:#fecaca}.pdu-btn-ghost{background:#16253f;color:#9cc3f7}' : '');
         document.head.appendChild(st);
     }
 
@@ -122,7 +122,7 @@
             + '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(file.name || 'Selected file') + '</span>'
             + '<span class="pdu-size">' + api._fmtBytes(file.size) + '</span></div>'
             + '<div class="pdu-progress"><div id="pduBar"></div></div>'
-            + '<div class="pdu-progress-label"><span id="pduState">Ready to upload</span><span id="pduPct">0%</span></div>'
+            + '<div class="pdu-progress-label" role="status" aria-live="polite"><span id="pduState">Ready to upload</span><span id="pduPct">0%</span></div>'
             + '</div>'
             + '<div class="pdu-actions">'
             + '<button class="pdu-btn pdu-btn-ghost" id="pduCancel" type="button">Cancel</button>'
@@ -236,6 +236,25 @@
         },
 
         /**
+         * Upload a private document (receipt, evidence, record) with an
+         * unguessable public id. The id is random, never the member's name or
+         * phone number, and the returned https URL is the only reference a
+         * page or Firestore record needs.
+         */
+        uploadPrivate: function (file, folder, opts) {
+            var random = (global.crypto && typeof global.crypto.randomUUID === 'function')
+                ? global.crypto.randomUUID().replace(/-/g, '')
+                : Date.now().toString(36) + Math.random().toString(36).slice(2, 14);
+            var cleanFolder = String(folder || 'private-documents')
+                .replace(/[^a-zA-Z0-9/_-]+/g, '-').replace(/^\/+|\/+$/g, '').slice(0, 120);
+            return this.upload(file, Object.assign({
+                preset: 'donation_proofs',
+                folder: cleanFolder,
+                publicId: 'pd-' + random
+            }, opts || {}));
+        },
+
+        /**
          * Upload a File/Blob to the media service with progress reporting.
          * Resolves with { url, publicId, bytes, format, name, resourceType }.
          */
@@ -256,6 +275,11 @@
                     form.append('file', file);
                     form.append('upload_preset', preset);
                     if (opts.folder) form.append('folder', opts.folder);
+                    // A caller-supplied public id keeps private documents
+                    // unguessable and lets receipts be referenced without a
+                    // storage-bucket path. Cloudinary still generates one when
+                    // the caller does not need a stable id.
+                    if (opts.publicId) form.append('public_id', opts.publicId);
 
                     xhr.open('POST', ENDPOINT, true);
                     xhr.upload.onprogress = function (e) {

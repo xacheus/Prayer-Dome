@@ -390,8 +390,5 @@
       "enabled": false
     },
     "singleProjectMode": true
-  },
-  "storage": {
-    "rules": "storage.rules"
   }
 }

@@ -97,7 +97,7 @@ enabled Google Cloud billing account:
 * `give.html` reads `settings/payments` directly (public read) and creates
   `offerings/{reference}` with `status: 'pending'`.
 * The member support page has a **Give** tab that writes the same collection.
-* Receipts are uploaded to the private `givingEvidence/{uid}/…` Storage path.
+* Receipts are uploaded through the shared Cloudinary service to `givingEvidence` with an unguessable public id; only the https link is stored on the record.
 * `admin.html` → **Giving & Donations** reviews, approves, rejects and marks
   gifts received. Only `received` rows count towards confirmed contributions.
 * `settings/payments` and `givingAudit` are administrator-writable only.
@@ -105,7 +105,7 @@ enabled Google Cloud billing account:
 Deploy the rules and indexes for this path:
 
 ```sh
-firebase deploy --only firestore:rules,storage --project <project-id>
+firebase deploy --only firestore:rules --project <project-id>
 ```
 
 Then sign in as an administrator, open **Payment Verification → Payment
@@ -131,12 +131,11 @@ Deploy all three pieces together; a website newer than the rules can show
 controls that the server correctly refuses:
 
 ```sh
-firebase deploy --only firestore:rules,storage --project <project-id>
+firebase deploy --only firestore:rules --project <project-id>
 firebase deploy --only functions --project <project-id>
 ```
 
-Radio audio is stored under `radioAudio/` in Firebase Storage and is limited to
-audio content types and files under 50 MB. Presenter requests, sessions and the
+Radio audio uploads to the ministry Cloudinary media library under `radioAudio/` (optionally to Cloudflare R2 for broadcast) and is limited to audio content types and files under 50 MB. Presenter requests, sessions and the
 public LIVE state are written only by the Admin SDK callables; browsers cannot
 approve themselves. `radioSessionWatchdog` uses the same Firebase
 Functions/Cloud Scheduler setup as the existing reminder and email jobs. It does

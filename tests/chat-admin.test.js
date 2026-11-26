@@ -50,8 +50,7 @@ const MODULE_SOURCE = (() => {
   const replacements = [
     [/^\s*import \{([^}]+)\} from "[^"]*firebase-app\.js";/m, 'const {$1} = window.__fb.app;'],
     [/^\s*import \{([^}]+)\} from "[^"]*firebase-firestore\.js";/m, 'const {$1} = window.__fb.firestore;'],
-    [/^\s*import \{([^}]+)\} from "[^"]*firebase-auth\.js";/m, 'const {$1} = window.__fb.auth;'],
-    [/^\s*import \{([^}]+)\} from "[^"]*firebase-storage\.js";/m, 'const {$1} = window.__fb.storage;']
+    [/^\s*import \{([^}]+)\} from "[^"]*firebase-auth\.js";/m, 'const {$1} = window.__fb.auth;']
   ];
   let transformed = code;
   for (const [pattern, replacement] of replacements) {
@@ -176,12 +175,6 @@ async function bootChat(options = {}) {
       getAuth: () => ({ currentUser: options.user || null }),
       onAuthStateChanged: (auth, callback) => { window.__authStateChanged = callback; return () => {}; },
       signOut: () => Promise.resolve()
-    },
-    storage: {
-      getStorage: () => ({}),
-      ref: () => ({}),
-      uploadBytes: () => Promise.resolve({}),
-      getDownloadURL: () => Promise.resolve('https://cdn.prayerdome.net/media.jpg')
     }
   };
 

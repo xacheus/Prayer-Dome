@@ -289,34 +289,25 @@
     const allowed = /^audio\//.test(file.type || '') || /\.(mp3|m4a|aac|wav|ogg|opus|flac)$/i.test(file.name || '');
     if (!allowed) throw new Error('Choose an audio file (MP3, M4A, AAC, WAV, OGG or FLAC).');
     if (file.size > 50 * 1024 * 1024) throw new Error('Audio files must be smaller than 50 MB.');
-    const safe = String(file.name || 'audio').replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').slice(-80) || 'audio';
-    const path = 'radioAudio/' + kind + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + safe;
-    const ref = bridge.storage.storageRef(bridge.storage.storage, path);
-    const task = bridge.storage.uploadBytesResumable(ref, file, { contentType: file.type || 'audio/mpeg' });
+    if (!window.PDUpload) throw new Error('The media uploader is not loaded. Refresh the console and try again.');
     if (statusEl) statusEl.textContent = 'Uploading ' + Math.round((file.size / 1024) / 1024 * 10) / 10 + ' MB…';
-    await new Promise(function (resolve, reject) {
-      task.on('state_changed', function (snapshot) {
-        if (!statusEl) return;
-        const pct = snapshot.totalBytes ? Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100) : 0;
-        statusEl.textContent = 'Uploading… ' + pct + '%';
-      }, reject, resolve);
+    const uploaded = await window.PDUpload.uploadPrivate(file, 'radioAudio/' + kind, {
+      preset: 'live_streams',
+      onProgress: function (pct) {
+        if (statusEl) statusEl.textContent = 'Uploading… ' + Math.round(pct) + '%';
+      }
     });
-    const url = await bridge.storage.getDownloadURL(ref);
     if (statusEl) statusEl.textContent = 'Upload complete.';
-    return url;
+    return uploaded.url;
   }
 
   async function deleteAudioQuietly(url) {
-    // A Storage download URL embeds the object path. Only delete objects under
-    // radioAudio/, never a podcast or another ministry asset.
+    // Uploads now live in the ministry's Cloudinary media library. Removing a
+    // published asset needs a signed admin API call, so this console never
+    // deletes another broadcaster's audio by guessing a URL. Old Firebase
+    // Storage references are left untouched for manual review.
     if (!url || typeof url !== 'string') return;
-    const match = /\/o\/(radioAudio%2F[^?]+)/i.exec(url);
-    if (!match) return;
-    try {
-      const path = decodeURIComponent(match[1]);
-      if (path.indexOf('radioAudio/') !== 0) return;
-      await bridge.storage.deleteObject(bridge.storage.storageRef(bridge.storage.storage, path));
-    } catch (error) { console.warn('Radio audio cleanup skipped:', error && error.message); }
+    console.info('Radio audio cleanup is manual for:', url.slice(0, 120));
   }
 
   function renderCounts(counts) {
