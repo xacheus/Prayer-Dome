@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="theme-color" content="#0A4D9B">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="/manifest.json">
+    <title>Shared with Prayer Dome</title>
+    <link rel="icon" href="/assets/logo-192.png" sizes="192x192">
+    <link rel="stylesheet" href="/assets/pd-brand.css">
+    <link rel="stylesheet" href="/assets/pd-icons.css">
+    <script src="/assets/pd-icons.js"></script>
+    <style>
+        body { margin: 0; background: #f5f7fb; color: #14213d; font-family: 'Poppins', system-ui, sans-serif; }
+        body.dark-mode { background: #071426; color: #eaf2ff; }
+        .si-topbar {
+            display: flex; align-items: center; gap: 12px;
+            padding: calc(12px + env(safe-area-inset-top, 0px)) 18px 12px;
+            background: #fff; border-bottom: 1px solid rgba(10,77,155,.1);
+        }
+        body.dark-mode .si-topbar { background: #0a1626; border-color: rgba(212,175,55,.2); }
+        .si-topbar img { width: 38px; height: 38px; border-radius: 11px; }
+        .si-topbar strong { font-size: .82rem; letter-spacing: .14em; text-transform: uppercase; color: #0A4D9B; }
+        body.dark-mode .si-topbar strong { color: #F6DF8A; }
+        .si-topbar a { margin-left: auto; color: #0A4D9B; text-decoration: none; font-weight: 700; font-size: .85rem; }
+        body.dark-mode .si-topbar a { color: #F6DF8A; }
+        .si-wrap { max-width: 760px; margin: 0 auto; padding: 30px 18px 60px; }
+        .si-card {
+            background: #fff; border: 1px solid rgba(10,77,155,.12); border-radius: 22px;
+            box-shadow: 0 18px 50px rgba(7,36,77,.09); overflow: hidden;
+        }
+        body.dark-mode .si-card { background: #0a1626; border-color: rgba(212,175,55,.2); }
+        .si-banner {
+            padding: 26px 26px 22px; color: #fff;
+            background: radial-gradient(circle at 20% 10%, rgba(212,175,55,.28), transparent 45%), linear-gradient(135deg, #0A4D9B, #07244d);
+        }
+        .si-banner i { font-size: 1.6rem; vertical-align: middle; margin-right: 8px; color: #F6DF8A; }
+        .si-banner h1 { margin: 6px 0 4px; font-size: 1.35rem; }
+        .si-banner p { margin: 0; opacity: .86; font-size: .86rem; }
+        .si-body { padding: 26px; }
+        .si-label { font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 900; color: #8a6d1a; }
+        .si-title { margin: 6px 0 12px; font-size: 1.22rem; line-height: 1.35; overflow-wrap: anywhere; }
+        .si-text {
+            margin: 0 0 16px; padding: 16px; border-radius: 14px;
+            background: rgba(10,77,155,.055); line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere;
+        }
+        body.dark-mode .si-text { background: rgba(212,175,55,.08); }
+        .si-url { display: flex; align-items: center; gap: 8px; font-size: .82rem; color: #0A4D9B; overflow-wrap: anywhere; }
+        body.dark-mode .si-url { color: #93C5FD; }
+        .si-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .si-btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+            min-height: 46px; padding: 10px 18px; border-radius: 999px;
+            font: inherit; font-weight: 800; font-size: .85rem; text-decoration: none; cursor: pointer;
+            border: 1px solid rgba(10,77,155,.22); background: #fff; color: #0A4D9B;
+        }
+        body.dark-mode .si-btn { background: #102441; color: #eaf2ff; border-color: rgba(212,175,55,.3); }
+        .si-btn.primary { background: #0A4D9B; border-color: #0A4D9B; color: #fff; }
+        .si-btn.gold { background: #F6DF8A; border-color: #F6DF8A; color: #1a1400; }
+        .si-btn[hidden] { display: none; }
+        .si-note { margin-top: 20px; font-size: .78rem; line-height: 1.6; opacity: .75; }
+        .si-empty { text-align: center; padding: 48px 24px; }
+        .si-empty i { font-size: 2.6rem; color: #0A4D9B; }
+        @media (max-width: 480px) {
+            .si-wrap { padding: 18px 12px 42px; }
+            .si-banner, .si-body { padding: 20px 18px; }
+            .si-actions .si-btn { flex: 1 1 100%; }
+        }
+    </style>
+    <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
+</head>
+<body class="pd-home">
+<header class="si-topbar">
+    <a href="/" aria-label="Prayer Dome home"><img src="/assets/logo-192.png" alt=""></a>
+    <strong>Prayer Dome</strong>
+    <a href="/bible.html">Open Bible</a>
+</header>
+<main class="si-wrap">
+    <section class="si-card" aria-labelledby="siHeading">
+        <div class="si-banner">
+            <i class="pd-i pd-i-share-2" aria-hidden="true"></i>
+            <h1 id="siHeading">Shared with Prayer Dome</h1>
+            <p>Received from another app. Nothing is posted or uploaded until you choose to share it.</p>
+        </div>
+        <div class="si-body" id="siEmpty" hidden>
+            <div class="si-empty">
+                <i class="pd-i pd-i-inbox" aria-hidden="true"></i>
+                <h2>Nothing was shared</h2>
+                <p>Share a link or a passage from another app, then choose Prayer Dome as the destination.</p>
+                <a class="si-btn primary" href="/bible.html"><i class="pd-i pd-i-book-open"></i> Read the Bible</a>
+            </div>
+        </div>
+        <div class="si-body" id="siContent" hidden>
+            <div class="si-label" id="siLabel">Title</div>
+            <h2 class="si-title" id="siTitle"></h2>
+            <p class="si-text" id="siText"></p>
+            <div class="si-url" id="siUrlRow" hidden>
+                <i class="pd-i pd-i-link" aria-hidden="true"></i>
+                <a id="siUrl" href="#" rel="noopener noreferrer"></a>
+            </div>
+            <div class="si-actions">
+                <a class="si-btn primary" id="siOpen" href="#" rel="noopener noreferrer" hidden>
+                    <i class="pd-i pd-i-external-link"></i> Open link
+                </a>
+                <button class="si-btn gold" type="button" id="siShare"><i class="pd-i pd-i-share-2"></i> Share again</button>
+                <button class="si-btn" type="button" id="siCopy"><i class="pd-i pd-i-copy"></i> Copy details</button>
+            </div>
+            <p class="si-note">Your shared content stays on this device. Prayer Dome does not store links received through Android Share.</p>
+        </div>
+    </section>
+</main>
+<script>
+(function () {
+    'use strict';
+    var params = new URLSearchParams(window.location.search);
+    var title = (params.get('title') || '').trim();
+    var text = (params.get('text') || '').trim();
+    var rawUrl = (params.get('url') || '').trim();
+    var safeUrl = '';
+    try {
+        var parsed = new URL(rawUrl);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') safeUrl = parsed.href;
+    } catch (e) { /* ignore malformed links */ }
+
+    var $ = function (id) { return document.getElementById(id); };
+    var empty = $('siEmpty');
+    var content = $('siContent');
+    if (!title && !text && !safeUrl) {
+        empty.hidden = false;
+        return;
+    }
+    content.hidden = false;
+    $('siTitle').textContent = title || 'Shared passage or note';
+    $('siText').textContent = text || '';
+    $('siText').hidden = !text;
+    $('siLabel').textContent = title ? 'Shared title' : 'Shared text';
+
+    if (safeUrl) {
+        $('siUrl').textContent = safeUrl;
+        $('siUrl').href = safeUrl;
+        $('siUrlRow').hidden = false;
+        $('siOpen').href = safeUrl;
+        $('siOpen').hidden = false;
+    }
+
+    var shareData = {
+        title: title || 'Shared with Prayer Dome',
+        text: text,
+        url: safeUrl
+    };
+    if (!shareData.text) delete shareData.text;
+    if (!shareData.url) delete shareData.url;
+
+    $('siShare').addEventListener('click', function () {
+        if (navigator.share) {
+            navigator.share(shareData).catch(function () {});
+            return;
+        }
+        copy();
+    });
+    function copy() {
+        var value = [title, text, safeUrl].filter(Boolean).join('\n');
+        var done = function () {
+            $('siCopy').innerHTML = '<i class="pd-i pd-i-check"></i> Copied';
+            setTimeout(function () { $('siCopy').innerHTML = '<i class="pd-i pd-i-copy"></i> Copy details'; }, 2200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(value).then(done).catch(function () {});
+        else {
+            var area = document.createElement('textarea');
+            area.value = value; document.body.appendChild(area); area.select();
+            try { document.execCommand('copy'); done(); } catch (e) {}
+            area.remove();
+        }
+    }
+    $('siCopy').addEventListener('click', copy);
+
+    // Keep the site-wide appearance preference in step with every other page.
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches &&
+        localStorage.getItem('pd-theme-preference') !== 'light') document.body.classList.add('dark-mode');
+})();
+</script>
+<script src="/assets/pd-app.js" defer></script>
+</body>
+</html>

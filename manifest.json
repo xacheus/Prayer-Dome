@@ -136,16 +136,6 @@
       "origin": "https://prayerdome.net"
     }
   ],
-  "file_handlers": [
-    {
-      "action": "/resource-view.html",
-      "accept": {
-        "application/pdf": [
-          ".pdf"
-        ]
-      }
-    }
-  ],
   "share_target": {
     "action": "/share",
     "method": "GET",

@@ -28,7 +28,7 @@ VerseWidgetRenderer.java → RemoteViews → launcher / lock screen
 | `res/raw/pd_widget_verses.json` | Generated verse library: 4 slots, 80 verses, the rotation rule, the slot boundaries and checkpoints computed by the website library. Never edited by hand. |
 | `VerseWidgetData.java` | Loads that JSON, applies the website rotation, replays the checkpoints (`selfCheck()`), falls back to John 3:16 if the data ever disagrees with the site. |
 | `VerseWidgetStore.java` | SharedPreferences (`pd_verse_widget`): theme, text size, greeting/reference/brand toggles, and an optional pinned verse. |
-| `VerseWidgetRenderer.java` | Builds the RemoteViews card, the four themes, the tap targets (open the app at `/widgets.html`, refresh on the spot). |
+| `VerseWidgetRenderer.java` | Builds the RemoteViews card, the four themes, the tap targets (open the app at `/widgets.html`, refresh on the spot) and adapts type, padding and line count to each placed widget's real dimensions. |
 | `VerseWidgetProvider.java` | `AppWidgetProvider`: redraws on update, boot, app update and the boundary alarm. |
 | `VerseWidgetScheduler.java` | One wake-up per slot boundary (midnight, 11:00, 14:00, 18:00) via `setAndAllowWhileIdle` — four a day, no background service, no exact-alarm permission. |
 | `VerseWidgetPlugin.java` | Capacitor plugin `VerseWidget`: `getState`, `setPreferences`, `pinVerse`, `clearPin`, `refresh`, `requestPin`, `pendingRoute`. |

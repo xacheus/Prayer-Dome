@@ -408,12 +408,14 @@
   /* ----------------------------------------------------------- theme ui --- */
 
   /* ------------------------------------------------------------------ theme
-   * Automatic appearance management. The OS theme (prefers-color-scheme) is
-   * the single source of truth; there is no user-facing toggle. `dark-mode`
-   * is derived from the media query on every page load and re-applied the
-   * moment the device theme changes, so the app is always in step with the
-   * phone. `PDApp.theme` is the public handle pages and tests can read.
+   * One persisted preference for all pages: light, dark, or follow the device.
+   * `pd-theme-preference` is the source of truth. The old `pd-theme` key is
+   * kept only as a mirror of the resolved mode for older pages and tests; it
+   * is migrated once, then never allowed to override a deliberate choice.
+   * `PDApp.theme` is the public handle pages and tests can read.
    * ---------------------------------------------------------------------- */
+  var THEME_PREF_KEY = 'pd-theme-preference';
+  var THEME_CHOICES = ['light', 'dark', 'system'];
   var theme = {
     media: null,
     ensure: function () {
@@ -425,14 +427,44 @@
     scheme: function () {
       return (theme.ensure() && theme.ensure().matches) ? 'dark' : 'light';
     },
+    preference: function () {
+      var saved = lsGet(THEME_PREF_KEY, null);
+      if (THEME_CHOICES.indexOf(saved) > -1) return saved;
+      // One-time migration from the old OS-only setting.
+      var legacy = lsGet('pd-theme', null);
+      if (legacy === 'dark' || legacy === 'light') {
+        lsSet(THEME_PREF_KEY, legacy);
+        return legacy;
+      }
+      lsSet(THEME_PREF_KEY, 'system');
+      return 'system';
+    },
     mode: function () {
-      var forced = document.documentElement.getAttribute('data-pd-theme');
-      if (forced === 'dark' || forced === 'light') return forced;
-      return theme.scheme();
+      var preference = theme.preference();
+      return preference === 'system' ? theme.scheme() : preference;
     },
     isDark: function () { return theme.mode() === 'dark'; },
-    init: function () {
+    set: function (mode) {
+      var choice = THEME_CHOICES.indexOf(mode) > -1 ? mode : 'system';
+      lsSet(THEME_PREF_KEY, choice);
+      if (choice === 'system') document.documentElement.removeAttribute('data-pd-theme');
+      else document.documentElement.setAttribute('data-pd-theme', choice);
       if (ui && ui.syncTheme) ui.syncTheme();
+      broadcast('theme', { preference: choice, mode: theme.mode() });
+      return choice;
+    },
+    /** The visible icon button toggles the resolved mode; Device is in the bell. */
+    toggle: function () {
+      return theme.set(theme.isDark() ? 'light' : 'dark');
+    },
+    init: function () {
+      // Apply the saved preference before the first paint of the shell.
+      theme.set(theme.preference());
+      if (ui && ui.syncTheme) ui.syncTheme();
+      // Older pages define their own one-way toggle. Route every call through
+      // one shared implementation so no page can disagree with the preference.
+      window.toggleDarkMode = function () { return theme.toggle(); };
+      window.toggleDark = function () { return theme.toggle(); };
     }
   };
 
@@ -567,34 +599,71 @@
       document.addEventListener('pd:lang', function () { scripture.render($('#pdSplash .pd-splash-verse')); });
     },
     syncTheme: function () {
-      // The appearance now follows the device (prefers-color-scheme) with no
-      // manual toggle. The resolved mode drives `dark-mode` on <html> and
-      // <body> so fixed overlays, cached page styles and the brand layer all
-      // stay in step. Detects OS changes instantly — no reload needed.
+      // One renderer for every page. It applies the resolved mode to the whole
+      // document, keeps every visible appearance button in step, and lets the
+      // device change the theme only while the preference is "system".
       var sync = function () {
         var mode = theme.mode();
+        var preference = theme.preference();
         var dark = mode === 'dark';
         document.documentElement.classList.toggle('dark-mode', dark);
         document.body.classList.toggle('dark-mode', dark);
-        // Refresh pages that kept a legacy moon/sun toggle after this deploy
-        // so its icon always reflects the real, system-driven appearance.
-        var legacyToggle = document.querySelector('[data-pd-theme-toggle] .pd-i, .theme-toggle-btn .pd-i');
-        if (legacyToggle) legacyToggle.className = dark ? 'pd-i pd-i-sun' : 'pd-i pd-i-moon';
-        // Keep the legacy localStorage key in step (for older app shells that
-        // still read it) but the media query is the single source of truth.
+        var buttons = document.querySelectorAll('[data-pd-theme-toggle], .theme-toggle-btn, [data-pd-theme-choice]');
+        Array.prototype.forEach.call(buttons, function (button) {
+          var choice = button.getAttribute('data-pd-theme-choice');
+          var icon = button.querySelector('.pd-i');
+          if (icon) {
+            icon.className = choice === 'system' ? 'pd-i pd-i-monitor'
+              : (dark ? 'pd-i pd-i-sun' : 'pd-i pd-i-moon');
+          }
+          var label = choice === 'system' ? 'Follow device theme'
+            : (dark ? 'Switch to light theme' : 'Switch to dark theme');
+          button.setAttribute('aria-label', label);
+          button.setAttribute('title', label + ' · current: ' + preference);
+          button.setAttribute('aria-pressed', String(choice ? choice === preference : preference !== 'system'));
+        });
+        // Legacy key mirrors the resolved mode; it no longer decides it.
         try { localStorage.setItem('pd-theme', dark ? 'dark' : 'light'); } catch (e) {}
       };
       sync();
       if (window.matchMedia) {
         var mq = window.matchMedia('(prefers-color-scheme: dark)');
         try {
-          var onChg = function () { sync(); };
+          var onChg = function () { if (theme.preference() === 'system') sync(); };
           if (mq.addEventListener) mq.addEventListener('change', onChg);
           else if (mq.addListener) mq.addListener(onChg);
         } catch (e) { /* older WebViews */ }
       }
-      if (window.MutationObserver) {
+      if (window.MutationObserver && !theme._observed) {
+        theme._observed = true;
         new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-pd-theme'] });
+      }
+      // Neutralise the old one-way page handlers and give every button one
+      // shared three-state action. This also fixes buttons on pages that never
+      // defined toggleDarkMode() at all.
+      if (!theme._delegated) {
+        theme._delegated = true;
+        document.addEventListener('click', function (event) {
+          var choiceButton = event.target && event.target.closest
+            ? event.target.closest('[data-pd-theme-choice]') : null;
+          if (choiceButton) {
+            event.preventDefault();
+            theme.set(choiceButton.getAttribute('data-pd-theme-choice'));
+            return;
+          }
+          var button = event.target && event.target.closest
+            ? event.target.closest('[data-pd-theme-toggle], .theme-toggle-btn') : null;
+          if (!button) return;
+          if (button.hasAttribute('onclick')) button.removeAttribute('onclick');
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          theme.toggle();
+        }, true);
+        // Inline onclick attributes run before bubbling listeners, so remove
+        // them as soon as the shell starts as well.
+        Array.prototype.forEach.call(
+          document.querySelectorAll('[data-pd-theme-toggle], .theme-toggle-btn'),
+          function (button) { button.removeAttribute('onclick'); });
       }
       // Adapt the theme-colour chrome of the browser UI to match.
       if (!document.querySelector('meta[name="theme-color"]')) return;
@@ -614,6 +683,7 @@
       // state, and the permission strip when alerts are still off.
       notifications.render();
       notifications.syncAlerts();
+      notifications.syncSound();
       notifications.syncBadge();
       var first = panel.querySelector('.pd-notif-alerts:not([hidden]) button, .pd-notif-item, .pd-notif-head-actions button');
       if (first && typeof first.focus === 'function') {
@@ -976,27 +1046,77 @@
 
   /* --------------------------------------------------------- announcements */
   var announcements = {
+    /**
+     * The moving News bar is a read-only projection of Firestore
+     * `announcements`. An admin publish now reaches every open page directly;
+     * localStorage is only a last-known-good cache for offline visits.
+     */
     init: function () {
       var bar = $('#pdAnnouncementBar');
       if (!bar) return;
-      var items = (store.get('announcements', 'DEFAULT_ANNOUNCEMENTS') || []).filter(function (a) { return a && a.active !== false; });
       var track = $('.pd-marquee-track', bar);
       if (!track) return;
-      if (!items.length) { bar.style.display = 'none'; return; }
-      var render = function () {
+
+      var paint = function (items) {
+        items = (items || []).filter(function (a) { return a && a.active !== false; }).slice(0, 8);
+        if (!items.length) {
+          track.innerHTML = '';
+          bar.style.display = 'none';
+          bar.classList.remove('pd-marquee-ready');
+          return;
+        }
+        bar.style.display = '';
         var html = items.map(function (a, i) {
           return '<span class="pd-marquee-item" data-i="' + i + '"><i class="' + iconCls(a.icon, 'pd-i-megaphone') + '" aria-hidden="true"></i> ' + esc(a.text) + '</span>';
         }).join('<i class="pd-i pd-i-latin-cross pd-marquee-sep"></i>');
         // Duplicate for a seamless loop.
         track.innerHTML = '<div class="pd-marquee-group">' + html + '</div><div class="pd-marquee-group" aria-hidden="true">' + html + '</div>';
+        bar.classList.add('pd-marquee-ready');
       };
-      render();
-      bar.classList.add('pd-marquee-ready');
-      // Pause on hover / touch.
+
+      // Show the cached bar immediately (also the offline fallback), then let
+      // the live snapshot replace it. Never write to Firestore from here.
+      var cached = store.get('announcements', 'DEFAULT_ANNOUNCEMENTS') || [];
+      paint(cached);
+
       bar.addEventListener('mouseenter', function () { bar.classList.add('pd-marquee-paused'); });
       bar.addEventListener('mouseleave', function () { bar.classList.remove('pd-marquee-paused'); });
-      on('store:announcements', function (e) { items = (e.detail || []).filter(function (a) { return a.active !== false; }); render(); });
-      on('announcement', function (e) { items = (e.detail || []).filter(function (a) { return a.active !== false; }); render(); });
+
+      if (!fb || !fb.db || !fb.collection || !fb.query || !fb.orderBy || !fb.limit) return;
+      var map = function (snap) {
+        var rows = [];
+        snap.forEach(function (d) {
+          var x = d.data() || {};
+          if (x.active === false || x.status === 'draft' || x.status === 'hidden') return;
+          var title = String(x.title || '');
+          if (!title) return;
+          var body = String(x.body || '');
+          rows.push({
+            id: d.id,
+            text: title + (body ? ' — ' + body.slice(0, 80) : ''),
+            icon: x.category === 'event' ? 'pd-i-calendar' : 'pd-i-megaphone',
+            active: true,
+            createdAt: x.createdAt || null
+          });
+        });
+        rows.sort(function (a, b) {
+          var at = a.createdAt && a.createdAt.toMillis ? a.createdAt.toMillis() : 0;
+          var bt = b.createdAt && b.createdAt.toMillis ? b.createdAt.toMillis() : 0;
+          return bt - at;
+        });
+        rows = rows.slice(0, 8);
+        // Keep the cache small and current so an offline visitor still sees
+        // the last announcements they were online for.
+        store.set('announcements', rows);
+        paint(rows);
+      };
+      var q;
+      try { q = fb.query(fb.collection(fb.db, 'announcements'), fb.orderBy('createdAt', 'desc'), fb.limit(8)); }
+      catch (e) { return; }
+      try {
+        if (fb.onSnapshot) fb.onSnapshot(q, map, function () { /* offline: keep cache */ });
+        else if (fb.getDocs) fb.getDocs(q).then(map).catch(function () {});
+      } catch (e) { /* offline: the cached bar remains */ }
     }
   };
 
@@ -1087,41 +1207,43 @@
   /* Android 8+ delivers notifications through a named channel, and the
      channel — not the payload — owns importance, sound and lock-screen
      visibility. One channel per category lets a member silence "Events" in
-     Android settings without silencing "Live service". These ids are mirrored
-     in AndroidManifest.xml's default_notification_channel_id. */
-  var NATIVE_CHANNELS = [
-    { id: 'prayer_dome_general', name: 'Prayer Dome', description: 'Church announcements and ministry notices', importance: 4, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
-    { id: 'prayer_dome_verse', name: 'Daily Bible verse', description: 'The verse of the day', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
-    { id: 'prayer_dome_live', name: 'Live services', description: 'When Prayer Dome goes live', importance: 5, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
-    { id: 'prayer_dome_prayer', name: 'Prayer and care', description: 'Prayer requests and pastoral care updates', importance: 4, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: true, sound: 'default' },
-    { id: 'prayer_dome_news', name: 'News and announcements', description: 'What is happening at Prayer Dome', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
-    { id: 'prayer_dome_sermon', name: 'Sermons and devotionals', description: 'New teaching and devotionals', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' },
-    { id: 'prayer_dome_events', name: 'Events and reminders', description: 'Services, conferences and reminders', importance: 3, visibility: 0, lights: true, lightColor: '#D4AF37', vibration: false, sound: 'default' }
+     Android settings without silencing "Live service".
+
+     Android never lets an app change the sound of an existing channel, so the
+     branded chime lives in a new, versioned set of channel ids. Each category
+     has a quiet twin for members who switch the app's notification sound off;
+     the server sends to the matching id. No separate local-notification plugin
+     is required — FCM owns foreground and background delivery. */
+  var SOUND_KEY = 'pd_notif_sound';
+  var CHANNEL_VERSION = 'v2';
+  var CHANNEL_SOUND = 'pd_notification_chime';
+  var CHANNEL_BASES = [
+    { id: 'general', name: 'Prayer Dome', description: 'Church announcements and ministry notices', importance: 4, vibration: true },
+    { id: 'verse', name: 'Daily Bible verse', description: 'The verse of the day', importance: 3, vibration: false },
+    { id: 'live', name: 'Live services', description: 'When Prayer Dome goes live', importance: 5, vibration: true },
+    { id: 'prayer', name: 'Prayer and care', description: 'Prayer requests and pastoral care updates', importance: 4, vibration: true },
+    { id: 'news', name: 'News and announcements', description: 'What is happening at Prayer Dome', importance: 3, vibration: false },
+    { id: 'sermon', name: 'Sermons and devotionals', description: 'New teaching and devotionals', importance: 3, vibration: false },
+    { id: 'events', name: 'Events and reminders', description: 'Services, conferences and reminders', importance: 3, vibration: false }
   ];
-  function nativeChannelId(type) {
-    var key = String(type || 'general').toLowerCase();
-    if (key === 'tf') key = 'general';
-    if (key === 'events') key = 'event';
+  function channelDefinition(base, quiet) {
     return {
-      verse: 'prayer_dome_verse',
-      live: 'prayer_dome_live',
-      prayer: 'prayer_dome_prayer',
-      news: 'prayer_dome_news',
-      sermon: 'prayer_dome_sermon',
-      devotional: 'prayer_dome_sermon',
-      event: 'prayer_dome_events',
-      general: 'prayer_dome_general'
-    }[key] || 'prayer_dome_general';
+      id: 'prayer_dome_' + base.id + '_' + CHANNEL_VERSION + (quiet ? '_quiet' : ''),
+      name: base.name + (quiet ? ' (silent)' : ''),
+      description: base.description,
+      importance: quiet ? 2 : base.importance,
+      visibility: 0,
+      lights: !quiet,
+      lightColor: '#D4AF37',
+      vibration: quiet ? false : base.vibration,
+      sound: quiet ? null : CHANNEL_SOUND
+    };
   }
-  /* LocalNotifications needs a stable positive 32-bit id per item, otherwise
-     two different announcements can replace each other in the shade. */
-  function nativeNotificationId(id) {
-    var str = String(id || 'prayer-dome');
-    var hash = 0;
-    for (var i = 0; i < str.length; i += 1) {
-      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
-    }
-    return Math.abs(hash || 1) % 2147483600 || 1;
+  var NATIVE_CHANNELS = CHANNEL_BASES.reduce(function (all, base) {
+    return all.concat([channelDefinition(base, false), channelDefinition(base, true)]);
+  }, []);
+  function soundEnabled() {
+    try { return localStorage.getItem(SOUND_KEY) !== 'false'; } catch (e) { return true; }
   }
 
   var notifications = {
@@ -1133,6 +1255,20 @@
     // The last service-worker state that was announced to the page. It stops
     // diagnostics() from announcing the same state over and over.
     _swState: '',
+    /** A small, explicit three-way appearance control inside the bell panel. */
+    ensureAppearance: function (panel) {
+      if (!panel || panel.querySelector('[data-pd-theme-options]')) return;
+      var strip = document.createElement('div');
+      strip.className = 'pd-theme-options';
+      strip.setAttribute('data-pd-theme-options', '');
+      strip.innerHTML = '<span>Appearance</span>' +
+        '<button type="button" data-pd-theme-choice="light"><i class="pd-i pd-i-sun"></i> Light</button>' +
+        '<button type="button" data-pd-theme-choice="dark"><i class="pd-i pd-i-moon"></i> Dark</button>' +
+        '<button type="button" data-pd-theme-choice="system"><i class="pd-i pd-i-monitor"></i> Device</button>';
+      var list = panel.querySelector('#' + notifications.listId) || panel.lastChild;
+      panel.insertBefore(strip, list);
+    },
+
     /**
      * The notification centre must exist on every page that shows a bell.
      *
@@ -1148,6 +1284,7 @@
         notifications.panelEl = existing;
         notifications.listEl = $('#pdNotifList') || existing.querySelector('[data-pd-notif-list]');
         if (notifications.listEl) notifications.listId = notifications.listEl.id || notifications.listId;
+        notifications.ensureAppearance(existing);
         return existing;
       }
       var bell = $('#pdNotifBell') || $('#notificationBell') || $('.pd-bell-btn');
@@ -1173,6 +1310,7 @@
           '<span class="pd-notif-alerts-text">Turn on device alerts so Prayer Dome can reach you when the page is closed.</span>' +
           '<button type="button" class="pd-notif-alerts-btn" data-pd-notif="enable">Turn on</button>' +
         '</div>' +
+        '<label class="pd-notif-sound"><input type="checkbox" data-pd-notif-sound checked> Notification sound</label>' +
         '<div id="' + notifications.listId + '"></div>';
       document.body.appendChild(panel);
 
@@ -1190,6 +1328,7 @@
 
       notifications.panelEl = panel;
       notifications.listEl = list;
+      notifications.ensureAppearance(panel);
       return panel;
     },
     /** Show or hide the "turn on device alerts" strip inside the centre. */
@@ -1199,6 +1338,20 @@
       var strip = panel.querySelector('[data-pd-notif="alerts"]');
       if (!strip) return;
       strip.hidden = !notifications.canPrompt();
+    },
+    syncSound: function () {
+      var panel = notifications.panelEl;
+      if (!panel) return;
+      var box = panel.querySelector('[data-pd-notif-sound]');
+      if (!box) return;
+      box.checked = soundEnabled();
+      if (box._pdBound) return;
+      box._pdBound = true;
+      box.addEventListener('change', function () {
+        try { localStorage.setItem(SOUND_KEY, box.checked ? 'true' : 'false'); } catch (e) {}
+        notifications.syncPreferences();
+        toast(box.checked ? 'Notification sound on' : 'Notifications will be silent', 'success');
+      });
     },
     init: function () {
       notifications.badgeEl = $('#pdNotifBadge') || $('.pd-bell-badge') || $('#notifBadge');
@@ -1304,10 +1457,12 @@
               id: d.id, type: x.type || 'general', title: x.title || 'Update',
               message: x.message || '', link: x.link || null,
               time: x.createdAt ? (x.createdAt.toDate ? x.createdAt.toDate().toISOString() : new Date(x.createdAt).toISOString()) : new Date().toISOString(),
-              read: false
+              read: false, source: 'publicNotifications'
             });
           });
-          if (remote.length) notifications.merge(remote);
+          // Always replace the remote half, including an empty list: a notice
+          // removed by an admin must disappear from open bells without a reload.
+          notifications.syncRemote(remote, true);
         };
         try {
           if (fb.onSnapshot) {
@@ -1399,6 +1554,43 @@
       });
     },
 
+    /**
+     * Replace the Firestore-backed half of the bell with the latest snapshot.
+     * `complete` is true for onSnapshot: this also removes a notice that an
+     * admin deleted, while keeping local pushes and personal account rows.
+     * Read state is remembered locally by id and content signature, so a
+     * reload or a second device never makes an old announcement new again.
+     */
+    syncRemote: function (remote, complete) {
+      if (!complete) return notifications.merge(remote);
+      var known = {};
+      var previous = {};
+      notifications.items.forEach(function (n) { previous[n.id] = true; });
+      var incoming = (remote || []).map(function (n) {
+        return Object.assign({}, n, { remote: true, read: isRead(n) });
+      });
+      var local = notifications.items.filter(function (n) { return !n.remote; });
+      var merged = [];
+      incoming.concat(local).forEach(function (n) {
+        if (!n || !n.id) return;
+        var sig = signature(n);
+        if (known[n.id] || known[sig]) return;
+        known[n.id] = true;
+        known[sig] = true;
+        merged.push(n);
+      });
+      merged.sort(function (a, b) { return new Date(b.time) - new Date(a.time); });
+      notifications.items = merged.slice(0, 40);
+      lsSet('pd_notifications', notifications.items);
+      notifications.render();
+      notifications.syncBadge();
+
+      var cutoff = Date.now() - 10 * 60 * 1000;
+      incoming.forEach(function (n) {
+        if (!previous[n.id] && !n.read && new Date(n.time).getTime() > cutoff) notifications.notifyDevice(n);
+      });
+    },
+
     /* Merge remote items without duplicating what is already local and without
        resurrecting anything the member already read. */
     merge: function (remote) {
@@ -1480,7 +1672,7 @@
     /** Native permission on the packaged app, browser permission on the web. */
     requestPermission: function () {
       var native = window.Capacitor && window.Capacitor.Plugins &&
-        (window.Capacitor.Plugins.PushNotifications || window.Capacitor.Plugins.LocalNotifications);
+        window.Capacitor.Plugins.PushNotifications;
       if (native && native.requestPermissions) {
         return native.requestPermissions()
           .then(function (res) {
@@ -1556,8 +1748,10 @@
             link: data.url || data.link || null,
             time: new Date().toISOString()
           };
+          // Capacitor's push plugin does not draw a system card while the app is
+          // in the foreground. The bell shows it instantly instead; when the app
+          // is closed FCM draws the branded native notification itself.
           notifications.push(item, { localOnly: true, silent: true });
-          notifications.showNative(item);
         });
       } catch (e) { /* ignore */ }
 
@@ -1570,33 +1764,6 @@
       } catch (e) { /* ignore */ }
 
       try { push.register(); } catch (e) { /* permission not granted yet */ }
-    },
-
-    /**
-     * Draw a foreground push natively. It goes through the category channel,
-     * so Android's own lock-screen privacy setting and the member's channel
-     * choice still decide whether the content is shown on the lock screen.
-     */
-    showNative: function (n) {
-      var local = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
-      if (!local || !local.schedule) return false;
-      if (!typeAllowed(n.type)) return false;
-      try {
-        var call = local.schedule({
-          notifications: [{
-            id: nativeNotificationId(n.id),
-            title: n.title || 'Prayer Dome',
-            body: n.message || '',
-            channelId: nativeChannelId(n.type),
-            smallIcon: 'ic_notification',
-            iconColor: '#D4AF37',
-            schedule: { at: new Date(Date.now() + 250) },
-            extra: { url: n.link || '/notifications', id: n.id, kind: n.type || 'general' }
-          }]
-        });
-        if (call && call.catch) call.catch(function () { /* user denied */ });
-      } catch (e) { return false; }
-      return true;
     },
 
     /**
@@ -1742,7 +1909,7 @@
       var options = {
         body: n.message || '',
         icon: BRAND_LOGO,
-        badge: '/assets/logo-192.png',
+        badge: '/assets/notification-badge-96.png',
         tag: n.id,                 // one entry per item — never a duplicate
         renotify: false,
         requireInteraction: false, // informative, not intrusive
@@ -1910,7 +2077,7 @@
        document is read by the Cloud Function before it sends a category. */
     syncPreferences: function () {
       var current = fb && fb.auth && fb.auth.currentUser;
-      var prefs = readPrefs();
+      var prefs = Object.assign(readPrefs(), { sound: soundEnabled() });
       if (!current || !fb || !fb.db || !fb.doc || !fb.setDoc) return Promise.resolve(false);
       return Promise.resolve(fb.setDoc(fb.doc(fb.db, 'userNotificationPrefs', current.uid), {
         uid: current.uid,
@@ -1934,6 +2101,10 @@
             else if (stored[key] === true) prefs[key] = true;
           });
           lsSet(PREF_KEY, prefs);
+          if (typeof stored.sound === 'boolean') {
+            try { localStorage.setItem(SOUND_KEY, stored.sound ? 'true' : 'false'); } catch (e) {}
+          }
+          notifications.syncSound();
           broadcast('notif-prefs', prefs);
           try { document.dispatchEvent(new CustomEvent('pd:notif-prefs', { detail: prefs })); } catch (e) {}
           return prefs;
@@ -3494,6 +3665,7 @@
     init: function () {
       // Each module is isolated: one failure must never break the rest.
       var modules = [
+        ['theme', theme.init],
         ['tables', tables.init],
         ['layout', layout.init],
         ['appShell', appShell.init],

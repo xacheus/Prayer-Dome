@@ -99,6 +99,9 @@ const PRECACHE = [
     // The dedicated offline shell shown when a navigation cannot be served at
     // all — far friendlier than falling back to a half-empty home page.
     '/offline.html',
+    // PWA Android share target destination — keep it available offline.
+    '/share',
+    '/share-intake.html',
     '/devotional-data.js',
     '/bible.html',
     '/prayer.html',
@@ -137,6 +140,7 @@ const PRECACHE = [
     '/manifest.json',
     '/assets/logo.png',
     '/assets/logo-192.png',
+    '/assets/notification-badge-96.png',
     '/news.html',
     '/radio.html',
     '/lessons.html',
@@ -414,7 +418,7 @@ async function showVerseNotification(verse) {
         body: '\u201C' + verse.text + '\u201D\n\u2014 ' + verse.reference +
               ' (' + (verse.translation || 'NIV') + ')',
         icon: '/assets/logo-192.png',
-        badge: '/assets/logo-192.png',
+        badge: '/assets/notification-badge-96.png',
         tag: 'pd-verse-' + verse.slot + '-' + todayStamp(),
         renotify: false,
         data: {
@@ -549,7 +553,7 @@ function notificationOptions(note) {
     var options = {
         body: note.body,
         icon: note.icon || '/assets/logo-192.png',
-        badge: '/assets/logo-192.png',
+        badge: '/assets/notification-badge-96.png',
         image: note.image || undefined,
         // A stable tag means a re-sent broadcast replaces the old card instead
         // of stacking duplicates on the lock screen.

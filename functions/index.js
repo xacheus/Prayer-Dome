@@ -37,7 +37,7 @@ const verseBank = require('./verse-bank');
    their icon on Android). */
 const SITE_URL = process.env.PD_SITE_URL || 'https://prayerdome.net';
 const PUSH_ICON = SITE_URL + '/assets/logo-192.png';
-const PUSH_BADGE = SITE_URL + '/assets/logo-192.png';
+const PUSH_BADGE = SITE_URL + '/assets/notification-badge-96.png';
 
 function absoluteUrl(value, fallback) {
   if (!value || typeof value !== 'string') return fallback || SITE_URL + '/index.html';
@@ -54,9 +54,15 @@ function normaliseKind(value) {
     : 'general';
 }
 
-/** Drop devices whose owner switched this category off on their account page. */
-async function filterTokensByPreference(tokens, kind) {
-  if (!tokens.length) return tokens;
+/**
+ * Filter devices by the member's category switches and split them into the
+ * branded-sound and silent Android channel audiences. Android cannot change a
+ * channel's sound after creation, so both channel ids exist and the payload
+ * must name the right one for each recipient.
+ */
+async function notificationAudience(tokens, kind) {
+  if (!tokens.length) return { allowed: [], quiet: new Set() };
+  const quiet = new Set();
   try {
     const db = admin.firestore();
     const [prefsSnap, tokenSnap] = await Promise.all([
@@ -68,7 +74,7 @@ async function filterTokensByPreference(tokens, kind) {
       const row = doc.data() || {};
       if (row.prefs) prefsByUser[row.uid || doc.id] = row.prefs;
     });
-    if (!Object.keys(prefsByUser).length) return tokens;   // everyone still on
+    if (!Object.keys(prefsByUser).length) return { allowed: tokens, quiet };
     const userByToken = {};
     tokenSnap.forEach((doc) => {
       const row = doc.data() || {};
@@ -77,14 +83,22 @@ async function filterTokensByPreference(tokens, kind) {
     // Devotionals live under the member's "Sermons and devotionals" switch;
     // the preference document stores that category as `sermon`.
     const prefKey = kind === 'devotional' ? 'sermon' : kind;
-    return tokens.filter((token) => {
+    const allowed = tokens.filter((token) => {
       const prefs = prefsByUser[userByToken[token]];
-      return !prefs || prefs[prefKey] !== false;
+      if (prefs && prefs[prefKey] === false) return false;
+      if (prefs && prefs.sound === false) quiet.add(token);
+      return true;
     });
+    return { allowed, quiet };
   } catch (error) {
     console.warn('Could not read notification preferences; sending to all:', error.message);
-    return tokens;
+    return { allowed: tokens, quiet };
   }
+}
+
+/** Kept for callers that only need the filtered token list. */
+async function filterTokensByPreference(tokens, kind) {
+  return (await notificationAudience(tokens, kind)).allowed;
 }
 
 function linkFor(record) {
@@ -104,17 +118,17 @@ function linkFor(record) {
    creates in assets/pd-app.js. A channel owns its importance and lock-screen
    visibility, so a member can mute events without missing a live service. */
 const ANDROID_CHANNELS = {
-  verse: 'prayer_dome_verse',
-  live: 'prayer_dome_live',
-  prayer: 'prayer_dome_prayer',
-  news: 'prayer_dome_news',
-  sermon: 'prayer_dome_sermon',
-  devotional: 'prayer_dome_sermon',
-  event: 'prayer_dome_events',
-  general: 'prayer_dome_general'
+  verse: 'prayer_dome_verse_v2',
+  live: 'prayer_dome_live_v2',
+  prayer: 'prayer_dome_prayer_v2',
+  news: 'prayer_dome_news_v2',
+  sermon: 'prayer_dome_sermon_v2',
+  devotional: 'prayer_dome_sermon_v2',
+  event: 'prayer_dome_events_v2',
+  general: 'prayer_dome_general_v2'
 };
 
-function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
+function pushMessage({ tokens, title, body, image, kind, link, id, tag, quiet }) {
   const message = {
     tokens,
     notification: {
@@ -154,10 +168,13 @@ function pushMessage({ tokens, title, body, image, kind, link, id, tag }) {
     android: {
       priority: 'high',
       notification: {
-        channelId: ANDROID_CHANNELS[normaliseKind(kind)] || 'prayer_dome_general',
+        // The client creates both variants on first launch. A member who turns
+        // the sound off receives the quiet channel instead; OS channel settings
+        // remain the final authority on the device.
+        channelId: (ANDROID_CHANNELS[normaliseKind(kind)] || 'prayer_dome_general_v2') + (quiet ? '_quiet' : ''),
         icon: 'ic_notification',
         color: '#0A4D9B',
-        sound: 'default'
+        sound: quiet ? null : 'pd_notification_chime'
       }
     },
     apns: {
@@ -187,6 +204,57 @@ async function disableDeadTokens(response, tokens) {
       console.warn('Could not retire an expired token:', error.message);
     }
   }
+}
+
+/**
+ * Token-bearing push records are admin-only by rule, so the open app cannot
+ * read them. Write a token-free mirror with a deterministic id instead. The
+ * same id is used by the admin console, so a broadcast appears once in every
+ * bell whether it was queued from the dashboard or by a Cloud Function.
+ */
+async function mirrorPublicNotification(notification, id) {
+  if (!id || notification.inApp === false) return;
+  const title = notification.title || 'Prayer Dome';
+  const body = notification.message || notification.body || '';
+  if (!title && !body) return;
+  const kind = normaliseKind(notification.type || notification.kind);
+  const link = linkFor(notification);
+  await admin.firestore().doc(`publicNotifications/${id}`).set({
+    title,
+    message: body,
+    type: kind,
+    link: link || null,
+    inApp: true,
+    status: 'in-app',
+    sourceId: id,
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
+}
+
+/**
+ * Fan one notification out to both channel audiences, in FCM-sized chunks.
+ * The two groups never overlap, so a device cannot receive the same card
+ * twice with different sounds.
+ */
+async function sendPushAudience(audience, base) {
+  let successCount = 0;
+  let failureCount = 0;
+  const groups = [
+    { tokens: audience.allowed.filter((token) => !audience.quiet.has(token)), quiet: false },
+    { tokens: audience.allowed.filter((token) => audience.quiet.has(token)), quiet: true }
+  ];
+  for (const group of groups) {
+    if (!group.tokens.length) continue;
+    const message = pushMessage({ ...base, tokens: group.tokens, quiet: group.quiet });
+    for (let i = 0; i < group.tokens.length; i += 500) {
+      const chunk = group.tokens.slice(i, i + 500);
+      const response = await admin.messaging().sendEachForMulticast({ ...message, tokens: chunk });
+      successCount += response.successCount;
+      failureCount += response.failureCount;
+      await disableDeadTokens(response, chunk);
+    }
+  }
+  return { successCount, failureCount };
 }
 
 // Dynamic social sharing pages for news and testimony links.
@@ -781,14 +849,13 @@ exports.dailyDevotionalNotification = functions.pubsub
 
       // Respect the member's "Sermons and devotionals" switch, exactly like a
       // dashboard announcement does.
-      const allowedTokens = await filterTokensByPreference(tokens, 'devotional');
-      if (!allowedTokens.length) {
+      const audience = await notificationAudience(tokens, 'devotional');
+      if (!audience.allowed.length) {
         console.log('Every device muted devotionals; nothing to send.');
         return null;
       }
 
-      const payload = pushMessage({
-        tokens: allowedTokens,
+      const response = await sendPushAudience(audience, {
         title: 'Daily Devotional — Prayer Dome',
         body: dev.title ? `${dev.title}: ${dev.thought ? dev.thought.substring(0, 80) + '…' : 'Read today\'s word.'}` : 'Your daily devotional is ready.',
         kind: 'devotional',
@@ -796,10 +863,7 @@ exports.dailyDevotionalNotification = functions.pubsub
         id: `devotional-${today}`,
         tag: `pd-devotional-${today}`
       });
-
-      const response = await admin.messaging().sendEachForMulticast(payload);
-      await disableDeadTokens(response, allowedTokens);
-      console.log(`Devotional notification sent to ${response.successCount}/${allowedTokens.length} devices.`);
+      console.log(`Devotional notification sent to ${response.successCount}/${audience.allowed.length} devices.`);
 
       // Log the dispatch.
       await db.collection('devotionalLogs').add({
@@ -961,14 +1025,20 @@ exports.sendPushNotification = functions.firestore
     const body = notification.message || notification.body || '';
     const kind = normaliseKind(notification.type || notification.kind);
     const link = linkFor(notification);
-    const allowedTokens = await filterTokensByPreference(validTokens, kind);
-    if (!allowedTokens.length) {
+    // Open apps read the bell mirror; FCM reaches devices that are closed.
+    // Keep both halves of one notification under the same deterministic id.
+    try {
+      await mirrorPublicNotification({ ...notification, type: kind, link }, context.params.notificationId);
+    } catch (error) {
+      console.warn('Could not mirror notification into the in-app centre:', error.message);
+    }
+    const audience = await notificationAudience(validTokens, kind);
+    if (!audience.allowed.length) {
       console.log('Every registered device muted this category; notification stays in-app.');
       await snap.ref.set({ status: 'in-app', recipients: 0, filteredByPreference: true }, { merge: true });
       return null;
     }
-    const message = pushMessage({
-      tokens: allowedTokens,
+    const base = {
       title,
       body,
       image: notification.image || notification.imageUrl || null,
@@ -976,22 +1046,13 @@ exports.sendPushNotification = functions.firestore
       link,
       id: context.params.notificationId,
       tag: notification.tag || ('pd-' + context.params.notificationId)
-    });
+    };
 
     try {
       await snap.ref.set({ status: 'sending' }, { merge: true });
-      // FCM accepts at most 500 tokens per multicast call. Fan out in chunks
-      // so a growing church never silently loses the members past 500.
-      let successCount = 0;
-      let failureCount = 0;
-      for (let i = 0; i < allowedTokens.length; i += 500) {
-        const chunk = allowedTokens.slice(i, i + 500);
-        const response = await admin.messaging().sendEachForMulticast({ ...message, tokens: chunk });
-        successCount += response.successCount;
-        failureCount += response.failureCount;
-        await disableDeadTokens(response, chunk);
-      }
-
+      // Branded-sound and silent recipients are sent in separate multicast
+      // batches because Android's channel id is part of the payload.
+      const { successCount, failureCount } = await sendPushAudience(audience, base);
       console.log(`Notification "${title}" sent to ${successCount} devices, failed: ${failureCount}`);
       await snap.ref.set({
         status: 'sent',
@@ -1134,7 +1195,10 @@ exports.dailyVerseDispatch = functions.pubsub
         if (!tokens.length) continue;
 
         for (const { slot } of dueSlots) {
-          let verse = verseBank.verseFor(slot.id, local);
+          // Pass the member's local calendar date, not the UTC instant. The
+          // generated bank accepts YYYY-MM-DD and applies the same rotation
+          // as the website, service worker and Android widget.
+          let verse = verseBank.verseFor(slot.id, localDate);
           if (special && (special.slots === 'all' || String(special.slots || '').includes(slot.id))) {
             verse = {
               ...verse,
@@ -1146,17 +1210,16 @@ exports.dailyVerseDispatch = functions.pubsub
           }
           const title = `${verse.slotLabel} · Prayer Dome`;
           const body = `\u201C${verse.text}\u201D\n\u2014 ${verse.reference} (${verse.translation || 'NIV'})`;
-          const message = pushMessage({
-            tokens,
-            title,
-            body,
-            kind: 'verse',
-            link: '/bible.html?verse=' + encodeURIComponent(verse.reference),
-            id: `${localDate}-${slot.id}-${uid}`,
-            tag: `pd-verse-${slot.id}-${localDate}`
-          });
+          const audience = await notificationAudience(tokens, 'verse');
           try {
-            const response = await admin.messaging().sendEachForMulticast(message);
+            const response = await sendPushAudience(audience, {
+              title,
+              body,
+              kind: 'verse',
+              link: '/bible.html?verse=' + encodeURIComponent(verse.reference),
+              id: `${localDate}-${slot.id}-${uid}`,
+              tag: `pd-verse-${slot.id}-${localDate}`
+            });
             await db.collection('verseDispatchLogs').add({
               uid,
               date: localDate,
@@ -1165,7 +1228,6 @@ exports.dailyVerseDispatch = functions.pubsub
               failureCount: response.failureCount,
               dispatchedAt: admin.firestore.FieldValue.serverTimestamp()
             });
-            await disableDeadTokens(response, tokens);
           } catch (error) {
             console.error(`Verse dispatch failed for ${uid}/${slot.id}:`, error.message);
           }

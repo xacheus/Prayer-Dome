@@ -23,7 +23,7 @@
         android:layout_marginTop="6dp"
         android:lineSpacingExtra="3dp"
         android:maxLines="4"
-        android:text="Be still, and know that I am God: I will be exalted among the heathen, I will be exalted in the earth."
+        android:text="'Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth.' — Psalm 46:10, NIV"
         android:textColor="@color/pd_white"
         android:textSize="15sp" />
 

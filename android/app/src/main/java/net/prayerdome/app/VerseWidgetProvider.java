@@ -47,16 +47,18 @@ public class VerseWidgetProvider extends AppWidgetProvider {
         VerseWidgetStore store = VerseWidgetStore.get(context);
         Calendar now = Calendar.getInstance();
         for (int appWidgetId : appWidgetIds) {
-            manager.updateAppWidget(appWidgetId, VerseWidgetRenderer.build(context, store, now));
+            manager.updateAppWidget(appWidgetId,
+                    VerseWidgetRenderer.build(context, store, now, manager.getAppWidgetOptions(appWidgetId)));
         }
         VerseWidgetScheduler.schedule(context);
     }
 
     @Override
     public void onAppWidgetOptionsChanged(Context context, AppWidgetManager manager, int appWidgetId, Bundle options) {
-        // A resize is a redraw: the card re-wraps the Scripture text.
-        manager.updateAppWidget(appWidgetId,
-                VerseWidgetRenderer.build(context, VerseWidgetStore.get(context), Calendar.getInstance()));
+        // A resize is a redraw: the card re-wraps the Scripture text and
+        // rebalances its type/padding for the new dimensions.
+        manager.updateAppWidget(appWidgetId, VerseWidgetRenderer.build(context,
+                VerseWidgetStore.get(context), Calendar.getInstance(), options));
     }
 
     @Override
@@ -72,10 +74,16 @@ public class VerseWidgetProvider extends AppWidgetProvider {
     @Override
     public void onReceive(Context context, Intent intent) {
         String action = intent == null ? null : intent.getAction();
+        // APPWIDGET_UPDATE must reach onUpdate: that is the only place Android
+        // supplies the widget ids and their size options. Handling it here used
+        // to draw every instance with one generic card and ignore resizing.
+        if (AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action)) {
+            super.onReceive(context, intent);
+            return;
+        }
         if (ACTION_REFRESH.equals(action) || ACTION_TICK.equals(action)
                 || Intent.ACTION_BOOT_COMPLETED.equals(action)
-                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)
-                || AppWidgetManager.ACTION_APPWIDGET_UPDATE.equals(action)) {
+                || Intent.ACTION_MY_PACKAGE_REPLACED.equals(action)) {
             try {
                 refresh(context);
             } catch (RuntimeException error) {

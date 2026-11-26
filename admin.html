@@ -5254,7 +5254,7 @@ window.toggleDarkMode = function() {
         /* ===== Portal Notices (Announcements) Management ===== */
         window.loadAnnouncements = async function(){ const tbody=document.getElementById('listAnnouncements'); if(tbody) tbody.innerHTML='<td colspan="5"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try{ const snap=await getDocs(query(collection(db,"announcements"),orderBy("createdAt","desc"),limit(100))); const items=[]; snap.forEach(d=>items.push({id:d.id,...d.data()})); items.sort((a,b)=>(b.pinned===true)-(a.pinned===true)); let html=''; items.forEach(a=>{ const cat=a.category==='urgent'?'<span class="badge badge-danger"><i class="pd-i pd-i-triangle-alert" aria-hidden="true"></i> Urgent</span>':a.category==='event'?'<span class="badge badge-warning"><i class="pd-i pd-i-calendar" aria-hidden="true"></i> Event</span>':'<span class="badge badge-info"><i class="pd-i pd-i-megaphone" aria-hidden="true"></i> General</span>'; const pin=a.pinned?'<span class="badge badge-warning"><i class="pd-i pd-i-pin"></i> Pinned</span>':'<span style="color:var(--text-sub);font-size:0.7rem;">—</span>'; html+=`<tr><td style="white-space:nowrap;">${a.createdAt?moment(a.createdAt.toDate()).format('MMM D, YYYY HH:mm'):'N/A'}</td><td style="white-space:normal;"><strong>${escapeHTML(a.title||'')}</strong><p style="font-size:0.7rem;color:var(--text-sub);white-space:normal;margin-top:2px;">${escapeHTML((a.body||'').substring(0,80))}${(a.body||'').length>80?'...':''}</p></td><td>${cat}</td><td>${pin}</td><td style="white-space:nowrap;"><button class="btn btn-sm btn-outline" onclick="toggleAnnouncementPin('${a.id}', ${a.pinned===true})"><i class="pd-i pd-i-pin"></i> ${a.pinned?'Unpin':'Pin'}</button><button class="btn btn-sm btn-danger" onclick="deleteRecord('announcements','${a.id}')" aria-label="Delete"><i class="pd-i pd-i-trash"></i></button></td></tr>`; }); if(tbody) tbody.innerHTML=html||'<td colspan="5">No notices published yet<\/td>'; } catch(e){ console.error(e); toast("Error loading notices","error"); } };
 
-        window.saveAnnouncement = async function(){ const title=document.getElementById('annTitle').value.trim(), body=document.getElementById('annBody').value.trim(); if(!title||!body) return toast("Title and message are required","error"); showLoading(); try{ await addDoc(collection(db,"announcements"),{ title:title, body:body, category:document.getElementById('annCategory').value, pinned:document.getElementById('annPinned').checked, emailMembers:!!(document.getElementById('annEmail')||{}).checked, createdAt:serverTimestamp(), createdBy:adminUser?.email }); await logAdminActivity('announcement_published',{ title:title }); /* Instant in-app notification + moving announcement bar on every open page. */ if(window.PDApp){ PDApp.notifications.push({ type:'general', title:title, message:body.substring(0,110), link:null }); const marquee = PDApp.store.get('announcements','DEFAULT_ANNOUNCEMENTS') || []; marquee.unshift({ id:'ann-'+Date.now().toString(36), text:title+(body?' — '+body.substring(0,80):''), icon:'pd-i-megaphone', active:true }); PDApp.store.set('announcements', marquee.slice(0,20)); } document.getElementById('annTitle').value=''; document.getElementById('annBody').value=''; document.getElementById('annPinned').checked=false; var annEmailEl=document.getElementById('annEmail'); if(annEmailEl) annEmailEl.checked=false; closeModal('modalAnnouncement'); toast("Notice published — users notified instantly"); await loadAnnouncements(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
+        window.saveAnnouncement = async function(){ const title=document.getElementById('annTitle').value.trim(), body=document.getElementById('annBody').value.trim(); if(!title||!body) return toast("Title and message are required","error"); showLoading(); try{ const annRef = await addDoc(collection(db,"announcements"),{ title:title, body:body, category:document.getElementById('annCategory').value, pinned:document.getElementById('annPinned').checked, emailMembers:!!(document.getElementById('annEmail')||{}).checked, createdAt:serverTimestamp(), createdBy:adminUser?.email }); await logAdminActivity('announcement_published',{ title:title }); /* One token-free mirror feeds every open bell and marquee; no device-local store is used. */ if(window.PDApp){ PDApp.notifications.push({ type:'general', title:title, message:body.substring(0,110), link:null, id:'ann-'+annRef.id }, { silent: true }); } if(window.mirrorNotification){ await mirrorNotification(title, body.substring(0,110), 'general', '/index.html', 'ann-'+annRef.id); } document.getElementById('annTitle').value=''; document.getElementById('annBody').value=''; document.getElementById('annPinned').checked=false; var annEmailEl=document.getElementById('annEmail'); if(annEmailEl) annEmailEl.checked=false; closeModal('modalAnnouncement'); toast("Notice published — users notified instantly"); await loadAnnouncements(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
 
         window.toggleAnnouncementPin = async function(id, currentlyPinned){ showLoading(); try{ await updateDoc(doc(db,"announcements",id),{ pinned:!currentlyPinned }); toast(!currentlyPinned?"Notice pinned":"Notice unpinned"); await loadAnnouncements(); } catch(e){ toast(e.message,'error'); } finally { hideLoading(); } };
 
@@ -6237,23 +6237,29 @@ window.toggleDarkMode = function() {
                     createdAt: serverTimestamp(),
                     createdBy: adminUser?.email || 'admin'
                 });
-                await mirrorNotification('Prayer Dome is LIVE', `"${title}" is streaming now. Tap to watch.`, 'live', '/live.html');
+                await mirrorNotification('Prayer Dome is LIVE', `"${title}" is streaming now. Tap to watch.`, 'live', '/live.html', 'live-' + new Date().toISOString().slice(0, 10));
             } catch (e) { console.warn('live notification failed', e); }
         };
 
         /* A token-bearing document is unreadable to members by design, so open
            apps would never see it in their bell. This small public mirror keeps
            the in-app centre live on every device without exposing any token. */
-        window.mirrorNotification = async function(title, message, type = 'general', link = null) {
+        window.mirrorNotification = async function(title, message, type = 'general', link = null, id = null) {
             try {
-                await addDoc(collection(db, 'publicNotifications'), {
+                // A deterministic document id means the dashboard mirror and
+                // the Cloud Function mirror for one broadcast collapse into a
+                // single bell entry instead of appearing twice.
+                const key = id || String(type || 'general') + '-' +
+                    String(title || 'update').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 48) +
+                    '-' + Math.floor(Date.now() / 1000).toString(36);
+                await setDoc(doc(db, 'publicNotifications', key), {
                     title, message, type,
                     link: link || null,
                     inApp: true,
                     status: 'in-app',
-                    createdAt: serverTimestamp(),
-                    createdBy: adminUser?.email || 'admin'
-                });
+                    sourceId: key,
+                    createdAt: serverTimestamp()
+                }, { merge: true });
             } catch (e) { /* the push is the important half */ }
         };
 
@@ -6282,8 +6288,8 @@ window.toggleDarkMode = function() {
                 if (link) payload.link = link;
                 if (image) payload.image = image;
                 payload.tag = 'pd-' + type + '-' + Date.now().toString(36);
-                await addDoc(collection(db, "notifications"), payload);
-                await mirrorNotification(title, message, type, link);
+                const queued = await addDoc(collection(db, "notifications"), payload);
+                await mirrorNotification(title, message, type, link, queued?.id || payload.tag);
                 toast(`Push queued for ${tokens.length} device${tokens.length === 1 ? '' : 's'}.`, "success");
                 await setDoc(doc(db, "notifications", "latest_alert"), { title, message, type, link: link || null, active: true, createdAt: serverTimestamp(), createdBy: adminUser?.email, sentTo: tokens.length }, { merge: true });
                 await logAdminActivity('notification_sent', { title, type, recipients: tokens.length });

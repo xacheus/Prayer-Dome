@@ -22,6 +22,10 @@
   },
   "rewrites": [
     {
+      "source": "/share",
+      "destination": "/share-intake.html"
+    },
+    {
       "source": "/api/health",
       "destination": "/api/system?op=health"
     },
