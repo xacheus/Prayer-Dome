@@ -27,6 +27,12 @@ const server = spawn(process.execPath, ['scripts/dev-server.mjs'], {
   const head = await request(base + '/', { method: 'HEAD' });
   assert.equal(head.status, 200); assert.equal(await head.text(), '');
   assert.equal((await request(base + '/', { method: 'POST' })).status, 405);
+  const billing = await request(base + '/api/billing', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'plans.list' })
+  });
+  assert.equal(billing.status, 401, '/api/billing must require a verified ID token');
+  assert.equal((await billing.json()).error.code, 'unauthenticated');
   assert.equal((await request(base + '/api/translate', { method: 'POST', body: '{' })).status, 400);
   const translate = await request(base + '/api/translate', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },

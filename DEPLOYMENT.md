@@ -48,14 +48,17 @@ when Play reports "signed with the wrong key".
 1. Import this repository using the existing `vercel.json` (Other framework,
    Node 22, build `node scripts/build-vercel.mjs`, output `dist`). Do not publish
    the repository root as a static directory.
-2. The upload filter includes the shared API handlers and the lockfile. Keep
+2. The upload filter includes the shared API handlers, `lib/billing-server.js`,
+   `functions/billing.js`, its catalogue and the lockfile. Keep
    `functions/translate.js`, `functions/share.js` and `functions/brevo.js` in
-   serverless uploads.
+   serverless uploads. Vercel runs `npm ci --ignore-scripts` so the serverless
+   billing gateway has the pinned `firebase-admin` dependency but does not run
+   the legacy Cloud Functions installer.
    The Hobby plan allows at most **12 Serverless Functions per deployment**, so
-   `/api/health` and `/api/newsletter` are both rewritten to `api/system.js`
-   rather than shipped as separate files. `tests/vercel.test.js` fails if a
-   thirteenth function is added; consolidate an endpoint instead of upgrading
-   the plan.
+   `/api/health`, `/api/newsletter`, `/api/billing` and `/api/payment-webhook`
+   are all rewritten to `api/system.js` rather than shipped as separate files.
+   `tests/vercel.test.js` fails if a thirteenth function is added; consolidate
+   an endpoint instead of upgrading the plan.
 3. Automatic deployments are intentionally enabled only for `main`; this work
    stays on the session branch. Use a manual preview deployment or review/merge
    before a production deployment. The local preview is not a Vercel deployment.
@@ -71,10 +74,15 @@ public Firebase config:
 
 ```sh
 firebase deploy --only firestore:rules --project <project-id>
+# Non-payment functions (notifications, verification, mail) only:
 firebase deploy --only functions --project <project-id>
 # Alternative to Vercel hosting, not an additional required step:
 firebase deploy --only hosting --project <project-id>
 ```
+
+**Payments never require a Cloud Functions deployment.** A closed Google Cloud
+billing account does not block Firebase Authentication, Firestore rules or the
+Vercel billing API described below. Do not re-enable Cloud Billing for payments.
 
 Firebase Hosting now builds and publishes `dist/`, not repository sources.
 The Firestore rules target is explicitly configured. Firebase Hosting does not
@@ -137,33 +145,75 @@ not add a streaming server, TURN service or new paid vendor. See
 approval (a server-side 24/7 stream and TURN/SFU for larger live audiences
 would be recurring costs).
 
-### Support-plan billing callable
+### Deposits, support, giving and withdrawals (Vercel, no Cloud Functions)
 
-The member support page and the finance console both call one callable named
-`billing` in `us-central1`. Vercel does not deploy it, and the website can be
-newer than the deployed function. If a member sees a billing error, check the
-function before changing the page:
+All member money actions now use the same-origin Vercel route
+`POST /api/billing`. `support.html` and `admin.html` send the signed-in user's
+Firebase ID token; `lib/billing-server.js` verifies it, then calls the shared
+transaction logic in `functions/billing.js`. That module is plain Node code —
+it does **not** import `firebase-functions` and no `billing` callable or
+scheduled Cloud job is deployed. Firebase Admin SDK 13.x is the only server
+dependency; Firestore and Firebase Authentication continue on the existing
+project without a paid billing account.
+
+Required Vercel environment variables (server-side only, never committed):
 
 ```sh
-firebase functions:list --project <project-id>
-firebase functions:log --only billing --project <project-id>
-firebase deploy --only functions:billing --project <project-id>
+# Full Firebase service-account JSON, supplied as a single-line string.
+vercel env add FIREBASE_SERVICE_ACCOUNT_JSON production
+# Optional: only for automatic provider-confirmed hosted checkouts.
+vercel env add PAYMENT_WEBHOOK_SECRET production
 ```
 
-`not-found` means the callable is absent, or it was deployed to another project
-or region. `internal` means the function ran but threw; the log now starts with
-`Billing action <action> failed:` and the real cause. The page retries one
-transient failure automatically and shows the error code instead of a single
-generic notice. A rejected business rule (for example an unapproved membership
-or an unconfigured finance number) is shown exactly as written by the server.
-Deploying only `billing` avoids the secret check on unrelated Brevo/Cloudinary
-functions; deploy all functions afterwards if their code also changed.
+The service account needs Firestore Data Reader/Writer on the existing database
+and nothing more. Firebase Admin verifies ID tokens and signs private receipt
+URLs with that identity. `GOOGLE_APPLICATION_CREDENTIALS` is supported as an
+alternative for runtimes that already have Application Default Credentials.
+Without credentials the API returns a safe `failed-precondition` message and
+records the technical cause in the Vercel logs; it never falls back to a client
+write or a fake success.
+
+`PAYMENT_WEBHOOK_SECRET` is a shared HMAC-SHA256 secret you obtain from your
+existing payment provider. Configure the provider to POST JSON to
+`https://prayerdome.net/api/payment-webhook` with the signature in
+`x-pd-signature` (hex or base64, with an optional `sha256=` prefix). The gateway
+verifies the signature with `crypto.timingSafeEqual` before an event can touch a
+payment. If the secret is absent, webhooks fail closed and gifts stay pending
+for manual Finance verification. No provider credentials are invented in this
+repository.
+
+Supported confirmation paths:
+
+* **Mobile Money / bank transfer / office / WhatsApp** — the member submits a
+  reference and private receipt; Finance checks the ministry account and
+  explicitly approves. No screenshot alone confirms a payment.
+* **Hosted checkout** — the provider's signature-verified webhook may confirm a
+  matching open payment. Amount, currency, reference and event id must match;
+  a replayed event cannot credit a balance twice.
+* **Giving and church support** — `offerings/{reference}` is created as
+  `pending` directly in Firestore, then Finance reviews and marks it received.
+  Those gifts are never added to a withdrawable wallet balance.
+
+Withdrawals reserve the amount in `wallets/{uid}.heldBalance`, appear in
+**Admin → Withdrawals**, and move from `pending` → `under review` → approved /
+`processing` → `paid` only after Finance records the real payout reference.
+Rejecting or cancelling releases the hold; only the administrator action that
+confirms a completed payout deducts the verified balance. Every state change
+writes a `walletTransactions` row and a `billingAudit` entry.
+
+Errors from `/api/billing` are JSON with a stable `code` and a short safe
+`message`; full technical detail is logged on the server. The pages show the
+server's explanation where it is safe (for example a missing payment method or
+an exhausted balance) and a retry notice for transient failures. Check
+`https://prayerdome.net/api/health` after deploying, then sign in on
+`/support.html` and open the wallet tab: a `plans.list` request must succeed
+before any money is sent.
 
 The functions package is pinned to `firebase-admin` 13.x. Version 14 removed the
 namespaced `admin.firestore()` / `admin.storage()` API used throughout these
-files, so upgrading it turns every billing call into an opaque `internal` error.
-Run `npm run functions:verify` after changing dependencies; it now fails fast if
-the namespace API is missing.
+files, so upgrading it turns every billing action into an opaque failure. Run
+`npm run functions:verify` after changing dependencies; it fails fast if the
+namespace API is missing.
 
 ### Bible reader (API.Bible)
 

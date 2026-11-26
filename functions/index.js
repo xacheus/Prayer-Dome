@@ -8,7 +8,6 @@ const brevo = require('./brevo');
 const crypto = require('crypto');
 const translateHandler = require('./translate');
 const facebookCampaign = require('./facebookCampaign');
-const billingModule = require('./billing');
 const notificationModule = require('./notifications');
 const radioModule = require('./radio');
 const verificationModule = require('./verification');
@@ -1187,10 +1186,9 @@ exports.getFacebookCampaignStatus = facebookCampaign.getFacebookCampaignStatus;
 exports.generateFacebookCampaign = facebookCampaign.generateFacebookCampaign;
 exports.facebookCampaignScheduler = facebookCampaign.facebookCampaignScheduler;
 
-// Support-plan billing, verified payments and wallet credits. One callable keeps
-// the privileged money path in one auditable place.
-exports.billing = billingModule.billing;
-exports.expireSupportSubscriptions = billingModule.expireJob;
+// Support-plan billing, verified payments and wallet credits are served by the
+// Vercel endpoint /api/billing (api/billing-server.js), NOT by a Google Cloud
+// Function. No billing callable or billing pub/sub job is deployed from here.
 
 // Transactional email + per-member in-app notifications. Every trigger reacts
 // to a status that has already been written, and records a deterministic

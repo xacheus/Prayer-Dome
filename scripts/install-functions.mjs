@@ -3,12 +3,12 @@
  * Postinstall hook: install the Firebase Functions sub-package dependencies
  * on clean checkouts so `npm run verify:all` (functions:verify) works locally.
  *
- * Skipped on Vercel: the deployment only serves the static bundle plus the
- * dependency-free handlers in /api, so installing firebase-admin and
- * firebase-functions (~290 packages) there only adds build time and failure
- * surface without affecting the deployed site. Also skipped whenever the
- * functions/ package itself is absent (e.g. filtered uploads), so the hook
- * is safe to keep wired up regardless of environment.
+ * Skipped on Vercel: the deployed billing API uses the root firebase-admin
+ * dependency, not this legacy Firebase Functions sub-package. Installing
+ * firebase-functions there would only add build time and a Cloud Functions SDK
+ * that the payment path no longer uses. Also skipped whenever the functions/
+ * package itself is absent (e.g. filtered uploads), so the hook is safe to
+ * keep wired up regardless of environment.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';

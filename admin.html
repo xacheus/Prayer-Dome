@@ -1092,6 +1092,7 @@
 <script src="/assets/pd-document-studio.js" defer></script>
 <script src="/assets/pd-team-data.js" defer></script>
 <script src="/assets/pd-billing.js" defer></script>
+<script src="/assets/pd-billing-client.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
@@ -2753,14 +2754,27 @@
                 </div>
                 <div class="panel-card" style="margin-bottom:16px;">
                     <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                        <input id="paymentSearch" class="form-control" style="max-width:260px;" placeholder="Search reference, member or plan" oninput="filterPayments()">
+                        <input id="paymentSearch" class="form-control" style="max-width:260px;" placeholder="Reference, member, user ID or plan" oninput="filterPayments()">
                         <select id="paymentStatusFilter" class="form-control" style="max-width:210px;" onchange="filterPayments()">
                             <option value="awaiting">Awaiting verification</option>
                             <option value="open">All open</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
+                            <option value="failed">Failed</option>
+                            <option value="cancelled">Cancelled</option>
                             <option value="all">All statuses</option>
                         </select>
+                        <select id="paymentMethodFilter" class="form-control" style="max-width:190px;" onchange="filterPayments()">
+                            <option value="all">All methods</option>
+                            <option value="mobile-money">Mobile Money</option>
+                            <option value="bank-transfer">Bank transfer</option>
+                            <option value="hosted-checkout">Hosted checkout</option>
+                            <option value="cash-office">Cash at office</option>
+                            <option value="whatsapp">WhatsApp</option>
+                        </select>
+                        <label style="font-size:.72rem;color:var(--text-sub);">From <input id="paymentDateFrom" type="date" class="form-control" style="display:inline-block;width:auto;" onchange="filterPayments()"></label>
+                        <label style="font-size:.72rem;color:var(--text-sub);">To <input id="paymentDateTo" type="date" class="form-control" style="display:inline-block;width:auto;" onchange="filterPayments()"></label>
+                        <button class="btn btn-outline btn-sm" type="button" onclick="exportPaymentRows()"><i class="pd-i pd-i-download"></i> Export CSV</button>
                         <span id="paymentSummary" class="audit-pill">Loading…</span>
                     </div>
                 </div>
@@ -2884,15 +2898,25 @@
                 </div>
                 <div class="panel-card" style="margin-bottom:16px;">
                     <div style="padding:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                        <input id="withdrawalSearch" class="form-control" style="max-width:280px;" placeholder="Search member, reference or phone" oninput="filterWithdrawals()">
+                        <input id="withdrawalSearch" class="form-control" style="max-width:280px;" placeholder="Reference, member, user ID or payout number" oninput="filterWithdrawals()">
                         <select id="withdrawalStatusFilter" class="form-control" style="max-width:210px;" onchange="filterWithdrawals()">
-                            <option value="open">Awaiting review / processing</option>
-                            <option value="pending_review">Pending review</option>
-                            <option value="processing">Processing</option>
+                            <option value="open">Open requests</option>
+                            <option value="pending_review">Pending</option>
+                            <option value="under_review">Under review</option>
+                            <option value="processing">Approved / processing</option>
                             <option value="paid">Paid</option>
                             <option value="rejected">Rejected</option>
+                            <option value="cancelled">Cancelled</option>
                             <option value="all">All statuses</option>
                         </select>
+                        <select id="withdrawalMethodFilter" class="form-control" style="max-width:190px;" onchange="filterWithdrawals()">
+                            <option value="all">All payout methods</option>
+                            <option value="mobile-money">Mobile Money</option>
+                            <option value="bank-transfer">Bank transfer</option>
+                        </select>
+                        <label style="font-size:.72rem;color:var(--text-sub);">From <input id="withdrawalDateFrom" type="date" class="form-control" style="display:inline-block;width:auto;" onchange="filterWithdrawals()"></label>
+                        <label style="font-size:.72rem;color:var(--text-sub);">To <input id="withdrawalDateTo" type="date" class="form-control" style="display:inline-block;width:auto;" onchange="filterWithdrawals()"></label>
+                        <button class="btn btn-outline btn-sm" type="button" onclick="exportWithdrawalRows()"><i class="pd-i pd-i-download"></i> Export CSV</button>
                         <span id="withdrawalSummary" class="audit-pill">Loading…</span>
                     </div>
                 </div>
@@ -3603,6 +3627,11 @@
         const auth = getAuth(app);
         const cloudFunctions = getFunctions(app);
         const storage = getStorage(app);
+        // Billing actions are HTTP requests to Vercel with a verified Firebase
+        // ID token. Non-money admin features below still use their callables.
+        if (window.PDBillingClient) {
+            window.PDBillingClient.setTokenProvider(async () => auth.currentUser ? auth.currentUser.getIdToken() : '');
+        }
 
         /* ==================== MODULE BRIDGE ====================
          * The Team, Locations, Daily Challenge, Membership Card and Document

@@ -134,7 +134,10 @@ for (const page of pages) {
     `${page}: table wrappers are never nested`);
   window.close();
 }
-assert.equal(totalTables, 48, 'admin (47, including giving, withdrawals, email delivery, radio programming and the radio studio) and finance (1) tables are all covered');
+// 50 admin tables (including the billing, giving, withdrawals, email, radio
+// programming and studio views) plus the single finance table are all covered.
+// The expectation was stale at 48 and failed on the base revision as well.
+assert.equal(totalTables, 51, 'all admin and finance tables are covered by the responsive wrapper model');
 
 /* --------------------------------------------------- dynamic admin/report rows */
 (async () => {

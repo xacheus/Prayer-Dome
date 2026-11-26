@@ -2,9 +2,15 @@
 /*
  * Support-plan billing and wallet credits
  * ---------------------------------------------------------------------------
- * Every money change happens here, behind a Firebase callable. The browser can
- * read a plan catalogue, but it can never create an active subscription, mark
- * a payment approved, or move a wallet balance.
+ * Every money change happens here, behind a server-controlled action handler.
+ * The browser can read a plan catalogue, but it can never create an active
+ * subscription, mark a payment approved, or move a wallet balance.
+ *
+ * This module deliberately contains NO firebase-functions import. The money
+ * path is served by the Vercel endpoint `api/billing-server.js`; importing a
+ * Cloud Functions SDK here used to make every support payment depend on a
+ * deployed, billable Google Cloud function. The handler's errors keep the
+ * HttpsError shape so existing clients and tests can map them safely.
  *
  * Lifecycle
  *   catalogue -> pending_payment -> pending_verification -> approved
@@ -13,21 +19,30 @@
  *
  * A payment screenshot is never proof on its own: an administrator must open
  * the receipt, check it against the ministry account, and explicitly confirm
- * the verification before the transaction runs.
+ * the verification before the transaction runs. A verified provider webhook is
+ * the only other trusted confirmation, and it must pass signature validation
+ * and amount/reference matching in the Vercel webhook gateway first.
  */
 
-const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const crypto = require('crypto');
 const catalog = require('./billing-catalog');
 
-const REGION = 'us-central1';
 const CURRENCY = 'USD';
 const MIN_WALLET_DEPOSIT = 5;
 const MIN_WITHDRAWAL = 10;
 const PAYMENT_SETTINGS_DOC = 'settings/payments';
 const MAX_AMOUNT = 1000000;
-const { HttpsError } = functions.https;
+
+class BillingError extends Error {
+  constructor(code, message, details) {
+    super(String(message || 'Billing request failed.'));
+    this.name = 'HttpsError';
+    this.code = code;
+    this.details = details;
+  }
+}
+const HttpsError = BillingError;
 
 function fail(code, message, details) {
   // The marker lets the browser tell a real server decision ("that payment
@@ -343,6 +358,31 @@ function subscriptionId(uid, planId) {
     String(planId).replace(/[^a-z0-9-]/g, '').slice(0, 40);
 }
 
+/* A second tap with a fresh idempotency key must not create another open
+   deposit for the same amount and channel. Ten minutes is long enough to cover
+   a slow checkout and short enough not to block a genuine repeat deposit after
+   the first one has been paid or cancelled. */
+const OPEN_DEPOSIT_WINDOW_MS = 10 * 60 * 1000;
+async function findOpenDeposit(uid, charge, methodId) {
+  const snapshot = await admin.firestore().collection('paymentRequests')
+    .where('userId', '==', uid)
+    .where('kind', '==', 'wallet_deposit')
+    .where('status', 'in', ['pending_payment', 'pending_verification'])
+    .orderBy('createdAt', 'desc')
+    .limit(20)
+    .get();
+  let matches = [];
+  snapshot.forEach((entry) => matches.push(entry.data() || {}));
+  matches = matches.filter((row) => {
+    const raw = row.createdAt;
+    const created = raw && typeof raw.toDate === 'function' ? raw.toDate() : new Date(raw || 0);
+    if (!Number.isFinite(created.getTime()) || Date.now() - created.getTime() > OPEN_DEPOSIT_WINDOW_MS) return false;
+    return Math.round(Number(row.amount) * 100) / 100 === charge &&
+      String(row.payToMethodId || '') === String(methodId || '');
+  });
+  return matches.length ? matches[0] : null;
+}
+
 function publicPlan(row) {
   return {
     id: row.id,
@@ -504,6 +544,19 @@ async function createCheckout(data, context) {
         payment: paymentView(previous.data()),
         subscriptionId: previous.data().subscriptionId || '',
         walletTransactionId: previous.data().walletTransactionId || ''
+      };
+    }
+  }
+
+  if (kind === 'wallet_deposit') {
+    const selectedDepositMethod = requirePaymentSettings(paymentSettings, data.methodId, 'support');
+    const openDeposit = await findOpenDeposit(uid, charge, selectedDepositMethod.id);
+    if (openDeposit) {
+      return {
+        alreadyCreated: true,
+        payment: paymentView(openDeposit),
+        subscriptionId: '',
+        walletTransactionId: openDeposit.walletTransactionId || ''
       };
     }
   }
@@ -901,6 +954,187 @@ async function approvePayment(data, context) {
   return outcome || { reference, status: 'approved' };
 }
 
+/*
+ * Provider-confirmed checkout. This entry point is only reachable from the
+ * Vercel webhook gateway after it has validated the provider's HMAC signature.
+ * A browser cannot call it: the gateway passes a `webhook: true` context that
+ * no client request can set. Even then, the event must name an existing hosted
+ * checkout, the same amount and currency, and a fresh event id.
+ */
+async function confirmProviderPayment(data, context) {
+  if (!context || context.webhook !== true) {
+    fail('permission-denied', 'Provider confirmations must arrive through the verified webhook endpoint.');
+  }
+  const reference = text(data.reference, 80).toUpperCase();
+  const eventId = text(data.eventId, 160);
+  const providerReference = text(data.providerReference, 160);
+  if (!reference || !eventId || !providerReference) {
+    fail('invalid-argument', 'The provider event is incomplete.');
+  }
+  const eventKey = crypto.createHash('sha256').update(eventId + '|' + reference).digest('hex');
+  const db = admin.firestore();
+  const paymentRef = db.collection('paymentRequests').doc(reference);
+  const eventRef = db.collection('paymentWebhookEvents').doc(eventKey);
+  const now = new Date();
+  const outcomeStatus = text(data.outcome, 20).toLowerCase();
+  const failed = ['failed', 'cancelled', 'canceled', 'reversed', 'refunded'].includes(outcomeStatus);
+  const succeeded = ['paid', 'success', 'successful', 'completed'].includes(outcomeStatus);
+  if (!failed && !succeeded) fail('invalid-argument', 'The provider event has no recognised outcome.');
+  let outcome = null;
+
+  await db.runTransaction(async (transaction) => {
+    const [paymentSnap, eventSnap] = await Promise.all([
+      transaction.get(paymentRef),
+      transaction.get(eventRef)
+    ]);
+    if (!paymentSnap.exists) fail('not-found', 'That payment reference was not found.');
+    const payment = paymentSnap.data() || {};
+    if (eventSnap.exists) {
+      outcome = { reference, status: eventSnap.data().paymentStatus || (failed ? 'failed' : 'approved'), alreadyProcessed: true };
+      return;
+    }
+    if (payment.status === 'approved' || payment.status === 'active' || payment.status === 'failed') {
+      outcome = { reference, status: payment.status, alreadyProcessed: true };
+      return;
+    }
+    if (!['pending_payment', 'pending_verification'].includes(payment.status)) {
+      fail('failed-precondition', 'This checkout is no longer open for provider confirmation.');
+    }
+    if (payment.payToType !== 'hosted-checkout' && payment.method !== 'hosted-checkout') {
+      fail('failed-precondition', 'This payment method cannot be confirmed by a provider webhook.');
+    }
+    const paidAmount = Math.round(Number(data.amount) * 100) / 100;
+    const paidCurrency = text(data.currency, 8).toUpperCase();
+    if (!Number.isFinite(paidAmount) || paidAmount !== Math.round(Number(payment.amount) * 100) / 100 ||
+        paidCurrency !== text(payment.currency || CURRENCY, 8).toUpperCase()) {
+      fail('failed-precondition', 'The provider amount does not match this payment reference.');
+    }
+
+    const auditRef = db.collection('billingAudit').doc();
+    if (failed) {
+      transaction.update(paymentRef, {
+        status: outcomeStatus === 'cancelled' || outcomeStatus === 'canceled' ? 'cancelled' : 'failed',
+        providerReference,
+        providerEventId: eventId,
+        providerFailureReason: text(data.reason, 300) || 'Provider reported an unsuccessful payment',
+        updatedAt: now
+      });
+      if (payment.walletTransactionId) {
+        transaction.update(db.collection('walletTransactions').doc(payment.walletTransactionId), {
+          status: 'failed', providerReference, updatedAt: now
+        });
+      }
+      if (payment.subscriptionId) {
+        transaction.update(db.collection('subscriptions').doc(payment.subscriptionId), {
+          status: 'failed', lastPaymentStatus: 'failed', pendingPaymentRef: '', updatedAt: now
+        }, { merge: true });
+      }
+      transaction.create(eventRef, {
+        eventId, reference, providerReference, paymentStatus: 'failed', createdAt: now
+      });
+      transaction.create(auditRef, {
+        action: 'payment_provider_failed',
+        paymentRef: reference,
+        subscriptionId: payment.subscriptionId || '',
+        walletTransactionId: payment.walletTransactionId || '',
+        userId: payment.userId,
+        amount: payment.amount,
+        currency: payment.currency || CURRENCY,
+        status: 'failed',
+        actorUid: 'webhook',
+        actorEmail: 'provider-webhook',
+        actorRole: 'system',
+        note: 'Verified provider event reported an unsuccessful payment: ' + providerReference,
+        createdAt: now
+      });
+      outcome = { reference, status: 'failed', alreadyProcessed: false };
+      return;
+    }
+
+    // Atomic confirmation: only the transaction that finds an open payment can
+    // credit the wallet or activate the plan, and the same event id can never
+    // be processed a second time.
+    const verifiedBy = 'provider-webhook';
+    if (payment.kind === 'wallet_deposit') {
+      const walletRef = db.collection('wallets').doc(payment.userId);
+      const walletSnap = await transaction.get(walletRef);
+      const balance = walletSnap.exists ? Math.round((Number(walletSnap.data().balance) || 0) * 100) / 100 : 0;
+      const newBalance = Math.round((balance + Number(payment.amount)) * 100) / 100;
+      transaction.set(walletRef, {
+        userId: payment.userId,
+        balance: newBalance,
+        currency: payment.currency || CURRENCY,
+        updatedAt: now,
+        updatedBy: verifiedBy
+      }, { merge: true });
+      if (payment.walletTransactionId) {
+        transaction.update(db.collection('walletTransactions').doc(payment.walletTransactionId), {
+          status: 'approved', balanceAfter: newBalance, approvedAt: now,
+          approvedBy: verifiedBy, providerReference, updatedAt: now
+        });
+      }
+      outcome = { reference, status: 'approved', balance: newBalance, walletTransactionId: payment.walletTransactionId || '' };
+    } else if (payment.kind === 'subscription') {
+      if (!payment.subscriptionId) fail('failed-precondition', 'The subscription record is missing.');
+      const subRef = db.collection('subscriptions').doc(payment.subscriptionId);
+      const subSnap = await transaction.get(subRef);
+      if (!subSnap.exists) fail('not-found', 'The subscription record is missing.');
+      const subscription = subSnap.data();
+      if (subscription.userId !== payment.userId) fail('failed-precondition', 'Subscription ownership does not match the payment.');
+      const months = Number(payment.durationMonths || payment.planSnapshot && payment.planSnapshot.durationMonths || 1) || 1;
+      const expires = addMonths(now, months);
+      transaction.update(subRef, {
+        status: 'active',
+        paymentVerified: true,
+        paymentRef: reference,
+        pendingPaymentRef: '',
+        startDate: subscription.startDate || now,
+        activatedAt: now,
+        expiresAt: expires,
+        renewalDate: expires,
+        lastPaymentAmount: payment.amount,
+        lastPaymentAt: now,
+        verifiedBy,
+        updatedAt: now
+      }, { merge: true });
+      outcome = { reference, status: 'active', subscriptionId: payment.subscriptionId, expiresAt: expires.toISOString() };
+    } else {
+      fail('failed-precondition', 'Unknown payment type.');
+    }
+
+    transaction.update(paymentRef, {
+      status: 'approved',
+      providerReference,
+      providerEventId: eventId,
+      approvedAt: now,
+      approvedBy: verifiedBy,
+      verifiedByUid: 'webhook',
+      verificationNote: 'Confirmed by a signature-verified provider webhook: ' + providerReference,
+      updatedAt: now
+    });
+    transaction.create(eventRef, {
+      eventId, reference, providerReference, paymentStatus: 'approved', createdAt: now
+    });
+    transaction.create(auditRef, {
+      action: 'payment_provider_confirmed',
+      paymentRef: reference,
+      subscriptionId: payment.subscriptionId || '',
+      walletTransactionId: payment.walletTransactionId || '',
+      userId: payment.userId,
+      amount: payment.amount,
+      currency: payment.currency || CURRENCY,
+      status: 'approved',
+      actorUid: 'webhook',
+      actorEmail: verifiedBy,
+      actorRole: 'system',
+      note: 'Provider-confirmed payment ' + providerReference,
+      createdAt: now
+    });
+  });
+
+  return outcome || { reference, status: 'approved' };
+}
+
 async function rejectPayment(data, context) {
   const adminUid = await requireAdmin(context);
   const adminActor = actor(context);
@@ -1130,6 +1364,9 @@ function publicWithdrawal(row) {
     userEmail: row.userEmail || '',
     amount: row.amount,
     currency: row.currency || CURRENCY,
+    payoutMethodId: row.payoutMethodId || '',
+    payoutMethodLabel: row.payoutMethodLabel || '',
+    payoutMethodType: row.payoutMethodType || '',
     receivePhone: row.receivePhone || '',
     status: row.status || 'pending_review',
     requestedAt: row.requestedAt || null,
@@ -1140,6 +1377,15 @@ function publicWithdrawal(row) {
   };
 }
 
+/* Payout channels are a subset of the finance-configured methods: only money
+   that can be sent back to a member (Mobile Money or a bank transfer) is
+   eligible. The browser supplies an id, never account details of its own. */
+function eligiblePayoutMethods(settings) {
+  return (settings && Array.isArray(settings.methods) ? settings.methods : [])
+    .filter(usablePaymentMethod)
+    .filter((method) => ['mobile-money', 'bank-transfer'].includes(method.type));
+}
+
 async function requestWithdrawal(data, context) {
   const uid = requireAuth(context);
   const token = (context.auth && context.auth.token) || {};
@@ -1148,8 +1394,27 @@ async function requestWithdrawal(data, context) {
   if (value < MIN_WITHDRAWAL) fail('invalid-argument', 'The minimum withdrawal is $10.00.');
   const phone = text(data.phone, 40);
   const digits = phone.replace(/\D/g, '');
-  if (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9) {
-    fail('invalid-argument', 'Enter a valid Mobile Money number, including the country code.');
+  const payoutSettings = await loadPaymentSettings();
+  const payoutMethods = eligiblePayoutMethods(payoutSettings);
+  if (!payoutMethods.length) {
+    fail('failed-precondition',
+      'No approved payout method is configured yet. Ask the finance team to add a Mobile Money number or bank account before requesting a withdrawal.');
+  }
+  const wantedId = text(data.payoutMethodId, 60);
+  const payoutMethod = wantedId
+    ? payoutMethods.find((method) => method.id === wantedId)
+    : payoutMethods[0];
+  if (!payoutMethod) {
+    fail('failed-precondition', 'That payout method is not approved for withdrawals. Refresh the page and choose another one.');
+  }
+  const payoutAccount = text(data.accountNumber, 60);
+  if (payoutMethod.type === 'mobile-money' &&
+      (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9)) {
+    fail('invalid-argument', 'Enter the Mobile Money number that should receive the payment, including the country code.');
+  }
+  if (payoutMethod.type === 'bank-transfer' &&
+      (!payoutAccount || payoutAccount.replace(/\D/g, '').length < 6)) {
+    fail('invalid-argument', 'Enter the bank account number that should receive the payment.');
   }
   const key = text(data.idempotencyKey, 80) || crypto.randomBytes(12).toString('hex');
   const idemRef = db.collection('billingIdempotency').doc(uid + '_wd_' + key.replace(/[^A-Za-z0-9_.-]/g, ''));
@@ -1197,7 +1462,11 @@ async function requestWithdrawal(data, context) {
       userEmail: text(user.email || member.email || token.email || '', 180),
       amount: value,
       currency: CURRENCY,
-      receivePhone: phone,
+      payoutMethodId: payoutMethod.id,
+      payoutMethodLabel: payoutMethod.label,
+      payoutMethodType: payoutMethod.type,
+      receivePhone: payoutMethod.type === 'mobile-money' ? phone : '',
+      receiveAccount: payoutMethod.type === 'bank-transfer' ? payoutAccount : '',
       status: 'pending_review',
       requestedAt: now,
       createdAt: now,
@@ -1218,7 +1487,10 @@ async function requestWithdrawal(data, context) {
       status: 'pending_review',
       reference,
       withdrawalId: reference,
-      receivePhone: phone,
+      payoutMethodId: payoutMethod.id,
+      payoutMethodLabel: payoutMethod.label,
+      receivePhone: row.receivePhone,
+      receiveAccount: row.receiveAccount,
       createdAt: now,
       updatedAt: now
     });
@@ -1258,6 +1530,9 @@ async function reviewWithdrawal(data, context, decision) {
   if (decision === 'reject' && reason.length < 4) {
     fail('invalid-argument', 'Give the member a reason for rejecting this withdrawal.');
   }
+  if (!['review', 'approve', 'reject'].includes(decision)) {
+    fail('invalid-argument', 'Unknown withdrawal decision.');
+  }
   const db = admin.firestore();
   const withdrawalRef = db.collection('withdrawals').doc(reference);
   const auditRef = db.collection('billingAudit').doc();
@@ -1273,12 +1548,28 @@ async function reviewWithdrawal(data, context, decision) {
       outcome = { reference, status: 'rejected', alreadyRejected: true };
       return;
     }
-    if (!['pending_review', 'processing'].includes(row.status)) {
+    if (!['pending_review', 'under_review', 'processing'].includes(row.status)) {
       fail('failed-precondition', 'Only an open withdrawal can be reviewed.');
     }
+    const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const txSnap = await transaction.get(txRef);
+    if (decision === 'review') {
+      if (row.status !== 'pending_review') fail('failed-precondition', 'This withdrawal is already under review.');
+      transaction.update(withdrawalRef, {
+        status: 'under_review', reviewedAt: now, reviewedBy: adminActor.email || adminUid, updatedAt: now
+      });
+      if (txSnap.exists) transaction.update(txRef, { status: 'under_review', updatedAt: now });
+      transaction.create(auditRef, {
+        action: 'withdrawal_under_review', withdrawalId: reference,
+        walletTransactionId: txRef.id, userId: row.userId, amount: row.amount,
+        currency: row.currency || CURRENCY, status: 'under_review', actorUid: adminUid,
+        actorEmail: adminActor.email || '', actorRole: 'admin',
+        note: reason || 'Administrator opened the review.', createdAt: now
+      });
+      outcome = { reference, status: 'under_review' };
+      return;
+    }
     if (decision === 'approve') {
-      const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
-      const txSnap = await transaction.get(txRef);
       transaction.update(withdrawalRef, {
         status: 'processing',
         reviewedAt: now,
@@ -1307,8 +1598,6 @@ async function reviewWithdrawal(data, context, decision) {
     // Rejection: release the hold. The verified balance must not move.
     const walletRef = db.collection('wallets').doc(row.userId);
     const walletSnap = await transaction.get(walletRef);
-    const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
-    const txSnap = await transaction.get(txRef);
     if (walletSnap.exists) {
       const wallet = walletSnap.data() || {};
       const held = Math.max(0, Math.round(((Number(wallet.heldBalance) || 0) - Number(row.amount || 0)) * 100) / 100);
@@ -1437,6 +1726,65 @@ async function settleWithdrawal(data, context) {
   });
 
   return outcome || { reference, status: 'paid' };
+}
+
+/* Cancellation releases a reserved amount without moving the verified balance.
+   A member may cancel only while the request is still open for review; an
+   administrator may also cancel an approved-but-unpaid request. */
+async function cancelWithdrawal(data, context) {
+  const uid = requireAuth(context);
+  const reference = withdrawalReferenceId(data.reference);
+  if (!reference) fail('invalid-argument', 'Choose a withdrawal to cancel.');
+  const db = admin.firestore();
+  const withdrawalRef = db.collection('withdrawals').doc(reference);
+  const auditRef = db.collection('billingAudit').doc();
+  const isAdminUser = await isAdmin(uid);
+  const now = new Date();
+  let outcome = null;
+
+  await db.runTransaction(async (transaction) => {
+    const snapshot = await transaction.get(withdrawalRef);
+    if (!snapshot.exists) fail('not-found', 'That withdrawal was not found.');
+    const row = snapshot.data() || {};
+    if (row.userId !== uid && !isAdminUser) {
+      fail('permission-denied', 'This withdrawal belongs to another member.');
+    }
+    if (row.status === 'cancelled') {
+      outcome = { reference, status: 'cancelled', alreadyCancelled: true };
+      return;
+    }
+    if (row.status === 'paid') fail('failed-precondition', 'A paid withdrawal cannot be cancelled.');
+    if (!['pending_review', 'under_review', 'processing'].includes(row.status)) {
+      fail('failed-precondition', 'Only an open withdrawal can be cancelled.');
+    }
+    if (row.status === 'processing' && !isAdminUser) {
+      fail('permission-denied', 'This withdrawal is being processed. Contact the ministry office to cancel it.');
+    }
+    const walletRef = db.collection('wallets').doc(row.userId);
+    const walletSnap = await transaction.get(walletRef);
+    const txRef = db.collection('walletTransactions').doc('wt_' + reference.toLowerCase().replace(/[^a-z0-9]/g, ''));
+    const txSnap = await transaction.get(txRef);
+    if (walletSnap.exists) {
+      const wallet = walletSnap.data() || {};
+      const held = Math.max(0, Math.round(((Number(wallet.heldBalance) || 0) - Number(row.amount || 0)) * 100) / 100);
+      transaction.update(walletRef, { heldBalance: held, updatedAt: now });
+    }
+    transaction.update(withdrawalRef, {
+      status: 'cancelled',
+      cancelledAt: now,
+      cancelledBy: uid,
+      updatedAt: now
+    });
+    if (txSnap.exists) transaction.update(txRef, { status: 'cancelled', updatedAt: now });
+    transaction.create(auditRef, {
+      action: 'withdrawal_cancelled', withdrawalId: reference, walletTransactionId: txRef.id,
+      userId: row.userId, amount: row.amount, currency: row.currency || CURRENCY,
+      status: 'cancelled', actorUid: uid, actorRole: isAdminUser ? 'admin' : 'member',
+      note: 'Reserved amount released; the verified balance was not changed.', createdAt: now
+    });
+    outcome = { reference, status: 'cancelled' };
+  });
+  return outcome || { reference, status: 'cancelled' };
 }
 
 async function savePaymentSettings(data, context) {
@@ -1601,12 +1949,18 @@ async function routeBilling(data, context) {
       return { settings: publicPaymentSettings(await loadPaymentSettings(), 'give') };
     case 'payment.settings.save':
       return savePaymentSettings(payload, context);
+    case 'payment.webhook':
+      return confirmProviderPayment(payload, context);
     case 'withdrawal.request':
       return requestWithdrawal(payload, context);
+    case 'withdrawal.review':
+      return reviewWithdrawal(payload, context, 'review');
     case 'withdrawal.approve':
       return reviewWithdrawal(payload, context, 'approve');
     case 'withdrawal.reject':
       return reviewWithdrawal(payload, context, 'reject');
+    case 'withdrawal.cancel':
+      return cancelWithdrawal(payload, context);
     case 'withdrawal.paid':
       return settleWithdrawal(payload, context);
     case 'subscriptions.cancel':
@@ -1655,16 +2009,17 @@ async function handler(data, context) {
   }
 }
 
-const billing = functions.region(REGION).https.onCall(handler);
-
-/* Daily safety net. The member page also evaluates expiry from the stored date,
-   so a delayed job can never make an expired plan look active. */
-const expireJob = functions.region(REGION).pubsub.schedule('every day 03:10')
-  .timeZone('Africa/Mbabane')
-  .onRun(async () => {
-    const count = await expireSubscriptions();
-    console.log('Expired ' + count + ' subscriptions');
-    return null;
-  });
-
-module.exports = { billing, expireJob, expireSubscriptions, addMonths, subscriptionId };
+/* The Vercel serverless gateway calls `handler` directly. Previously this file
+   registered a Firebase callable and a pub/sub job here, which made every
+   support payment depend on a deployed, billable Google Cloud Function. The
+   member page evaluates expiry from the stored date and an administrator can
+   run `subscriptions.expire` through the same authenticated endpoint, so no
+   scheduled Cloud job is needed. */
+module.exports = {
+  handler,
+  routeBilling,
+  expireSubscriptions,
+  addMonths,
+  subscriptionId,
+  HttpsError
+};

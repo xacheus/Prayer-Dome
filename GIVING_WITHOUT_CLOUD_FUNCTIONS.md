@@ -46,7 +46,7 @@ pending  ──approve──▶  approved  ──mark received──▶  receive
 - `assets/pd-billing.js` — shared method model accepts `hosted-checkout` and `checkoutUrl`.
 - `firestore.rules` — public read / admin write for payment settings, validated pending offering creation, admin-only transitions, append-only audit.
 - `storage.rules` — private `givingEvidence` path.
-- `functions/billing.js` — legacy callable kept working, with parity for hosted checkout settings.
+- `functions/billing.js` — runtime-independent transaction logic shared by the Vercel billing API.
 - `DEPLOYMENT.md` — Firestore-only giving deployment section.
 - `tests/giving.test.js`, `tests/rules/firestore.test.js`, `tests/billing.test.js`, `tests/id-verification.test.js`, `tests/layout.test.js`, `tests/upgrade.test.js`.
 
@@ -84,16 +84,28 @@ These are **configuration**, not code gaps. Nothing below requires Google Cloud 
 2. **A hosted-checkout provider, if you want card payments.** Create an account with an approved non-GCP-billing provider, obtain the hosted checkout URL and put it on a payment method. The donor pays there and returns with the provider transaction reference.
 3. **Automatic provider verification/webhooks, if you later want it.** Not required for the delivered manual-safe flow. It needs provider API credentials and a webhook secret and should terminate on Vercel (`api/system.js?op=…`) or another non-GCP host, verify the provider signature, and write the status with a server credential. Do not trust a browser success claim.
 4. **Deploying rules/storage.** The sandbox has no Firebase credentials. Run the commands in section 5 from a machine signed into the Firebase project.
-5. **Deploying the website.** Vercel deploys the branch as usual; no `functions:billing` deployment is needed for giving.
+5. **Deploying the website.** Vercel deploys the branch as usual; no billing Cloud Function deployment is needed for giving.
 6. **A real end-to-end live payment.** A sandbox cannot move real Airtel/MTN/bank money. After configuration, submit one small real gift, approve it, mark it received and print the receipt.
 
 ### Provider choices to consider
 
 Any provider that gives you an `https://` hosted checkout page and a transaction reference works with the delivered flow. Common African options include Flutterwave, Pesapal, DPO Pay, Payfast and provider-specific merchant portals. Choose one that supports your country, currency (SZL/USD) and settlement bank; this is a commercial decision, not a code dependency. The code does not pretend a provider is configured when it is not.
 
-## 4. What remains on the legacy callable (out of scope for church giving)
+## 4. What changed for the savings wallet and support plans
 
-The member **support plans / savings wallet** product (`paymentRequests`, `subscriptions`, `walletTransactions`, withdrawals and plan checkout) still calls the optional `billing` Cloud Function in `functions/billing.js`. That product is not church giving and is not required for the Give page or the support **Give** tab. If you also want plan checkout to run without Cloud Functions, that is a separate migration with its own balance-integrity design; do not mix it into the giving release. Giving, donations and support contributions are complete without it.
+The member **support plans / savings wallet** product (`paymentRequests`,
+`subscriptions`, `walletTransactions`, withdrawals and plan checkout) used to
+call an optional `billing` Cloud Function. That dependency has been removed:
+the same server-side transactions now run through the Vercel route
+`POST /api/billing`, with Firebase ID-token verification and a server-owned
+Firebase Admin credential. No Cloud Functions deployment, Cloud Build, Artifact
+Registry or Google Cloud billing account is needed for any money path.
+
+The public **Give** page and the support **Give** tab continue to use direct
+Firestore writes for offerings; they never call a function. A provider-hosted
+checkout can be confirmed by a signature-verified Vercel webhook, and all other
+methods require explicit Finance verification. See `DEPLOYMENT.md` for the two
+server-side environment variables and the provider-webhook contract.
 
 ## 5. Deploy/configure checklist
 

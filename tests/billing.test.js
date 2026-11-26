@@ -79,7 +79,7 @@ test('billing failures are reported by cause, not one catch-all notice', () => {
   assert.equal(browser.billingRetryable({ code: 'functions/not-found' }), false);
   assert.match(
     browser.billingErrorCopy({ code: 'functions/not-found' }, { staff: true }),
-    /firebase deploy --only functions:billing --project prayer-dome/
+    /\/api\/billing/
   );
   assert.match(
     read('functions/billing.js'),

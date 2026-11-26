@@ -133,6 +133,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
     <script src="/assets/pd-upload.js"></script>
     <script src="/assets/pd-billing.js"></script>
+    <script src="/assets/pd-billing-client.js"></script>
 
     <style>
         :root {
@@ -324,6 +325,7 @@
         .tx-title { display: block; font-size: .83rem; font-weight: 800; color: var(--text-main); line-height: 1.3; }
         .tx-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 2px; font-size: .66rem; color: var(--text-sub); line-height: 1.4; }
         .tx-meta .tx-ref { font-family: 'SFMono-Regular', Consolas, monospace; overflow-wrap: break-word; word-break: normal; }
+        .tx-meta .tx-cancel { background: none; border: 0; padding: 0; color: var(--pd-red); font: inherit; font-size: .78rem; text-decoration: underline; cursor: pointer; }
         .tx-amount { text-align: right; flex: 0 0 auto; }
         .tx-amount strong { display: block; font-size: .86rem; font-weight: 900; color: var(--text-main); white-space: nowrap; }
         .tx-amount .status-chip { margin-top: 4px; }
@@ -1106,6 +1108,14 @@
             </div>
 
             <div class="money-field">
+                <label for="withPayoutMethod">Approved payout method</label>
+                <select id="withPayoutMethod" class="form-control" onchange="updatePayoutMethodFields()">
+                    <option value="">Loading approved methods…</option>
+                </select>
+                <p class="money-hint">Only payout channels saved by Finance can be used. No money moves until the request is approved and paid.</p>
+            </div>
+
+            <div class="money-field" id="withPhoneField">
                 <label for="withPhone">Mobile Money number to receive</label>
                 <div class="money-input-wrap money-input-wrap--phone">
                     <i class="pd-i pd-i-smartphone" aria-hidden="true"></i>
@@ -1114,10 +1124,20 @@
                 <p class="money-hint">Include the country code. Finance sends the payment only to this number after approval.</p>
             </div>
 
+            <div class="money-field" id="withAccountField" hidden>
+                <label for="withAccount">Bank account number to receive</label>
+                <div class="money-input-wrap money-input-wrap--phone">
+                    <i class="pd-i pd-i-banknote" aria-hidden="true"></i>
+                    <input type="text" id="withAccount" placeholder="Account number" autocomplete="off" maxlength="60">
+                </div>
+                <p class="money-hint" id="withAccountHint">Finance pays only to the account details registered for your membership.</p>
+            </div>
+
             <div id="withdrawSummary" class="money-summary" hidden>
                 <strong style="display:block;margin-bottom:6px;">Review your request</strong>
                 <div>Amount: <strong id="withSummaryAmount">$0.00</strong></div>
                 <div>Receive on: <strong id="withSummaryPhone">—</strong></div>
+                <div>Payout method: <strong id="withSummaryMethod">—</strong></div>
                 <div>Available after this request: <strong id="withSummaryAvailable">$0.00</strong></div>
                 <p style="margin:8px 0 0;font-size:.74rem;">Submitting places the amount on hold; it is not paid yet. Finance reviews it first. Money leaves your balance only when the payment is actually confirmed.</p>
             </div>
@@ -1139,7 +1159,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, addDoc, query, where, orderBy, getDocs, serverTimestamp, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-functions.js";
         import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         const firebaseConfig = { apiKey: "AIzaSyCxvql0r_aeerphxTA0UUedRppdBxGf7wo", authDomain: "prayer-dome.firebaseapp.com", projectId: "prayer-dome", storageBucket: "prayer-dome.firebasestorage.app", messagingSenderId: "198295153196", appId: "1:198295153196:web:1222b31948d7974ba3bf89" };
@@ -1147,9 +1166,13 @@
         const storage = getStorage(app);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        const cloudFunctions = getFunctions(app);
-        const billingCall = httpsCallable(cloudFunctions, 'billing');
         const Billing = window.PDBilling;
+        // Money actions go to the Vercel API, never to a Google Cloud Function.
+        // The token is minted by Firebase Auth in the browser and verified on
+        // the server for every request.
+        if (window.PDBillingClient) {
+            window.PDBillingClient.setTokenProvider(async () => currentUser ? currentUser.getIdToken() : '');
+        }
 
         // Global state
         let currentUser = null;
@@ -1183,7 +1206,6 @@
         const RETRYABLE_BILLING_ACTIONS = ['plans.list', 'payment.settings.public', 'checkout.create', 'withdrawal.request', 'evidence.signedUrl'];
 
         async function callBilling(action, payload) {
-            const request = Object.assign({ action }, payload || {});
             let lastError = null;
             // One retry for a transient failure on a read or an idempotent
             // write (cold start, dropped connection, busy service). Checkout
@@ -1193,8 +1215,7 @@
             // repeat there would add a second audit entry.
             for (let attempt = 0; attempt < 2; attempt += 1) {
                 try {
-                    const result = await billingCall(request);
-                    return result.data || {};
+                    return await window.PDBillingClient.call(action, payload || {});
                 } catch (error) {
                     lastError = error;
                     const code = Billing && Billing.billingErrorCode ? Billing.billingErrorCode(error) : '';
@@ -1365,8 +1386,48 @@
             }
             populateSupportPaymentMethods();
             populateSupportGivingMethods();
+            populatePayoutMethods();
             renderPaymentChannels();
             renderSupportGivingDetails();
+        }
+
+        function approvedPayoutMethods() {
+            return supportPaymentMethods.filter(method =>
+                ['mobile-money', 'bank-transfer'].indexOf(method.type) !== -1);
+        }
+
+        function populatePayoutMethods() {
+            const select = document.getElementById('withPayoutMethod');
+            if (!select) return;
+            const methods = approvedPayoutMethods();
+            if (!methods.length) {
+                select.innerHTML = '<option value="">No payout method configured</option>';
+                select.disabled = true;
+            } else {
+                select.innerHTML = methods.map(method =>
+                    '<option value="' + esc(method.id) + '">' + esc(method.label) + '</option>').join('');
+                select.value = methods[0].id;
+                select.disabled = false;
+            }
+            updatePayoutMethodFields();
+        }
+
+        window.updatePayoutMethodFields = function () {
+            const select = document.getElementById('withPayoutMethod');
+            const method = approvedPayoutMethods().find(item => item.id === (select && select.value)) || null;
+            const bank = method && method.type === 'bank-transfer';
+            const phoneField = document.getElementById('withPhoneField');
+            const accountField = document.getElementById('withAccountField');
+            if (phoneField) phoneField.hidden = Boolean(bank);
+            if (accountField) accountField.hidden = !bank;
+            const hint = document.getElementById('withAccountHint');
+            if (hint && bank) hint.textContent = 'Bank: ' + (method.bankName || 'approved account') +
+                (method.accountName ? ' · ' + method.accountName : '') + '. Confirm these details with Finance before submitting.';
+        };
+
+        function selectedPayoutMethod() {
+            const select = document.getElementById('withPayoutMethod');
+            return approvedPayoutMethods().find(method => method.id === (select && select.value)) || null;
         }
 
         function selectedSupportMethod() {
@@ -2683,6 +2744,10 @@
                 if (item.date) meta.push('<span>' + esc(Billing.formatDate(item.date)) + '</span>');
                 meta.push('<span class="tx-ref">' + esc(item.reference || '—') + '</span>');
                 if (item.note) meta.push('<span>' + esc(item.note) + '</span>');
+                if (kind === 'withdrawal' && ['pending_review', 'under_review'].indexOf(item.status) !== -1) {
+                    meta.push('<button type="button" class="tx-cancel" onclick="cancelWithdrawal(\'' +
+                        esc(item.reference) + '\')">Cancel request</button>');
+                }
                 return '<div class="tx-item">' +
                     '<div class="tx-main">' +
                         '<div class="tx-icon ' + (isOut ? 'wth' : 'dep') + '" aria-hidden="true"><i class="pd-i ' + icon + '"></i></div>' +
@@ -2704,15 +2769,34 @@
             if (field && !field.value) setTimeout(() => field.focus(), 60);
         };
 
+        function withdrawalForm() {
+            const payout = selectedPayoutMethod();
+            const phone = String((document.getElementById('withPhone') || {}).value || '').trim();
+            const account = String((document.getElementById('withAccount') || {}).value || '').trim();
+            const digits = phone.replace(/\D/g, '');
+            if (!payout) return { error: 'Choose an approved payout method first. Finance has not configured one yet.' };
+            if (payout.type === 'mobile-money' && (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9)) {
+                return { error: 'Enter a valid Mobile Money number with the country code.' };
+            }
+            if (payout.type === 'bank-transfer' && account.replace(/\D/g, '').length < 6) {
+                return { error: 'Enter the bank account number that should receive the payout.' };
+            }
+            return {
+                payoutMethodId: payout.id,
+                phone,
+                account,
+                destination: payout.type === 'bank-transfer' ? account : phone,
+                label: payout.label
+            };
+        }
+
         window.prepareWithdrawal = async () => {
             if (!currentUser) return toast('Sign in to request a withdrawal.', 'error');
             const amountField = document.getElementById('withAmount');
-            const phoneField = document.getElementById('withPhone');
             const value = Math.round((Number(amountField && amountField.value) || 0) * 100) / 100;
-            const phone = String((phoneField && phoneField.value) || '').trim();
-            const digits = phone.replace(/\D/g, '');
             if (!value || value < 10) return toast('Minimum withdrawal is $10.00', 'error');
-            if (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9) return toast('Enter a valid Mobile Money number with the country code.', 'error');
+            const form = withdrawalForm();
+            if (form.error) return toast(form.error, 'error');
             const summary = document.getElementById('withdrawSummary');
             const button = document.getElementById('btnSubmitWith');
             try {
@@ -2723,11 +2807,12 @@
                 const available = Math.round((balance - held) * 100) / 100;
                 if (value > available) return toast('The amount is more than your available balance of ' + money(available, wallet.currency || 'USD') + '.', 'error');
                 document.getElementById('withSummaryAmount').textContent = money(value, wallet.currency || 'USD');
-                document.getElementById('withSummaryPhone').textContent = phone;
+                document.getElementById('withSummaryPhone').textContent = form.destination;
+                document.getElementById('withSummaryMethod').textContent = form.label;
                 document.getElementById('withSummaryAvailable').textContent = money(available - value, wallet.currency || 'USD');
                 if (summary) summary.hidden = false;
                 if (button) { button.textContent = 'Confirm withdrawal request'; button.onclick = window.submitWithdrawal; }
-                toast('Review the amount and number, then confirm.', 'success');
+                toast('Review the amount and destination, then confirm.', 'success');
             } catch (error) {
                 toast(error.message, 'error');
             }
@@ -2737,25 +2822,28 @@
             if (!currentUser) return toast('Sign in to request a withdrawal.', 'error');
             if (checkoutInFlight) return toast('A request is already being sent. Please wait.', 'error');
             const amountField = document.getElementById('withAmount');
-            const phoneField = document.getElementById('withPhone');
             const value = Math.round((Number(amountField && amountField.value) || 0) * 100) / 100;
-            const phone = String((phoneField && phoneField.value) || '').trim();
-            const digits = phone.replace(/\D/g, '');
             if (!value || value < 10) return toast('Minimum withdrawal is $10.00', 'error');
-            if (!/^\+?[0-9][0-9 ()\-]{6,24}$/.test(phone) || digits.length < 9) return toast('Enter a valid Mobile Money number with the country code.', 'error');
+            const form = withdrawalForm();
+            if (form.error) return toast(form.error, 'error');
             const button = document.getElementById('btnSubmitWith');
             checkoutInFlight = true;
             if (button) { button.disabled = true; button.textContent = 'Sending request…'; }
             try {
                 const result = await callBilling('withdrawal.request', {
                     amount: value,
-                    phone,
+                    phone: form.phone,
+                    accountNumber: form.account,
+                    payoutMethodId: form.payoutMethodId,
                     idempotencyKey: Billing.idempotencyKey()
                 });
                 const withdrawal = result.withdrawal || {};
                 closeModal('modalWithdraw');
                 if (amountField) amountField.value = '';
+                const phoneField = document.getElementById('withPhone');
+                const accountField = document.getElementById('withAccount');
                 if (phoneField) phoneField.value = '';
+                if (accountField) accountField.value = '';
                 const summary = document.getElementById('withdrawSummary');
                 if (summary) summary.hidden = true;
                 if (button) button.textContent = 'Review withdrawal';
@@ -2767,6 +2855,18 @@
             } finally {
                 checkoutInFlight = false;
                 if (button) { button.disabled = false; button.textContent = 'Review withdrawal'; }
+            }
+        };
+
+        window.cancelWithdrawal = async (reference) => {
+            if (!currentUser) return toast('Sign in to cancel a withdrawal.', 'error');
+            if (!window.confirm('Cancel ' + reference + '? The reserved amount will be released; no money has been paid.')) return;
+            try {
+                await callBilling('withdrawal.cancel', { reference });
+                toast('Withdrawal cancelled. The held amount is available again.', 'success');
+                await loadWalletData();
+            } catch (error) {
+                toast(error.message, 'error');
             }
         };
 

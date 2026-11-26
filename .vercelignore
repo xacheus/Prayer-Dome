@@ -6,6 +6,7 @@
 !assets/
 !documents/
 !functions/
+!lib/
 !scripts/
 !.well-known/
 !*.html
@@ -27,16 +28,22 @@
 # api/share.js reuses this dependency-free handler. The rest of the Firebase
 # Functions package is not needed by Vercel.
 functions/*
+!functions/billing.js
+!functions/billing-catalog.js
 !functions/share.js
 !functions/brevo.js
 !functions/translate.js
 !functions/email-design.js
 !functions/r2.js
 
-# Only the public-bundle builder and the postinstall hook are needed during
-# the Vercel build. Vercel still runs `npm install` for the deployment even
-# with "installCommand" overridden, so the postinstall script referenced by
-# package.json must survive the upload filter (it no-ops when VERCEL is set).
+# The Vercel billing gateway lives outside api/ so it does not consume a
+# serverless-function slot; api/system.js imports it for /api/billing.
+lib/*
+!lib/billing-server.js
+
+# Only the public-bundle builder is needed during the Vercel build. The
+# explicit `npm ci --ignore-scripts` install command installs firebase-admin
+# for the billing API without running this legacy functions postinstall hook.
 scripts/*
 !scripts/build-vercel.mjs
 !scripts/install-functions.mjs

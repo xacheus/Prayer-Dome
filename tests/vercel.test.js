@@ -48,13 +48,16 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
   const config = JSON.parse(fs.readFileSync(path.join(ROOT, 'vercel.json'), 'utf8'));
 
   test('Vercel uses the explicit static framework preset', config.framework === null);
-  test('Vercel skips the unnecessary dependency install', config.installCommand === '');
+  test('Vercel installs the server-side Firebase Admin dependency without running postinstall',
+    config.installCommand === 'npm ci --ignore-scripts --no-audit --no-fund' &&
+    JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).dependencies['firebase-admin']);
   test('Vercel builds an allowlisted public bundle',
     config.buildCommand === 'node scripts/build-vercel.mjs' && config.outputDirectory === 'dist');
   test('Vercel functions have bounded execution time and traced data files',
     config.functions && config.functions['api/*.js'] &&
-    config.functions['api/*.js'].maxDuration === 10 &&
-    config.functions['api/*.js'].includeFiles.includes('pd-content-data.js'));
+    config.functions['api/*.js'].maxDuration === 20 &&
+    config.functions['api/*.js'].includeFiles.includes('pd-content-data.js') &&
+    config.functions['api/*.js'].includeFiles.includes('functions/billing.js'));
 
   const apiFunctions = fs.readdirSync(path.join(ROOT, 'api')).filter(name => name.endsWith('.js'));
   test('the API stays within the 12-function Hobby plan limit',
@@ -65,6 +68,12 @@ function invoke(modulePath, method = 'GET', requestBody = null, query = {}) {
   const iceRewrite = (config.rewrites || []).find(rule => rule.source === '/api/live-ice');
   test('/api/live-ice is routed through the consolidated system function',
     iceRewrite && iceRewrite.destination === '/api/system?op=live-ice');
+  const billingRewrite = (config.rewrites || []).find(rule => rule.source === '/api/billing');
+  test('/api/billing is routed through the consolidated system function',
+    billingRewrite && billingRewrite.destination === '/api/system?op=billing');
+  const webhookRewrite = (config.rewrites || []).find(rule => rule.source === '/api/payment-webhook');
+  test('/api/payment-webhook is routed through the consolidated system function',
+    webhookRewrite && webhookRewrite.destination === '/api/system?op=payment-webhook');
   test('automatic deployments are enabled for arena branches and main',
     config.git && config.git.deploymentEnabled.main === true &&
     config.git.deploymentEnabled['**'] === false &&
