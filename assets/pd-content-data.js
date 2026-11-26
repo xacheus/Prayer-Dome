@@ -113,15 +113,15 @@ PD_CONTENT.DEFAULT_RADIO = [
    uses this schedule to name the current programme honestly; it never presents
    the schedule itself as a live broadcast. */
 PD_CONTENT.RADIO_PROGRAMMES = [
-  { id: 'morning-prayer', days: [0,1,2,3,4,5,6], start: 300, end: 360, title: 'Morning Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and scripture' },
-  { id: 'bible-teaching', days: [0,1,2,3,4,5,6], start: 360, end: 420, title: 'Bible Teaching', host: 'Prayer Dome Teaching Team', kind: 'Bible teaching' },
-  { id: 'gospel-worship', days: [0,1,2,3,4,5,6], start: 420, end: 540, title: 'Gospel Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music' },
-  { id: 'encouragement', days: [0,1,2,3,4,5,6], start: 540, end: 720, title: 'Encouragement', host: 'Pastoral Team', kind: 'Encouragement and prayer' },
-  { id: 'scripture-reflection', days: [0,1,2,3,4,5,6], start: 720, end: 900, title: 'Scripture Reflection', host: 'Prayer Dome Ministry Team', kind: 'Scripture reflection' },
-  { id: 'afternoon-worship', days: [0,1,2,3,4,5,6], start: 900, end: 1080, title: 'Afternoon Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music' },
-  { id: 'evening-prayer', days: [0,1,2,3,4,5,6], start: 1080, end: 1200, title: 'Evening Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and thanksgiving' },
-  { id: 'announcements', days: [0,1,2,3,4,5,6], start: 1200, end: 1230, title: 'Announcements', host: 'Prayer Dome Office', kind: 'Church announcements' },
-  { id: 'night-watch', days: [0,1,2,3,4,5,6], start: 1230, end: 300, title: 'Night Watch & Worship', host: 'Prayer Dome Radio', kind: 'Quiet worship and prayer' }
+  { id: 'morning-prayer', days: [0,1,2,3,4,5,6], start: 300, end: 360, title: 'Morning Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and scripture', description: 'morning prayer and Bible inspiration to begin the day', category: 'gospel-worship', personaId: 'warm-female' },
+  { id: 'bible-teaching', days: [0,1,2,3,4,5,6], start: 360, end: 420, title: 'Bible Teaching', host: 'Prayer Dome Teaching Team', kind: 'Bible teaching', description: 'Bible teaching and reflection', category: 'inspirational', personaId: 'deep-male' },
+  { id: 'gospel-worship', days: [0,1,2,3,4,5,6], start: 420, end: 540, title: 'Gospel Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music', description: 'gospel praise and worship', category: 'praise', personaId: 'energetic-male' },
+  { id: 'encouragement', days: [0,1,2,3,4,5,6], start: 540, end: 720, title: 'Encouragement', host: 'Pastoral Team', kind: 'Encouragement and prayer', description: 'midday prayer and encouragement', category: 'inspirational', personaId: 'friendly-female' },
+  { id: 'scripture-reflection', days: [0,1,2,3,4,5,6], start: 720, end: 900, title: 'Scripture Reflection', host: 'Prayer Dome Ministry Team', kind: 'Scripture reflection', description: 'scripture reflection and quiet worship', category: 'instrumental-worship', personaId: 'calm-male' },
+  { id: 'afternoon-worship', days: [0,1,2,3,4,5,6], start: 900, end: 1080, title: 'Afternoon Worship', host: 'Prayer Dome Worship', kind: 'Licensed worship music', description: 'afternoon gospel and Christian teaching', category: 'african-gospel', personaId: 'friendly-female' },
+  { id: 'evening-prayer', days: [0,1,2,3,4,5,6], start: 1080, end: 1200, title: 'Evening Prayer', host: 'Prayer Dome Intercessors', kind: 'Prayer and thanksgiving', description: 'evening worship and thanksgiving', category: 'gospel-worship', personaId: 'calm-male' },
+  { id: 'announcements', days: [0,1,2,3,4,5,6], start: 1200, end: 1230, title: 'Announcements', host: 'Prayer Dome Office', kind: 'Church announcements', description: 'church announcements and station information', category: 'inspirational', personaId: 'deep-male' },
+  { id: 'night-watch', days: [0,1,2,3,4,5,6], start: 1230, end: 300, title: 'Night Watch & Worship', host: 'Prayer Dome Radio', kind: 'Quiet worship and prayer', description: 'night worship and prayer', category: 'instrumental-worship', personaId: 'gentle-female' }
 ];
 
 PD_CONTENT.RADIO_WELCOME = 'Welcome to Prayer Dome Radio, a listening room from Prayer Dome Ministries. You are among a family that prays in Zambia, Eswatini, South Africa, Malawi and Ireland. Settle in, breathe slowly, and let the Word of God and worship music steady your heart. Every programme below is scheduled content, not a claim that a live studio is on air.';

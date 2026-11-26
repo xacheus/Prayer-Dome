@@ -196,6 +196,13 @@
         .ticker-bar { background: linear-gradient(90deg, var(--accent-green), #0a3d7a); color: #fff; font-size: .62rem; font-weight: 800; letter-spacing: 1px; padding: 7px 10px; text-align: center; white-space: nowrap; overflow: hidden; }
         .ticker-bar .ticker-track { display: inline-block; animation: ticker 30s linear infinite; padding-left: 100%; }
         @keyframes ticker { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        /* Continuous radio ticker: seamless duplicated loop, below the player. */
+        .radio-ticker { background: #07244d; color: #f6df8a; font-size: .68rem; font-weight: 700; letter-spacing: .4px; padding: 8px 0; overflow: hidden; white-space: nowrap; border-top: 1px solid rgba(212,175,55,.4); }
+        .radio-ticker-track { display: inline-flex; animation: radioTicker 40s linear infinite; will-change: transform; }
+        .radio-ticker-group { display: inline-block; padding-right: 48px; }
+        @keyframes radioTicker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+        @media (prefers-reduced-motion: reduce) { .radio-ticker-track, .ticker-bar .ticker-track { animation: none; } }
+        .radio-reconnect { margin: 8px 0 0; color: #fecaca; font-size: .66rem; font-weight: 700; }
         /* ---- Radio welcome & player ---- */
         .radio-hero {
             margin: 10px 20px 0; padding: clamp(18px, 3.5vw, 30px);
@@ -301,6 +308,8 @@
 <script src="/assets/pd-verse-alerts.js" defer></script>
 <script src="/assets/pd-nav.js" defer></script>
 <script src="/assets/pd-app.js" defer></script>
+<script src="/assets/pd-radio-announcements.js" defer></script>
+<script src="/assets/pd-radio-discovery.js" defer></script>
 <script src="/assets/pd-radio-live.js" defer></script>
     <link rel="stylesheet" href="/assets/pd-responsive-fix.css">
   <meta name="mobile-web-app-capable" content="yes">
@@ -403,6 +412,7 @@
         <button type="button" class="radio-main-toggle" id="radioMainToggle" disabled><i class="pd-i pd-i-play" aria-hidden="true"></i> <span>Play station</span></button>
         <label class="radio-volume" for="radioVolume"><i class="pd-i pd-i-volume-2" aria-hidden="true"></i><input type="range" id="radioVolume" min="0" max="100" value="80" aria-label="Radio volume"><span id="radioVolumeValue">80%</span></label>
         <p class="radio-note" id="radioStatusNote">Playback begins only when you press play. Nothing is downloaded in the background.</p>
+        <p class="radio-reconnect" id="radioReconnectNote" hidden></p>
         <div id="radioNowPlaying" class="radio-now-playing" aria-live="polite">
             <span class="radio-now-label"><i class="pd-i pd-i-disc-3" aria-hidden="true"></i> Now playing</span>
             <strong id="radioNowTitle">Automation is ready</strong>
@@ -509,6 +519,7 @@
 <div class="bottom-ui-system">
     <nav class="nav-bar pd-nav-bar" aria-label="Primary navigation"><a class="nav-link pd-nav-link" href="/" data-pd-nav="/"><i class="pd-i pd-i-house" aria-hidden="true"></i><span data-pd-t="nav.home">Home</span></a><a class="nav-link pd-nav-link" href="/bible" data-pd-nav="/bible"><i class="pd-i pd-i-book-open" aria-hidden="true"></i><span data-pd-t="nav.bible">Bible</span></a><a class="nav-link pd-nav-link" href="/lessons" data-pd-nav="/lessons"><i class="pd-i pd-i-graduation-cap" aria-hidden="true"></i><span data-pd-t="nav.teaching">Learn</span></a><a class="nav-link pd-nav-link" href="/game" data-pd-nav="/game"><i class="pd-i pd-i-gamepad-2" aria-hidden="true"></i><span>Play</span></a><a class="nav-link pd-nav-link" href="/prayer" data-pd-nav="/prayer"><i class="pd-i pd-i-hands-praying" aria-hidden="true"></i><span data-pd-t="nav.pray">Pray</span></a><a class="nav-link pd-nav-link" href="/account" data-pd-nav="/account"><i class="pd-i pd-i-circle-user" aria-hidden="true"></i><span data-pd-t="nav.account">Account</span></a></nav>
 
+    <div class="radio-ticker" aria-label="Radio ticker"><div class="radio-ticker-track" id="radioTickerTrack"><span class="radio-ticker-group">Prayer Dome Radio • A house of prayer for all nations</span><span class="radio-ticker-group">Prayer Dome Radio • A house of prayer for all nations</span></div></div>
     <div class="ticker-bar"><div class="ticker-track">“A HOUSE OF PRAYER FOR ALL NATIONS” • <i class="pd-i pd-i-latin-cross"></i> “HE DOES EVERYTHING BLAMELESSLY” — MARK 7:37 • <i class="pd-i pd-i-earth"></i> WORSHIP ANYTIME, ANYWHERE</div></div>
 </div>
 

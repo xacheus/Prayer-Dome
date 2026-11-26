@@ -182,3 +182,25 @@ After deployment:
 3. Decide whether the ministry wants a true server-side 24/7 stream. That requires a media server and a recurring bill; the current implementation is listener-side automation.
 4. Record and approve enough voices to avoid repeating one announcement; the engine avoids immediate repeats but a single recording cannot sound varied.
 5. Verify Brevo sender/domain settings; an accepted email is not proof of delivery, and the existing outbox status wording remains authoritative.
+
+---
+
+## 8. Update — automated 24/7 station upgrade (2026-11)
+
+This report described the first radio release. A later brief **superseded two
+of its decisions**:
+
+1. **AI presenter voices are now part of the design** (previously rejected).
+   Free Piper TTS + browser-voice fallback, admin-gated, cached in R2,
+   human recordings still take priority, and a TTS failure never stops the
+   music. See `docs/RADIO-24-7.md` §3.
+2. **A server-side 24/7 stream now ships as ready-to-run config** in
+   `radio/server/` (Icecast + Liquidsoap, Docker). It still needs one
+   always-on machine — that limitation is unchanged and documented honestly
+   in `docs/RADIO-24-7.md` §5. Listener-side automation remains the working
+   zero-budget broadcast until such a machine exists.
+
+The upgrade also added automatic free-music discovery (Internet Archive /
+Wikimedia Commons, licence-gated), Cloudflare R2 storage integration, a
+continuous Now-Playing ticker, playback history, and new admin panels.
+`docs/RADIO-24-7.md` is now the authoritative radio document.

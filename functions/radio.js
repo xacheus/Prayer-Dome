@@ -677,6 +677,103 @@ exports.radioSessionWatchdog = runtime.pubsub
     return { checked: sessions.size, ended };
   });
 
+/* --- Automatic music discovery (free catalogues, licence-gated) -------- */
+const Discovery = require('./discovery.js');
+
+async function fetchDiscoveryJson(url) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 9000);
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { Accept: 'application/json', 'User-Agent': 'PrayerDomeRadio/1.0 (+https://prayerdome.net/radio)' }
+    });
+    if (!response.ok) throw new Error('Upstream returned ' + response.status);
+    return await response.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Search the free catalogues and import eligible tracks into worshipSongs.
+ * Public-domain / CC tracks are approved automatically (the source licence
+ * is recorded on the track); everything else is imported unapproved for
+ * administrator review. Existing audio URLs are never duplicated. */
+async function runDiscoverySync(options) {
+  const opts = options || {};
+  const category = Discovery.CATEGORIES[opts.category] ? opts.category : 'gospel-worship';
+  const rows = Math.min(Math.max(Number(opts.rows) || 20, 1), 50);
+  const queryText = Discovery.CATEGORIES[category].query;
+  const db = admin.firestore();
+  const found = [];
+  const errors = [];
+  try {
+    found.push(...Discovery.parseArchive(await fetchDiscoveryJson(Discovery.archiveSearchUrl(queryText, rows)), category));
+  } catch (error) { errors.push('Internet Archive: ' + error.message); }
+  try {
+    found.push(...Discovery.parseCommons(await fetchDiscoveryJson(Discovery.commonsSearchUrl(queryText, rows)), category));
+  } catch (error) { errors.push('Wikimedia Commons: ' + error.message); }
+  const unique = Discovery.dedupe(found);
+  const existing = await db.collection('worshipSongs').where('audioUrl', 'in', unique.map((t) => t.audioUrl).slice(0, 10)).get().catch(() => ({ docs: [] }));
+  const known = new Set(existing.docs.map((entry) => (entry.data() || {}).audioUrl));
+  let imported = 0;
+  let approved = 0;
+  for (const track of unique.slice(0, 30)) {
+    if (!track.audioUrl || known.has(track.audioUrl)) continue;
+    await db.collection('worshipSongs').add({
+      title: track.title.slice(0, 160),
+      artist: track.artist.slice(0, 160),
+      album: (track.album || '').slice(0, 160),
+      genre: track.genre,
+      category: track.genre,
+      audioUrl: track.audioUrl.slice(0, 600),
+      source: track.source,
+      sourceUrl: (track.sourceUrl || '').slice(0, 400),
+      licenseStatus: track.licenseStatus,
+      rights: track.license || track.licenseStatus,
+      rightsHolder: track.source,
+      permissionConfirmed: track.permissionConfirmed === true,
+      approved: track.approved === true,
+      durationSeconds: Number(track.durationSeconds || 0),
+      discoveredBy: track.discoveredBy || track.source,
+      notes: (track.notes || '').slice(0, 600),
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    imported += 1;
+    if (track.approved) approved += 1;
+  }
+  await writeHealth({ type: 'discovery', message: 'Discovery sync: ' + imported + ' imported (' + approved + ' auto-approved) for ' + category, actor: opts.actor || 'scheduler' });
+  return { imported, approved, found: unique.length, errors };
+}
+
+exports.radioDiscoverySync = runtime.https.onCall(async (data, context) => {
+  await requireAdmin(context);
+  const result = await runDiscoverySync({
+    category: text(data && data.category, 40),
+    rows: Number(data && data.rows) || 20,
+    actor: context.auth.uid
+  });
+  return { ok: true, ...result };
+});
+
+/* Daily catalogue refresh. The scheduler is part of the existing Firebase
+ * Functions deployment — it adds no new paid service. */
+exports.radioDiscoveryScheduler = runtime.pubsub
+  .schedule('every 24 hours')
+  .timeZone('Africa/Lusaka')
+  .onRun(async () => {
+    const categories = ['african-gospel', 'gospel-worship', 'praise', 'traditional', 'instrumental-worship'];
+    let total = 0;
+    for (const category of categories) {
+      try {
+        const result = await runDiscoverySync({ category, rows: 10, actor: 'scheduler' });
+        total += result.imported;
+      } catch (error) { /* one category failing must not stop the rest */ }
+    }
+    return { imported: total };
+  });
+
 module.exports = {
   REQUEST_STATUSES,
   radioPresenterRequest: exports.radioPresenterRequest,
@@ -688,5 +785,8 @@ module.exports = {
   radioPresenterStatus: exports.radioPresenterStatus,
   radioReportIssue: exports.radioReportIssue,
   radioAdminHealth: exports.radioAdminHealth,
-  radioSessionWatchdog: exports.radioSessionWatchdog
+  radioSessionWatchdog: exports.radioSessionWatchdog,
+  radioDiscoverySync: exports.radioDiscoverySync,
+  radioDiscoveryScheduler: exports.radioDiscoveryScheduler,
+  runDiscoverySync
 };
