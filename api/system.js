@@ -18,6 +18,7 @@
  */
 
 const brevo = require('../functions/brevo');
+const billingServer = require('../lib/billing-server');
 
 function operation(req) {
   const query = req && req.query;
@@ -207,5 +208,9 @@ module.exports = function system(req, res) {
   var op = operation(req);
   if (op === 'newsletter') return brevo.newsletterHandler(req, res);
   if (op === 'live-ice') return liveIce(req, res);
+  // Billing lives on this consolidated endpoint so Hobby deployments stay
+  // within the 12-serverless-function limit.
+  if (op === 'billing') return billingServer.billingHandler(req, res);
+  if (op === 'payment-webhook') return billingServer.webhookHandler(req, res);
   return health(req, res);
 };

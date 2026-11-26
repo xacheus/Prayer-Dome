@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "",
+  "installCommand": "npm ci --ignore-scripts --no-audit --no-fund",
   "buildCommand": "node scripts/build-vercel.mjs",
   "outputDirectory": "dist",
   "cleanUrls": true,
@@ -16,8 +16,8 @@
   },
   "functions": {
     "api/*.js": {
-      "includeFiles": "{assets/pd-academy-data.js,assets/pd-content-data.js,assets/pd-radio-discovery.js,assets/pd-radio-announcements.js,functions/brevo.js,functions/email-design.js,functions/r2.js,functions/share.js,functions/translate.js,sermons-data.js}",
-      "maxDuration": 10
+      "includeFiles": "{assets/pd-academy-data.js,assets/pd-content-data.js,assets/pd-radio-*.js,functions/billing*.js,functions/brevo.js,functions/email-design.js,functions/r2.js,functions/share.js,functions/translate.js,sermons-data.js}",
+      "maxDuration": 20
     }
   },
   "rewrites": [
@@ -32,6 +32,14 @@
     {
       "source": "/api/live-ice",
       "destination": "/api/system?op=live-ice"
+    },
+    {
+      "source": "/api/billing",
+      "destination": "/api/system?op=billing"
+    },
+    {
+      "source": "/api/payment-webhook",
+      "destination": "/api/system?op=payment-webhook"
     },
     {
       "source": "/resource-view",

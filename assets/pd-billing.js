@@ -351,9 +351,13 @@
 
   var STATUS_LABELS = {
     draft: 'Draft',
+    pending: 'Pending',
     pending_payment: 'Awaiting payment',
     pending_verification: 'Pending verification',
-    pending_review: 'Pending review',
+    pending_review: 'Pending',
+    under_review: 'Under review',
+    failed: 'Failed',
+    refunded: 'Refunded',
     processing: 'Processing',
     paid: 'Paid',
     approved: 'Approved',
@@ -438,7 +442,7 @@
 
   function statusTone(status) {
     if (status === 'active' || status === 'approved' || status === 'paid') return 'ok';
-    if (status === 'rejected' || status === 'revoked' || status === 'expired' || status === 'suspended' || status === 'cancelled' || status === 'failed') return 'bad';
+    if (status === 'rejected' || status === 'revoked' || status === 'expired' || status === 'suspended' || status === 'cancelled' || status === 'failed' || status === 'refunded') return 'bad';
     return 'warn';
   }
 
@@ -532,7 +536,7 @@
           return raw;
         }
         return staff
-          ? 'The billing function is not deployed for this project. Run "firebase deploy --only functions:billing --project prayer-dome", then retry.'
+          ? 'The billing API route was not found. Check the Vercel rewrite for /api/billing and the FIREBASE_SERVICE_ACCOUNT_JSON environment variable.'
           : 'Billing is not available on this site yet. Please contact info@prayerdome.net and quote code not-found.';
       case 'unauthenticated':
         return fromServer && raw ? raw : 'Your sign-in has expired. Sign in again and retry.';

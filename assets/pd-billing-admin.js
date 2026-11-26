@@ -56,9 +56,8 @@
 
   async function callBilling(action, payload) {
     try {
-      const callable = bridge.httpsCallable(bridge.cloudFunctions, 'billing');
-      const result = await callable(Object.assign({ action }, payload || {}));
-      return result.data || {};
+      if (!window.PDBillingClient) throw new Error('The billing API client did not load. Refresh the page.');
+      return await window.PDBillingClient.call(action, payload || {});
     } catch (error) {
       console.error('Billing admin ' + action + ' failed:', error && error.code, error && error.message);
       throw new Error(Billing && Billing.billingErrorCopy
@@ -190,6 +189,63 @@
     return row.status === filter;
   }
 
+  function valueOf(elementId) {
+    const element = document.getElementById(elementId);
+    return element ? String(element.value || '').trim() : '';
+  }
+
+  function withinDates(row, fromId, toId) {
+    const at = toDate(row.createdAt || row.requestedAt);
+    if (!at) return true;
+    const from = valueOf(fromId);
+    const to = valueOf(toId);
+    if (from && at < new Date(from + 'T00:00:00')) return false;
+    if (to && at > new Date(to + 'T23:59:59')) return false;
+    return true;
+  }
+
+  function csvCell(value) {
+    return '"' + String(value == null ? '' : value).replace(/"/g, '""') + '"';
+  }
+
+  function downloadCsv(name, headers, rows) {
+    const lines = [headers.map(csvCell).join(',')].concat(rows.map((row) => row.map(csvCell).join(',')));
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function visiblePayments() {
+    const filter = valueOf('paymentStatusFilter') || 'awaiting';
+    const method = valueOf('paymentMethodFilter');
+    const search = valueOf('paymentSearch').toLowerCase();
+    return payments.filter((row) => {
+      if (!paymentMatchesFilter(row, filter)) return false;
+      if (method && method !== 'all' && row.payToType !== method && row.method !== method) return false;
+      if (!withinDates(row, 'paymentDateFrom', 'paymentDateTo')) return false;
+      if (!search) return true;
+      return [row.reference, row.userId, row.userName, row.userEmail, row.planName, row.planId, row.program, row.payToLabel]
+        .join(' ').toLowerCase().includes(search);
+    });
+  }
+
+  window.exportPaymentRows = function () {
+    const rows = visiblePayments();
+    if (!rows.length) return bridge.toast('No payment records match these filters.', 'error');
+    downloadCsv('prayer-dome-payments.csv',
+      ['Date', 'Reference', 'User ID', 'Member', 'Type', 'Amount', 'Currency', 'Method', 'Status', 'Verification'],
+      rows.map((row) => [date(row.createdAt), row.reference, row.userId, row.userName || row.userEmail,
+        row.kind, row.amount, row.currency, row.payToLabel || row.method, row.status,
+        [row.verifiedByUid, row.approvedAt, row.rejectionReason, row.verificationNote].filter(Boolean).join(' | ')]));
+    bridge.toast('Exported ' + rows.length + ' payment records.');
+  };
+
   window.filterPayments = function () {
     renderPayments();
   };
@@ -197,14 +253,7 @@
   function renderPayments() {
     const body = document.getElementById('paymentList');
     if (!body) return;
-    const filter = (document.getElementById('paymentStatusFilter') || {}).value || 'awaiting';
-    const search = String((document.getElementById('paymentSearch') || {}).value || '').trim().toLowerCase();
-    const rows = payments.filter((row) => {
-      if (!paymentMatchesFilter(row, filter)) return false;
-      if (!search) return true;
-      return [row.reference, row.userName, row.userEmail, row.planName, row.planId, row.program]
-        .join(' ').toLowerCase().includes(search);
-    });
+    const rows = visiblePayments();
     const awaiting = payments.filter((row) => row.status === 'pending_verification').length;
     const open = payments.filter((row) => ['pending_payment', 'pending_verification'].includes(row.status)).length;
     const approved = payments.filter((row) => row.status === 'approved').length;
@@ -1077,21 +1126,42 @@
     }
   };
 
+  function visibleWithdrawals() {
+    const filter = valueOf('withdrawalStatusFilter') || 'open';
+    const method = valueOf('withdrawalMethodFilter');
+    const search = valueOf('withdrawalSearch').toLowerCase();
+    return withdrawals.filter((row) => {
+      if (filter === 'open' && !['pending_review', 'under_review', 'processing'].includes(row.status)) return false;
+      if (!['all', 'open'].includes(filter) && row.status !== filter) return false;
+      if (method && method !== 'all' && row.payoutMethodType !== method) return false;
+      if (!withinDates(row, 'withdrawalDateFrom', 'withdrawalDateTo')) return false;
+      if (!search) return true;
+      return [row.userName, row.userEmail, row.userId, row.reference, row.receivePhone,
+        row.receiveAccount, row.paidReference, row.status, row.payoutMethodLabel]
+        .join(' ').toLowerCase().includes(search);
+    });
+  }
+
+  window.exportWithdrawalRows = function () {
+    const rows = visibleWithdrawals();
+    if (!rows.length) return bridge.toast('No withdrawals match these filters.', 'error');
+    downloadCsv('prayer-dome-withdrawals.csv',
+      ['Requested', 'Reference', 'User ID', 'Member', 'Amount', 'Currency', 'Payout method',
+        'Destination', 'Status', 'Paid reference', 'Reason'],
+      rows.map((row) => [date(row.requestedAt || row.createdAt), row.reference, row.userId,
+        row.userName || row.userEmail, row.amount, row.currency, row.payoutMethodLabel,
+        row.receivePhone || row.receiveAccount, row.status, row.paidReference,
+        row.rejectionReason || '']));
+    bridge.toast('Exported ' + rows.length + ' withdrawals.');
+  };
+
   window.filterWithdrawals = function () { renderWithdrawals(); };
 
   function renderWithdrawals() {
     const body = document.getElementById('withdrawalList');
     if (!body) return;
-    const filter = (document.getElementById('withdrawalStatusFilter') || {}).value || 'open';
-    const search = String((document.getElementById('withdrawalSearch') || {}).value || '').trim().toLowerCase();
-    const rows = withdrawals.filter((row) => {
-      if (filter === 'open' && !['pending_review', 'processing'].includes(row.status)) return false;
-      if (!['all', 'open'].includes(filter) && row.status !== filter) return false;
-      if (!search) return true;
-      return [row.userName, row.userEmail, row.reference, row.receivePhone, row.paidReference, row.status]
-        .join(' ').toLowerCase().includes(search);
-    });
-    const open = withdrawals.filter((row) => ['pending_review', 'processing'].includes(row.status));
+    const rows = visibleWithdrawals();
+    const open = withdrawals.filter((row) => ['pending_review', 'under_review', 'processing'].includes(row.status));
     const summary = document.getElementById('withdrawalSummary');
     if (summary) {
       summary.textContent = open.length + ' open · ' +
@@ -1104,19 +1174,23 @@
     }
     body.innerHTML = rows.map((row) => {
       const actions = [];
-      if (row.status === 'pending_review') {
+      if (row.status === 'pending_review' || row.status === 'under_review') {
+        if (row.status === 'pending_review') {
+          actions.push('<button class="btn btn-sm btn-outline" type="button" onclick="reviewWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-eye"></i> Review</button>');
+        }
         actions.push('<button class="btn btn-sm btn-primary" type="button" onclick="approveWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-check"></i> Approve</button>');
         actions.push('<button class="btn btn-sm btn-danger" type="button" onclick="rejectWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-x"></i> Reject</button>');
       } else if (row.status === 'processing') {
         actions.push('<button class="btn btn-sm btn-primary" type="button" onclick="markWithdrawalPaid(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-banknote"></i> Mark paid</button>');
         actions.push('<button class="btn btn-sm btn-danger" type="button" onclick="rejectWithdrawal(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-x"></i> Reject</button>');
+        actions.push('<button class="btn btn-sm btn-outline" type="button" onclick="cancelWithdrawalRequest(\'' + esc(row.reference || row.id) + '\')"><i class="pd-i pd-i-ban"></i> Cancel</button>');
       }
       if (row.userId) actions.push('<button class="btn btn-sm btn-outline" type="button" onclick="viewFullMemberDetails(\'' + esc(row.userId) + '\')"><i class="pd-i pd-i-user"></i> Member</button>');
       return '<tr>' +
         '<td style="white-space:nowrap;">' + esc(date(row.requestedAt || row.createdAt)) + '</td>' +
         '<td><strong>' + esc(row.userName || memberName(row.userId)) + '</strong><br><span style="font-size:.68rem;color:var(--text-sub);">' + esc(row.userEmail || '') + '</span></td>' +
         '<td><strong>' + money(row.amount, row.currency) + '</strong></td>' +
-        '<td>' + esc(row.receivePhone || '—') + '</td>' +
+        '<td>' + esc(row.payoutMethodLabel || 'Mobile Money') + '<br><span style="font-size:.68rem;color:var(--text-sub);">' + esc(row.receivePhone || row.receiveAccount || '—') + '</span></td>' +
         '<td>' + chip(row.status) + (row.rejectionReason ? '<br><span style="font-size:.68rem;color:#b91c1c;">' + esc(row.rejectionReason) + '</span>' : '') + '</td>' +
         '<td style="font-family:monospace;font-size:.68rem;word-break:normal;overflow-wrap:break-word;">' + esc(row.reference || row.id) + '</td>' +
         '<td style="font-family:monospace;font-size:.68rem;word-break:normal;overflow-wrap:break-word;">' + esc(row.paidReference || '—') + '</td>' +
@@ -1124,6 +1198,35 @@
       '</tr>';
     }).join('');
   }
+
+  window.reviewWithdrawal = async function (reference) {
+    const note = String(window.prompt('Optional note for the member after reviewing this request.') || '').trim();
+    window.showLoading();
+    try {
+      await callBilling('withdrawal.review', { reference, reason: note });
+      window.hideLoading();
+      window.toast('Marked as under review. The amount stays reserved.');
+      await window.loadWithdrawals();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
+
+  window.cancelWithdrawalRequest = async function (reference) {
+    if (!window.confirm('Cancel this withdrawal? The reserved amount is released and no payout is recorded.')) return;
+    window.showLoading();
+    try {
+      await callBilling('withdrawal.cancel', { reference });
+      window.hideLoading();
+      window.toast('Withdrawal cancelled and hold released.');
+      await window.loadWithdrawals();
+      await window.loadWalletBalances();
+    } catch (error) {
+      window.hideLoading();
+      window.toast(error.message, 'error');
+    }
+  };
 
   window.approveWithdrawal = async function (reference) {
     if (!window.confirm('Approve this withdrawal for payment? No money leaves the wallet yet. You must mark it paid only after the Mobile Money payment is confirmed.')) return;
