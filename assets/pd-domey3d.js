@@ -540,6 +540,7 @@
       act: null,
       pose: null,          // smoothed pose actually applied
       gaze: { x: 0, y: 0 },
+      saccade: { x: 0, y: 0 }, // tiny idle offset; never replaces a real gaze signal
       look: { x: 0, y: 0 },
       blink: { next: 1.6, t: 0, closed: 0 },
       time: 0,
@@ -894,15 +895,22 @@
       } else {
         state.blink.closed = approach(state.blink.closed, 0, step, 0.08);
       }
-      // Occasional micro-saccades make the gaze feel alive
+      // Occasional micro-saccades add life while the member is not being
+      // looked at. They must be an offset, never a replacement for look():
+      // a random glance used to overwrite the member's gaze and could send
+      // the eyes the wrong way even after rig.look() had been called.
+      state.saccade.x = approach(state.saccade.x, 0, step, 0.35);
+      state.saccade.y = approach(state.saccade.y, 0, step, 0.35);
       if (Math.random() < 0.004 * speed) {
-        state.gaze.x = clamp((Math.random() - 0.5) * 0.6, -1, 1);
-        state.gaze.y = clamp((Math.random() - 0.5) * 0.4, -1, 1);
+        state.saccade.x = (Math.random() - 0.5) * 0.3;
+        state.saccade.y = (Math.random() - 0.5) * 0.2;
       }
+      var gazeX = clamp(state.gaze.x + state.saccade.x, -1, 1);
+      var gazeY = clamp(state.gaze.y + state.saccade.y, -1, 1);
       var surprise = state.state === 'celebrating' ? 1.10 : (state.state === 'thinking' ? 0.95 : 1);
       var bored = state.state === 'listening' ? 0.97 : 1;
-      state.look.x = approach(state.look.x, state.gaze.x * 0.040, step, 0.10);
-      state.look.y = approach(state.look.y, -state.gaze.y * 0.028, step, 0.10);
+      state.look.x = approach(state.look.x, gazeX * 0.040, step, 0.10);
+      state.look.y = approach(state.look.y, -gazeY * 0.028, step, 0.10);
       ['R', 'L'].forEach(function (key) {
         var eye = eyes[key];
         eye.eye.position.x = state.look.x;

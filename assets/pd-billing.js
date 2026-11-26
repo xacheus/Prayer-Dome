@@ -52,7 +52,7 @@
   ];
 
   /* The official number is configuration, never source code. Checkout receives
-     it from settings/payments through the billing callable, and the support
+     it from settings/payments through the billing API, and the support
      page shows the same value from the authorised finance settings. */
   var PAYMENT_INSTRUCTIONS = 'Send the exact amount using the official PRAYER DOME payment ' +
     'method shown at checkout. Put the payment reference on the payment, then upload a clear ' +

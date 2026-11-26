@@ -112,7 +112,7 @@ function amount(value) {
 
 /*
  * Official payment details live in settings/payments and are managed by the
- * finance team through the billing callable. The document keeps a methods[]
+ * finance team through the billing API. The document keeps a methods[]
  * list so the give page and member support page can offer every channel the
  * ministry actually owns. No number is ever stored in this repository: if
  * finance has not configured a usable method, checkout stops instead of

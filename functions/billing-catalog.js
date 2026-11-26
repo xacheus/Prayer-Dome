@@ -11,7 +11,7 @@
  */
 
 // The official Mobile Money number is NEVER stored in code. The finance team
-// keeps it in settings/payments, and the billing callable writes the exact
+// keeps it in settings/payments, and the billing API writes the exact
 // number it used onto every payment request. This text is only a fallback for
 // catalogue display; checkout refuses to open until finance has configured the
 // number (see functions/billing.js → loadPaymentSettings()).

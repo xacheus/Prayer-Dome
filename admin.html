@@ -2962,7 +2962,7 @@
                 </div>
                 <div class="panel-card" style="margin-bottom:16px;">
                     <div style="padding:16px;font-size:.8rem;line-height:1.6;color:var(--text-sub);">
-                        These are the plans members see. Prices are monthly USD. Saving a plan here updates the public catalogue without a deploy, and the billing callable always charges the stored price.
+                        These are the plans members see. Prices are monthly USD. Saving a plan here updates the public catalogue without a deploy, and the billing API always charges the stored price.
                     </div>
                 </div>
                 <div class="panel-card">
@@ -5204,19 +5204,58 @@ window.toggleDarkMode = function() {
         window.filterGallery = function() { const searchTerm=document.getElementById('gallerySearch')?.value.toLowerCase(); if(!searchTerm) return loadGallery(); const filtered=allGalleryCache.filter(img=>img.title?.toLowerCase().includes(searchTerm)||img.category?.toLowerCase().includes(searchTerm)); const grid=document.getElementById('galleryGrid'); if(filtered.length===0){ grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:40px;">No matching images</div>'; return; } grid.innerHTML=filtered.map(img=>`<div class="gallery-item"><img src="${img.url}" class="gallery-image"><div class="gallery-info"><div class="gallery-title">${escapeHTML(img.title)}</div><div class="gallery-meta"><span><i class="pd-i pd-i-user"></i> ${escapeHTML(img.userName)}</span><span>${img.createdAt?moment(img.createdAt.toDate()).fromNow():'Recently'}</span></div><div class="gallery-meta"><span>${img.category}</span><span class="badge ${img.status==='approved'?'badge-success':'badge-warning'}">${img.status}</span></div><div class="gallery-actions">${img.status==='pending'?`<button class="btn btn-sm btn-success" onclick="approveGalleryImage('${img.id}')">Approve</button>`:''}<button class="btn btn-sm btn-outline" onclick="deleteGalleryImage('${img.id}')">Delete</button></div></div></div>`).join(''); };
 
         window.loadFinances = async function() {
-            const dBody=document.getElementById('listDeposits'), wBody=document.getElementById('listWithdrawals');
-            if(dBody) dBody.innerHTML='<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
-            if(wBody) wBody.innerHTML='<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
+            const dBody = document.getElementById('listDeposits');
+            const wBody = document.getElementById('listWithdrawals');
+            if (dBody) dBody.innerHTML = '<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
+            if (wBody) wBody.innerHTML = '<td colspan="6"><div class="spinner" style="width:30px;height:30px;"></div></td>';
+            // This overview is read-only. The money views own every status
+            // change so a balance can never be moved from two screens at once.
+            const statusChip = (status) => {
+                const labels = {
+                    pending: 'Pending', pending_payment: 'Awaiting payment',
+                    pending_review: 'Pending review', pending_verification: 'Awaiting verification',
+                    under_review: 'Under review', approved: 'Approved', processing: 'Processing',
+                    paid: 'Paid', rejected: 'Rejected', cancelled: 'Cancelled', failed: 'Failed'
+                };
+                const safe = String(status || 'unknown');
+                const tone = ['approved', 'paid'].includes(safe) ? 'success'
+                    : ['rejected', 'cancelled', 'failed'].includes(safe) ? 'danger' : 'warning';
+                return '<span class="badge badge-' + tone + '">' + escapeHTML(labels[safe] || safe) + '</span>';
+            };
+            const moneyLabel = (value, currency) => window.PDBilling && window.PDBilling.money
+                ? window.PDBilling.money(value, currency || 'USD')
+                : String(currency || 'USD') + ' ' + Number(value || 0).toFixed(2);
+            const manageButton = (view, label) =>
+                '<button class="btn btn-sm btn-outline" onclick="switchView(\'' + view + '\', pdNavFor(\'' + view + '\'))">' + label + '</button>';
             try {
-                const dSnap=await getDocs(query(collection(db,"deposits"),orderBy("createdAt","desc"),limit(30)));
-                let dHtml=''; dSnap.forEach(d=>{ const data=d.data(); const badge=data.status==='approved'?'<span class="badge badge-success">Approved</span>':data.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'; dHtml+=`<tr><td>${data.createdAt?moment(data.createdAt.toDate()).format('MMM D, YYYY'):'N/A'}</td><td>${escapeHTML(data.userName||data.userEmail)}</td><td style="color:var(--accent-green);font-weight:bold;">E${data.amount.toFixed(2)}</td><td>${data.proofUrl?`<button class="btn btn-sm btn-outline" onclick="viewDoc('${data.proofUrl}','image')">View</button>`:'No Proof'}</td><td>${badge}</td><td>${data.status==='pending'?`<button class="btn btn-sm btn-primary" onclick="approveFinance('deposits','${d.id}','${data.userId}',${data.amount})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectFinance('deposits','${d.id}')">Reject</button>`:'-'}</td></tr>`; }); if(dBody) dBody.innerHTML=dHtml||'<td colspan="6">No deposits<\/td>';
-                const wSnap=await getDocs(query(collection(db,"withdrawals"),orderBy("createdAt","desc"),limit(30)));
-                let wHtml=''; wSnap.forEach(w=>{ const data=w.data(); const badge=data.status==='approved'?'<span class="badge badge-success">Processed</span>':data.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'; wHtml+=`<tr><td>${data.createdAt?moment(data.createdAt.toDate()).format('MMM D, YYYY'):'N/A'}</td><td>${escapeHTML(data.userName||data.userEmail)}</td><td style="color:var(--accent-red);font-weight:bold;">E${data.amount.toFixed(2)}</td><td>${escapeHTML(data.receivePhone||'N/A')}</td><td>${badge}</td><td>${data.status==='pending'?`<button class="btn btn-sm btn-primary" onclick="approveFinance('withdrawals','${w.id}','${data.userId}',${data.amount})">Approve</button><button class="btn btn-sm btn-danger" onclick="rejectFinance('withdrawals','${w.id}')">Reject</button>`:'-'}</td></tr>`; }); if(wBody) wBody.innerHTML=wHtml||'<td colspan="6">No withdrawals<\/td>';
-            } catch(e){ console.error(e); }
+                const dSnap = await getDocs(query(collection(db, 'deposits'), orderBy('createdAt', 'desc'), limit(30)));
+                let dHtml = '';
+                dSnap.forEach(d => {
+                    const data = d.data();
+                    const proofUrl = String(data.proofUrl || '');
+                    const safeProof = /^https?:\/\/[^\s'"<>]+$/i.test(proofUrl)
+                        ? JSON.stringify(proofUrl).replace(/</g, '\u003c') : '';
+                    const proofButton = safeProof
+                        ? `<button class="btn btn-sm btn-outline" onclick="viewDoc(${safeProof},'image')">View</button>` : 'No Proof';
+                    dHtml += `<tr><td>${data.createdAt ? moment(data.createdAt.toDate()).format('MMM D, YYYY') : 'N/A'}</td><td>${escapeHTML(data.userName || data.userEmail)}</td><td style="color:var(--accent-green);font-weight:bold;">${moneyLabel(data.amount, data.currency)}</td><td>${proofButton}</td><td>${statusChip(data.status)}</td><td>${manageButton('payment-verification', 'Manage')}</td></tr>`;
+                });
+                if (dBody) dBody.innerHTML = dHtml || '<td colspan="6">No deposits</td>';
+                const wSnap = await getDocs(query(collection(db, 'withdrawals'), orderBy('createdAt', 'desc'), limit(30)));
+                let wHtml = '';
+                wSnap.forEach(w => {
+                    const data = w.data();
+                    wHtml += `<tr><td>${data.createdAt ? moment(data.createdAt.toDate()).format('MMM D, YYYY') : 'N/A'}</td><td>${escapeHTML(data.userName || data.userEmail)}</td><td style="color:var(--accent-red);font-weight:bold;">${moneyLabel(data.amount, data.currency)}</td><td>${escapeHTML(data.receivePhone || data.receiveAccount || 'N/A')}</td><td>${statusChip(data.status)}</td><td>${manageButton('withdrawals', 'Manage')}</td></tr>`;
+                });
+                if (wBody) wBody.innerHTML = wHtml || '<td colspan="6">No withdrawals</td>';
+            } catch (e) {
+                console.error('Finance overview could not be loaded:', e);
+                if (dBody) dBody.innerHTML = '<td colspan="6">Deposits could not be loaded.</td>';
+                if (wBody) wBody.innerHTML = '<td colspan="6">Withdrawals could not be loaded.</td>';
+            }
         };
 
         /* Legacy finance rows are read-only here. Every balance movement goes
-           through the billing callable so it is idempotent, audited and cannot
+           through the billing API so it is idempotent, audited and cannot
            be performed twice from two admin tabs. */
         window.approveFinance = async function(type){
             if (type === 'deposits') {
@@ -6438,10 +6477,34 @@ window.toggleDarkMode = function() {
             finally { hideLoading(); }
         };
 
-        window.loadFinancialReports = async function(){ const tbody=document.getElementById('financialReportsList'); if(!tbody) return; tbody.innerHTML='<td colspan="9"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try { const branchFilter=document.getElementById('reportBranchFilter')?.value||'all'; const statusFilter=document.getElementById('reportStatusFilter')?.value||'all'; const dateFilter=document.getElementById('reportDateFilter')?.value||''; const snapshot=await getDocs(query(collection(db,"financialReports"),orderBy("date","desc"))); let reports=[]; snapshot.forEach(doc=>{reports.push({id:doc.id,...doc.data()});}); let filtered=reports; if(branchFilter!=='all') filtered=filtered.filter(r=>r.branch===branchFilter); if(statusFilter!=='all') filtered=filtered.filter(r=>r.status===statusFilter); if(dateFilter) filtered=filtered.filter(r=>r.date===dateFilter); document.getElementById('totalReportsCount').innerText=filtered.length; document.getElementById('pendingReportsCount').innerText=filtered.filter(r=>r.status==='submitted').length; document.getElementById('approvedReportsCount').innerText=filtered.filter(r=>r.status==='approved').length; document.getElementById('totalIncomeAll').innerText=`E${filtered.reduce((sum,r)=>sum+(r.totalIncome||0),0).toFixed(2)}`; if(filtered.length===0){ tbody.innerHTML='<td colspan="9">No reports found<\/td>'; return; } let html=''; filtered.forEach(report=>{ const statusBadge=report.status==='approved'?'<span class="badge badge-success">Approved</span>':(report.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'); const surplusColor=(report.surplus||0)>=0?'var(--accent-green)':'var(--accent-red)'; html+=`<tr><td>${moment(report.date).format('MMM D, YYYY')}</td><td>${report.branch==='eswatini'?'Eswatini':report.branch==='zambia'?'Zambia':'Ireland'}</td><td>${escapeHTML(report.submittedBy)}</td><td style="color:var(--accent-green);font-weight:bold;">E${(report.totalIncome||0).toFixed(2)}</td><td style="color:var(--accent-red);">E${(report.totalExpense||0).toFixed(2)}</td><td style="color:${surplusColor};font-weight:bold;">E${(report.surplus||0).toFixed(2)}</td><td>${report.approvedBy?escapeHTML(report.approvedBy):'-'}</td><td>${statusBadge}</td><td>${report.documentUrl?`<button class="btn btn-sm btn-primary" onclick="viewDoc('${report.documentUrl}','auto')" aria-label="View document"><i class="pd-i pd-i-eye"></i></button>`:'-'}</td></tr>`; }); tbody.innerHTML=html; } catch(error){ console.error("Error loading reports:",error); tbody.innerHTML='<td colspan="9">Error loading reports<\/td>'; toast("Error loading financial reports", "error"); } };
+        // The last filtered report list powers the CSV export. It is never
+        // trusted for a write; it is only a snapshot of what the admin sees.
+        let financialReportsCache = [];
+        window.loadFinancialReports = async function(){ const tbody=document.getElementById('financialReportsList'); if(!tbody) return; tbody.innerHTML='<td colspan="9"><div class="spinner" style="width:30px;height:30px;"></div></td>'; try { const branchFilter=document.getElementById('reportBranchFilter')?.value||'all'; const statusFilter=document.getElementById('reportStatusFilter')?.value||'all'; const dateFilter=document.getElementById('reportDateFilter')?.value||''; const snapshot=await getDocs(query(collection(db,"financialReports"),orderBy("date","desc"))); let reports=[]; snapshot.forEach(doc=>{reports.push({id:doc.id,...doc.data()});}); let filtered=reports; if(branchFilter!=='all') filtered=filtered.filter(r=>r.branch===branchFilter); if(statusFilter!=='all') filtered=filtered.filter(r=>r.status===statusFilter); if(dateFilter) filtered=filtered.filter(r=>r.date===dateFilter); financialReportsCache=filtered; document.getElementById('totalReportsCount').innerText=filtered.length; document.getElementById('pendingReportsCount').innerText=filtered.filter(r=>r.status==='submitted').length; document.getElementById('approvedReportsCount').innerText=filtered.filter(r=>r.status==='approved').length; document.getElementById('totalIncomeAll').innerText=`E${filtered.reduce((sum,r)=>sum+(r.totalIncome||0),0).toFixed(2)}`; if(filtered.length===0){ tbody.innerHTML='<td colspan="9">No reports found<\/td>'; return; } let html=''; filtered.forEach(report=>{ const statusBadge=report.status==='approved'?'<span class="badge badge-success">Approved</span>':(report.status==='rejected'?'<span class="badge badge-danger">Rejected</span>':'<span class="badge badge-warning">Pending</span>'); const surplusColor=(report.surplus||0)>=0?'var(--accent-green)':'var(--accent-red)'; const reportUrl=String(report.documentUrl||''); const safeDocUrl=/^https?:\/\/[^\s'"<>]+$/i.test(reportUrl)?JSON.stringify(reportUrl).replace(/</g,'\u003c').replace(/'/g,'\u0027'):''; html+=`<tr><td>${moment(report.date).format('MMM D, YYYY')}</td><td>${report.branch==='eswatini'?'Eswatini':report.branch==='zambia'?'Zambia':'Ireland'}</td><td>${escapeHTML(report.submittedBy)}</td><td style="color:var(--accent-green);font-weight:bold;">E${(report.totalIncome||0).toFixed(2)}</td><td style="color:var(--accent-red);">E${(report.totalExpense||0).toFixed(2)}</td><td style="color:${surplusColor};font-weight:bold;">E${(report.surplus||0).toFixed(2)}</td><td>${report.approvedBy?escapeHTML(report.approvedBy):'-'}</td><td>${statusBadge}</td><td>${safeDocUrl?`<button class="btn btn-sm btn-primary" onclick="viewDoc(${safeDocUrl},'auto')" aria-label="View document"><i class="pd-i pd-i-eye"></i></button>`:'-'}</td></tr>`; }); tbody.innerHTML=html; } catch(error){ financialReportsCache=[]; console.error("Error loading reports:",error); tbody.innerHTML='<td colspan="9">Error loading reports<\/td>'; toast("Error loading financial reports", "error"); } };
 
         window.viewDoc = function(url,type){ const img=document.getElementById('docImagePreview'), pdf=document.getElementById('docPdfBtn'); if(url.toLowerCase().includes('.pdf')){ if(img) img.style.display='none'; if(pdf){ pdf.style.display='inline-flex'; pdf.href=url; } } else { if(img){ img.style.display='block'; img.src=url; } if(pdf) pdf.style.display='none'; } openModal('modalViewDoc'); };
-        window.exportFinancialReports = function() { toast("Export feature - CSV export ready", "info"); };
+        window.exportFinancialReports = function() {
+            if (!financialReportsCache.length) return toast('Load financial reports before exporting.', 'error');
+            const head = ['Date', 'Branch', 'Submitted by', 'Total income', 'Total expense', 'Surplus', 'Approved by', 'Status', 'Document'];
+            const rows = financialReportsCache.map(r => [
+                r.date || '', r.branch || '', r.submittedBy || '',
+                Number(r.totalIncome) || 0, Number(r.totalExpense) || 0, Number(r.surplus) || 0,
+                r.approvedBy || '', r.status || '', /^https?:\/\//i.test(String(r.documentUrl || '')) ? r.documentUrl : ''
+            ]);
+            // Quote every cell and neutralise spreadsheet formulas: the report
+            // text is admin-controlled but a CSV still opens in Excel/Sheets.
+            const cell = v => '"' + String(v).replace(/^([=+\-@])/i, "'$1").replace(/"/g, '""') + '"';
+            const csv = '\uFEFF' + [head, ...rows].map(r => r.map(cell).join(',')).join('\n');
+            const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'prayer-dome-financial-reports.csv';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+            toast('Exported ' + rows.length + ' financial reports.');
+        };
         window.uploadMedia = function(){ window.uploadGalleryImage(); };
         /* ===== TEAM MANAGEMENT (full editor inside the console) =====
          * Two collections back this screen:

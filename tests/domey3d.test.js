@@ -182,6 +182,22 @@ function evalOnWindow(source) {
     const left = rig.eyes.R.eye.position.x;
     return Number.isFinite(right) && Number.isFinite(left) && right > 0 && left < 0;
   })());
+  t('idle glances never override a real gaze signal', (function () {
+    const originalRandom = Math.random;
+    let call = 0;
+    // Force a saccade on the first frame, and make it pull hard to the right.
+    Math.random = () => [0, 1, 0.5][call++ % 3];
+    try {
+      const settle = () => { for (let i = 0; i < 20; i += 1) rig.update(1 / 60, {}); };
+      rig.look(1, 0); settle();
+      const right = rig.eyes.R.eye.position.x;
+      rig.look(-1, 0); settle();
+      const left = rig.eyes.R.eye.position.x;
+      return Number.isFinite(right) && Number.isFinite(left) && right > 0 && left < 0;
+    } finally {
+      Math.random = originalRandom;
+    }
+  })());
   t('a strange sensor value never breaks the frame',
     (function () {
       try {

@@ -301,7 +301,7 @@
     }
 
     // Receipts uploaded through Storage have a private path, not a public URL.
-    // Ask the billing callable for a 15-minute signed URL; never guess one.
+    // Ask the billing API for a 15-minute signed URL; never guess one.
     let evidenceSource = row.evidenceUrl || '';
     let evidenceError = '';
     if (!evidenceSource && row.evidencePath) {

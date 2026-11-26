@@ -106,3 +106,28 @@ an administrator in **Payment Verification → Payment methods**.
 5. Run one small live transaction through the configured provider after the
    environment variables are set, then approve it in the admin console. This
    sandbox deliberately did not create a fake successful production payment.
+
+## Follow-up full-feature audit (26 Nov 2026)
+
+After the Vercel deployment checks turned green, the whole repository was
+audited feature by feature for incomplete controls and credential leaks. Three
+concrete defects were found and fixed in this branch:
+
+| Finding | Fix |
+| --- | --- |
+| `admin.html`'s Financial Reports "Export All" button only displayed a toast saying an export was ready. No file was produced. | The button now exports the current filtered report list as a real UTF-8 CSV, using the same safe quoting pattern as the certificate export. Formula-like cells are neutralised before they reach Excel/Sheets. |
+| Report and deposit document URLs were interpolated straight into inline `onclick` handlers. A quote or `javascript:` URL in a Firestore row could break the handler or open an unsafe link. | Only `http(s)` URLs are rendered, and they are emitted with `JSON.stringify` plus `<` escaping before being passed to `viewDoc()`. |
+| The legacy Finance overview still labelled every non-approved withdrawal as "Pending" and offered actions for a status the billing API no longer creates. Domey's random micro-saccades also overwrote a real `rig.look()` gaze signal, causing an intermittent gaze test failure. | The overview now uses the real Pending review / Under review / Approved / Processing / Paid / Rejected / Cancelled labels, shows the billing currency, and sends staff to the authoritative money views. Domey's idle glances are now a small decaying offset to, never a replacement for, the member's gaze. |
+
+Stale source comments and one admin help sentence still called the retired
+money path a "billing callable"; they now refer to the Vercel billing API.
+Historical reports deliberately keep the old wording where it describes the
+original failure.
+
+Verification after these changes: `npm test` (all suites), `npm run lint`,
+`npm run functions:verify`, `npm run build`, `node --check` over 145 JavaScript
+files, and local HTTP smoke checks of `/support.html`, `/give.html`,
+`/admin.html`, `/api/health` and unauthenticated `/api/billing` (401). All
+passed. Responsive structure is checked by the existing jsdom/layout tests;
+there is still no real browser or physical Android device in this environment,
+and no fake production payment was created.

@@ -172,3 +172,44 @@ for (const [label, ok] of [
   if (ok) console.log('PASS  ' + label);
   else { console.error('FAIL  ' + label); process.exitCode = 1; }
 }
+
+// Financial reports: the toolbar's export must produce a real CSV of the
+// filtered rows, not a toast that claims an export is ready. Document links
+// are restricted to http(s) before being embedded in an inline handler.
+for (const [label, ok] of [
+  ['financial report export downloads a CSV of the current list',
+    /window\.exportFinancialReports = function\(\)[\s\S]*?financialReportsCache\.length[\s\S]*?new Blob\(\[csv\], \{ type: 'text\/csv;charset=utf-8' \}\)[\s\S]*?a\.download = 'prayer-dome-financial-reports\.csv'/.test(html) &&
+    !html.includes('Export feature - CSV export ready')],
+  ['export escapes quotes and neutralises spreadsheet formulas',
+    html.includes("replace(/^([=+\\-@])/i") && html.includes(".replace(/\"/g, '\"\"')")],
+  ['report list keeps the filtered rows for export',
+    /financialReportsCache=filtered/.test(html)],
+  ['report document links are http(s) only and safely quoted',
+    html.includes("^https?:\\/\\/[^\\s'\"<>]+$/i.test(reportUrl)") &&
+    html.includes('JSON.stringify(reportUrl)') &&
+    html.includes('onclick="viewDoc(${safeDocUrl}')],
+  ['CSV export is driven by the toolbar button',
+    html.includes('onclick="exportFinancialReports()"')]
+]) {
+  if (ok) console.log('PASS  ' + label);
+  else { console.error('FAIL  ' + label); process.exitCode = 1; }
+}
+
+// The legacy Finance overview is read-only, but its badges still have to
+// describe the real withdrawal lifecycle created by the billing API.
+for (const status of ['pending_review', 'under_review', 'approved', 'processing', 'paid', 'rejected', 'cancelled']) {
+  const ok = html.includes(status + ':');
+  if (ok) console.log('PASS  finance overview labels ' + status);
+  else { console.error('FAIL  finance overview is missing status ' + status); process.exitCode = 1; }
+}
+for (const [label, ok] of [
+  ['finance overview no longer offers direct balance-changing actions',
+    html.includes("manageButton('withdrawals', 'Manage')") &&
+    html.includes("manageButton('payment-verification', 'Manage')") &&
+    !/data\.status==='pending'\?`<button class="btn btn-sm btn-primary" onclick="approveFinance/.test(html)],
+  ['finance overview uses the billing currency formatter',
+    html.includes('window.PDBilling.money(value, currency')]
+]) {
+  if (ok) console.log('PASS  ' + label);
+  else { console.error('FAIL  ' + label); process.exitCode = 1; }
+}

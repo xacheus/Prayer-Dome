@@ -307,7 +307,7 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     // Withdrawal requests and their holds are created and settled by the
-    // billing callable. A member may read only their own rows; finance reads
+    // server billing API. A member may read only their own rows; finance reads
     // all of them. No client can create a withdrawal or move a balance.
     match /withdrawals/{id} {
       allow read: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
